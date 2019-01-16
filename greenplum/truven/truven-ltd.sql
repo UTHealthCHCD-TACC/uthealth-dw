@@ -1,69 +1,106 @@
 /*
+
+  !!!!!!!!!!!
+  NOTE: Manually adding a 'year' column to every table and populating it based on which file the data comes from.
+  Ex. ltd2011 = 2011, etc.... 
+  !!!!!!!!!!!
+  
 v1 Fields:
 
-abs2012,std2012,wc2012,ltd2012,ENROLID,absfreq,absgrp,SEX,DOBYR,seqnum,version
+NOTE: Missing 2011 file
 
 
-v2 Fields: (Add EFAMID)
+v2 Fields:
 
-abs2012,std2012,wc2012,ltd2012,ENROLID,EFAMID,absfreq,absgrp,SEX,DOBYR,seqnum,versionn 
+SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION
+
+
+v3 Fields: (Add DXVER)
+
+SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION
 
 */
 
--- !!!!!!!!!!!!!!!!
--- NOTE: Issue with a 'F' value found in MHSACOVG and 's' for dstatus in ltd113.csv and also non-character data.  Leaving that file out for now.
--- !!!!!!!!!!!!!!!
+
 drop table truven.ltd;
 CREATE TABLE truven.ltd (
-	hours numeric null,
-	ltdtyp int2 null,
-	ltdfrom date null,
-	ltdto date null,
-	efamid numeric NULL,
-	enrolid numeric NULL,
-	paid_ind bpchar(1) null,
+	year int2,
 	seqnum numeric NULL,
+	adv_case bpchar(30) null,
+	casestat bpchar(1) null,
+	base_pay numeric null,
+	dtabs1 date null,
+	dtlast date NULL,
+	daysabs numeric null,
+	offset_pay numeric null,
+	dtrtw date null, 
+	efamid numeric null,
+	enrolid numeric NULL,
+	rtw_flag bpchar(1) null,
+	caseid numeric null,
+	casedx bpchar(10) null,
+	dxver bpchar(1) null,
+	paytot numeric null,
 	version int2 NULL
 	
 )
 DISTRIBUTED RANDOMLY;
 
-drop external table ext_ltd_v1;
-CREATE EXTERNAL TABLE ext_ltd_v1 (
-	hours numeric ,
-	ltdtyp int2 ,
-	ltdfrom date ,
-	ltdto date ,
-	enrolid numeric ,
-	paid_ind bpchar(1) ,
+drop external table ext_ltd_v2;
+CREATE EXTERNAL TABLE ext_ltd_v2 (
 	seqnum numeric ,
-	version int2
+	adv_case bpchar(30) ,
+	casestat bpchar(1) ,
+	base_pay numeric ,
+	dtabs1 date ,
+	dtlast date ,
+	daysabs numeric ,
+	offset_pay numeric ,
+	dtrtw date , 
+	efamid numeric ,
+	enrolid numeric ,
+	rtw_flag bpchar(1) ,
+	caseid numeric ,
+	casedx bpchar(10) ,
+	paytot numeric ,
+	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/*2014*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
+/*
 select *
-from ext_ltd_v1
+from ext_ltd_v2
 limit 1000;
 
 truncate table truven.ltd;
 
-insert into truven.ltd (HOURS,ltdTYP,ltdFROM,ltdTO,ENROLID,PAID_IND,seqnum,version)
-select HOURS,ltdTYP,ltdFROM,ltdTO,ENROLID,PAID_IND,seqnum,version
-from ext_ltd_v1;
+*/
 
-drop external table ext_ltd_v2;
-CREATE EXTERNAL TABLE ext_ltd_v2 (
-	hours numeric ,
-	ltdtyp int2 ,
-	ltdfrom date ,
-	ltdto date ,
+insert into truven.ltd (year, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION)
+select 2014, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION
+from ext_ltd_v2;
+
+drop external table ext_ltd_v3;
+CREATE EXTERNAL TABLE ext_ltd_v3 (
+	seqnum numeric ,
+	adv_case bpchar(30) ,
+	casestat bpchar(1) ,
+	base_pay numeric ,
+	dtabs1 date ,
+	dtlast date ,
+	daysabs numeric ,
+	offset_pay numeric ,
+	dtrtw date , 
 	efamid numeric ,
 	enrolid numeric ,
-	paid_ind bpchar(1) ,
-	seqnum numeric ,
+	rtw_flag bpchar(1) ,
+	caseid numeric ,
+	casedx bpchar(10) ,
+	dxver bpchar(1) ,
+	paytot numeric ,
 	version int2 
 ) 
 LOCATION ( 
@@ -71,13 +108,15 @@ LOCATION (
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
+/*
 select *
-from ext_ltd_v2
+from ext_ltd_v3
 limit 1000;
+*/
 
-insert into truven.ltd (HOURS,ltdTYP,ltdFROM,ltdTO,EFAMID,ENROLID,PAID_IND,seqnum,version )
-select HOURS,ltdTYP,ltdFROM,ltdTO,EFAMID,ENROLID,PAID_IND,seqnum,version 
-from ext_ltd_v2;
+insert into truven.ltd (year, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION)
+select 2015, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION
+from ext_ltd_v3;
 
 -- Verify
 

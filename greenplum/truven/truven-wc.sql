@@ -1,69 +1,72 @@
 /*
+
 v1 Fields:
 
-HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version
+ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,DXVER,VERSION
 
 
 v2 Fields: (Add EFAMID)
 
-HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version 
+ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,VERSION
+
+
+v3 Fields: (Add DXVER)
+
+ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,DXVER,VERSION
+
 
 */
 
--- !!!!!!!!!!!!!!!!
--- NOTE: Issue with a 'F' value found in MHSACOVG and 's' for dstatus in abs113.csv and also non-character data.  Leaving that file out for now.
--- !!!!!!!!!!!!!!!
-drop table truven.abs;
-CREATE TABLE truven.abs (
-	hours numeric null,
-	abstyp int2 null,
-	absfrom date null,
-	absto date null,
-	efamid numeric NULL,
+drop table truven.wc;
+CREATE TABLE truven.wc (
+	year int2,
+	adv_case bpchar(30) null,
+	seqnum numeric NULL,	
+	casestat bpchar(1) null,
+	dtinj date null,
+	casedx bpchar(10) null,
+	payindm numeric null,
+	paymed numeric null,
+	payoth numeric null,
+	dtbeg date null,
+	dtlast date NULL,
+	paytot numeric null,
+	efamid numeric null,
 	enrolid numeric NULL,
-	paid_ind bpchar(1) null,
-	seqnum numeric NULL,
+	bodypart bpchar(255) null,
+	cause bpchar(255) null,
+	nature bpchar(255) null,
+	caseid numeric null,
+	daysabs numeric null,
+	dtrtw date null,
+	rtw_flag bpchar(1) null,
+	dxver bpchar(1) null,
 	version int2 NULL
 	
 )
 DISTRIBUTED RANDOMLY;
 
-drop external table ext_abs_v1;
-CREATE EXTERNAL TABLE ext_abs_v1 (
-	hours numeric ,
-	abstyp int2 ,
-	absfrom date ,
-	absto date ,
+drop external table ext_wc_v1;
+CREATE EXTERNAL TABLE ext_wc_v1 (
+	adv_case bpchar(30) ,
+	seqnum numeric ,	
+	casestat bpchar(1) ,
+	dtinj date ,
+	casedx bpchar(10) ,
+	payindm numeric ,
+	paymed numeric ,
+	payoth numeric ,
+	dtbeg date ,
+	dtlast date ,
+	paytot numeric ,
 	enrolid numeric ,
-	paid_ind bpchar(1) ,
-	seqnum numeric ,
-	version int2
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
-
-select *
-from ext_abs_v1
-limit 1000;
-
-truncate table truven.abs;
-
-insert into truven.abs (HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version)
-select HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version
-from ext_abs_v1;
-
-drop external table ext_abs_v2;
-CREATE EXTERNAL TABLE ext_abs_v2 (
-	hours numeric ,
-	abstyp int2 ,
-	absfrom date ,
-	absto date ,
-	efamid numeric ,
-	enrolid numeric ,
-	paid_ind bpchar(1) ,
-	seqnum numeric ,
+	bodypart bpchar(255) ,
+	cause bpchar(255) ,
+	nature bpchar(255) ,
+	caseid numeric ,
+	daysabs numeric ,
+	dtrtw date ,
+	rtw_flag bpchar(1) ,
 	version int2 
 ) 
 LOCATION ( 
@@ -72,16 +75,96 @@ LOCATION (
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
-from ext_abs_v2
+from ext_wc_v1
 limit 1000;
 
-insert into truven.abs (HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version )
-select HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version 
-from ext_abs_v2;
+truncate table truven.wc;
+
+insert into truven.wc (year, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,VERSION)
+select 2011, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,VERSION
+from ext_wc_v1;
+
+drop external table ext_wc_v2;
+CREATE EXTERNAL TABLE ext_wc_v2 (
+	adv_case bpchar(30) ,
+	seqnum numeric ,	
+	casestat bpchar(1) ,
+	dtinj date ,
+	casedx bpchar(10) ,
+	payindm numeric ,
+	paymed numeric ,
+	payoth numeric ,
+	dtbeg date ,
+	dtlast date ,
+	paytot numeric ,
+	efamid numeric ,
+	enrolid numeric ,
+	bodypart bpchar(255) ,
+	cause bpchar(255) ,
+	nature bpchar(255) ,
+	caseid numeric ,
+	daysabs numeric ,
+	dtrtw date ,
+	rtw_flag bpchar(1) ,
+	version int2 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8801/*2014*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+--select *
+--from ext_wc_v2
+--limit 1000;
+
+insert into truven.wc (year, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,VERSION)
+select 2014, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,VERSION 
+from ext_wc_v2;
+
+
+drop external table ext_wc_v3;
+CREATE EXTERNAL TABLE ext_wc_v3 (
+	adv_case bpchar(30) ,
+	seqnum numeric ,	
+	casestat bpchar(1) ,
+	dtinj date ,
+	casedx bpchar(10) ,
+	payindm numeric ,
+	paymed numeric ,
+	payoth numeric ,
+	dtbeg date ,
+	dtlast date ,
+	paytot numeric ,
+	efamid numeric ,
+	enrolid numeric ,
+	bodypart bpchar(255) ,
+	cause bpchar(255) ,
+	nature bpchar(255) ,
+	caseid numeric ,
+	daysabs numeric ,
+	dtrtw date ,
+	rtw_flag bpchar(1) ,
+	dxver bpchar(1) ,
+	version int2 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8801/*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+/*
+select *
+from ext_wc_v3
+limit 1000;
+*/
+
+insert into truven.wc (year, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,DXVER,VERSION)
+select 2015, ADV_CASE,SEQNUM,CASESTAT,DTINJ,CASEDX,PAYINDM,PAYMED,PAYOTH,DTBEG,DTLAST,PAYTOT,EFAMID,ENROLID,BODYPART,CAUSE,NATURE,CASEID,DAYSABS,DTRTW,RTW_FLAG,DXVER,VERSION 
+from ext_wc_v3;
 
 -- Verify
 
-select count(*) from truven.abs;
+select count(*) from truven.wc;
 
 
 
