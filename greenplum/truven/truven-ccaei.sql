@@ -254,3 +254,12 @@ select count(*) from truven.ccaei;
 
 
 
+-- Fix storage options
+create table truven.ccaei_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaei)
+distributed randomly;
+
+drop table truven.ccaei;
+alter table truven.ccaei_new rename to ccaei;
+

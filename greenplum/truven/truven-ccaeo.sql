@@ -230,5 +230,29 @@ limit 1000;
 
 select count(*) from truven.ccaeo;
 
+-- Fix storage options
+create table truven.ccaeo_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaeo)
+distributed randomly;
+
+drop table truven.ccaeo;
+alter table truven.ccaeo_new rename to ccaeo;
+
+-- Query
+
+SELECT count(*)
+                   FROM truven.ccaeo WHERE DATATYP = 1 and
+                                    EIDFLAG = 1 and
+                                    AGE > 17 and
+                                    (
+                DX1  IN ('60000','60001','60090','60091','60020','60021') or
+                DX2  IN ('60000','60001','60090','60091','60020','60021') or
+                DX3  IN ('60000','60001','60090','60091','60020','60021') or
+                DX4  IN ('60000','60001','60090','60091','60020','60021')
+                                    )
+
+
+
 
 

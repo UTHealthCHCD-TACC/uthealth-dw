@@ -178,3 +178,12 @@ select count(*) from truven.mdcra;
 
 
 
+-- Fix storage options
+create table truven.mdcra_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcra)
+distributed randomly;
+
+drop table truven.mdcra;
+alter table truven.mdcra_new rename to mdcra;
+

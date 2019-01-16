@@ -142,3 +142,12 @@ select count(*) from truven.mdcrt;
 
 
 
+-- Fix storage options
+create table truven.mdcrt_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcrt)
+distributed randomly;
+
+drop table truven.mdcrt;
+alter table truven.mdcrt_new rename to mdcrt;
+

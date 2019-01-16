@@ -142,3 +142,12 @@ select count(*) from truven.ccaet;
 
 
 
+-- Fix storage options
+create table truven.ccaet_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaet)
+distributed randomly;
+
+drop table truven.ccaet;
+alter table truven.ccaet_new rename to ccaet;
+

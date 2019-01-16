@@ -124,3 +124,12 @@ select count(*) from truven.ltd;
 
 
 
+-- Fix storage options
+create table truven.ltd_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ltd)
+distributed randomly;
+
+drop table truven.ltd;
+alter table truven.ltd_new rename to ltd;
+

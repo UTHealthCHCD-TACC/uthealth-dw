@@ -177,4 +177,13 @@ from ext_ccaea_v2;
 select count(*) from truven.ccaea;
 
 
+-- Fix storage options
+create table truven.ccaea_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaea)
+distributed randomly;
+
+drop table truven.ccaea;
+alter table truven.ccaea_new rename to ccaea;
+
 

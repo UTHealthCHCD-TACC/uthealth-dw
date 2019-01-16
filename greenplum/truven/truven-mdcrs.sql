@@ -403,3 +403,12 @@ select count(*) from truven.mdcrs;
 
 
 
+-- Fix storage options
+create table truven.mdcrs_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcrs)
+distributed randomly;
+
+drop table truven.mdcrs;
+alter table truven.mdcrs_new rename to mdcrs;
+

@@ -231,3 +231,12 @@ select count(*) from truven.mdcro;
 
 
 
+-- Fix storage options
+create table truven.mdcro_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcro)
+distributed randomly;
+
+drop table truven.mdcro;
+alter table truven.mdcro_new rename to mdcro;
+

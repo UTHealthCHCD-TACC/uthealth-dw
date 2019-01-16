@@ -244,3 +244,12 @@ select count(*) from truven.ccaed;
 
 
 
+-- Fix storage options
+create table truven.ccaed_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaed)
+distributed randomly;
+
+drop table truven.ccaed;
+alter table truven.ccaed_new rename to ccaed;
+

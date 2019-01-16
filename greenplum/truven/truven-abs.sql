@@ -89,5 +89,16 @@ from ext_abs_v2;
 
 select count(*) from truven.abs;
 
+-- Fix storage options
+create table truven.abs_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.abs)
+distributed randomly;
+
+drop table truven.abs;
+alter table truven.abs_new rename to abs;
+
+
+
 
 

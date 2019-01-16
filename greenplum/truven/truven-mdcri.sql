@@ -254,3 +254,12 @@ select count(*) from truven.mdcri;
 
 
 
+-- Fix storage options
+create table truven.mdcri_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcri)
+distributed randomly;
+
+drop table truven.mdcri;
+alter table truven.mdcri_new rename to mdcri;
+

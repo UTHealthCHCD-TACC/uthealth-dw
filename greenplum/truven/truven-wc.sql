@@ -166,5 +166,12 @@ from ext_wc_v3;
 
 select count(*) from truven.wc;
 
+-- Fix storage options
+create table truven.wc_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.wc)
+distributed randomly;
 
+drop table truven.wc;
+alter table truven.wc_new rename to wc;
 

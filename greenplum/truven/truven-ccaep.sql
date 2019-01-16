@@ -79,5 +79,14 @@ from ext_ccaep_v1;
 
 select count(*) from truven.ccaep;
 
+-- Fix storage options
+create table truven.ccaep_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaep)
+distributed randomly;
+
+drop table truven.ccaep;
+alter table truven.ccaep_new rename to ccaep;
+
 
 

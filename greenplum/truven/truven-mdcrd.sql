@@ -242,5 +242,12 @@ from ext_mdcrd_v2;
 
 select count(*) from truven.mdcrd;
 
+-- Fix storage options
+create table truven.mdcrd_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcrd)
+distributed randomly;
 
+drop table truven.mdcrd;
+alter table truven.mdcrd_new rename to mdcrd;
 

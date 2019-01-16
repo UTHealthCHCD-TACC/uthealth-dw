@@ -149,5 +149,16 @@ from ext_std_v3;
 
 select count(*) from truven.std;
 
+-- Fix storage options
+create table truven.std_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.std)
+distributed randomly;
+
+drop table truven.std;
+alter table truven.std_new rename to std;
+
+
+
 
 

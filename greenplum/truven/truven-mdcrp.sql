@@ -81,3 +81,12 @@ select count(*) from truven.mdcrp;
 
 
 
+-- Fix storage options
+create table truven.mdcrp_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.mdcrp)
+distributed randomly;
+
+drop table truven.mdcrp;
+alter table truven.mdcrp_new rename to mdcrp;
+

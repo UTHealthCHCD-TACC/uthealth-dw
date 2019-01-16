@@ -403,3 +403,12 @@ select count(*) from truven.ccaes;
 
 
 
+-- Fix storage options
+create table truven.ccaes_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaes)
+distributed randomly;
+
+drop table truven.ccaes;
+alter table truven.ccaes_new rename to ccaes;
+

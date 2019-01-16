@@ -266,4 +266,13 @@ from ext_ccaef_v2;
 select count(*) from truven.ccaef;
 
 
+-- Fix storage options
+create table truven.ccaef_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.ccaef)
+distributed randomly;
+
+drop table truven.ccaef;
+alter table truven.ccaef_new rename to ccaef;
+
 

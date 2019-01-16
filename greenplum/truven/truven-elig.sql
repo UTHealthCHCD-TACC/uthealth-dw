@@ -94,5 +94,14 @@ from ext_elig_v2;
 
 select count(*) from truven.elig;
 
+-- Fix storage options
+create table truven.elig_new 
+WITH (appendonly=true, orientation=column)
+as (select * from truven.elig)
+distributed randomly;
+
+drop table truven.elig;
+alter table truven.elig_new rename to elig;
+
 
 
