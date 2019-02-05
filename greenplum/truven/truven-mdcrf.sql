@@ -88,6 +88,7 @@ CREATE TABLE truven.mdcrf (
 	hlthplan int2 null,
 	indstry bpchar(5) null
 )
+WITH (appendonly=true, orientation=column)
 DISTRIBUTED RANDOMLY;
 
 drop external table ext_mdcrf_v1;
@@ -158,13 +159,13 @@ CREATE EXTERNAL TABLE ext_mdcrf_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*113*'
+'gpfdist://c252-140:8801/*113*clean2*'
 )
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
+FORMAT 'CSV' ( HEADER DELIMITER ',' QUOTE '"' null '');
 
 select *
 from ext_mdcrf_v1
-limit 100000;
+limit 10000;
 
 truncate table truven.mdcrf;
 
