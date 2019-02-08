@@ -8,7 +8,7 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 8
-   and n.nspname in ('truven', 'optum')
+   and n.nspname in ('truven', 'optum_zip')
    ORDER BY n.nspname, relpages desc;
    
    

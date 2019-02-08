@@ -1,0 +1,11 @@
+ analyze optum_zip.medical;
+ analyze optum_zip.confinement;
+ analyze optum_zip.diagnostic;
+ analyze optum_zip.facility_detail;
+ analyze optum_zip.lab_result;
+ analyze optum_zip.member;
+ analyze optum_zip.member_detail;
+ analyze optum_zip.procedure;
+ analyze optum_zip.provider;
+ analyze optum_zip.provider_bridge;
+ analyze optum_zip.rx;

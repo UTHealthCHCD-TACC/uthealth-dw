@@ -4,11 +4,11 @@ grant connect on database uthealth to group uthealthdev;
 
 --revoke all on schema truven from group uthealthdev;
 grant usage on schema truven to group uthealthdev;
-grant usage on schema optum to group uthealthdev;
+grant usage on schema optum_zip to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
 select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('truven', 'optum')
+from pg_tables where schemaname in ('optum_zip')
 order by schemaname, tablename;
 
 drop role tester;
