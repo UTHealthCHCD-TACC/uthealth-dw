@@ -1,6 +1,6 @@
 --Medical
-drop table optum.provider;
-create table optum.provider (
+drop table optum_dod.provider;
+create table optum_dod.provider (
 PROV_UNIQUE bigint, BED_SZ_RANGE char(20), CRED_TYPE char(20), GRP_PRACTICE int, HOSP_AFFIL int, PROV_STATE char(2), PROV_TYPE char(3), PROVCAT char(4), 
 TAXONOMY1 char(10), TAXONOMY2 char(10), EXTRACT_YM int, VERSION numeric
 )
@@ -23,11 +23,11 @@ from ext_provider
 limit 1000;
 
 -- Insert
-insert into optum.provider
+insert into optum_dod.provider
 select * from ext_provider;
 
 -- Analyze
-analyze optum.provider;
+analyze optum_dod.provider;
 
 --Verify
-select count(*) from optum.provider;
+select count(*) from optum_dod.provider;

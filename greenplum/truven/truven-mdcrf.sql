@@ -18,6 +18,7 @@ EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
 -- !!!!!!!!!!!!!!!!
 -- NOTE: Issue with a 'F' value found in MHSACOVG and 's' for dstatus in mdcrf113.csv and also non-character data.  Leaving that file out for now.
+-- UPDATED: Deleted bad rows (4 total) from mdcrf113, including the non-unicode characters and 1 row where '***********' for pddate.
 -- !!!!!!!!!!!!!!!
 drop table truven.mdcrf;
 CREATE TABLE truven.mdcrf (
@@ -159,7 +160,7 @@ CREATE EXTERNAL TABLE ext_mdcrf_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*113*clean2*'
+'gpfdist://c252-140:8801/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' QUOTE '"' null '');
 
@@ -253,7 +254,7 @@ FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
 from ext_mdcrf_v2
-limit 1000;
+limit 10000;
 
 insert into truven.mdcrf (SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
 DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
