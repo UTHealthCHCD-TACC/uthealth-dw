@@ -75,3 +75,5 @@ join optum_zip.facility_detail f on pd.clmid=f.clmid;
 
 
 
+
+

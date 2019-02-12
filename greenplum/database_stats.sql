@@ -16,7 +16,7 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 8
-   and n.nspname in ('optum_zip')
+   and n.nspname in ('truven')
    ORDER BY n.nspname, relpages desc;
    
 
