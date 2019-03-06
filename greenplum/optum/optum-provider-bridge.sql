@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_provider_bridge (
 PROV_UNIQUE bigint, DEA char(9), NPI char(10), PROV bigint, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/zip5_provider_bridge.txt'
+'gpfdist://c252-140:8801/dod_provider_bridge.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

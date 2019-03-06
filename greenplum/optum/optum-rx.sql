@@ -17,7 +17,7 @@ patid int8, pat_planid int8,ahfsclss bpchar(8),	avgwhlsl numeric,	brnd_nm bpchar
 	rfl_nbr bpchar(2),spclt_ind bpchar(1),specclss bpchar(3),std_cost numeric,std_cost_yr int2,strength bpchar(10),extract_ym int4,version numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/2018/*_r2018*'
+'gpfdist://c252-140:8801//*_r2*q3.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -31,8 +31,19 @@ limit 1000;
 insert into optum_dod.rx
 select 2018, * from ext_rx;
 
+-- Set Year/Quarter
+select date_part('year', fill_dt), fill_dt
+from optum_dod.rx
+limit 10;
+
+update optum_dod.rx set year=date_part('year', fill_dt);
+
 -- Analyze
 analyze optum_dod.rx;
+
+-- Year & Quarter
+select distinct extract(quarter from fill_dt)
+from ext_rx;
 
 --Verify
 select count(*), min(year), max(year), count(distinct year) from optum_dod.rx;

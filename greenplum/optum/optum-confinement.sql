@@ -20,7 +20,7 @@ LOS numeric, POS char(5), PROC1 char(7), PROC2 char(7), PROC3 char(7), PROC4 cha
 PROV numeric, STD_COST numeric, STD_COST_YR smallint, TOS_CD char(13), EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/2018/*_c2018*'
+'gpfdist://c252-140:8801/*_c2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -32,7 +32,7 @@ limit 1000;
 */
 -- Insert
 insert into optum_dod.confinement
-select 2018, * from ext_confinement;
+select 0, * from ext_confinement;
 
 -- Analyze
 analyze optum.confinement;

@@ -13,7 +13,7 @@ PROV_UNIQUE bigint, BED_SZ_RANGE char(20), CRED_TYPE char(20), GRP_PRACTICE int,
 TAXONOMY1 char(10), TAXONOMY2 char(10), EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/zip5_provider.txt'
+'gpfdist://c252-140:8801/dod_provider.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

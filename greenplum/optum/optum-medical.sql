@@ -21,7 +21,7 @@ PROCMOD char(5),PROV numeric,PROV_PAR char(5),PROVCAT char(4),REFER_PROV numeric
 UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/2018/*_m2018*'
+'gpfdist://c252-140:8801/*_m2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -33,7 +33,7 @@ limit 1000;
 */
 -- Insert
 insert into optum_dod.medical
-select 2018, * from ext_medical;
+select 0, * from ext_medical;
 
 -- Analyze
 analyze optum.medical;

@@ -15,19 +15,19 @@ LABCLMID char(19), LOINC_CD char(7), LOW_NRML numeric, PROC_CD char(7), RSLT_NBR
 source char(2), TST_DESC char(30), TST_NBR char(10), EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/2018/*_lr2018*'
+'gpfdist://c252-140:8801/*_lr2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 /*
 select *
-from ext_labresults
+from ext_labresult
 limit 1000;
 */
 -- Insert
 insert into optum_dod.lab_result
-select 2018, * from ext_labresult;
+select 0, * from ext_labresult;
 
 -- Analyze
 analyze optum_dod.lab_result;

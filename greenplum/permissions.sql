@@ -4,19 +4,21 @@ grant connect on database uthealth to group uthealthdev;
 
 --revoke all on schema truven from group uthealthdev;
 grant usage on schema truven to group uthealthdev;
-grant usage on schema optum_zip to group uthealthdev;
+grant usage on schema optum_dod to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
 select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('optum_zip')
+from pg_tables where schemaname in ('optum_dod')
 order by schemaname, tablename;
 
+--Create User
 drop role tester;
-CREATE ROLE tester NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<enter password>';
-grant uthealthdev to tester;
+CREATE ROLE jfu2 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<enter password>';
+grant uthealthdev to jfu2;
 
-select count(*) from optum.confinement;
-select count(*) from truven.elig;
+--Change Password
+alter user lghosh1 with password '<enter password>';
+
 
 select *
 FROM information_schema.role_table_grants

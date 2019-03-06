@@ -13,7 +13,7 @@ PATID bigint, PAT_PLANID bigint, CHARGE_ALLOC numeric, CLMID char(19), CLMSEQ ch
 PROC_CD char(7), PROCMOD char(5), RVNU_CD char(4), STD_COST_ALLOC numeric, STD_COST_YR smallint, UNITS numeric, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/2018/*_fd2018*'
+'gpfdist://c252-140:8801/*_fd2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -25,7 +25,7 @@ limit 1000;
 */
 -- Insert
 insert into optum_dod.facility_detail
-select 2018, * from ext_facility_detail;
+select 0, * from ext_facility_detail;
 
 -- Analyze
 analyze optum_dod.facility_detail;
