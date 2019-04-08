@@ -5,10 +5,11 @@ grant connect on database uthealth to group uthealthdev;
 --revoke all on schema truven from group uthealthdev;
 grant usage on schema truven to group uthealthdev;
 grant usage on schema optum_dod to group uthealthdev;
+grant usage on schema data_warehouse to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
 select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('optum_dod')
+from pg_tables where schemaname in ('data_warehouse')
 order by schemaname, tablename;
 
 --Create User
