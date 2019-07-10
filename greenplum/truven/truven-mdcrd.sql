@@ -220,7 +220,7 @@ CREATE EXTERNAL TABLE ext_mdcrd_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/mdcrd*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -240,7 +240,7 @@ from ext_mdcrd_v2;
 
 -- Verify
 
-select count(*) from truven.mdcrd;
+select count(*), min(year), max(year) from truven.mdcrd;
 
 -- Fix storage options
 create table truven.mdcrd_new 

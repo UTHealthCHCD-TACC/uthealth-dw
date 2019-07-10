@@ -19,10 +19,19 @@ SVCDATE,SVCSCAT,TSVCDAT,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,WGTKEY,
 EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,PLANKEY,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
-v3 Fields: (Drop PLANKEY and WGTKEY, Add DXVER, UNITS and NPI)
+v3 Fields: (Drop PLANKEY and WGTKEY, Add DXVER, UNITS and NPI) 2015/16
 
 SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
 CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
+NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
+SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
+EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
+v4 Fields: (CASEID & DISDATE moved) 2017
+
+SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,DOBYR,YEAR,ADMDATE,AGE,
+CAP_SVC,CASEID,COB,COINS,COPAY,DEDUCT,DISDATE,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
 NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
 SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
 EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
@@ -277,7 +286,7 @@ CREATE EXTERNAL TABLE ext_ccaes_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/ccaes*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -301,6 +310,7 @@ EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,PLANKEY,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaes_v2;
 
+--V3
 
 drop external table ext_ccaes_v3;
 CREATE EXTERNAL TABLE ext_ccaes_v3 (
@@ -375,11 +385,11 @@ CREATE EXTERNAL TABLE ext_ccaes_v3 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/ccaes162*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select *
+select disdate, *
 from ext_ccaes_v3
 limit 1000;
 
@@ -397,10 +407,115 @@ EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaes_v3;
 
+
+--V4
+
+drop external table ext_ccaes_v4;
+CREATE EXTERNAL TABLE ext_ccaes_v4 (
+	seqnum numeric ,
+	version int2 ,
+	dx1 bpchar(10) ,
+	dx2 bpchar(10) ,
+	dxver bpchar(10) ,
+	proc1 bpchar(10) ,
+	proctyp bpchar(10) ,
+	
+	
+	dobyr numeric ,
+	year numeric ,
+	admdate date ,
+	age numeric ,
+	
+	cap_svc bpchar(1) ,
+	
+	caseid numeric ,
+	
+	cob numeric ,
+	coins numeric ,
+	copay numeric ,
+	deduct numeric ,
+	
+	disdate date ,
+	
+	drg numeric ,
+	dx3 bpchar(10) ,
+	dx4 bpchar(10) ,
+	fachdid numeric ,
+	facprof bpchar(1) ,
+	mhsacovg int2 ,
+	msclmid numeric ,
+	
+	netpay numeric ,
+	npi bpchar(10) ,
+	ntwkprov bpchar(1) ,
+	paidntwk bpchar(1) ,
+	pay numeric ,
+	pddate date ,
+	pdx bpchar(10) ,
+	pproc bpchar(10) ,
+	procmod bpchar(2) ,
+	provid numeric ,
+	qty numeric ,
+	revcode int2 ,
+	
+	svcdate date ,
+	svcscat int4 ,
+	tsvcdat date ,
+	units numeric ,
+	admtyp numeric ,
+	mdc int2 ,
+	dstatus numeric ,
+	stdplac numeric ,
+	stdprov numeric ,
+
+	efamid numeric ,
+	enrolid numeric ,
+	empzip numeric ,
+	plantyp numeric ,
+	region int2 ,
+	datatyp numeric ,
+	agegrp int2 ,
+	
+	eeclass int2 ,
+	eestatu int2 ,
+	egeoloc int2 ,
+	eidflag int2 ,
+	emprel int2 ,
+	enrflag int2 ,
+	phyflag int2 ,
+	rx int2 ,
+	sex int2 ,
+	hlthplan int2 ,
+	indstry bpchar(5)
+) 
+LOCATION ( 
+'gpfdist://c252-140:8801/ccaes171*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+select disdate, *
+from ext_ccaes_v4
+limit 1000;
+
+insert into truven.ccaes (SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
+CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
+NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
+SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
+EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
+select SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
+CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
+NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
+SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
+EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+from ext_ccaes_v4;
+
 -- Verify
 
-select count(*) from truven.ccaes;
+select count(*), min(year), max(year) from truven.ccaes;
 
+select date('2017');
 
 
 -- Fix storage options

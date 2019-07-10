@@ -207,7 +207,7 @@ CREATE EXTERNAL TABLE ext_ccaeo_v2 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/ccaeo*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -240,6 +240,8 @@ drop table truven.ccaeo;
 alter table truven.ccaeo_new rename to ccaeo;
 
 -- Query
+
+select count(*), min(year), max(year) from truven.ccaeo;
 
 SELECT count(*)
                    FROM truven.ccaeo WHERE DATATYP = 1 and

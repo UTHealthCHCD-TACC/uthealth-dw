@@ -13,6 +13,8 @@ alter sequence data_warehouse.enrollment_id_seq cache 200;
 --Optum load
 insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, state, cov_eff_dt, cov_term_dt, plan_ty_cd)
 select 'od', patid, gdr_cd, yrdob, family_id, state, eligeff, eligend, product
+
+select count(*)
 from optum_dod.member;
 
 -- State
@@ -25,14 +27,18 @@ insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, 
 select 't', enrolid, 'M', dobyr, efamid, s.postal_code, dtstart, dtend, plantyp
 from truven.ccaet c
 join dev.truven_state_codes s on c.egeoloc=s.truven_code
-where sex=1;
+where sex=1
+and c.year>=2016;
+
 
 insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, state, cov_eff_dt, cov_term_dt, plan_ty_cd)
 select 't', enrolid, 'F', dobyr, efamid, s.postal_code, dtstart, dtend, plantyp
 from truven.ccaet c
 join dev.truven_state_codes s on c.egeoloc=s.truven_code
-where sex=2;
+where sex=2
+and c.year>=2016;
 
+--Verify
 
 -- State
 select distinct egeoloc

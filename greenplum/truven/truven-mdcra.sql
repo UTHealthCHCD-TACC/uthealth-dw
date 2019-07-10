@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE ext_mdcra_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/mdcra*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -174,7 +174,7 @@ from ext_mdcra_v2;
 
 -- Verify
 
-select count(*) from truven.mdcra;
+select count(*), min(year), max(year) from truven.mdcra;
 
 
 

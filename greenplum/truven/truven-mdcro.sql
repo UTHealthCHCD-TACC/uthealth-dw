@@ -207,7 +207,7 @@ CREATE EXTERNAL TABLE ext_mdcro_v2 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/mdcro*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -227,7 +227,7 @@ from ext_mdcro_v2;
 
 -- Verify
 
-select count(*) from truven.mdcro;
+select count(*), min(year), max(year) from truven.mdcro;
 
 
 

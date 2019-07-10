@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE ext_ccaea_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/ccaea*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -174,7 +174,7 @@ from ext_ccaea_v2;
 
 -- Verify
 
-select count(*) from truven.ccaea;
+select count(*), min(year), max(year)  from truven.ccaea;
 
 
 -- Fix storage options

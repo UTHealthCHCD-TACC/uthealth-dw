@@ -19,6 +19,7 @@ alter table data_warehouse.dim_date add column year smallint;
 update data_warehouse.dim_date set year = extract(year from date);
 
 --Map Enrollment to dim_date
+
 create table data_warehouse.dim_enrollment_date (
 id bigserial, date_id bigint, enrollment_id bigint
 )
@@ -29,13 +30,29 @@ distributed randomly;
 alter sequence data_warehouse.dim_enrollment_date_id_seq cache 200;
 
 --Insert
+alter table data_warehouse.dim_enrollment_date rename to dim_enrollment_date_backup;
+
+
 insert into data_warehouse.dim_enrollment_date(date_id, enrollment_id)
 select d.id, e.id
 from data_warehouse.dim_date d
-join data_warehouse.enrollment e on d.date between e.cov_eff_dt and e.cov_term_dt;
+join data_warehouse.enrollment e on d.date between e.cov_eff_dt and e.cov_term_dt
+where e.source='t'
+and d.year >= 2016;
 
-select count(*)
-from data_warehouse.dim_enrollment_date;
+and 
+limit 10;
+
+--Verify
+select e.source, extract(year from e.cov_eff_dt) as year, count(*)
+from data_warehouse.enrollment e
+group by 1, 2; 
+
+select e.source, count(*), min(d.year), max(d.year)
+from data_warehouse.dim_enrollment_date ed
+join data_warehouse.enrollment e on e.id=ed.enrollment_id
+join data_warehouse.dim_date d on d.id=ed.date_id
+group by 1;
 
 -- Test Queries
 select d.month, d.year, e.source, count(*) as mbr_cnt, 
@@ -64,3 +81,12 @@ from data_warehouse.enrollment e
 join dev.enrollment__date_2013 ed on e.id=ed.enrollment_id
 group by 1, 2, 3
 order by ed.year, ed.month, e.source;
+
+select distinct plan_ty_cd
+from data_warehouse.enrollment;
+
+
+select *
+from data_warehouse.enrollment
+where source = 't'
+limit 10;
