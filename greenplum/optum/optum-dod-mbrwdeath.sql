@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_member_wdeath (
 PatID bigint, Death_ym int, Extract_ym int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/dod_mbrwdeath.txt'
+'gpfdist://c252-140:8801/optum/dod/dod_mbrwdeath.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
