@@ -14,8 +14,8 @@ order by schemaname, tablename;
 
 --Create User
 drop role tester;
-CREATE ROLE jfu2 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<enter password>';
-grant uthealthdev to jfu2;
+CREATE ROLE wcough NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<enter password>';
+grant uthealthdev to wcough;
 
 --Change Password
 alter user lghosh1 with password '<enter password>';

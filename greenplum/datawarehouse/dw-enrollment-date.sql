@@ -30,15 +30,15 @@ distributed randomly;
 alter sequence data_warehouse.dim_enrollment_date_id_seq cache 200;
 
 --Insert
-alter table data_warehouse.dim_enrollment_date rename to dim_enrollment_date_backup;
 
+--alter table data_warehouse.dim_enrollment_date rename to dim_enrollment_date_backup;
+delete from data_warehouse.dim_enrollment_date where enrollment_id not in (select id from data_warehouse.enrollment);
 
 insert into data_warehouse.dim_enrollment_date(date_id, enrollment_id)
 select d.id, e.id
 from data_warehouse.dim_date d
 join data_warehouse.enrollment e on d.date between e.cov_eff_dt and e.cov_term_dt
-where e.source='t'
-and d.year >= 2016;
+where e.source='t';
 
 and 
 limit 10;
@@ -75,6 +75,23 @@ from data_warehouse.dim_enrollment_date ed
 join data_warehouse.dim_date d on d.id=ed.date_id
 where d.year=2013)
 distributed randomly;
+
+
+create table dev.dim_enrolldate_check
+as
+select distinct enrollment_id
+from data_warehouse.dim_enrollment_date;
+
+--2,976,114,314
+select count(*) from dev.dim_enrolldate_check;
+
+--Missing from dim_enrollment_date due to partial months
+--3,075,350
+select count(e.*)
+from enrollment e
+left join dev.dim_enrolldate_check d on e.id=d.enrollment_id
+where d.enrollment_id is null;
+
 
 select ed.month, ed.year, e.source, count(*) as mbr_cnt, count(distinct e.mbr_id) as cnt2
 from data_warehouse.enrollment e	

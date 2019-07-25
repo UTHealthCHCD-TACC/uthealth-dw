@@ -152,3 +152,6 @@ distributed randomly;
 drop table truven.ccaet;
 alter table truven.ccaet_new rename to ccaet;
 
+select distinct empzip
+from truven.ccaet;
+

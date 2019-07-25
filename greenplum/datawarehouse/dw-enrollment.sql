@@ -7,6 +7,8 @@ id bigserial, source char(2), mbr_id bigint, gndr_cd char(1), mbr_dob smallint, 
 WITH (appendonly=true, orientation=column)
 distributed randomly;
 
+alter table data_warehouse.enrollment ALTER COLUMN state TYPE varchar;
+
 --Greenplum performance optimization for serial/sequence
 alter sequence data_warehouse.enrollment_id_seq cache 200;
 
@@ -23,20 +25,30 @@ from optum_dod.member;
 
 
 --Truven load
+delete from data_warehouse.enrollment
+where source='t';
+
 insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, state, cov_eff_dt, cov_term_dt, plan_ty_cd)
-select 't', enrolid, 'M', dobyr, efamid, s.postal_code, dtstart, dtend, plantyp
+select 't', enrolid, 'M', dobyr, efamid, s.abbr, dtstart, dtend, plantyp
 from truven.ccaet c
 join dev.truven_state_codes s on c.egeoloc=s.truven_code
-where sex=1
-and c.year>=2016;
+where sex=1;
 
 
 insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, state, cov_eff_dt, cov_term_dt, plan_ty_cd)
-select 't', enrolid, 'F', dobyr, efamid, s.postal_code, dtstart, dtend, plantyp
+select 't', enrolid, 'F', dobyr, efamid, s.abbr, dtstart, dtend, plantyp
 from truven.ccaet c
 join dev.truven_state_codes s on c.egeoloc=s.truven_code
-where sex=2
-and c.year>=2016;
+where sex=2;
+
+select extract(year from dtstart) as year, s.state, c.egeoloc, count(*)
+from truven.ccaet c
+join dev.truven_state_codes s on c.egeoloc=s.truven_code
+group by 1, 2, 3
+order by 1, 2;
+
+select s.state, count(*)
+
 
 --Verify
 
@@ -45,18 +57,25 @@ select distinct egeoloc
 from truven.ccaet;
 
 -- Need lookup table for Truven state codes
+drop external table truven_state_codes;
 create external table truven_state_codes
 (
-truven_code smallint, description varchar, state varchar, abbr varchar, postal_code char(2)
+truven_code smallint, state varchar, abbr varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/state_codes.csv'
+'gpfdist://c252-140:8801/truven-state-codes.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
+drop table dev.truven_state_codes;
 create table dev.truven_state_codes
 as 
-select *
+select truven_code, state, upper(abbr) as abbr
 from truven_state_codes;
 
+
+-- Final Verification
+select source, count(*), min(cov_eff_dt), max(cov_term_dt)
+from data_warehouse.enrollment
+group by 1;
 
