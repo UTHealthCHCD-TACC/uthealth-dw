@@ -8,7 +8,7 @@
 
 --#4: What percentage of people died during a hospitalization in 2011.  Look at discharge status (DSTATUS=20s for Optum)
 
---#5: How mn people re-admitted within 30 days for both same diagnosis vs any diagnosis all years.  Original admission for pnemonia.  ICD10=J18.9 & ICD9 = 486*
+--#5: How many people re-admitted within 30 days for both same diagnosis vs any diagnosis all years.  Original admission for pnemonia.  ICD10=J18.9 & ICD9 = 486*
 
 
 

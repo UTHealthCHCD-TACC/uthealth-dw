@@ -1,3 +1,12 @@
+--Activity
+select *
+from pg_stat_activity;
+
+select *
+from pg_stat_ssl;
+
+SELECT version();
+
 --Total DB Size
 select n.nspname, sum(relpages::bigint*8*1024) AS size
 FROM pg_class

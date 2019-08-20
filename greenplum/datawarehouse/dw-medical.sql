@@ -65,3 +65,9 @@ null, null, null, null, null, netpay, deduct, copay, coins, cob, pddate
 from truven.ccaeo;
 
 
+--Verify
+select source, count(*)
+from data_warehouse.medical
+group by 1;
+
+

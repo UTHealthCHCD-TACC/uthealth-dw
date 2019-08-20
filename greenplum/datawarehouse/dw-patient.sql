@@ -8,7 +8,7 @@ distributed randomly;
 
 --Optum load
 insert into data_warehouse.patient
-select patid, gdr_cd, yrdob, 'od'
+select distinct patid, gdr_cd, yrdob, 'od'
 from optum_dod.member;
 
 -- Are there dulicates
@@ -48,12 +48,12 @@ limit 10;
 
 --Truven load
 insert into data_warehouse.patient
-select enrolid, 'M', dobyr, 't'
+select distinct enrolid, 'M', dobyr, 't'
 from truven.ccaet
 where sex=1;
 
 insert into data_warehouse.patient
-select enrolid, 'F', dobyr, 't'
+select distinct enrolid, 'F', dobyr, 't'
 from truven.ccaet
 where sex=2;
 
