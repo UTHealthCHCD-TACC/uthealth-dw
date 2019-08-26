@@ -2,6 +2,8 @@
  * The enrollment_date table maps patient enrollments in a particular dataset to every month/year covered in the data
  */
 
+-- NOTE : Deprecated
+
 -- Date Table
 drop table data_warehouse.dim_date;
 create table data_warehouse.dim_date as		
@@ -10,13 +12,26 @@ select TO_CHAR(datum,'yyyymmdd')::INT AS id,
        EXTRACT(MONTH FROM datum) AS month,
        TO_CHAR(datum,'Month') AS month_name
 FROM (	  select datum
-      FROM GENERATE_SERIES ('2007-01-01'::DATE, '2020-12-31'::DATE, '1 month') AS datum
+      FROM GENERATE_SERIES ('2007-01-01'::DATE, '2022-12-31'::DATE, '1 month') AS datum
 ) DQ
 ORDER BY 1;
 
 -- Add Columens
 alter table data_warehouse.dim_date add column year smallint;
 update data_warehouse.dim_date set year = extract(year from date);
+
+--UT FY
+--NOTE: Doesn't handle 00->99
+alter table data_warehouse.dim_date add column fy_ut char(2);
+alter table data_warehouse.dim_date drop column fy_ut_temp;
+alter table data_warehouse.dim_date add column fy_ut_temp int;
+update data_warehouse.dim_date set fy_ut_temp = cast(substring(cast(year as varchar), 3) as int); 
+update data_warehouse.dim_date set fy_ut = case 
+											when month >= 9 then LPAD(cast(cast(fy_ut_temp+1 as int) as varchar), 2, '0') 
+											else LPAD(cast(cast(fy_ut_temp as int) as varchar), 2, '0')
+										end;
+alter table data_warehouse.dim_date drop column fy_ut_temp;									
+select * from data_warehouse.dim_date;
 
 --Map Enrollment to dim_date
 
