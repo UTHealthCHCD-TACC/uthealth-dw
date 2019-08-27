@@ -1,6 +1,6 @@
 
 --Main table
-drop table data_warehouse.medical;
+drop table data_warehouse.medical_claim;
 create table data_warehouse.medical (
 id bigserial NOT NULL,
 	"source" bpchar(2) NULL,

@@ -9,7 +9,7 @@ grant usage on schema data_warehouse to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
 select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('dev2016')
+from pg_tables where schemaname in ('data_warehouse')
 order by schemaname, tablename;
 
 --Create User
