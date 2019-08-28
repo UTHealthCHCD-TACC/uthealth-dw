@@ -82,6 +82,7 @@ WITH (appendonly=true, orientation=column)
 as select * from truven.ccaei where year=2016
 distributed by (enrolid);
 
+drop table truven_ccaeo;
 create table truven_ccaeo
 WITH (appendonly=true, orientation=column)
 as select * from truven.ccaeo where year=2016
