@@ -146,6 +146,7 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='trvc' and e.member_id_src = m.enrolid::text)
 ;
 
 
@@ -178,6 +179,7 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='trvm' and e.member_id_src = m.enrolid::text)
 ;
 
 
