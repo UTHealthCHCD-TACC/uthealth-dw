@@ -87,6 +87,29 @@ where v_member_id::text not in (
 	)
 ;
 
+--- Medicare
+insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+with cte_distinct_member as (
+	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
+	from medicare.mbsf_abcd_summary
+)
+select v_member_id, v_raw_data, ( d.data_source_cd::text || (nextval('uth_serial'))::text )::bigint
+from cte_distinct_member
+  join reference_tables.ref_data_source d
+    on d.data_source = v_raw_data
+where v_member_id::text not in ( 
+	select m.member_id_src
+	from data_warehouse.dim_member_id_src m 
+	)
+;
+
+
+
+select last_value from uth_serial;
+
+
+select max(uth_member_id) from data_warehouse.dim_member_id_src;
+
 
 
 create index uth_id_index on data_warehouse.dim_member_id_src (uth_member_id);

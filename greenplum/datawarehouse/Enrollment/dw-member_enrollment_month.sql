@@ -1,13 +1,12 @@
 /*
- * The member_enrollment_monthly table creates on record for each month/year that a member was enrolled
+ * The member_enrollment_monthly table creates one record for each month/year that a member was enrolled
  * 
  *  !!!!!!!!!  data_warehouse.dim_member_id_src table must be populated first !!!!!!!!!!!!   
  *   !!!!!!!!      Use dw-dim_member_id_src.sql in Git !!!
  */
 
 
-------------------------------------------------------------------------------------------------------------------------
-drop table data_warehouse.member_enrollment_monthly;
+--Create member_enrollment_monthly table. ---------------------------------------------------------
 
 create table data_warehouse.member_enrollment_monthly (
     --ID columns
@@ -34,20 +33,10 @@ WITH (appendonly=true, orientation=column)
 distributed randomly;
 
 alter sequence data_warehouse.member_enrollment_monthly_id_seq cache 200;
-------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
 
---Optum DOD 
-select * 
-from data_warehouse.dim_member_id_src a 
-where not exists ( select patid from optum_dod.member b where b.patid::text = a.member_id_src ) and a.data_source = 'optd';
-
-select * 
-from optum_dod.member a 
-where not exists ( select 1 from data_warehouse.dim_member_id_src b where b.member_id_src = a.patid::text and b.data_source = 'optd');
-
-
---Optum DOD load
+--Optum DOD----------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -70,22 +59,11 @@ from optum_dod.member m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
-where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='optd' and e.member_id_src = m.patid::text)
 ;
+---------------------------------------------------------------------------------------------------
 
 
-
---Optum ZIP validation
-select * 
-from data_warehouse.dim_member_id_src a 
-where not exists ( select patid from optum_zip.member b where b.patid::text = a.member_id_src ) and a.data_source = 'optz';
-
-select * 
-from optum_zip.member a 
-where not exists ( select 1 from data_warehouse.dim_member_id_src b where b.member_id_src = a.patid::text and b.data_source = 'optz');
-
-
---Optum ZIP load
+--Optum ZIP----------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -109,18 +87,11 @@ from optum_zip.member m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
- where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='optz' and e.member_id_src = m.patid::text)
  ; 
+---------------------------------------------------------------------------------------------------
 
 
- --Truven Commercial
-select * 
-from truven.ccaet a 
-where not exists ( select 1 from data_warehouse.dim_member_id_src b where b.member_id_src = a.enrolid::text and b.data_source = 'trvc');
-
-
- 
- --Truven Commercial
+--Truven Commercial -------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -146,14 +117,12 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='trvc' and e.member_id_src = m.enrolid::text)
 ;
+---------------------------------------------------------------------------------------------------
 
 
 
-
-
---Truven Medicaid  
+--Truven Medicare --------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -179,11 +148,20 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where not exists (select 1 from data_warehouse.dim_member_id_src e where e.data_source ='trvm' and e.member_id_src = m.enrolid::text)
 ;
+--------------------------------------------------------------------------------
 
 
-
+--Medicare   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+insert into data_warehouse.member_enrollment_monthly (
+	data_source, month_year_id, uth_member_id,
+	gender_cd, state, zip5, zip3,
+	age_derived, dob_derived, death_date,
+	plan_type, bus_cd         
+	)		
+	
+	
+	
 
 select count(distinct uth_member_id), data_source
 from data_warehouse.member_enrollment_monthly
