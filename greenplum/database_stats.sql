@@ -25,7 +25,7 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 8
-   and n.nspname in ('truven')
+   and n.nspname in ('data_warehouse', 'truven')
    ORDER BY n.nspname, relpages desc;
    
 

@@ -5,11 +5,12 @@ grant connect on database uthealth to group uthealthdev;
 --revoke all on schema truven from group uthealthdev;
 grant usage on schema truven to group uthealthdev;
 grant usage on schema optum_dod to group uthealthdev;
+grant usage on schema reference_tables to group uthealthdev;
 grant usage on schema data_warehouse to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
 select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('data_warehouse')
+from pg_tables where schemaname in ('reference_tables')
 order by schemaname, tablename;
 
 --Create User
@@ -17,9 +18,11 @@ drop role tester;
 CREATE ROLE jharri66 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<password>';
 grant uthealthdev to jharri66;
 
---Change Password
+-- Change Password
 alter user lghosh1 with password '<enter password>';
 
+-- Grant superuser
+ALTER USER jharri66 SUPERUSER; 
 
 select *
 FROM information_schema.role_table_grants
