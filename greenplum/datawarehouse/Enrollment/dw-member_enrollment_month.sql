@@ -152,6 +152,7 @@ from truven.mdcrt m
 --------------------------------------------------------------------------------
 
 
+
 --Medicare   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
@@ -168,5 +169,11 @@ from data_warehouse.member_enrollment_monthly
 group by data_source
 ;
 
+--- create index 
+create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
+
+create index enrollment_seq_index on data_warehouse.member_enrollment_monthly (id);
+
+create index enrollment_data_source_index on data_warehouse.member_enrollment_monthly (data_source);
 
 
