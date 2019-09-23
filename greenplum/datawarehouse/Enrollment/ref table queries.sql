@@ -1,7 +1,20 @@
+-------------------------------------------------------------------------------------------------------
+---- Tables Loaded from csv or other source files
+-------------------------------------------------------------------------------------------------------
+				
+create table data_warehouse.ref_truven_state_codes (truven_code int2, state varchar, abbr text);			
 
+create table data_warehouse.ref_admit_type (admit_type_cd char(1), admit_type varchar, admit_type_desc varchar);
+
+create table data_warehouse.ref_admit_source (admit_source_cd char(5), admit_source varchar, admit_source_desc varchar);
+
+
+-------------------------------------------------------------------------------------------------------
+---- Tables loaded with a hardcoded SQL insert statement
+-------------------------------------------------------------------------------------------------------
 
 --- gender decode table
-create table reference_tables.ref_gender 
+create table data_warehouse.ref_gender 
 (
 	data_source char(4), 
 	gender_cd_src char(5),
@@ -9,9 +22,9 @@ create table reference_tables.ref_gender
 )
 ;
 
-delete from reference_tables.ref_gender;
+delete from data_warehouse.ref_gender;
 
-insert into reference_tables.ref_gender (data_source, gender_cd_src, gender_cd)
+insert into data_warehouse.ref_gender (data_source, gender_cd_src, gender_cd)
        values ('trv','1','M'),
               ('trv','2','F'),
               ('opt','M','M'),
@@ -23,8 +36,8 @@ insert into reference_tables.ref_gender (data_source, gender_cd_src, gender_cd)
 
 --- Data Source shorthand table
 
-drop table reference_tables.ref_data_source ;            
-create table reference_tables.ref_data_source
+drop table data_warehouse.ref_data_source ;            
+create table data_warehouse.ref_data_source
 (
 	data_source char(4),
 	data_source_cd smallint,
@@ -32,7 +45,7 @@ create table reference_tables.ref_data_source
 )
 ;
 
-insert into reference_tables.ref_data_source (data_source, data_source_cd, data_source_desc)
+insert into data_warehouse.ref_data_source (data_source, data_source_cd, data_source_desc)
        values ('optz',10,'Optum Zip'),
    			  ('optd',20,'Optum Date of Death'),
    			  ('trvc',30,'Truven Commercial'),
@@ -44,7 +57,7 @@ insert into reference_tables.ref_data_source (data_source, data_source_cd, data_
        
    			 
 ---plan type decode table   			 
-create table reference_tables.ref_plan_type (
+create table data_warehouse.ref_plan_type (
 				data_source char(4), 
 				source_column_name text, 
 				plan_type_src varchar, 
@@ -52,10 +65,9 @@ create table reference_tables.ref_plan_type (
 				plan_desc text
 				);
 				
+delete from data_warehouse.ref_plan_type;				
 				
-delete from reference_tables.ref_plan_type;				
-				
-insert into reference_tables.ref_plan_type (data_source, source_column_name, plan_type_src, plan_type, plan_desc)
+insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_type_src, plan_type, plan_desc)
 		values ('trv','plantyp','1','BMM','basic major medical'),
 			   ('trv','plantyp','2','CMP','comprehensive'),
 			   ('trv','plantyp','3','EPO',''),
@@ -79,17 +91,4 @@ insert into reference_tables.ref_plan_type (data_source, source_column_name, pla
 			   ('opt','product','UNK','UNK','')
 			   ;
 				
-				
-	create table reference_tables.ref_truven_state_codes (truven_code int2, state varchar, abbr text);			
-
-
-
-
-
-
-create table dev.hpm_cohorts 
-( enrolid varchar, industry_type varchar, age_group varchar, gender varchar, egeoloc varchar, diabetes_flag char(1), sample_year char(4) );
-
-
-
 
