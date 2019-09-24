@@ -29,7 +29,10 @@ insert into data_warehouse.ref_gender (data_source, gender_cd_src, gender_cd)
               ('trv','2','F'),
               ('opt','M','M'),
               ('opt','F','F'),
-              ('opt','U','U') ;
+              ('opt','U','U'), 
+              ('mdcr','0','U'),
+              ('mdcr','1','M'),
+              ('mdcr','2','F') ;
 
              
              
@@ -92,3 +95,6 @@ insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_
 			   ;
 				
 
+
+			
+ 
