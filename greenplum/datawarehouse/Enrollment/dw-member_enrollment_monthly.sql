@@ -12,7 +12,7 @@ create table data_warehouse.member_enrollment_monthly (
     --ID columns
 	id bigserial,
 	data_source char(4), 
-	month_year_id char(7),
+	month_year_id int4,
 	uth_member_id bigint,		
 	--demographics
 	gender_cd char(1),
