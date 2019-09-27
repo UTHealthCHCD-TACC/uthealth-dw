@@ -1,14 +1,14 @@
 
---Main table
-drop table data_warehouse.claim_detail;
+
+drop table if exists data_warehouse.claim_detail;
+
 create table data_warehouse.claim_detail (
 id bigserial NOT NULL,
 	claim_id bigserial,
-	seq_num_src,
-	seq_num_derived,
-	proc_id,
-	proc_src,
-	proc_mod_src,
+	provider_id int8,
+	seq_num int8,
+	proc_id int8,
+	proc varchar,
 	cost numeric,
 	paid numeric,
 	service_date date,
@@ -20,10 +20,10 @@ WITH (appendonly=true, orientation=column)
 distributed randomly;
 
 --Greenplum performance optimization for serial/sequence
-alter sequence data_warehouse.claim_detail_id_seq cache 400;
+alter sequence data_warehouse.claim_detail_id_seq cache 100;
 
 --Optum load: 
-insert into data_warehouse.claim_detail(claim_id, seq_num_src, proc_src, proc_mod_src, cost, paid, service_date, paid_date, 
+insert into data_warehouse.claim_detail(claim_id, provider_id, seq_num, proc_id, proc, cost, paid, service_date, paid_date, 
 billing_provider_id_src, service_provider_id_src)
 select 
 from optum_dod.medical;
@@ -60,5 +60,7 @@ from truven.ccaeo;
 select source, count(*)
 from data_warehouse.medical
 group by 1;
+
+
 
 
