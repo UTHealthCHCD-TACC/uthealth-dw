@@ -14,10 +14,10 @@
 
 @set clmid = '4127563691'
 
---Case 4: 
+--Case 4: Has confinement, but no admit info
 
 @set clmid = '187810755'
-@set patid = '33004716829'
+@set patid = '33104078443'
 /*
  * Queries
  */

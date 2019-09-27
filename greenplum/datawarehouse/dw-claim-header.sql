@@ -13,6 +13,7 @@ id bigserial NOT NULL,
 	admit_id_src varchar,
 	admit_date date,
 	discharge_date date,
+	discharge_status_src varchar,
 	admit_type_src varchar,
 	admit_channel_src varchar,
 	total_cost numeric,
@@ -22,29 +23,31 @@ WITH (appendonly=true, orientation=column)
 distributed randomly;
 
 --Greenplum performance optimization for serial/sequence
-alter sequence data_warehouse.claim_header_id_seq cache 400;
+alter sequence data_warehouse.claim_header_id_seq cache 100;
 
 --Optum load: 
 insert into data_warehouse.claim_header(source, member_id_src, claim_id_src, 
-admit_id_src, admit_date, discharge_date, admit_type_src, admit_channel_src, 
+admit_id_src, admit_date, admit_type_src, admit_channel_src, discharge_date,
 total_cost, total_paid)
-
-
-select 'OPTD', m.patid, m.clmid, 
+select 'OPTD', m.patid, m.clmid,
 max(conf.conf_id) as conf_id, 
 min(conf.admit_date) as admit_date, 
+max(rat.value) as admit_type_src,
+max(rac.value_derived) as admit_channel_src,
 min(conf.disch_date) as disch_date,
 sum(m.charge) as total_cost, 
-sum(m.copay) as total_paid, 
-count(distinct conf.conf_id) as conf_cnt, 
-count(*) as record_cnt
+sum(m.copay + m.coins) as total_paid--, 
+--count(distinct conf.conf_id) as conf_cnt, 
+--count(*) as record_cnt
 from optum_dod_medical m
 left join optum_dod_confinement conf on m.conf_id=conf.conf_id
-where clmid='187810755'
+left join optum_dod.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
+left join optum_dod.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
+--where clmid='187810755'
 group by 1, 2, 3;
 
 select count(*)
-from data_warehouse.medical;
+from data_warehouse.claim_header;
 
 
 -- Diagnostics
@@ -54,26 +57,38 @@ from data_warehouse.medical;
  * Truven 'medical' data is split between inpatient and outpatient data tables (ex. ccaei and ccaeo). 
  */
 --Truven load Inpatient
-insert into data_warehouse.medical(source, mbr_id, claim_typ, claim_no, case_link_key, adm_dt, dc_dt, dc_stat, drg_cd,
-tot_chgs, tot_alwd, tot_paid, billed_amt, allowed_amt, paid_amt, ded_amt, copay_amt, coins_amt, cob_amt, adjud_date)
-select 'to', enrolid, facprof, msclmid, caseid, admdate, disdate, dstatus, drg,
-null, null, null, null, null, netpay, deduct, copay, coins, cob, pddate
-from truven.ccaes;
+insert into data_warehouse.claim_header(source, member_id_src, claim_id_src, 
+admit_id_src, admit_date, admit_type_src, discharge_date, discharge_status_src, 
+total_cost, total_paid)
 
-update data_warehouse.medical
-set source='ts' where source='to';
+select 'TRUV', s.enrolid, s.msclmid,
+max(i.caseid) as admit_id_src, 
+max(i.admdate) as admit_date, 
+max(atyp.value) as admit_type_src, 
+max(i.disdate) as discharge_date,
+max(ds.value) as discharge_status_src,
+max(i.totpay) as total_cost,
+max(i.totnet) as total_paid--,
+--count(*) as record_cnt
+from truven_ccaes s
+left join truven.ccaei i on s.caseid=i.caseid and s.enrolid=i.enrolid
+left join truven.ref_admit_type atyp on i.admtyp=atyp.key
+left join truven.ref_discharge_status ds on i.dstatus=ds."key"
+--where s.enrolid=14516012 and s.msclmid=266334
+group by 1, 2, 3;
+
 
 --Truven load Outpatient (Skipping for now)
-insert into data_warehouse.medical(source, mbr_id, claim_typ, claim_no, case_link_key, adm_dt, dc_dt, dc_stat, drg_cd,
-tot_chgs, tot_alwd, tot_paid, billed_amt, allowed_amt, paid_amt, ded_amt, copay_amt, coins_amt, cob_amt, adjud_date)
-select 'to', enrolid, facprof, msclmid, null, null, null, null, null,
-null, null, null, null, null, netpay, deduct, copay, coins, cob, pddate
-from truven.ccaeo;
+insert into data_warehouse.claim_header(source, member_id_src, claim_id_src, 
+total_cost, total_paid)
 
+select 'TRUV', o.enrolid, o.msclmid,
+sum(o.pay) as total_cost,
+sum(o.netpay) as total_paid
+--count(*) as record_cnt
+from truven_ccaeo o
+--where o.enrolid=602902 and o.msclmid=1466020
+group by 1, 2, 3;
 
---Verify
-select source, count(*)
-from data_warehouse.medical
-group by 1;
 
 

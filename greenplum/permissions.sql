@@ -9,14 +9,21 @@ grant usage on schema reference_tables to group uthealthdev;
 grant usage on schema data_warehouse to group uthealthdev;
 
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
-select 'grant select on '||schemaname||'.'||tablename||' to uthealthdev;'
-from pg_tables where schemaname in ('reference_tables')
+select 'grant select on '||schemaname||'.'||tablename||' to public;'
+from pg_tables where schemaname in ('pg_catalog')
 order by schemaname, tablename;
 
 --Create User
-drop role tester;
-CREATE ROLE jharri66 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<password>';
+drop role dwtest;
+CREATE ROLE dwtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<password>';
 grant uthealthdev to jharri66;
+
+grant connect on database uthealth to dwtest;
+grant usage on schema tableau to dwtest;
+
+REVOKE ALL ON SCHEMA pg_catalog FROM public;
+grant USAGE ON SCHEMA pg_catalog TO public;
+grant select on tables in SCHEMA pg_catalog TO public;
 
 -- Change Password
 alter user lghosh1 with password '<enter password>';

@@ -27,10 +27,8 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 8
-   and n.nspname in ('data_warehouse')
+   and n.nspname in ('dev2016')
    ORDER BY n.nspname, relpages desc;
    
-
-  
-  select * 
-  from pg_namespace;
+--Greenplum Distribution of a table
+SELECT get_ao_distribution('dev2016.optum_dod_confinement');

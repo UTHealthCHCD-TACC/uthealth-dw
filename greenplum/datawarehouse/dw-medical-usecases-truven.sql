@@ -20,8 +20,11 @@
 
 --Outpatient
 select distinct c.code as proc_code, c.desc, o.dx1, i.description dx1_desc, 
+'SERVICES:',
+p.value as place_of_service,
 o.*
 from truven_ccaeo o
+left join truven.ref_place_of_service p on o.stdplac=p.key
 left join reference_tables.cms_proc_codes c on o.proc1=c.code and coalesce(o.procmod, 'none')=coalesce(c.mod, 'none')
 left join reference_tables.icd_10 i on o.dx1=i.icd_10
 where o.msclmid=:clmid and enrolid=:enrolid
@@ -40,16 +43,26 @@ order by o.seqnum;
 @set enrolid = 14516012
 
 --Inpatient
-select distinct c.code as proc_code, c.desc, o.dx1, i.description dx1_desc, 
-'ADMISSIONS:', a.*,
-'SERVICES:', o.*
-from truven.ccaei a
-join truven_ccaes o on a.caseid=o.caseid and a.enrolid=o.enrolid
-left join reference_tables.cms_proc_codes c on o.proc1=c.code and coalesce(o.procmod, 'none')=coalesce(c.mod, 'none')
-left join reference_tables.icd_10 i on o.dx1=i.icd_10
-where o.msclmid=:clmid 
-and o.enrolid=:enrolid
-order by o.seqnum;
+select distinct c.code as proc_code, c.desc, s.dx1, ic.description dx1_desc, 
+'ADMISSIONS:', 
+atyp.value as admit_type,
+ds.value as discharge_status,
+i.*,
+'SERVICES:', 
+p.value as place_of_service,
+st.value as service_type,
+s.*
+from truven_ccaes s 
+left join truven.ref_place_of_service p on s.stdplac=p.key
+left join truven.ccaei i on s.caseid=i.caseid and s.enrolid=i.enrolid
+left join truven.ref_admit_type atyp on i.admtyp=atyp.key
+left join truven.ref_discharge_status ds on i.dstatus=ds."key"
+left join truven.ref_service_type st on s.svcscat=st.key
+left join reference_tables.cms_proc_codes c on s.proc1=c.code and coalesce(s.procmod, 'none')=coalesce(c.mod, 'none')
+left join reference_tables.icd_10 ic on s.dx1=ic.icd_10
+where s.msclmid=:clmid 
+and s.enrolid=:enrolid
+order by s.seqnum;
 
 -- Individual tables
 select *
