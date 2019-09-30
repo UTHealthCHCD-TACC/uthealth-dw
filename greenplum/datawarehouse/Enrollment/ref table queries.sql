@@ -95,6 +95,15 @@ insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_
 			   ;
 				
 
+--- business code decode table
 
-			
+create table data_warehouse.ref_bus_cd ( data_source char(4), bus_cd_src varchar, bus_cd char(4), column_name_src varchar, bus_desc varchar );
+
+insert into data_warehouse.ref_bus_cd (data_source, bus_cd_src, bus_cd, column_name_src, bus_desc)
+	   values ('trvm',null,'MCR',null,'Medicare Advantage'),
+	          ('trvc',null,'COM',null,'Commercial'),
+	          ('opt','MCR','MCR','bus','Medicare Advantage'),
+	          ('opt','COM','COM','bus','Commercial'),
+	          ('mdcr',null,'MDCR',null,'Medicare')
+	         ;
  
