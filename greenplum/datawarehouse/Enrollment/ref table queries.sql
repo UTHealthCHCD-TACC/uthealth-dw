@@ -8,10 +8,44 @@ create table data_warehouse.ref_admit_type (admit_type_cd char(1), admit_type va
 
 create table data_warehouse.ref_admit_source (admit_source_cd char(5), admit_source varchar, admit_source_desc varchar);
 
-
+create table data_warehouse.ref_medicare_state_codes (medicare_state_cd char(2), state varchar, state_cd char(2));
 -------------------------------------------------------------------------------------------------------
 ---- Tables loaded with a hardcoded SQL insert statement
 -------------------------------------------------------------------------------------------------------
+
+
+--- Data Source table
+drop table data_warehouse.ref_data_source ; 
+
+create table data_warehouse.ref_data_source
+(
+	data_source char(4),
+	data_source_cd smallint,
+	data_source_desc text,
+	fiscal_year_flag bool,
+	fiscal_year_begin_month int
+)
+;
+
+
+select * 
+from data_warehouse.member_enrollment_monthly where data_source = 'trvc';
+
+
+insert into data_warehouse.ref_data_source (data_source, data_source_cd, data_source_desc, fiscal_year_flag, fiscal_year_begin_month)
+       values ('optz',10,'Optum Zip',false,1),
+   			  ('optd',20,'Optum Date of Death',false,1),
+   			  ('trvc',30,'Truven Commercial',false,1),
+   			  ('trvm',30,'Truven Medicare',false,1),  --- the 30 is intentional, truven commercial and medicare members should have the same ID
+   			 -- ('bcbs',40,'BlueCross BlueShield'),
+   			  ('mdcr',50,'Medicare',false,1);
+   			 -- ('mdcd',60,'Medicaid'),
+   			 -- ('cern',70,'Cerner')	       
+       
+   			 
+
+
+
 
 --- gender decode table
 create table data_warehouse.ref_gender 
@@ -36,29 +70,6 @@ insert into data_warehouse.ref_gender (data_source, gender_cd_src, gender_cd)
 
              
              
-
---- Data Source shorthand table
-
-drop table data_warehouse.ref_data_source ;            
-create table data_warehouse.ref_data_source
-(
-	data_source char(4),
-	data_source_cd smallint,
-	data_source_desc text
-)
-;
-
-insert into data_warehouse.ref_data_source (data_source, data_source_cd, data_source_desc)
-       values ('optz',10,'Optum Zip'),
-   			  ('optd',20,'Optum Date of Death'),
-   			  ('trvc',30,'Truven Commercial'),
-   			  ('trvm',30,'Truven Medicare'),  --- the 30 is intentional, truven commercial and medicare members should have the same ID
-   			  ('bcbs',40,'BlueCross BlueShield'),
-   			  ('mdcr',50,'Medicare'),
-   			  ('mdcd',60,'Medicaid'),
-   			  ('cern',70,'Cerner')	       ;
-       
-   			 
 ---plan type decode table   			 
 create table data_warehouse.ref_plan_type (
 				data_source char(4), 
