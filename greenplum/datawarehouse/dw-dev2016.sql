@@ -117,7 +117,7 @@ distributed by (enrolid);
 --create table truven_ccaep
 --WITH (appendonly=true, orientation=column)
 --as 
-select count(*) from truven.ccaep where year=2016;
+select count(*) from truven.ccaep where year=2014;
 --distributed by (plankey);
 
 create table truven_mdcri
