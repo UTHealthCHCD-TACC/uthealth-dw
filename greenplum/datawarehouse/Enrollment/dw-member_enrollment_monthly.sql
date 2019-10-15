@@ -162,9 +162,9 @@ insert into data_warehouse.member_enrollment_monthly (
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd         
-	)		
+	)	
 select 'mdcr', b.month_year_id, a.uth_member_id,
-	   c.gender_cd, m.state_code, m.zip_cd, substring(m.zip_cd,1,3),
+	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
 	   'ABCD' as plan_type, 'MDCR'
 from medicare.mbsf_abcd_summary m
@@ -190,12 +190,17 @@ from medicare.mbsf_abcd_summary m
   left outer join data_warehouse.ref_gender c
     on c.data_source = 'mdcr'
    and c.gender_cd_src = m.sex_ident_cd
+  left outer join data_warehouse.ref_medicare_state_codes e 
+     on e.medicare_state_cd = m.state_code
  -- left outer join data_warehouse.ref_plan_type d
  --   on d.data_source = 'mdcr'
  -- and d.plan_type_src::int = m.plantyp
 ;
 	
 
+
+select * 
+from data_warehouse.member_enrollment_monthly where data_source = 'mdcr';
 
 --- create indexes -------------------------------------------------------------------------------- 
 create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
