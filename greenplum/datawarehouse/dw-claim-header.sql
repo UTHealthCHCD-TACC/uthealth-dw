@@ -90,5 +90,7 @@ from truven_ccaeo o
 --where o.enrolid=602902 and o.msclmid=1466020
 group by 1, 2, 3;
 
-
-
+--Verify
+select source, count(*)
+from data_warehouse.claim_header
+group by 1;
