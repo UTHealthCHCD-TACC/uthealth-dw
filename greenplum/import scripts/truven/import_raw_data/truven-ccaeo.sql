@@ -243,18 +243,15 @@ alter table truven.ccaeo_new rename to ccaeo;
 
 select count(*), min(year), max(year) from truven.ccaeo;
 
-SELECT count(*)
-                   FROM truven.ccaeo WHERE DATATYP = 1 and
-                                    EIDFLAG = 1 and
-                                    AGE > 17 and
-                                    (
-                DX1  IN ('60000','60001','60090','60091','60020','60021') or
-                DX2  IN ('60000','60001','60090','60091','60020','60021') or
-                DX3  IN ('60000','60001','60090','60091','60020','60021') or
-                DX4  IN ('60000','60001','60090','60091','60020','60021')
-                                    )
+
+CREATE TABLE truven.ccaea_distinct
+WITH (appendonly=true, orientation=column)
+AS (SELECT DISTINCT * FROM truven.ccaea);
+
+select count(*)
+from truven.ccaet;
 
 
-
-
+select count(*)
+from truven.ccaet_distinct;
 

@@ -1,4 +1,4 @@
-create role uthealthdev;
+create role uthealthadmin;
 
 grant connect on database uthealth to group uthealthdev;
 
@@ -8,15 +8,29 @@ grant usage on schema optum_dod to group uthealthdev;
 grant usage on schema reference_tables to group uthealthdev;
 grant usage on schema data_warehouse to group uthealthdev;
 
+--uthealthadmin
+grant all on database uthealth to uthealthadmin;
+
+--Schemas
+grant all on schema truven to group uthealthadmin;
+grant all on schema optum_dod to group uthealthadmin;
+grant all on schema optum_zip to group uthealthadmin;
+grant all on schema reference_tables to group uthealthadmin;
+grant all on schema data_warehouse to group uthealthadmin;
+grant all on schema medicare to group uthealthadmin;
+grant all on schema dev to group uthealthadmin;
+grant all on schema dev2016 to group uthealthadmin;
+
 --grant select on all TABLES in schema truven to uthealthdev; # Not supported in Postgres < 9.0
-select 'grant select on '||schemaname||'.'||tablename||' to public;'
-from pg_tables where schemaname in ('pg_catalog')
+select 'grant all on '||schemaname||'.'||tablename||' to uthealthadmin;'
+from pg_tables where schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')
 order by schemaname, tablename;
 
 --Create User
 drop role dwtest;
 CREATE ROLE dwtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<password>';
-grant uthealthdev to jharri66;
+
+grant uthealthadmin to dwtest;
 
 grant connect on database uthealth to dwtest;
 grant usage on schema tableau to dwtest;
@@ -26,7 +40,7 @@ grant USAGE ON SCHEMA pg_catalog TO public;
 grant select on tables in SCHEMA pg_catalog TO public;
 
 -- Change Password
-alter user lghosh1 with password '<enter password>';
+alter user cc_user with password '<password>';
 
 -- Grant superuser
 ALTER USER jharri66 SUPERUSER; 
