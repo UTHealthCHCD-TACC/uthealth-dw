@@ -2,10 +2,10 @@
  * 
  */
 
------ create dim_member_id_src
-drop table data_warehouse.dim_member_id_src;
+----- create dim_uth_member_id
+drop table data_warehouse.dim_uth_member_id;
 
-create table data_warehouse.dim_member_id_src (
+create table data_warehouse.dim_uth_member_id (
 	member_id_src text, 
 	data_source char(4), 
 	uth_member_id int8 unique
@@ -17,10 +17,10 @@ drop sequence uth_serial;
 create sequence uth_serial start 100000000;
 
 
------- load dim_member_id_src
+------ load dim_uth_member_id
 
 --Optum DoD
-insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optd' as v_raw_data
 	from optum_dod.member
@@ -31,13 +31,13 @@ from cte_distinct_member
     on d.data_source = v_raw_data
 where v_member_id::text not in (
 	select m.member_id_src
-	from data_warehouse.dim_member_id_src m
+	from data_warehouse.dim_uth_member_id m
 	)
 ;
 
 
 ---Optum ZIP
-insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
 	from optum_zip.member
@@ -48,14 +48,14 @@ from cte_distinct_member
     on d.data_source = v_raw_data
 where v_member_id::text not in (
 	select m.member_id_src
-	from data_warehouse.dim_member_id_src m
+	from data_warehouse.dim_uth_member_id m
 	)
 ;
 
 
 
 ---Truven Commercial
-insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct enrolid as v_member_id, 'trvc' as v_raw_data
 	from truven.ccaet
@@ -66,13 +66,13 @@ from cte_distinct_member
     on d.data_source = v_raw_data
 where v_member_id::text not in (
 	select m.member_id_src
-	from data_warehouse.dim_member_id_src m
+	from data_warehouse.dim_uth_member_id m
 	)
 ;
 
 
 ---Truven Medicare
-insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct enrolid as v_member_id, 'trvm' as v_raw_data
 	from truven.mdcrt
@@ -83,12 +83,12 @@ from cte_distinct_member
     on d.data_source = v_raw_data
 where v_member_id::text not in (
 	select m.member_id_src
-	from data_warehouse.dim_member_id_src m
+	from data_warehouse.dim_uth_member_id m
 	)
 ;
 
 --- Medicare
-insert into data_warehouse.dim_member_id_src (member_id_src, data_source, uth_member_id)
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
 	from medicare.mbsf_abcd_summary
@@ -99,7 +99,7 @@ from cte_distinct_member
     on d.data_source = v_raw_data
 where v_member_id::text not in ( 
 	select m.member_id_src
-	from data_warehouse.dim_member_id_src m 
+	from data_warehouse.dim_uth_member_id m 
 	)
 ;
 
@@ -108,11 +108,11 @@ where v_member_id::text not in (
 select last_value from uth_serial;
 
 
-select max(uth_member_id) from data_warehouse.dim_member_id_src;
+select max(uth_member_id) from data_warehouse.dim_uth_member_id;
 
 
 
-create index uth_id_index on data_warehouse.dim_member_id_src (uth_member_id);
+create index uth_id_index on data_warehouse.dim_uth_member_id (uth_member_id);
 
 
-select * from data_warehouse.dim_member_id_src;
+select * from data_warehouse.dim_uth_member_id;
