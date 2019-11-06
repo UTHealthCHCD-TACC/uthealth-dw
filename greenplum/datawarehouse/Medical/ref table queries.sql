@@ -6,7 +6,19 @@ create table reference_tables.ref_bill_type_frequency ( bill_type_frequency_cd c
 
 create table reference_tables.ref_bill_type_institution ( bill_type_institution_cd char(1), bill_type_institution_desc text );
 
-create table data_warehouse.ref_optum_type_of_service (tos_cd_src text, level_1_desc text, level_2_desc text, bill_type_institution_cd char(1), bill_type_classification_cd char(1) );
+create table reference_tables.ref_optum_type_of_service (tos_cd_src text, level_1_desc text, level_2_desc text, bill_type_institution_cd char(1), bill_type_classification_cd char(1) );
+
+
+create table reference_tables.ref_revenue_code ( revenue_cd char(4), revenue_cd_desc text );
+
+create table reference_tables.ref_type_of_service ( type_of_service_cd char(2), type_of_service_desc text );
+
+create table reference_tables.ref_provider_specialty ( provider_specialty_cd char(3), provider_specialty_desc text );
+
+create table reference_tables.ref_place_of_treatment ( place_of_treatment_cd char(2), place_of_treatment_desc text );
+
+
+
 
 -----
 
@@ -15,13 +27,15 @@ select bill_type_institution_cd || bill_type_classification_cd || bill_type_freq
        bill_type_institution_desc || ' ' || bill_type_classification_desc ||' ' || bill_type_frequency_desc as bill_type_desc,
        bill_type_institution_cd, bill_type_classification_cd, bill_type_frequency_cd, 
        bill_type_institution_desc, bill_type_classification_desc, bill_type_frequency_desc
-into data_warehouse.ref_bill_type_cd
-from data_warehouse.ref_bill_type_institution 
-  left outer join data_warehouse.ref_bill_type_frequency
+into reference_tables.ref_bill_type_cd
+from reference_tables.ref_bill_type_institution 
+  left outer join reference_tables.ref_bill_type_frequency
      on bill_type_frequency_cd is not null
-  left outer join data_warehouse.ref_bill_type_classification
+  left outer join reference_tables.ref_bill_type_classification
      on position( substring(bill_type_institution_cd,1,1) in bill_type_institution_cd_list ) > 0 
 order by 1
  ;
  
-select * from data_warehouse.ref_bill_type_cd;
+select * from reference_tables.ref_bill_type_cd;
+
+
