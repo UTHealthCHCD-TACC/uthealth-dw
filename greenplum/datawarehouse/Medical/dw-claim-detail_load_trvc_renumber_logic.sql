@@ -9,6 +9,10 @@
  * this procedure does not address the following fields (assumption is that these are not relevant for data_source='trvc':
  * 		bill_provider_id, ref_provider_id, charge_amount, bill_type_inst, bill_type_class, bill_type_freq, drg_type
  * this procedure only loads data for a specific period of time (years)
+ * 
+ * 11/11/2019 - Joe Harrison
+ * 	1. Original code depended on a CASE statement to determine UTH_CLAIM_ID.  Needed to use COALESCE instead.
+ * 		- the reason is that "WHEN null" is not a valid case for a CASE statement since null cannot be evaluated
  */
 insert into dev.claim_detail_v2(data_source, uth_claim_id, claim_id_src, claim_sequence_number, uth_member_id, 
 from_date_of_service, to_date_of_service, month_year_id, perf_provider_id, network_ind, network_paid_ind, admit_date, discharge_date,
@@ -18,22 +22,30 @@ units, drg_cd)
 with cte1
 	as 
 	(
-		select 'trvc' as dt_src, 
+		select 'trvc' as dt_src, coalesce(s.msclmid, s.caseid) claim_no, s.enrolid, coalesce(s.enrolid,-999) z_enrolid, s."year",
+		/* replaced with different logic 11-11-2019
 			case s.msclmid
 				when null then cast(trunc(s.caseid,0)::text||trunc(s.year,0)::text||trunc(s.enrolid,0)::text as numeric)
 				else cast(trunc(s.msclmid,0)::text||trunc(s.year,0)::text||trunc(s.enrolid,0)::text as numeric)
 			end claim_no,
+		*/
 			s.msclmid ,s.seqnum, m.uth_member_id, get_my_from_date(s.admdate) as mon_year, s.proc1, substring(s.procmod, 1,1) as procmod1, 
 			substring(s.procmod, 2,1) procmod2, s.revcode, s.cob, s.coins, s.copay, s.deduct, s.pay, s.netpay, s.provid, s.qty, s.drg, 
 			s.proctyp, s.ntwkprov::boolean, s.paidntwk::boolean, s.svcdate, s.tsvcdat, s.admdate, s.disdate
 		from truven.ccaes s inner join data_warehouse.dim_uth_member_id m
 		on s.enrolid = m.member_id_src::int8 and m.data_source='trvc'
+	),
+	cte2
+	as
+	( 
+		select *, cast(trunc(claim_no,0)::text||trunc(year,0)::text||trunc(z_enrolid,0)::text as numeric) uth_claim_id
+		from cte1
 	)
-select dt_src, claim_no, msclmid, 
+select dt_src, uth_claim_id , msclmid, 
 	row_number() over (
-		partition by claim_no
+		partition by uth_claim_id
 		order by seqnum) rownum, 
 	uth_member_id, svcdate, tsvcdat, mon_year, provid, ntwkprov, paidntwk, admdate, disdate, proc1, proctyp, procmod1, procmod2, revcode,
 	pay, netpay, copay, deduct, coins, cob, qty, drg
-from cte1
+from cte2
 where mon_year between 201501 and 201712
