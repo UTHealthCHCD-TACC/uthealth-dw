@@ -1,8 +1,8 @@
 
 
-drop table dev.claim_detail_v2;
+drop table dev.claim_detail_v1;
 
-create table dev.claim_detail_v2 (  
+create table dev.claim_detail_v1 (  
 		data_source char(4),
 		uth_claim_id numeric, 
 		claim_id_src text,
@@ -15,8 +15,8 @@ create table dev.claim_detail_v2 (
 		bill_provider_id int,
 		ref_provider_id int,
 		place_of_service int, 
-		network_ind bool,
-		network_paid_ind bool,
+		network_ind char(1) check (network_ind in('Y','N','') ),
+		network_paid_ind char(1) check (network_paid_ind in('Y','N','') ),
 		admit_date date,
 		discharge_date date,
 		procedure_cd text,
@@ -41,7 +41,7 @@ create table dev.claim_detail_v2 (
 distributed by (uth_claim_id);
 
 
-analyze dev.claim_detail_v2;
+analyze dev.claim_detail_v1;
 
 -----------------------------------------------------------------------------------------------
 
@@ -52,7 +52,11 @@ create table dev.claim_header_v1 (
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
 		admit_id text,
-		
+		claim_type text,
+		total_charge_amount numeric(13,2),
+		total_allowed_amount numeric(13,2),
+		total_paid_amount numeric(13,2),
+		place_of_service text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
 
@@ -66,7 +70,7 @@ select dbo.set_all_perms();
 -----------------------------------------------------------------------------------------------
 
 
-
+create or replace function right(text, integer) returns text as $$ select substring($1 from char_length($1) + 1 - $2); $$ language sql immutable;
 
 		
 
@@ -76,9 +80,11 @@ select 'trvc', msclmid, seqnum, "year", svcdate, tsvcdat, enrolid,
        dx1, dx2, dx3, dx4, dxver,
        proc1, proctyp, procmod, revcode, 
        provid, stdplac, ntwkprov, paidntwk,
-       qty, fachdid, facprof 
+       qty, fachdid, facprof , right('abcd',1)
+       
+       select distinct ntwkprov, paidntwk
 from truven.ccaeo_wc a 
-where msclmid is not null
+--where msclmid is not null
 limit 10;
 
 
@@ -91,7 +97,7 @@ create or replace function claim_detail_build () returns void
 as $FUNC$ 
 declare
 	r_data_source text; 
-	r_uth_claim_id int; 
+	r_uth_claim_id numeric; 
 	r_claim_id_src int; 
 	r_claim_seq int; 
 	r_enrolid bigint; 
@@ -145,18 +151,30 @@ begin
 		       dx1, dx2, dx3, dx4, dxver
 		from truven.ccaeo_wc a 
 		where msclmid is not null
-		limit 10
-		--where year between 2015 and 2017
+		  and year between 2015 and 2017
+		  limit 25
 		
 	loop 	
+		--get month_year_id and uth_member_id, assign uth_claim_id
 		select month_year_id into r_month_year_id from reference_tables.ref_month_year where month_int = extract(month from r_from_date_of_service) and year_int = r_year;
+	
 		select uth_member_id into r_uth_member_id from data_warehouse.dim_uth_member_id where data_source = 'trvc' and trunc(member_id_src::numeric,0) = r_enrolid;
+	
+		r_uth_claim_id := ( substring(r_year::text,3,2) || substring(r_uth_member_id::text,1,2) ||  substring(r_uth_member_id::text,9,3) || right(r_claim_id_src::text,4)  )::numeric;
 		
+		--check facility header
 		if r_fachdid is not null then
 			select substring(billtyp,1,3) into r_bill_type from truven.ccaef_wc a where a.fachdid = r_fachdid;
 		end if;
 	
+		--check for claim header entry
+		perform 1 from dev.claim_header_v1 where uth_claim_id = r_uth_claim_id;
+		if not found then
+			insert into dev.claim_header_v1 ( data_source, uth_claim_id, uth_member_id, admit_id, claim_type )
+				   values (r_data_source, r_uth_claim_id, r_uth_member_id, r_fachdid, r_facprof);
+		end if;
 	
+		--claim detail
 		insert into dev.claim_detail_v2 (data_source, uth_claim_id, claim_id_src, claim_sequence_number, 
 										 uth_member_id, from_date_of_service, to_date_of_service, month_year_id, 
 										 perf_provider_id, network_ind, network_paid_ind, 
@@ -165,7 +183,7 @@ begin
 										 deductible, copay, coins, cob, units,
 										 bill_type_inst, bill_type_class, bill_type_freq
 										 ) 
-		                         values (r_data_source, (r_year::text || r_claim_id_src::text || r_uth_member_id::text )::numeric, r_claim_id_src, r_claim_seq, 
+		                         values (r_data_source, r_uth_claim_id, r_claim_id_src, r_claim_seq, 
 		                         		 r_uth_member_id, r_from_date_of_service, r_to_date_of_service, r_month_year_id, 
 		                        		 r_perf_provider_id, r_network_ind::bool, r_network_paid_ind::bool,  
 		                         		 r_procedure_code, r_procedure_type, substring(r_procmod,1,1), substring(r_procmod,2,1), 
@@ -177,14 +195,28 @@ begin
 	end loop;	
 end $FUNC$
 language 'plpgsql';
+----------------------------------------------------------------------------------
+
 
 
 select claim_detail_build();
 
 
-select * from dev.claim_detail_v2 where data_source = 'trvx'; 
+select *, 	
+		row_number() over (
+		partition by uth_claim_id
+		order by claim_sequence_number) rownum 
+from dev.claim_detail_v2 
+where data_source = 'trvx' 
+order by uth_claim_id, claim_sequence_number; 
+
+
+select * from dev.claim_header_v1
+order by uth_claim_id;
 
 
 
 delete from dev.claim_detail_v2 where data_source = 'trvx';
+
+delete from dev.claim_header_v1;
 		

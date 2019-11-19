@@ -6,9 +6,11 @@
  */
 
 
+drop table data_warehouse.member_enrollment_monthly;
+
 --Create member_enrollment_monthly table ---------------------------------------------------------
 
-create table data_warehouse.member_enrollment_monthly (
+create table data_warehouse.member_enrollment_monthly_v1 (
     --ID columns
 	id bigserial,
 	data_source char(4), 
@@ -25,12 +27,13 @@ create table data_warehouse.member_enrollment_monthly (
 	--enrollment type
 	plan_type char(4),
 	bus_cd char(4),
+	employee_status text, 
 	claim_created_flag bool default false
 )
 WITH (appendonly=true, orientation=column)
 distributed randomly;
 
-alter sequence data_warehouse.member_enrollment_monthly_id_seq cache 200;
+alter sequence data_warehouse.member_enrollment_monthly_v1_id_seq cache 200;
 
 ---------------------------------------------------------------------------------------------------
 
@@ -39,7 +42,7 @@ alter sequence data_warehouse.member_enrollment_monthly_id_seq cache 200;
     ---------------- data loads --------------------
 
 -- Optum DOD --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into data_warehouse.member_enrollment_monthly_v1 (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -50,23 +53,25 @@ select 'optd', b.month_year_id, a.uth_member_id,
        b.year_int - yrdob, (yrdob::varchar || '-12-31')::date as birth_dt, (select max(death_ym) from optum_dod.member_wdeath dod where dod.patid = m.patid ) as death_dt,  
        d.plan_type, bus
 from optum_dod.member m
-  join data_warehouse.dim_member_id_src a
+  join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optd'
-  join data_warehouse.ref_month_year b
+  join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.eligeff) and m.eligend
-  left outer join data_warehouse.ref_gender c
+    and b.year_int between 2015 and 2017
+  left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd 
-  left outer join data_warehouse.ref_plan_type d
+  left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
 ;
 ---------------------------------------------------------------------------------------------------
 
 
+
 -- Optum ZIP --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into data_warehouse.member_enrollment_monthly_v1 (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -78,18 +83,19 @@ select
        b.year_int - yrdob, (yrdob::varchar || '-12-31')::date, null, 
        d.plan_type, bus
 from optum_zip.member m
-  join data_warehouse.dim_member_id_src a
+  join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optz'
-  join data_warehouse.ref_month_year b
+  join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.eligeff) and m.eligend
-  left outer join data_warehouse.ref_gender c
+   and b.year_int between 2015 and 2017
+  left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd
-  left outer join data_warehouse.ref_plan_type d
+  left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
-  left outer join data_warehouse.ref_zip_crosswalk e 
+  left outer join reference_tables.ref_zip_crosswalk e 
    on e.zip = substring(zipcode_5,1,5)
 ; 
 ---------------------------------------------------------------------------------------------------
@@ -97,7 +103,7 @@ from optum_zip.member m
 
 
 -- Truven Commercial ------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into data_warehouse.member_enrollment_monthly_v1 (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -109,17 +115,18 @@ select
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
        d.plan_type, 'COM'
 from truven.ccaet m
-  join data_warehouse.dim_member_id_src a
+  join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'trvc'
-  join data_warehouse.ref_truven_state_codes s 
+  join reference_tables.ref_truven_state_codes s 
     on m.egeoloc=s.truven_code
-  join data_warehouse.ref_month_year b 
+  join reference_tables.ref_month_year b 
     on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
-  left outer join data_warehouse.ref_gender c
+    and b.year_int between 2015 and 2017
+  left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
-  left outer join data_warehouse.ref_plan_type d
+  left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
 ;
@@ -127,7 +134,7 @@ from truven.ccaet m
 
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into data_warehouse.member_enrollment_monthly_v1 (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -139,17 +146,18 @@ select
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
        d.plan_type, 'MCR'
 from truven.mdcrt m
-  join data_warehouse.dim_member_id_src a
+  join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'trvm'
-  join data_warehouse.ref_truven_state_codes s 
+  join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
-  join data_warehouse.ref_month_year b
+  join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
-  left outer join data_warehouse.ref_gender c
+    and b.year_int between 2015 and 2017
+  left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
-  left outer join data_warehouse.ref_plan_type d
+  left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
 ;
@@ -157,7 +165,7 @@ from truven.mdcrt m
 
 
 -- Medicare  --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into data_warehouse.member_enrollment_monthly_v1 (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -168,11 +176,12 @@ select 'mdcr', b.month_year_id, a.uth_member_id,
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
 	   'ABCD' as plan_type, 'MDCR'
 from medicare.mbsf_abcd_summary m
-  join data_warehouse.dim_member_id_src a
+  join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
    and a.data_source = 'mdcr'
-  join data_warehouse.ref_month_year b
+  join reference_tables.ref_month_year b
     on b.year_int = bene_enrollmt_ref_yr::int
+    and b.year_int between 2015 and 2017
    and 
    (	month_int = case when m.mdcr_entlmt_buyin_ind_01 in ('1','3','A','C') then 1 else 0 end
      or month_int = case when m.mdcr_entlmt_buyin_ind_02 in ('1','3','A','C') then 2 else 0 end
@@ -187,10 +196,10 @@ from medicare.mbsf_abcd_summary m
      or month_int = case when m.mdcr_entlmt_buyin_ind_11 in ('1','3','A','C') then 11 else 0 end
      or month_int = case when m.mdcr_entlmt_buyin_ind_12 in ('1','3','A','C') then 12 else 0 end
     )
-  left outer join data_warehouse.ref_gender c
+  left outer join reference_tables.ref_gender c
     on c.data_source = 'mdcr'
    and c.gender_cd_src = m.sex_ident_cd
-  left outer join data_warehouse.ref_medicare_state_codes e 
+  left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code
  -- left outer join data_warehouse.ref_plan_type d
  --   on d.data_source = 'mdcr'
@@ -199,8 +208,14 @@ from medicare.mbsf_abcd_summary m
 	
 
 
-select * 
-from data_warehouse.member_enrollment_monthly where data_source = 'mdcr';
+analyze data_warehouse.member_enrollment_monthly_v1;
+
+
+select dbo.set_all_perms();
+
+select count(*), data_source , substring(month_year_id::text,1,4)
+from data_warehouse.member_enrollment_monthly_v1 
+group by data_source , substring(month_year_id::text,1,4);
 
 --- create indexes -------------------------------------------------------------------------------- 
 create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
