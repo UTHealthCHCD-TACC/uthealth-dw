@@ -6,13 +6,12 @@
  */
 
 
-drop table data_warehouse.member_enrollment_monthly;
+drop table data_warehouse.member_enrollment_monthly_v1;
 
 --Create member_enrollment_monthly table ---------------------------------------------------------
 
 create table data_warehouse.member_enrollment_monthly_v1 (
     --ID columns
-	id bigserial,
 	data_source char(4), 
 	month_year_id int4,
 	uth_member_id bigint,		
@@ -31,18 +30,45 @@ create table data_warehouse.member_enrollment_monthly_v1 (
 	claim_created_flag bool default false
 )
 WITH (appendonly=true, orientation=column)
-distributed randomly;
+distributed by(uth_member_id, month_year_id)
+partition by list (data_source)
+	subpartition by range(month_year_id)
+		subpartition template 
+	(
+		--start(200601) end(201901) every(100),
+		--default subpartition spXXXX
+		subpartition sp2007 start(200701) INCLUSIVE,
+		subpartition sp2008 start(200801) INCLUSIVE,
+		subpartition sp2009 start(200901) INCLUSIVE,
+		subpartition sp2010 start(201001) INCLUSIVE,
+		subpartition sp2011 start(201101) INCLUSIVE,
+		subpartition sp2012 start(201201) INCLUSIVE,
+		subpartition sp2013 start(201301) INCLUSIVE,
+		subpartition sp2014 start(201401) INCLUSIVE,
+		subpartition sp2015 start(201501) INCLUSIVE,
+		subpartition sp2016 start(201601) INCLUSIVE,
+		subpartition sp2017 start(201701) INCLUSIVE,
+		subpartition sp2018 start(201801) INCLUSIVE
+		end(201901) EXCLUSIVE
+	)
+(
+   partition optz values('optz'),
+   partition trvc values('trvc'),
+   partition trvm values('trvm'),
+   partition optd values('optd'),
+   partition mdcr values('mdcr')
+   --default partition xxxx 
+);
 
-alter sequence data_warehouse.member_enrollment_monthly_v1_id_seq cache 200;
 
 ---------------------------------------------------------------------------------------------------
 
-
+delete from data_warehouse.member_enrollment_monthly;
 
     ---------------- data loads --------------------
 
 -- Optum DOD --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly_v1 (
+insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -71,7 +97,7 @@ from optum_dod.member m
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly_v1 (
+insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -102,8 +128,8 @@ from optum_zip.member m
 
 
 
--- Truven Commercial ------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly_v1 (
+-- Truven Commercial --------18 minutes ----------------------------------------------------------------------
+insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -134,7 +160,7 @@ from truven.ccaet m
 
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly_v1 (
+insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -165,7 +191,7 @@ from truven.mdcrt m
 
 
 -- Medicare  --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly_v1 (
+insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -208,13 +234,13 @@ from medicare.mbsf_abcd_summary m
 	
 
 
-analyze data_warehouse.member_enrollment_monthly_v1;
+analyze data_warehouse.member_enrollment_monthly;
 
 
 select dbo.set_all_perms();
 
 select count(*), data_source , substring(month_year_id::text,1,4)
-from data_warehouse.member_enrollment_monthly_v1 
+from data_warehouse.member_enrollment_monthly
 group by data_source , substring(month_year_id::text,1,4);
 
 --- create indexes -------------------------------------------------------------------------------- 

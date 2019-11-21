@@ -15,8 +15,8 @@ create table dev.claim_detail_v1 (
 		bill_provider_id int,
 		ref_provider_id int,
 		place_of_service int, 
-		network_ind char(1) check (network_ind in('Y','N','') ),
-		network_paid_ind char(1) check (network_paid_ind in('Y','N','') ),
+		network_ind bool,
+		network_paid_ind bool,
 		admit_date date,
 		discharge_date date,
 		procedure_cd text,
@@ -75,17 +75,20 @@ create or replace function right(text, integer) returns text as $$ select substr
 		
 
 
-select 'trvc', msclmid, seqnum, "year", svcdate, tsvcdat, enrolid,
+select 'trvx', msclmid, seqnum, "year", svcdate, tsvcdat, enrolid,
        netpay, pay, deduct, copay, coins, cob,
-       dx1, dx2, dx3, dx4, dxver,
        proc1, proctyp, procmod, revcode, 
        provid, stdplac, ntwkprov, paidntwk,
-       qty, fachdid, facprof , right('abcd',1)
-       
-       select distinct ntwkprov, paidntwk
+       trunc(qty,0), fachdid, facprof, 
+       dx1, dx2, dx3, dx4, dxver,
+       b.month_year_id, stdplac 
 from truven.ccaeo_wc a 
---where msclmid is not null
-limit 10;
+  join reference_tables.ref_month_year b 
+    on month_int = extract(month from svcdate) 
+   and year_int = year
+where msclmid is not null
+  and year between 2015 and 2017
+  limit 25;
 
 
 select count(*) from truven.ccaef_wc;
