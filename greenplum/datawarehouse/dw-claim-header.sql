@@ -4,7 +4,7 @@ drop table data_warehouse.claim_header;
 create table data_warehouse.claim_header (
 id bigserial NOT NULL,
 	"source" bpchar(4),
-	member_id_src int8,
+	member_id_src varchar,
 	uth_member_id varchar, 
 	claim_id_src varchar,
 	uth_claim_id varchar,
@@ -21,6 +21,16 @@ id bigserial NOT NULL,
 ) 
 WITH (appendonly=true, orientation=column)
 distributed randomly;
+
+alter table data_warehouse.claim_header alter column member_id_src type varchar;
+
+--Remove '.0' from id_src columns.  Ex. claim_id_src=3452345.0 -> 3452345
+--The trailing .0 make joins to Truven raw data difficult
+select cast(trunc(cast('12354.0' as numeric), 0) as varchar)
+update data_warehouse.claim_header set member_id_src=cast(trunc(cast(member_id_src as numeric), 0) as varchar)
+update data_warehouse.claim_header set claim_id_src=cast(trunc(cast(claim_id_src as numeric), 0) as varchar)
+
+
 
 --Greenplum performance optimization for serial/sequence
 alter sequence data_warehouse.claim_header_id_seq cache 100;
@@ -61,7 +71,7 @@ insert into data_warehouse.claim_header(source, member_id_src, claim_id_src,
 admit_id_src, admit_date, admit_type_src, discharge_date, discharge_status_src, 
 total_cost, total_paid)
 
-select 'TRUV', s.enrolid, s.msclmid,
+select 'truc', s.enrolid, trunc(s.msclmid, 0),
 max(i.caseid) as admit_id_src, 
 max(i.admdate) as admit_date, 
 max(atyp.value) as admit_type_src, 
@@ -82,7 +92,7 @@ group by 1, 2, 3;
 insert into data_warehouse.claim_header(source, member_id_src, claim_id_src, 
 total_cost, total_paid)
 
-select 'TRUV', o.enrolid, o.msclmid,
+select 'truc', o.enrolid, trunc(o.msclmid, 0),
 sum(o.pay) as total_cost,
 sum(o.netpay) as total_paid
 --count(*) as record_cnt

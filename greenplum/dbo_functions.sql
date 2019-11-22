@@ -21,7 +21,25 @@ $body$
     SET search_path = pg_catalog;
 
 
-grant execute on function dbo.pg_kill_connection(pid integer) to uthealthadmin;
+grant execute on function dbo.pg_terminate_backend(pid integer) to uthealthadmin;
+
+
+CREATE OR REPLACE FUNCTION dbo.pg_cancel_backend(pid integer)
+RETURNS boolean AS $body$
+DECLARE
+    result boolean;
+BEGIN
+    result := (select pg_catalog.pg_cancel_backend(pid));
+    RETURN result;
+END;
+$body$
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    VOLATILE
+    RETURNS NULL ON NULL INPUT
+    SET search_path = pg_catalog;
+
+grant execute on function dbo.pg_cancel_backend(pid integer) to uthealthadmin;
 
 CREATE FUNCTION dbo.get_sa() RETURNS SETOF pg_stat_activity AS
 $$ SELECT * FROM pg_catalog.pg_stat_activity; $$
@@ -43,10 +61,54 @@ RAISE NOTICE 'Setting permissions for %', table_name;
 EXECUTE 'grant all on ' || table_name || ' to uthealthadmin';
 END LOOP;
 END;
-$body$;
+$body$
 LANGUAGE plpgsql
 VOLATILE
-SECURITY DEFINER;
+SECURITY DEFINER
 
 grant execute on function dbo.set_table_perms() to uthealthadmin;
 
+
+CREATE or replace FUNCTION dbo.set_sequence_perms() RETURNS boolean AS
+$body$
+DECLARE
+  r record;
+  seq_name TEXT;
+BEGIN
+FOR r in 
+SELECT schemaname||'.'||relname AS s FROM pg_catalog.pg_statio_all_sequences WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')
+loop
+seq_name := r.s;
+RAISE NOTICE 'Setting permissions for %', seq_name;
+EXECUTE 'grant all on ' || seq_name || ' to uthealthadmin';
+END LOOP;
+return true;
+END;
+$body$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY definer
+
+grant execute on function dbo.set_sequence_perms() to uthealthadmin;
+
+select dbo.set_sequence_perms()
+
+select * from dev.claim_detail_v1_id_seq;
+
+
+
+
+------------------------------------------ All Perms
+create or replace function dbo.set_all_perms()  RETURNS boolean as
+$body$
+BEGIN
+PERFORM  dbo.set_table_perms();
+PERFORM  dbo.set_sequence_perms();
+RETURN true;
+END;
+$body$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY definer
+
+grant execute on function dbo.set_all_perms() to uthealthadmin;

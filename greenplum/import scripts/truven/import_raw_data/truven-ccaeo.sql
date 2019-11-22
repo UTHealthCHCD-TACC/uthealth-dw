@@ -228,7 +228,8 @@ limit 1000;
 
 -- Verify
 
-select count(*) from truven.ccaeo;
+select count(*) from truven.ccaes;
+select count(*) from truven.ccaes_distinct;
 
 -- Fix storage options
 create table truven.ccaeo_new 
@@ -237,7 +238,7 @@ as (select * from truven.ccaeo)
 distributed randomly;
 
 drop table truven.ccaeo;
-alter table truven.ccaeo_new rename to ccaeo;
+alter table truven.ccaeo_distinct rename to ccaeo;
 
 -- Query
 

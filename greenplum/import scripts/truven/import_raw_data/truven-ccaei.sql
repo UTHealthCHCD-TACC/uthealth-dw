@@ -369,7 +369,7 @@ from ext_ccaei_v3;
 
 select count(*), min(year), max(year) from truven.ccaei;
 
-select count(*), min(year), max(year) from truven.ccaei;
+select count(*), min(year), max(year) from truven.ccaei_distinct;
 
 -- Fix storage options
 create table truven.ccaei_new 
