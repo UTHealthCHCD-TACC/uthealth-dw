@@ -14,6 +14,7 @@ where a.enrolid is not null
 --Updated version
 create temporary table dim_uth_claim_id_temp as select * from data_warehouse.dim_uth_claim_id;
 
+drop table data_warehouse.dim_uth_claim_id_temp;
 CREATE TABLE data_warehouse.dim_uth_claim_id_temp (
 	generated_value bigserial NOT NULL,
 	data_source bpchar(4) NULL,
@@ -27,6 +28,8 @@ WITH (
 	appendonly=true, orientation=column
 )
 DISTRIBUTED BY (generated_value);
+
+alter sequence data_warehouse.dim_uth_claim_id_temp_generated_value_seq cache 100;
 
 insert into data_warehouse.dim_uth_claim_id_temp (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0)::text, b.uth_member_id                                              
@@ -44,6 +47,8 @@ from truven.ccaeo a
   and c.generated_value is null;
                  
 select count(*) from data_warehouse.dim_uth_claim_id_temp;
+
+select count(*) from dim_uth_claim_id_temp;
 
 drop table data_warehouse.dim_uth_claim_id;
 rename data_warehouse.dim_uth_claim_id_temp to data_warehouse.dim_uth_claim_id;

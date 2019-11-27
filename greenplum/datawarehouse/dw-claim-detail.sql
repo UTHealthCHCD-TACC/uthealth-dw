@@ -59,9 +59,18 @@ from truven.ccaeo;
 
 --Verify
 select source, count(*)
-from data_warehouse.medical
+from data_warehouse.claim_header
 group by 1;
 
+select data_source, count(*)
+from dev.claim_header_v1
+group by 1;
 
+select data_source, count(*)
+from dev.claim_detail_v1
+group by 1;
 
+select *
+from dev.claim_detail_v1
+limit 10;
 
