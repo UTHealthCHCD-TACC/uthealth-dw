@@ -9,9 +9,9 @@ create table data_warehouse.dim_uth_claim_id (
 	member_id_src text not null,
 	data_year char(4) not null, 
 	uth_claim_id bigint,
-	uth_member_id bigint,
-	unique (data_source, claim_id_src, member_id_src, data_year)
-) distributed by (data_source, claim_id_src, member_id_src, data_year);
+	uth_member_id bigint
+) with (appendonly=true, orientation = column)
+distributed by (generated_value);
 
 
 alter sequence data_warehouse.dim_uth_claim_id_generated_value_seq restart with 100000000;
@@ -21,30 +21,35 @@ select dbo.set_all_perms();
 
 
 
+select * 
+from truven.ccaeo_wc;
+
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)
 
 
-explain analyze 
-select distinct 'trvc', msclmid::text, enrolid::text, trunc(year,0)::text--, b.uth_member_id
-from truven.ccaeo a
-limit 10;
-
-
-
+select  'trvc', msclmid::text  , enrolid::text, trunc(year,0)::text, b.uth_member_id
+--from truven.ccaes a
+from truven.ccaeo_wc a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'trvc'
-   and b.member_id_src = a.enrolid::text  
+   and b.member_id_src = enrolid::text || '.0' 
 where a.enrolid is not null
  and not exists ( select 1 from data_warehouse.dim_uth_claim_id c
 				            where c.data_source = 'trvc'
-				              and c.claim_id_src = a.msclmid::text
-				              and c.member_id_src = a.enrolid::text
-				              and c.data_year = trunc(a.year,0)::text
-             	)
-limit 10;
-
+				              and c.claim_id_src = msclmid::text || '.0' 
+				              and c.member_id_src = a.enrolid::text || '.0' 
+				              and c.data_year = trunc(a.year,0)::text  )
+limit 10				              
+; ----------------------------------------------------------------------------------------------
 
  
+
+explain analyze select distinct * into dev.ccaeo_2016_wc  from truven.ccaeo where year = 2016; 
+
+
+select count(*) from dev.ccaeo_2017_wc;
+
+select * from data_warehouse.dim_uth_claim_id;
  
  
  
