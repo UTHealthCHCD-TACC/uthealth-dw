@@ -34,12 +34,12 @@ with cte0 as
 		c.s_year, c.caseid, c.totpay, c.totnet, c.stdplac
 		from cte1 c inner join data_warehouse.dim_uth_claim_id u 
 		on u.claim_id_src = c.tmp_src_clm_id
-		and u.data_year = c.s_year::text
+		and u.data_year = c.s_year
 		where u.data_source='trvc'
 		order by u.data_year, u.claim_id_src	
 	)
-select * from cte2
---3,297,864 records returned
+select count(*) from cte2
+--3,296,871 records returned
 
 --4,053,913 total unique case id's by year between 2015 and 2017 in ccaes
 --select c.dt_src, u.uth_claim_id, u.uth_member_id, c.caseid, c.totpay, c.totnet, c.stdplac
