@@ -28,9 +28,10 @@ order by schemaname, tablename;
 
 --Create User
 drop role dwtest;
-CREATE ROLE dwtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD '<password>';
+CREATE ROLE cms2 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'CMStwo2too';
 
 grant uthealthadmin to dwtest;
+grant uthealthdev to cms2;
 
 grant connect on database uthealth to dwtest;
 grant usage on schema tableau to dwtest;
@@ -40,7 +41,7 @@ grant USAGE ON SCHEMA pg_catalog TO public;
 grant select on tables in SCHEMA pg_catalog TO public;
 
 -- Change Password
-alter user cc_user with password '<password>';
+alter user turban with password 'changeme';
 
 -- Grant superuser
 ALTER USER jharri66 SUPERUSER; 
