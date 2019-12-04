@@ -49,7 +49,7 @@ DISTRIBUTED BY (uth_claim_id);
 analyze dev.claim_header_optum;
 analyze dev.dim_uth_claim_id_optum;
 
---Optum load: 
+--Optum load: 23 min
 insert into dev.claim_detail_optum(data_source,	uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
 	from_date_of_service, to_date_of_service, month_year_id,	
@@ -66,7 +66,7 @@ select 'optd', ch.uth_claim_id, ch.uth_member_id,
 		partition by uth_claim_id
 		order by cast(m.clmseq as int8)) rownum,
 */ 
-null, m.clmseq,
+trunc(m.clmseq::int4), m.clmseq,
 m.fst_dt, m.lst_dt, get_my_from_date(m.fst_dt),
 m.prov, m.bill_prov, m.refer_prov, null, --place_of_service is an int, but optum is varchar -> m.pos,
 null, null,
@@ -79,17 +79,22 @@ from dev.claim_header_optum ch
 join optum_dod_medical m on ch.claim_id_src=m.clmid::text and ch.member_id_src=m.patid::text
 left outer join optum_dod_confinement conf on m.conf_id=conf.conf_id;
 
+/* NOTE: The following code is not needed.  
+ * However, it provides a more efficient mechanism (than row_number()) for resetting claim_sequence_number to start at 1
+ * for cases where the source version is not 1, but uses sequential numbers (ex. 2345, 2346, 2347 -> 1, 2, 3)
+ 
 --Set claim_seq_number to start at 1 for a given detail (more efficient then row_number()).
 create temp table optum_claim_detail_sequence
 as
-select uth_claim_id, min(claim_seq_number_src) as min_seq, max(claim_seq_number_src) as max_seq
+select uth_claim_id, min(claim_sequence_number_src) as min_seq, max(claim_sequence_number_src) as max_seq
 from dev.claim_detail_optum
 group by 1;
 
 update dev.claim_detail_optum a
-set a.claim_sequence_number = a.claim_sequence_number_src::int8 - b.min_seq + 1
+set claim_sequence_number = claim_sequence_number_src::int8 - b.min_seq::int8 + 1
 from optum_claim_detail_sequence b
 where a.uth_claim_id=b.uth_claim_id;
+*/
 
 /*
  * Scratch Space
@@ -100,47 +105,14 @@ select count(*)
 from dev.claim_detail_optum;
 
 select *
-from data_warehouse.claim_detail_v1
+from dev.claim_detail_optum
 limit 10;
-
-
-
-/*
- * Truven 'medical' data is split between inpatient and outpatient data tables (ex. ccaes and ccaeo). 
- */
---Truven load Services/Inpatient
-insert into dev.claim_detail_v3(claim_header_id, provider_id, seq_num, proc_code, proc_mod, cost, paid, service_date, paid_date, 
-billing_provider_id_src, service_provider_id_src)
-select distinct ch.id, cast(s.fachdid as varchar), s.seqnum, s.proc1, s.procmod, null, s.netpay, s.svcdate, s.pddate, 
-null, null
-from data_warehouse.claim_header ch
-join dev2016.truven_ccaes s on ch.claim_id_src=cast(s.caseid as varchar) and ch.member_id_src=cast(s.enrolid as varchar);
-
-update data_warehouse.medical
-set source='ts' where source='to';
-
---Truven load Outpatient (Skipping for now)
-insert into data_warehouse.medical(source, mbr_id, claim_typ, claim_no, case_link_key, adm_dt, dc_dt, dc_stat, drg_cd,
-tot_chgs, tot_alwd, tot_paid, billed_amt, allowed_amt, paid_amt, ded_amt, copay_amt, coins_amt, cob_amt, adjud_date)
-select 'to', enrolid, facprof, msclmid, null, null, null, null, null,
-null, null, null, null, null, netpay, deduct, copay, coins, cob, pddate
-from truven.ccaeo;
-
-
---Verify
-select source, count(*)
-from data_warehouse.claim_header
-group by 1;
-
-select data_source, count(*)
-from dev.claim_header_v1
-group by 1;
-
-select data_source, count(*)
-from dev.claim_detail_v1
-group by 1;
 
 select *
-from dev.claim_detail_v1
+from dev.claim_detail_optum
+where uth_claim_id=162996771593
+order by claim_sequence_number
 limit 10;
+
+select trunc(0002);
 
