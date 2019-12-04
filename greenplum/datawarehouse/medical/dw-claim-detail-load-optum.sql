@@ -59,21 +59,19 @@ insert into dev.claim_detail_optum(data_source,	uth_claim_id, uth_member_id,
 	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
 	revenue_code, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob,
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
-	drg_cd,	drg_type)
+	drg_cd,	drg_type) --NOTE: Will drop drg_type, it is based on data_source
+
+
 	
 select 'optd', ch.uth_claim_id, ch.uth_member_id,
-/*row_number() over (
-		partition by uth_claim_id
-		order by cast(m.clmseq as int8)) rownum,
-*/ 
 trunc(m.clmseq::int4), m.clmseq,
 m.fst_dt, m.lst_dt, get_my_from_date(m.fst_dt),
-m.prov, m.bill_prov, m.refer_prov, null, --place_of_service is an int, but optum is varchar -> m.pos,
+m.prov, m.bill_prov, m.refer_prov, null, --NOTE: place_of_service is an int, but optum is varchar -> m.pos,
 null, null,
 conf.admit_date, conf.disch_date,
 m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
-m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, --cob is an int, but optum is varchar -> m.cob,
-null, null, null, null, --units gives integer out of range error -> m.units, 
+m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_code to 4 digits with leading zero
+null, null, null, m.units, --NOTE: bill_type_freq is null for optum
 m.drg, null
 from dev.claim_header_optum ch
 join optum_dod_medical m on ch.claim_id_src=m.clmid::text and ch.member_id_src=m.patid::text
