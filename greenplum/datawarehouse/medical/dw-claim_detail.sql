@@ -5,7 +5,6 @@ drop table dev.claim_detail_v1;
 create table dev.claim_detail_v1 (  
 		data_source char(4),
 		uth_claim_id numeric, 
-		claim_id_src text,
 		claim_sequence_number int4,
 		uth_member_id bigint, 
 		from_date_of_service date,
@@ -23,7 +22,7 @@ create table dev.claim_detail_v1 (
 		procedure_type text,
 		proc_mod_1 char(1), 
 		proc_mod_2 char(1), 
-		revenue_code char (4),
+		revenue_cd char (4),
 		charge_amount numeric(13,2),
 		allowed_amount numeric(13,2),
 		paid_amount numeric(13,2),
@@ -51,12 +50,12 @@ create table dev.claim_header_v1 (
 		data_source char(4),
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
-		admit_id text,
 		claim_type text,
+		place_of_service text,
+		admission_id text,
 		total_charge_amount numeric(13,2),
 		total_allowed_amount numeric(13,2),
-		total_paid_amount numeric(13,2),
-		place_of_service text
+		total_paid_amount numeric(13,2)
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
 
@@ -70,26 +69,54 @@ select dbo.set_all_perms();
 -----------------------------------------------------------------------------------------------
 
 
-create or replace function right(text, integer) returns text as $$ select substring($1 from char_length($1) + 1 - $2); $$ language sql immutable;
+select pay, netpay, ntwkprov, ntwkprov::bool 
+from truven.ccaeo; 
 
-		
 
 
-select 'trvx', msclmid, seqnum, "year", svcdate, tsvcdat, enrolid,
-       netpay, pay, deduct, copay, coins, cob,
-       proc1, proctyp, procmod, revcode, 
-       provid, stdplac, ntwkprov, paidntwk,
-       trunc(qty,0), fachdid, facprof, 
-       dx1, dx2, dx3, dx4, dxver,
-       b.month_year_id, stdplac 
-from truven.ccaeo_wc a 
+insert into dev.claim_detail_v1 (  data_source, uth_claim_id, claim_sequence_number,  uth_member_id, from_date_of_service, to_date_of_service,
+								   month_year_id, perf_provider_id, place_of_service, network_ind, network_paid_ind,
+								   procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_code,
+								   allowed_amount, paid_amount, deductible, copay, coins, cob, units,
+								   bill_type_inst, bill_type_class, bill_type_freq)		
+								   
+								   
+select 'trvc', c.uth_claim_id, a.seqnum, c.uth_member_id, a.svcdate, a.tsvcdat,
+       b.month_year_id, a.provid, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
+       a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), revcode, 
+       a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, trunc(a.qty,0), 
+       substring(d.billtyp,1,1), substring(d.billtyp,2,1), substring(d.billtyp,3,1) 
+     --  d.caseid, d.fachdid, d.billtyp, facprof
+     --  dx1, dx2, dx3, dx4, dxver,
+from truven.ccaeo a 
   join reference_tables.ref_month_year b 
     on month_int = extract(month from svcdate) 
    and year_int = year
-where msclmid is not null
-  and year between 2015 and 2017
-  limit 25;
+  join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = 'trvc'
+   and c.data_year = trunc(a.year,0)
+   and c.claim_id_src = a.msclmid::text
+   and c.member_id_src = a.enrolid::text
+  left outer join truven.ccaef d 
+    on d.msclmid = a.msclmid 
+   and d.year = a.year 
+   and d.enrolid = a.enrolid 
+where a.msclmid is not null
+  and a.year between 2015 and 2017
+  ;
 
+ 
+ select count(distinct msclmid ) from truven.ccaes;
+
+
+ 
+ select * from dev.claim_detail_v1 where uth_claim_id = 152255296912;
+ 
+ 
+select caseid, msclmid, year, enrolid, *
+from truven.ccaes 
+where caseid = 852789 and year = 2011;
+ 
 
 select count(*) from truven.ccaef_wc;
 

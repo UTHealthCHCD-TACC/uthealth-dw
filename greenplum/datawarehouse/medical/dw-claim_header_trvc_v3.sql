@@ -27,8 +27,8 @@ insert into dev.claim_header_v1(data_source,uth_claim_id, uth_member_id, admit_i
 				when 'P' then 'P'
 				else ''
 			end claim_type,
-		sum(s.pay) over(partition by d.uth_claim_id order by d.uth_claim_id) allowed_amount,
-		sum(s.netpay) over(partition by d.uth_claim_id order by d.uth_claim_id) paid_amount
+		sum(s.pay) over(partition by d.uth_claim_id) allowed_amount,
+		sum(s.netpay) over(partition by d.uth_claim_id) paid_amount
 		--select count(*)  417,858,041 rows
 		from (truven.ccaes s join data_warehouse.dim_uth_claim_id d 
 		on d.claim_id_src = s.msclmid::text
