@@ -51,7 +51,7 @@ SELECT setval('dev.dim_uth_member_id_optum_generated_serial_seq', (SELECT max(ge
 ALTER TABLE dev.dim_uth_member_id_optum ALTER generated_serial SET DEFAULT nextval('dev.dim_uth_member_id_optum_generated_serial_seq'::regclass)
 alter sequence dev.dim_uth_member_id_optum_generated_serial_seq cache 100;
 
---Now insert missing claim_ids
+--Now insert new/missing claim_ids
 insert into dev.dim_uth_claim_id_optum (data_source, claim_id_src, member_id_src, data_year, uth_member_id)                                              
 select distinct  'optd', a.clmid::text, a.patid::text, trunc(a.year,0), b.uth_member_id                                              
 from optum_dod_medical a
@@ -115,3 +115,27 @@ select *
 from dev.dim_uth_claim_id_optum
 where generated_value is null
 limit 10;
+
+
+select data_source, count(*)
+from data_warehouse.claim_header_v1
+group by 1;
+
+select data_source, count(*)
+from data_warehouse.claim_detail_v1
+group by 1;
+
+
+select * 
+from data_warehouse.claim_header_v1
+where data_source='trvc'
+and uth_claim_id=15100057738;
+
+select * 
+from data_warehouse.claim_header_v1 h
+join data_warehouse.claim_detail_v1 d on h.uth_claim_id=d.uth_claim_id
+where h.uth_claim_id=15100057738;
+
+
+
+

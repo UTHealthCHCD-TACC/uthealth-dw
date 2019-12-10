@@ -39,7 +39,8 @@ m.age_derived, m.gender_cd, m.state, m.zip3
 
   
  --Sample query
- select p.icd_10, p.state, count(distinct p.claim_detail_id) as claim_detail_count
+ select p.icd_10, p.description, p.state, count(distinct p.claim_detail_id) as claim_detail_count
  from dev.ptk p
- group by 1, 2
+ group by 1, 2, 3
+ order by 1, 4 desc;
  order by 1, 3 desc;
