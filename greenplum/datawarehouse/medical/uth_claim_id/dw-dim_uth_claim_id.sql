@@ -7,7 +7,7 @@ create table data_warehouse.dim_uth_claim_id (
 	data_source char(4),
 	claim_id_src text not null,
 	member_id_src text not null,
-	data_year numeric(4)not null, 
+	data_year int4 not null, 
 	uth_claim_id bigint,
 	uth_member_id bigint
 ) with (appendonly=true, orientation = column)
