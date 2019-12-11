@@ -33,12 +33,12 @@ select
    pg_size_pretty( pg_total_relation_size(n.nspname||'.'||relname)) as size_new
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
-   WHERE relpages >= 8
-   and n.nspname in ('truven')
+   WHERE relpages >= 0
+   and n.nspname in ('data_warehouse')
    ORDER BY 7 desc;
    
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('data_warehouse.dim_uth_claim_id');
+SELECT get_ao_distribution('data_warehouse.claim_detail_v1');
 
 --Server Settings
 SELECT *
