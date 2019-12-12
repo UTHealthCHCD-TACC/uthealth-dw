@@ -1,28 +1,9 @@
+/* code to populate dim_uth_claim_id, run dw-create-dim_uth_claim_id.sql to build table first
+ * 
+ * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
+ */
 
-
-drop table data_warehouse.dim_uth_claim_id;
-
-create table data_warehouse.dim_uth_claim_id (    
-	generated_value bigserial,
-	data_source char(4),
-	claim_id_src text not null,
-	member_id_src text not null,
-	data_year int4 not null, 
-	uth_claim_id bigint,
-	uth_member_id bigint
-) with (appendonly=true, orientation = column)
-distributed by (generated_value);
-
-
-alter sequence data_warehouse.dim_uth_claim_id_generated_value_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_claim_id_generated_value_seq cache 200;
-
-
-alter table data_warehouse.dim_uth_claim_id alter column data_year type numeric(4,0) using(data_year::numeric(4,0));
-
-select dbo.set_all_perms();
-
+---truven commercial, outpatient
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0)::text, b.uth_member_id                                              
 from truven.ccaeo a
@@ -35,9 +16,11 @@ from truven.ccaeo a
                                               and a.enrolid::text = c.member_id_src
                                               and trunc(a.year,0)::text = c.data_year 
   where a.enrolid is not null
-  and c.generated_value is null;
+  and c.generated_value is null
+;
+
  
- 
+--truven commercial, inpatient 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', coalesce(a.msclmid::text,a.caseid::text), a.enrolid::text, trunc(a.year,0)::text, b.uth_member_id                                              
 from truven.ccaes a  
@@ -50,9 +33,11 @@ from truven.ccaes a
                                               and a.enrolid::text = c.member_id_src
                                               and trunc(a.year,0)::text = c.data_year 
   where a.enrolid is not null
-  and c.generated_value is null;
+  and c.generated_value is null
+;
  
---- Medicare outpatient 
+ 
+--- truven medicare outpatient 
  insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0)::text, b.uth_member_id                                              
 from truven.mdcro a
@@ -65,11 +50,11 @@ from truven.mdcro a
                                               and a.enrolid::text = c.member_id_src
                                               and trunc(a.year,0)::text = c.data_year 
   where a.enrolid is not null
-  and c.generated_value is null;
+  and c.generated_value is null
+;
  
  
- 
---- Medicare inpatient  
+---Truven medicare inpatient  
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)     
 select distinct  'trvc', coalesce(a.msclmid::text,a.caseid::text), a.enrolid::text, trunc(a.year,0)::text, b.uth_member_id                                              
 from truven.mdcrs a  
@@ -82,7 +67,10 @@ from truven.mdcrs a
                                               and a.enrolid::text = c.member_id_src
                                               and trunc(a.year,0)::text = c.data_year 
   where a.enrolid is not null
-  and c.generated_value is null;
+  and c.generated_value is null
+;
+
+
  
 
 
@@ -90,7 +78,3 @@ update data_warehouse.dim_uth_claim_id set uth_claim_id = ( substring(data_year:
 
 
 
-
-select * , data_year::numeric(4,0) 
-from data_warehouse.dim_uth_claim_id
-where data_year = '';

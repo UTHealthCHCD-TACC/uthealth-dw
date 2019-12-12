@@ -3,7 +3,7 @@
  */
 
 ----- create dim_uth_member_id
-drop table data_warehouse.dim_uth_member_id;
+drop table if exists data_warehouse.dim_uth_member_id;
 
 create table data_warehouse.dim_uth_member_id (
 	generated_serial bigserial,
@@ -17,11 +17,10 @@ create table data_warehouse.dim_uth_member_id (
 
 alter sequence data_warehouse.dim_uth_member_id_generated_serial_seq restart with 100000000; 
 
+alter sequence data_warehouse.dim_uth_member_id_generated_serial_seq cache 200;
 
 analyze data_warehouse.dim_uth_member_id;
 
-
-select dbo.set_all_perms();
 
 ------ load dim_uth_member_id
 
@@ -36,7 +35,7 @@ with cte_distinct_member as (
 	where b.member_id_src is null 
 )
 select v_member_id, v_raw_data, ( d.data_source_cd::text || (nextval('data_warehouse.dim_uth_member_id_generated_serial_seq'))::text )::bigint
-from cte_distinct_member 
+from cte_distinct_member a
   join reference_tables.ref_data_source d 
     on d.data_source = v_raw_data
 ;
@@ -112,15 +111,3 @@ from cte_distinct_member
 
 
 
-
-select * 
-from truven.ccaet a 
-  join truven.ccaet b 
-  on a.dtstart = b.dtstart and a.enrolid = b.enrolid and a.dobyr <> b.dobyr
-
-
-
-create index uth_id_index on data_warehouse.dim_uth_member_id (uth_member_id);
-
-
-select * from data_warehouse.dim_uth_member_id;

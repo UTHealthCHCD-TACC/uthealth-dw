@@ -1,8 +1,8 @@
 
 
-drop table if exists data_warehouse.claim_detail;
+drop table if exists dw_qa.claim_detail;
 
-create table data_warehouse.claim_detail (  
+create table dw_qa.claim_detail (  
 		data_source char(4),
 		uth_claim_id numeric, 
 		claim_sequence_number int4,
@@ -41,18 +41,19 @@ create table data_warehouse.claim_detail (
 distributed by (uth_claim_id);
 
 
-analyze data_warehouse.claim_detail;
+analyze dw_qa.claim_detail;
 
 -----------------------------------------------------------------------------------------------
 
-drop table if exists data_warehouse.claim_header;
+drop table if exists dw_qa.claim_header;
 
-create table data_warehouse.claim_header (
+create table dw_qa.claim_header (
 		data_source char(4),
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
 		claim_type text,
-		place_of_service text,
+		place_of_service char(2),
+		uth_admission_id numeric,
 		admission_id text,
 		total_charge_amount numeric(13,2),
 		total_allowed_amount numeric(13,2),
@@ -63,7 +64,7 @@ create table data_warehouse.claim_header (
 distributed by (uth_claim_id);
 
 
-analyze data_warehouse.claim_header;
+analyze dw_qa.claim_header;
 
 -----------------------------------------------------------------------------------------------
 		
