@@ -2,7 +2,8 @@
 
 drop table if exists dw_qa.claim_detail;
 
-create table dw_qa.claim_detail (  
+create table dw_qa.claim_detail ( 
+		id bigserial,
 		data_source char(4),
 		uth_claim_id numeric, 
 		claim_sequence_number int4,
@@ -30,6 +31,7 @@ create table dw_qa.claim_detail (
 		deductible numeric(13,2),
 		coins numeric(13,2),
 		cob numeric(13,2),	
+		cob_ind text,
 		bill_type_inst char(1),
 		bill_type_class char(1),
 		bill_type_freq char(1),

@@ -1,16 +1,16 @@
 /*
- * The member_enrollment_monthly table creates one record for each month/year that a member was enrolled
+ * The member_enrollment_monthly table creates one record for each month/year that a member was enrolled in coverage
  * 
  *  !!!!!!!!!  data_warehouse.dim_member_id_src table must be populated first !!!!!!!!!   
- *   !!!!!!!!             Use dw-dim_member_id_src.sql in Git                  !!!!!!!
+ *   	             Use dw-create-load-dim_member_id_src.sql in Git      
  */
 
 
-drop table data_warehouse.member_enrollment_monthly_v1;
+drop table if exists data_warehouse.member_enrollment_monthly;
 
 --Create member_enrollment_monthly table ---------------------------------------------------------
 
-create table data_warehouse.member_enrollment_monthly_v1 (
+create table data_warehouse.member_enrollment_monthly (
     --ID columns
 	data_source char(4), 
 	month_year_id int4,
@@ -63,7 +63,7 @@ partition by list (data_source)
 
 ---------------------------------------------------------------------------------------------------
 
-delete from data_warehouse.member_enrollment_monthly;
+analyze data_warehouse.member_enrollment_monthly;
 
     ---------------- data loads --------------------
 
