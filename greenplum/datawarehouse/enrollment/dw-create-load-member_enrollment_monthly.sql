@@ -94,6 +94,7 @@ from optum_dod.member m
 ;
 ---------------------------------------------------------------------------------------------------
 
+select * from data_warehouse.member_enrollment_monthly;
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
@@ -159,6 +160,7 @@ from truven.ccaet m
 ---------------------------------------------------------------------------------------------------
 
 
+
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
@@ -174,7 +176,7 @@ select
 from truven.mdcrt m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
-   and a.data_source = 'trvm'
+   and a.data_source in ('trvm','trvc')
   join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b
