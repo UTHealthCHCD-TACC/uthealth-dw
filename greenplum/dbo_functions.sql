@@ -21,7 +21,7 @@ $body$
     SET search_path = pg_catalog;
 
 
-grant execute on function dbo.pg_terminate_backend(pid integer) to uthealthadmin;
+grant execute on function dbo.pg_kill_connection(pid integer) to uthealthadmin;
 
 
 CREATE OR REPLACE FUNCTION dbo.pg_cancel_backend(pid integer)
@@ -53,18 +53,22 @@ CREATE VIEW dbo.pg_stat_activity AS SELECT * FROM dbo.get_sa();
 grant select on dbo.pg_stat_activity to uthealthadmin;
 
 
-CREATE FUNCTION dbo.set_table_perms() RETURNS boolean AS
+CREATE or replace FUNCTION dbo.set_table_perms(role varchar, perm_level varchar) RETURNS boolean AS
 $body$
 BEGIN
-FOR table_name IN SELECT schemaname||'.'||tablename AS table_name FROM pg_tables WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')LOOP
+FOR table_name IN 
+SELECT schemaname||'.'||tablename AS table_name 
+FROM pg_tables 
+WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')
+LOOP
 RAISE NOTICE 'Setting permissions for %', table_name;
-EXECUTE 'grant all on ' || table_name || ' to uthealthadmin';
+EXECUTE 'grant ' || perm_level || ' on ' || table_name || ' to ' || role;
 END LOOP;
 END;
 $body$
 LANGUAGE plpgsql
 VOLATILE
-SECURITY DEFINER
+SECURITY definer;
 
 grant execute on function dbo.set_table_perms() to uthealthadmin;
 

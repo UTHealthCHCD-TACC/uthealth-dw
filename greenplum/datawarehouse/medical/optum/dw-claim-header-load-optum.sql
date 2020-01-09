@@ -17,62 +17,13 @@ CREATE TABLE dev.claim_header_optum (
 WITH (
 	appendonly=true, orientation=column
 )
-DISTRIBUTED RANDOMLY;
+DISTRIBUTED BY (uth_claim_id);
 
 
 
-/*
- * First need to deal with loading data_warehouse.dim_uth_claim_id with any new claim numbers for optum
- * We assume all patids already exist in dim_uth_member_id table.
- */
-
---Use a dev version of the uth id tables, must create an manually set sequence to keep 'in sync'.
-drop table dev.dim_uth_claim_id_optum; 
-create table dev.dim_uth_claim_id_optum 
-WITH (
-	appendonly=true, orientation=column
-)
-as select * from data_warehouse.dim_uth_claim_id;
-CREATE SEQUENCE dev.dim_uth_claim_id_optum_generated_value_seq;
-ALTER SEQUENCE dev.dim_uth_claim_id_optum_generated_value_seq OWNED BY dev.dim_uth_claim_id_optum.generated_value;
-SELECT setval('dev.dim_uth_claim_id_optum_generated_value_seq', (SELECT max(generated_value) FROM dev.dim_uth_claim_id_optum), true);
-ALTER TABLE dev.dim_uth_claim_id_optum ALTER generated_value SET DEFAULT nextval('dev.dim_uth_claim_id_optum_generated_value_seq'::regclass)
-alter sequence dev.dim_uth_claim_id_optum_generated_value_seq cache 100;
-
-drop table dev.dim_uth_member_id_optum;
-create table dev.dim_uth_member_id_optum 
-WITH (
-	appendonly=true, orientation=column
-)
-as select * from data_warehouse.dim_uth_member_id;
-CREATE SEQUENCE dev.dim_uth_member_id_optum_generated_serial_seq;
-ALTER SEQUENCE dev.dim_uth_member_id_optum_generated_serial_seq OWNED BY dev.dim_uth_member_id_optum.generated_serial;
-SELECT setval('dev.dim_uth_member_id_optum_generated_serial_seq', (SELECT max(generated_serial) FROM dev.dim_uth_member_id_optum), true);
-ALTER TABLE dev.dim_uth_member_id_optum ALTER generated_serial SET DEFAULT nextval('dev.dim_uth_member_id_optum_generated_serial_seq'::regclass)
-alter sequence dev.dim_uth_member_id_optum_generated_serial_seq cache 100;
-
---Now insert new/missing claim_ids
-insert into dev.dim_uth_claim_id_optum (data_source, claim_id_src, member_id_src, data_year, uth_member_id)                                              
-select distinct  'optd', a.clmid::text, a.patid::text, trunc(a.year,0), b.uth_member_id                                              
-from optum_dod_medical a
-  join dev.dim_uth_member_id_optum b 
-    on b.data_source = 'optd'
-   and b.member_id_src = a.patid::text 
-  left join dev.dim_uth_claim_id_optum c
-                                            on  b.data_source = c.data_source
-                                              and a.clmid::text = c.claim_id_src 
-                                              and a.patid::text = c.member_id_src
-                                              and trunc(a.year,0) = c.data_year 
-  where a.patid is not null
-  and c.generated_value is null;
-
---Set uth_claim_id
-update dev.dim_uth_claim_id_optum
-set uth_claim_id =  ( substring(data_year::text,3,2) || generated_value::text  )::bigint
-where uth_claim_id is null;
 
 /*
- * Now we can actually load the data
+ * We assume the matching records exist in dim_uth_claim_id
  */
 --Optum load: 
 insert into dev.claim_header_optum(data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, 
@@ -85,18 +36,22 @@ sum(0) as total_allowed_amount,
 sum(0) as total_paid_amount--, 
 --count(distinct conf.conf_id) as conf_cnt, 
 --count(*) as record_cnt
-from optum_dod_medical m
-join dev.dim_uth_claim_id_optum uthc on m.patid::text=uthc.member_id_src and m.clmid=uthc.claim_id_src and uthc.data_source='optd'
-left join optum_dod_confinement conf on m.conf_id=conf.conf_id
+from optum_dod.medical m
+join data_warehouse.dim_uth_claim_id uthc on uthc.data_source='optd' and m.patid::text=uthc.member_id_src and m.clmid=uthc.claim_id_src
+left join optum_dod.confinement conf on m.conf_id=conf.conf_id
 --left join optum_dod.ref_admit_type rat on m.admit_type::text=rat.key::text
 --left join optum_dod.ref_admit_channel rac on m.admit_chan::text=rac.key::text and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
 --where clmid='187810755'
+where m.year >= 2015 and m.year <= 2017
 group by 1, 2, 3, 4, 5;
 
 /*
  * Scratch Space
  */
-select data_source, count(*)
+
+analyze dev.claim_header_optum;
+
+select data_source, count(*), count(distinct uth_claim_id)
 from dev.claim_header_optum
 group by 1;
 

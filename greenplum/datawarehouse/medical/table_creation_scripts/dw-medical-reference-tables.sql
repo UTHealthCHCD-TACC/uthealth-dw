@@ -17,7 +17,7 @@ create table reference_tables.ref_provider_specialty ( provider_specialty_cd cha
 
 create table reference_tables.ref_place_of_treatment ( place_of_treatment_cd char(2), place_of_treatment_desc text );
 
-
+create table reference_tables.ref_optum_bill_type_from_tos (tos text, inst_code int, class_code int);
 
 
 -----
