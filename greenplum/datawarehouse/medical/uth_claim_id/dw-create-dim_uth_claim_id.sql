@@ -19,3 +19,4 @@ alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq restart with 100
 alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq cache 200;
 
 
+analyze data_warehouse.dim_uth_claim_id;

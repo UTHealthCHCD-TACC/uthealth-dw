@@ -3,7 +3,7 @@
  * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
  */
 
----truven commercial, outpatient
+---truven commercial, outpatient - 31min 2,479,688,920 rows
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
 from truven.ccaeo a
@@ -19,11 +19,13 @@ where a.enrolid is not null
 and c.uth_claim_id is null
 ;
 
-select distinct data_source from data_warehouse.dim_uth_claim_id;
+select count(*) from data_warehouse.dim_uth_claim_id;
+
+
  
---truven commercial, inpatient 
+--truven commercial, inpatient ??? ~400,000,000
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
-select distinct  'trvc', coalesce(a.msclmid::text,a.caseid::text), a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
+select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
 from truven.ccaes a  
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'trvc'
@@ -37,9 +39,12 @@ from truven.ccaes a
 and c.uth_claim_id is null
 ;
  
+ select count(*) from truven.ccaes --where msclmid is null; 
  
 
---- truven medicare outpatient 
+
+
+--- truven medicare outpatient 2min, 506,266,398
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvm', a.msclmid::text, a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
 from truven.mdcro a
@@ -55,11 +60,12 @@ where a.enrolid is not null
 and c.uth_claim_id is null
 ;
 
+
  
  
----Truven medicare inpatient  
+---Truven medicare inpatient  2min 50,129,682
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)     
-select distinct  'trvc', coalesce(a.msclmid::text,a.caseid::text), a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
+select distinct  'trvm', a.msclmid::text, a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
 from truven.mdcrs a  
   join data_warehouse.dim_uth_member_id b 
     on b.data_source in ('trvm','trvc')
@@ -90,7 +96,8 @@ where a.patid is not null
 and c.uth_claim_id is null
 ;
 
---Optum Zip 15min
+
+--Optum Zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year, uth_member_id)                                              
 select distinct  'optz', a.clmid::text, a.patid::text, trunc(a.year,0), b.uth_member_id                                              
 from optum_zip.medical a
@@ -106,6 +113,8 @@ where a.patid is not null
 and c.uth_claim_id is null
 ;
 
+
+analyze data_warehouse.dim_uth_claim_id;
 
 
 ---------------------------------------------------------------------------------------------------
@@ -224,9 +233,19 @@ where c.uth_claim_id is null
 
 
 
-select count(uth_claim_id), data_source
+select count(distinct uth_claim_id), data_source, data_year 
 from data_warehouse.dim_uth_claim_id
-group by data_source;
+where data_source = 'optd'
+group by data_source, data_year;
+
+
+select count(distinct msclmid) from truven.ccaeo;
+
+
+select count(distinct msclmid) from truven.ccaes;
+
+
+select count(distinct a.clmid ), year from optum_dod.medical a group by year;
 
 
 select count(uth_member_id), data_source

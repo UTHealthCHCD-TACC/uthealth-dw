@@ -9,16 +9,17 @@ insert into dev.claim_detail_v1 (  data_source, uth_claim_id, claim_sequence_num
 								   allowed_amount, paid_amount, deductible, copay, coins, cob, units,
 								   bill_type_inst, bill_type_class, bill_type_freq)		
 								   
+
 								   
 select 'trvc', c.uth_claim_id, a.seqnum, c.uth_member_id, a.svcdate, a.tsvcdat,
        b.month_year_id, a.provid, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
-       a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), revcode, 
+       a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, trunc(a.qty,0), 
        substring(d.billtyp,1,1), substring(d.billtyp,2,1), substring(d.billtyp,3,1) 
      --  d.caseid, d.fachdid, d.billtyp, facprof
      --  dx1, dx2, dx3, dx4, dxver,
 from truven.ccaeo a 
-  join reference_tables.ref_month_year b 
+  join reference_tables.ref_month_year b
     on month_int = extract(month from svcdate) 
    and year_int = year
   join data_warehouse.dim_uth_claim_id c 

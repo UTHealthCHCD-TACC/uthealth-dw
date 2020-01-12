@@ -3,7 +3,6 @@
 drop table if exists dw_qa.claim_detail;
 
 create table dw_qa.claim_detail ( 
-		id bigserial,
 		data_source char(4),
 		uth_claim_id numeric, 
 		claim_sequence_number int4,
@@ -69,4 +68,3 @@ distributed by (uth_claim_id);
 analyze dw_qa.claim_header;
 
 -----------------------------------------------------------------------------------------------
-		
