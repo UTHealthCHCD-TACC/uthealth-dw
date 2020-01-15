@@ -17,10 +17,21 @@
 --Case 4: Has confinement, but no admit info
 
 @set clmid = '187810755'
-@set patid = '33104078443'
+@set patid = 33104078443
+
+execute optum_use_case(:clmid, :patid);
+
+--Case 5: Duplicate Payors
+@set clmid = '4237722577'
+@set patid = 33061788874
+
+execute optum_use_case(:clmid, :patid);
+
 /*
  * Queries
  */
+DEALLOCATE optum_use_case;
+prepare optum_use_case(varchar, int8) as
 select distinct m.clmid, m.clmseq, m.fst_dt,
 d.clmid as has_diag, p.clmid as has_proc, fd.clmid as has_fd, 
 m.prov_par in_network,
@@ -44,8 +55,10 @@ left join optum_dod_facility_detail fd on m.clmid=fd.clmid
 left join reference_tables.hcpcs h on m.proc_cd=h.code
 left join reference_tables.cms_proc_codes c on m.proc_cd=c.code
 left join reference_tables.icd_10 i on d.diag=i.icd_10
-where m.clmid=:clmid -- and m.patid=:patid
+where m.clmid=$1 and m.patid=$2
 order by m.clmseq;
+
+
 
 --Admit type and channels
 select rat.value as type, rac.value_derived as channel, count(*)

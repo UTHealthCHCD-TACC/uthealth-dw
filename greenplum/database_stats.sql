@@ -43,4 +43,6 @@ SELECT get_ao_distribution('data_warehouse.claim_detail_v1');
 --Server Settings
 SELECT *
 FROM   pg_settings
-WHERE  name like '%wal%';
+WHERE  name like '%gp_workfile_compress_algorithm%';
+
+set gp_workfile_compress_algorithm to 'zlib';
