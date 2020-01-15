@@ -24,8 +24,15 @@ having count(distinct conf_id) > 1;
 /*
  * Diff clmseq==001
  */ 
-@set clmid = '4305533365'
-@set patid = 33175771375
+explain
+select clmid, patid, count(*) as cnt
+from optum_dupe_claims
+group by 1, 2
+having count(*) > 1 and count(distinct conf_id)=1;
+
+--Specific examples
+@set clmid = '4395192264'
+@set patid = 33063749079
 
 execute optum_use_case(:clmid, :patid);
 
