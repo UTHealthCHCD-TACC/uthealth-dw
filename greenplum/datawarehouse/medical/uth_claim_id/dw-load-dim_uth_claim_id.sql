@@ -23,7 +23,7 @@ select count(*) from data_warehouse.dim_uth_claim_id;
 
 
  
---truven commercial, inpatient ??? ~400,000,000
+--truven commercial, inpatient 3min 110,482,008
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year , uth_member_id)                                              
 select distinct  'trvc', a.msclmid::text, a.enrolid::text, trunc(a.year,0), b.uth_member_id                                              
 from truven.ccaes a  
@@ -235,11 +235,11 @@ where c.uth_claim_id is null
 
 select count(distinct uth_claim_id), data_source, data_year 
 from data_warehouse.dim_uth_claim_id
-where data_source = 'optd'
+where data_source = 'trvc'
 group by data_source, data_year;
 
 
-select count(distinct msclmid) from truven.ccaeo;
+select count(distinct msclmid::text || enrolid::text || year::text ) from truven.ccaeo;
 
 
 select count(distinct msclmid) from truven.ccaes;

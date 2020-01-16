@@ -37,7 +37,8 @@ create table dw_qa.claim_detail (
 		units int4,
 		drg_cd text,
 		claim_id_src text,
-		member_id_src text
+		member_id_src text,
+		table_id_src text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
 
@@ -52,15 +53,17 @@ create table dw_qa.claim_header (
 		data_source char(4),
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
+		from_date_of_service date,
 		claim_type text,
 		place_of_service char(2),
 		uth_admission_id numeric,
-		admission_id text,
+		admission_id_src text,
 		total_charge_amount numeric(13,2),
 		total_allowed_amount numeric(13,2),
 		total_paid_amount numeric(13,2),
 		claim_id_src text,
-		member_id_src text
+		member_id_src text,
+		table_id_src text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
 
