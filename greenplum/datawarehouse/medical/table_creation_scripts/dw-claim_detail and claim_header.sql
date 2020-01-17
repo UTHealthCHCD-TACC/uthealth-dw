@@ -30,7 +30,6 @@ create table dw_qa.claim_detail (
 		deductible numeric(13,2),
 		coins numeric(13,2),
 		cob numeric(13,2),	
-		cob_ind text,
 		bill_type_inst char(1),
 		bill_type_class char(1),
 		bill_type_freq char(1),
