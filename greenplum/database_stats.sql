@@ -34,7 +34,7 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 0
-   and n.nspname in ('data_warehouse')
+   and n.nspname in ('truven')
    ORDER BY 7 desc;
    
 --Greenplum Distribution of a table

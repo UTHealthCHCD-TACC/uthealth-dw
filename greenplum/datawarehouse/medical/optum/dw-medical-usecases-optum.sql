@@ -55,7 +55,7 @@ left join optum_dod_facility_detail fd on m.clmid=fd.clmid
 left join reference_tables.hcpcs h on m.proc_cd=h.code
 left join reference_tables.cms_proc_codes c on m.proc_cd=c.code
 left join reference_tables.icd_10 i on d.diag=i.icd_10
-where m.clmid=$1 and m.patid=$2
+where m.clmid=:clmid --and m.patid=$2
 order by m.clmseq;
 
 
@@ -99,3 +99,9 @@ where conf_id is not null;
 select clmid from optum_dod_confinement
 
 select * from reference_tables.hcpcs where code like '%97116%';
+
+--Multiple pos entries?
+select clmid, patid, count(distinct pos)
+from dev2016.optum_dod_medical
+group by 1, 2
+having count(distinct pos) > 1;

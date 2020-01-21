@@ -1,17 +1,24 @@
 /*
  * Diff conf_id
  */
-create temporary table optum_dupe_claims as 
+drop table quarantine.optum_dupe_claims;
+create table quarantine.optum_dupe_claims 
+WITH (
+	appendonly=true, orientation=column
+) as
 select m.clmid, m.patid, m.conf_id
-from dev2016.optum_dod_medical m
-where cast(m.clmseq as int)=1;
+from optum_dod.medical m
+where cast(m.clmseq as int)=1
+distributed randomly;
 
 --Total duplicates: 510
 explain
 select clmid, patid, count(*) as cnt, count(distinct conf_id) as uniq_conf_id
-from optum_dupe_claims
+from quarantine.optum_dupe_claims
 group by 1, 2
 having count(distinct conf_id) > 1;
+
+
 
 --Dupe records, diff conf_id/pat_planid
 @set clmid = '4237722577'

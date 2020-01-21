@@ -9,6 +9,7 @@ CREATE TABLE dev.claim_header_optum (
 	uth_member_id int8 NULL,
 	member_id_src text,
 	admit_id_src text NULL,
+	from_date_of_service date null,
 	total_charge_amount numeric(13,2) NULL,
 	total_allowed_amount numeric(13,2) NULL,
 	total_paid_amount numeric(13,2) NULL,
@@ -19,21 +20,19 @@ WITH (
 )
 DISTRIBUTED BY (uth_claim_id);
 
-
-
-
 /*
  * We assume the matching records exist in dim_uth_claim_id
  */
 --Optum load: 
 insert into dev.claim_header_optum(data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, 
-admit_id_src,
+admit_id_src, from_date_of_service, place_of_service,
 total_charge_amount, total_allowed_amount, total_paid_amount)
 select 'optd', uthc.uth_member_id, m.patid, uthc.uth_claim_id, m.clmid,
 max(conf.conf_id) as conf_id,
-sum(0) as total_charge_amount, 
-sum(0) as total_allowed_amount, 
-sum(0) as total_paid_amount--, 
+min(m.fst_dt) as from_date_of_service, min(m.pos) as place_of_service,
+sum(m.charge) as total_charge_amount, 
+sum(m.std_cost) as total_allowed_amount, 
+null as total_paid_amount--, 
 --count(distinct conf.conf_id) as conf_cnt, 
 --count(*) as record_cnt
 from optum_dod.medical m
