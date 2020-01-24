@@ -172,7 +172,7 @@ alter user turban with password 'changeme';
  * Superuser
  */
 -- Grant superuser
-ALTER USER wcough SUPERUSER; 
+ALTER USER turban SUPERUSER; 
 
 /*
  * Audit Permissions

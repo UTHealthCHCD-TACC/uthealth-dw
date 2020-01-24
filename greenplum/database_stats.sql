@@ -34,11 +34,11 @@ select
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 0
-   and n.nspname in ('truven')
+   and n.nspname in ('dev')
    ORDER BY 7 desc;
    
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('data_warehouse.claim_detail_v1');
+SELECT get_ao_distribution('dev.claim_header_optum');
 
 --Server Settings
 SELECT *
@@ -46,3 +46,6 @@ FROM   pg_settings
 WHERE  name like '%gp_workfile_compress_algorithm%';
 
 set gp_workfile_compress_algorithm to 'zlib';
+
+
+--Distribution Keys
