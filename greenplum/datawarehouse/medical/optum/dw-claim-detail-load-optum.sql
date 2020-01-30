@@ -3,7 +3,6 @@
  */
 drop table if exists dev.claim_detail_optum;
 CREATE TABLE dev.claim_detail_optum_fix (
-    id bigserial,
 	data_source bpchar(4) NULL,
 	uth_claim_id int8 NULL,
 	claim_sequence_number int4 NULL,
@@ -24,7 +23,7 @@ CREATE TABLE dev.claim_detail_optum_fix (
 	procedure_type text NULL,
 	proc_mod_1 bpchar(1) NULL,
 	proc_mod_2 bpchar(1) NULL,
-	revenue_code bpchar(4) NULL,
+	revenue_cd bpchar(4) NULL,
 	charge_amount numeric(13,2) NULL,
 	allowed_amount numeric(13,2) NULL,
 	paid_amount numeric(13,2) NULL,
@@ -60,7 +59,7 @@ insert into dev.claim_detail_optum(data_source,	uth_claim_id, uth_member_id,
 	network_ind, network_paid_ind,
 	admit_date,	discharge_date,
 	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
-	revenue_code, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
+	revenue_cd, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
 	drg_cd)
 select 'optz', ch.uth_claim_id, ch.uth_member_id,
@@ -70,8 +69,8 @@ m.prov::text, m.bill_prov::text, m.refer_prov::text, m.pos,
 null, null, --No mappings for network fields
 conf.admit_date, conf.disch_date,
 m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
-m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_code to 4 digits with leading zero
-bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
+m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
+bt.inst_cd, bt.class_cd, null, m.units, --NOTE: bill_type_freq is null for optum
 m.drg
 from dev.claim_header_optum ch
 join data_warehouse.dim_uth_claim_id uth on ch.uth_claim_id=uth.uth_claim_id
@@ -80,7 +79,7 @@ left outer join optum_zip.confinement conf on m.conf_id=conf.conf_id
 left outer join reference_tables.ref_optum_bill_type_from_tos bt on m.tos_cd=bt.tos
 where ch.data_source='optz' and m.year >= 2015 and m.year <= 2017;
 
-/* NOTE: The following code is not needed.  
+/* NOTE: The following cd is not needed.  
  * However, it provides a more efficient mechanism (than row_number()) for resetting claim_sequence_number to start at 1
  * for cases where the source version is not 1, but uses sequential numbers (ex. 2345, 2346, 2347 -> 1, 2, 3)
  
@@ -100,34 +99,35 @@ where a.uth_claim_id=b.uth_claim_id;
 /*
  * Scratch Space
  */
-insert into dev.claim_detail_optum_fix (data_source,	uth_claim_id, uth_member_id,
+insert into dev.claim_detail_optum_fix (data_source, uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
 	from_date_of_service, to_date_of_service, month_year_id,	
 	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
 	network_ind, network_paid_ind,
 	admit_date,	discharge_date,
 	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
-	revenue_code, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
+	revenue_cd, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
 	drg_cd)
-select distinct data_source,	uth_claim_id, uth_member_id,
+select distinct d.data_source, d.uth_claim_id, d.uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
-	from_date_of_service, to_date_of_service, month_year_id,	
-	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
+	d.from_date_of_service, d.to_date_of_service, month_year_id,	
+	perf_provider_id, bill_provider_id, ref_provider_id, d.place_of_service,
 	network_ind, network_paid_ind,
 	admit_date,	discharge_date,
 	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
-	revenue_code, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
+	revenue_cd, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
 	drg_cd
-from dev.claim_detail_optum;
+from dev.claim_detail_optum d
+join dev.claim_header_optum h on d.uth_claim_id=h.uth_claim_id;
 
 analyze dev.claim_header_optum;
 
 select prov::int8
 from dev2016.optum_zip_medical;
 
-analyze dev.claim_detail_optum;
+analyze dev.claim_detail_optum_fix;
 
 select get_my_from_date('2011-08-18'::date);
 
@@ -135,9 +135,32 @@ select data_source, count(*), count(distinct uth_claim_id)
 from dev.claim_detail_optum
 group by 1;
 
-select *
-from dev.claim_detail_optum
-limit 10;
+select data_source, count(*), count(distinct uth_claim_id)
+from dw_qa.claim_detail
+group by 1;
+
+insert into dw_qa.claim_detail(data_source, uth_claim_id, uth_member_id,
+    claim_sequence_number, claim_sequence_number_src,
+	from_date_of_service, to_date_of_service, month_year_id,	
+	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
+	network_ind, network_paid_ind,
+	admit_date,	discharge_date,
+	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
+	revenue_cd, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
+	bill_type_inst,	bill_type_class, bill_type_freq, units,
+	drg_cd)
+select data_source, uth_claim_id, uth_member_id,
+    claim_sequence_number, claim_sequence_number_src,
+	from_date_of_service, to_date_of_service, month_year_id,	
+	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
+	network_ind, network_paid_ind,
+	admit_date,	discharge_date,
+	procedure_cd, procedure_type, proc_mod_1, proc_mod_2,
+	revenue_cd, charge_amount, allowed_amount, paid_amount, copay, deductible, coins, cob, cob_type,
+	bill_type_inst,	bill_type_class, bill_type_freq, units,
+	drg_cd
+from dev.claim_detail_optum;
+
 
 select *
 from dev.claim_detail_optum

@@ -7,7 +7,7 @@ WITH (
 	appendonly=true, orientation=column
 ) as
 select year, clmid, patid, clmseq, coalesce(conf_id, '0') as conf_id
-from optum_dod.medical
+from optum_zip.medical
 distributed by (year, clmid, patid, clmseq);
 
 analyze dev.qtemp_all;
@@ -34,14 +34,14 @@ analyze data_warehouse.dim_uth_member_id;
 --Check for missing uth_claim_ids
 select m.clmid, m.patid
 from quarantine.optum_multiple_confs m
-left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 where uth.uth_claim_id is null;
 
 --Load
 insert into quarantine.uth_claim_ids(data_source, uth_claim_id, note)
-select distinct 'optd', uth.uth_claim_id, 'multiple confinement records'
+select distinct 'optz', uth.uth_claim_id, 'multiple confinement records'
 from quarantine.optum_multiple_confs m
-join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source;
+join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source;
 
 
 --Dupe records, diff conf_id/pat_planid
@@ -73,14 +73,14 @@ limit 10;
 --Check for missing uth_claim_ids
 select m.clmid, m.patid
 from quarantine.optum_dupe_clmseq m
-left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 where uth.uth_claim_id is null;
 
 --Load
 insert into quarantine.uth_claim_ids(data_source, uth_claim_id, note)
-select distinct 'optd', uth.uth_claim_id, 'dupe clmseq'
+select distinct 'optz', uth.uth_claim_id, 'dupe clmseq'
 from quarantine.optum_dupe_clmseq m
-join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source;
+join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source;
 
 
 --Specific examples
