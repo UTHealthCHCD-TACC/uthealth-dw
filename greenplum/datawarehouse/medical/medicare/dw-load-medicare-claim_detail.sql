@@ -60,8 +60,56 @@ where extract(year from b.clm_from_dt::date) between 2015 and 2017
 
 
 
-delete from dw_qa.claim_detail where data_source = 'mdcr';
+--bcarrier 
+select 'mdcr', c.uth_claim_id, a.clm_line_num::numeric, c.uth_member_id, b.clm_from_dt::date, b.clm_thru_dt::date,
+	       d.month_year_id, b.prvdr_num, null, null, b.clm_fac_type_cd, true, true, 
+	       null, null, a.hcpcs_cd,a.nch_clm_type_cd,  substring(a.hcpcs_1st_mdfr_cd,1,1),  substring(a.hcpcs_2nd_mdfr_cd,1,1), a.rev_cntr,
+	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
+	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
+	       b.clm_id, b.bene_id, 'bcarrier_claims_k'
+	       
+	       select a.*
+from medicare.bcarrier_line_k a 
+     join medicare.bcarrier_claims_k b
+       on b.clm_id = a.clm_id 
+      and b.bene_id = a.bene_id 
+     join data_warehouse.dim_uth_claim_id c
+	    on c.data_source = 'mdcr'
+	   and c.claim_id_src = a.clm_id
+	   and c.member_id_src = a.bene_id 
+	   and c.data_year = extract(year from clm_from_dt::date)
+   join reference_tables.ref_month_year d
+	    on d.month_int = extract(month from b.clm_from_dt::date) 
+	   and d.year_int = extract(year from b.clm_from_dt::date) 
+where extract(year from b.clm_from_dt::date) between 2015 and 2017
+;
+
+
+select pid, usename, application_name, backend_start, xact_start, waiting, state, query
+from pg_catalog.pg_stat_activity ;
+
+
+select pg_terminate_backend(116384);
+
+select version();
 
 
 
-select * from medicare.outpatient_revenue_center_k;
+
+select * from medicare.inpatient_revenue_center_k
+
+
+
+select distinct proctyp from truven.ccaeo;
+--dme
+
+--hha
+
+--hospice
+
+--snf
+
+
+
+
+
