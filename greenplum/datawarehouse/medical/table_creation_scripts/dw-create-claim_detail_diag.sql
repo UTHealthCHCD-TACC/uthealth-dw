@@ -1,18 +1,19 @@
 
 
-drop table if exists data_warehouse.claim_detail_diag;
+drop table if exists dw_qa.claim_detail_diag;
 
-create table data_warehouse.claim_detail_diag (
-id bigserial NOT NULL,
-	claim_detail_id int8,
-	diag_code varchar,
-	diag_position int
+create table dw_qa.claim_detail_diag (
+	id bigserial not null,
+	uth_claim_id numeric,
+	claim_sequence_number int4,
+	diagnosis_cd varchar,
+	diagnosis_position int4
 ) 
-WITH (appendonly=true, orientation=column)
-distributed randomly;
+with (appendonly=true, orientation=column)
+distributed by(id);
 
 --Greenplum performance optimization for serial/sequence
-alter sequence data_warehouse.claim_detail_diag_id_seq cache 100;
+alter sequence dw_qa.claim_detail_diag_id_seq cache 100;
 
 --Optum load: 
 insert into data_warehouse.claim_detail(claim_id, provider_id, seq_num, proc_id, proc, cost, paid, service_date, paid_date, 
