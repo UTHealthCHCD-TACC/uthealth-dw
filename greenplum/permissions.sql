@@ -1,3 +1,5 @@
+revoke all on schema public from public;
+
 /*
  * UTHealth Admin Role
  */
@@ -5,7 +7,6 @@ create role uthealthadmin;
 grant connect on database uthealth to group uthealthdev;
 
 
---uthealthadmin
 grant all on database uthealth to uthealthadmin;
 
 --Schemas
