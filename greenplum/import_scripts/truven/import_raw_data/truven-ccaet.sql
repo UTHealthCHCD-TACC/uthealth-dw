@@ -27,7 +27,7 @@ CREATE TABLE truven.ccaet (
 	age numeric NULL,
 	dobyr numeric NULL,
 	region int2 null,
-	
+	msa numeric null,
 	datatyp numeric null,
 	plankey numeric null,
 	wgtkey numeric null,
@@ -52,7 +52,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v1 (
 	enrolid numeric ,
 	dtend date ,
 	dtstart date ,
-	empzip numeric ,
+	--empzip numeric ,
 	memdays numeric ,
 	mhsacovg int2 ,
 	plantyp numeric ,
@@ -60,7 +60,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v1 (
 	age numeric ,
 	dobyr numeric ,
 	region int2 ,
-	
+	msa numeric ,
 	datatyp numeric ,
 	plankey numeric ,
 	wgtkey numeric ,
@@ -76,7 +76,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8801/ccaet*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -86,10 +86,10 @@ limit 1000;
 
 truncate table truven.ccaet;
 
-insert into truven.ccaet (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
-DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
-DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+insert into truven.ccaet (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,
+DOBYR,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
+select SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,
+DOBYR,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaet_v1;
 
 drop external table ext_ccaet_v2;

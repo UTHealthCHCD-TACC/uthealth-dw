@@ -13,6 +13,14 @@ EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARM
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
 DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
 
+vDMS Fields: (Drops EMPZIP, adds MSA)
+
+SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
+GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,THERCLS,
+DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,
+ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY
+
+
 */
 
 drop table truven.ccaed;
@@ -59,7 +67,7 @@ CREATE TABLE truven.ccaed (
 	maintin bpchar(5) null,
 	thergrp bpchar(5) null,
 	region int2 null,
-	
+	msa bpchar(7) ,
 	
 	datatyp numeric null,
 	plankey numeric null,
@@ -237,6 +245,89 @@ EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARM
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
 DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
 from ext_ccaed_v2;
+
+
+-- vDMS
+
+drop external table ext_ccaed_vDMS;
+CREATE EXTERNAL TABLE ext_ccaed_vDMS (
+	seqnum numeric ,
+	version int2 ,
+	efamid numeric ,
+	enrolid numeric ,
+	ndcnum numeric ,
+	svcdate date ,
+	dobyr numeric ,
+	year numeric ,
+	age numeric ,
+	awp numeric ,
+	cap_svc bpchar(1) ,
+	cob numeric ,
+	coins numeric ,
+	copay numeric ,
+	daysupp numeric ,
+	deduct numeric ,
+	dispfee numeric ,
+	
+	generid numeric ,
+	ingcost numeric ,
+	metqty numeric ,
+	mhsacovg int2 ,
+	netpay numeric ,
+	ntwkprov bpchar(1) ,
+	paidntwk bpchar(1) ,
+	pay numeric ,
+	pddate date ,
+	pharmid numeric ,
+	plantyp numeric ,
+	qty numeric ,
+	refill numeric ,
+	rxmr bpchar(5) ,
+	saletax numeric ,
+	
+	thercls numeric ,
+	dawind bpchar(5) ,
+	deaclas bpchar(5) ,
+	genind  bpchar(5) ,
+	maintin bpchar(5) ,
+	thergrp bpchar(5) ,
+	region int2 ,
+	msa bpchar(7) ,
+	
+	datatyp numeric ,
+	plankey numeric ,
+	wgtkey numeric ,
+	agegrp int2 ,
+	eeclass int2 ,
+	eestatu int2 ,
+	egeoloc int2 ,
+	eidflag int2 ,
+	emprel int2 ,
+	enrflag int2 ,
+	phyflag int2 ,
+	sex int2 ,
+	hlthplan int2 ,
+	indstry bpchar(5) 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8081/ccaed*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+select *
+from ext_ccaed_vDMS
+limit 1000;
+
+insert into truven.ccaed (SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,
+DEDUCT,DISPFEE,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
+THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,
+ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY )
+select SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,
+DEDUCT,DISPFEE,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
+THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,
+ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
+from ext_ccaed_vDMS;
+
 
 -- Verify
 
