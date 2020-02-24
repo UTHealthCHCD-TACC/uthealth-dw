@@ -8,7 +8,7 @@ CREATE TABLE dev.claim_header_optum_fix (
 	claim_id_src text,
 	uth_member_id int8 NULL,
 	member_id_src text,
-	admit_id_src text NULL,
+	admission_id_src text NULL,
 	from_date_of_service date null,
 	total_charge_amount numeric(13,2) NULL,
 	total_allowed_amount numeric(13,2) NULL,
@@ -26,7 +26,7 @@ DISTRIBUTED BY (uth_claim_id);
  */
 --Optum load: 
 insert into dev.claim_header_optum(data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, 
-admit_id_src, from_date_of_service, place_of_service,
+admission_id_src, from_date_of_service, place_of_service,
 total_charge_amount, total_allowed_amount, total_paid_amount)
 select 'optz', uthc.uth_member_id, m.patid, uthc.uth_claim_id, m.clmid,
 max(conf.conf_id) as conf_id,
@@ -53,10 +53,16 @@ from dev.claim_header_optum;
 analyze dev.claim_header_optum;
 
 select data_source, count(*), count(distinct uth_claim_id)
-from dev.claim_header_optum
+from dw_qa.claim_header
 group by 1;
 
-drop 
+insert into dw_qa.claim_header(data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, 
+admission_id_src, from_date_of_service, place_of_service,
+total_charge_amount, total_allowed_amount, total_paid_amount)
+select data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, 
+admission_id_src, from_date_of_service, place_of_service,
+total_charge_amount, total_allowed_amount, total_paid_amount
+from dev.claim_header_optum;
 
 
 select data_source, count(*)
@@ -94,6 +100,25 @@ from data_warehouse.claim_header_v1 h
 join data_warehouse.claim_detail_v1 d on h.uth_claim_id=d.uth_claim_id
 where h.uth_claim_id=15100057738;
 
+insert into dev.claim_header_optum_fix
+select h.*
+from dev.claim_header_optum h
+left outer join quarantine.uth_claim_ids q on h.uth_claim_id=q.uth_claim_id
+where q.data_source is null;
+
+select count(*)
+from dev.claim_header_optum_fix
+
+select uth_claim_id, count(*)
+from quarantine.uth_claim_ids
+group by 1
+having count(*) > 1
+
+
+select *
+from quarantine.uth_claim_ids q
+join data_warehouse.dim_uth_claim_id u on q.uth_claim_id=u.uth_claim_id
+where q.uth_claim_id=7883221893;
 
 
 

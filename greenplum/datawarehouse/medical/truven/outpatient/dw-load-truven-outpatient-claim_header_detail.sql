@@ -132,11 +132,7 @@ update dw_qa.claim_detail a set claim_sequence_number = rownum
 		
 
 		        
-		        
-select * from dw_qa.claim_detail where uth_claim_id = 2693961759
-
-
-where data_source = 'trvm';
+		       
 		       
 		       
 		       

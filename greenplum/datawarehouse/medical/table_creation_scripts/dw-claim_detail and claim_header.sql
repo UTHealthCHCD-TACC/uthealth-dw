@@ -10,9 +10,9 @@ create table dw_qa.claim_detail (
 		from_date_of_service date,
 		to_date_of_service date,
 		month_year_id int4, 
-		perf_provider_id int,
-		bill_provider_id int,
-		ref_provider_id int,
+		perf_provider_id text,
+		bill_provider_id text,
+		ref_provider_id text,
 		place_of_service int, 
 		network_ind bool,
 		network_paid_ind bool,
@@ -44,6 +44,11 @@ distributed by (uth_claim_id);
 
 analyze dw_qa.claim_detail;
 
+
+
+select version();
+
+alter table dw_qa.claim_detail alter column ref_provider_id type text;
 -----------------------------------------------------------------------------------------------
 
 drop table if exists dw_qa.claim_header;
