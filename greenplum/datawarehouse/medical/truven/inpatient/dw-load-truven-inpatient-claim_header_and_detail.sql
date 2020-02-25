@@ -1,6 +1,6 @@
 --- Claim Header
 ---------------------------------------------------------------------------------------------------
--------------------------------- truven commercial outpatient--------------------------------------
+-------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 2min 33,622,914
 insert into dw_qa.claim_header (data_source, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
@@ -19,7 +19,7 @@ where trunc(year,0) between 2015 and 2017
 ;
 
 ---------------------------------------------------------------------------------------------------
--------------------------------- truven medicare advantage outpatient------------------------------
+-------------------------------- truven medicare advantage inpatient------------------------------
 ---------------------------------------------------------------------------------------------------	
 ---medicare 40sec, 13,472,699
 insert into dw_qa.claim_header (data_source, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
@@ -43,7 +43,7 @@ where trunc(year,0) between 2015 and 2017
 -------------------------------- truven commercial inpatient--------------------------------------
 --------------------------------------------------------------------------------------------------
 --- 1m43s 124,491,267
-insert into dw_qa.claim_detail (  data_source, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into dw_qa.claim_detail (  data_source, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -73,7 +73,7 @@ where a.msclmid is not null
 -------------------------------- truven medicare adv inpatient--------------------------------------
 ----------------------------------------------------*-----------------------------------------------	
 ---1m37s   42,749,395
-insert into dw_qa.claim_detail (  data_source, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into dw_qa.claim_detail (  data_source, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -99,20 +99,4 @@ where a.msclmid is not null
   ;
   
  
- 
- ---update claim sequence
-update dw_qa.claim_detail a set claim_sequence_number = rownum 
-        from ( select uth_claim_id,
-                      claim_sequence_number,
-                      row_number() over ( partition by uth_claim_id 
-                                          order by claim_sequence_number
-                                        ) rownum 
-		       from dw_qa.claim_detail
-		       where table_id_src in ('mdcrs','ccaes')
-		       order by uth_claim_id, claim_sequence_number ) b
-		       where a.uth_claim_id = b.uth_claim_id
-		         and a.claim_sequence_number = b.claim_sequence_number
-		         and a.table_id_src in ('mdcrs','ccaes');
-
-		        
-		        analyze dw_qa.claim_detail;
+vacuum analyze dw_qa.claim_detail;

@@ -37,7 +37,9 @@ create table dw_qa.claim_detail (
 		drg_cd text,
 		claim_id_src text,
 		member_id_src text,
-		table_id_src text
+		table_id_src text,
+		claim_sequence_number_src text,
+		cob_type text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
 
@@ -45,10 +47,6 @@ distributed by (uth_claim_id);
 analyze dw_qa.claim_detail;
 
 
-
-select version();
-
-alter table dw_qa.claim_detail alter column ref_provider_id type text;
 -----------------------------------------------------------------------------------------------
 
 drop table if exists dw_qa.claim_header;
