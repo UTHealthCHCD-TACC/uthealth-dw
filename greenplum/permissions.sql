@@ -6,7 +6,6 @@ revoke all on schema public from public;
 create role uthealthadmin;
 grant connect on database uthealth to group uthealthdev;
 
-
 grant all on database uthealth to uthealthadmin;
 
 --Schemas
@@ -33,7 +32,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant all on tables to group uthealthadmi
 
 grant all on schema dev2016 to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA dev2016 grant all on tables to group uthealthadmin; 
-
 
 
 /*

@@ -16,7 +16,7 @@ select n.nspname, sum(relpages::bigint*8*1024) AS size
 FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    WHERE relpages >= 8
-   and n.nspname in ('dev')
+   and n.nspname in ('dw')
    group by 1;
    
   SELECT pg_size_pretty( pg_total_relation_size('truven'||'.'||'ccaeo') );
@@ -120,7 +120,7 @@ ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
 and nspname in ('data_warehouse', 'dev', 'truven', 'dw_qa')
-order by nspname;
+order by 1, 2, 3;
 
 
 
