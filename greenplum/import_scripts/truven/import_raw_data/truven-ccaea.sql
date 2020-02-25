@@ -1,5 +1,5 @@
 /*
-v1 Fields:
+v1 Fields: (2012, 2013, 2014, 
 
 SEQNUM,VERSION,EFAMID,ENROLID,MEMDAYS,YEAR,AGE,DOBYR,AGEGRP,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,ENRMON,
 DATTYP1,DATTYP2,DATTYP3,DATTYP4,DATTYP5,DATTYP6,DATTYP7,DATTYP8,DATTYP9,DATTYP10,DATTYP11,DATTYP12,
@@ -17,6 +17,16 @@ ENRIND1,ENRIND2,ENRIND3,ENRIND4,ENRIND5,ENRIND6,ENRIND7,ENRIND8,ENRIND9,ENRIND10
 MEMDAY1,MEMDAY2,MEMDAY3,MEMDAY4,MEMDAY5,MEMDAY6,MEMDAY7,MEMDAY8,MEMDAY9,MEMDAY10,MEMDAY11,MEMDAY12,
 PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10,PLNTYP11,PLNTYP12,
 EECLASS,EESTATU,EGEOLOC,EMPZIP,INDSTRY,MHSACOVG,REGION,MSWGTKEY
+
+vDMS version Fields:
+
+SEQNUM,VERSION,EFAMID,ENROLID,MEMDAYS,YEAR,AGE,DOBYR,AGEGRP,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,ENRMON,
+DATTYP1,DATTYP2,DATTYP3,DATTYP4,DATTYP5,DATTYP6,DATTYP7,DATTYP8,DATTYP9,DATTYP10,DATTYP11,DATTYP12,
+ENRIND1,ENRIND2,ENRIND3,ENRIND4,ENRIND5,ENRIND6,ENRIND7,ENRIND8,ENRIND9,ENRIND10,ENRIND11,ENRIND12,
+MEMDAY1,MEMDAY2,MEMDAY3,MEMDAY4,MEMDAY5,MEMDAY6,MEMDAY7,MEMDAY8,MEMDAY9,MEMDAY10,MEMDAY11,MEMDAY12,
+PLNKEY1,PLNKEY2,PLNKEY3,PLNKEY4,PLNKEY5,PLNKEY6,PLNKEY7,PLNKEY8,PLNKEY9,PLNKEY10,PLNKEY11,PLNKEY12,
+PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10,PLNTYP11,PLNTYP12,
+EECLASS,EESTATU,EGEOLOC,INDSTRY,MHSACOVG,MSA,REGION,WGTKEY
 
 */
 
@@ -50,11 +60,14 @@ CREATE TABLE truven.ccaea (
 	empzip numeric null,
 	indstry bpchar(5) null,
 	mhsacovg bpchar(5) null,
+	msa bpchar(7) null,
 	region int2 NULL,
 	wgtkey numeric null,
 	mswgtkey numeric NULL
 )
 DISTRIBUTED RANDOMLY;
+
+-- v1
 
 drop external table ext_ccaea_v1;
 CREATE EXTERNAL TABLE ext_ccaea_v1 (
@@ -83,14 +96,15 @@ CREATE EXTERNAL TABLE ext_ccaea_v1 (
 	eeclass int2 ,
 	eestatu int2 ,
 	egeoloc int2 ,
-	empzip numeric ,
+	--empzip numeric ,
 	indstry bpchar(5) ,
 	mhsacovg bpchar(5) ,
+	msa bpchar(10) ,
 	region int2 ,
 	wgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://c252-140:8081/ccaea*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -116,6 +130,7 @@ PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10
 EECLASS,EESTATU,EGEOLOC,EMPZIP,INDSTRY,MHSACOVG,REGION,WGTKEY
 from ext_ccaea_v1;
 
+-- v2
 
 drop external table ext_ccaea_v2;
 CREATE EXTERNAL TABLE ext_ccaea_v2 (
@@ -172,10 +187,78 @@ PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10
 EECLASS,EESTATU,EGEOLOC,EMPZIP,INDSTRY,MHSACOVG,REGION,MSWGTKEY
 from ext_ccaea_v2;
 
+-- vDMS
+
+drop external table ext_ccaea_vDMS;
+CREATE EXTERNAL TABLE ext_ccaea_vDMS (
+	seqnum numeric ,
+	version int2 ,
+	efamid numeric ,
+	enrolid numeric ,
+	memdays numeric ,
+	year numeric ,
+	age numeric ,
+	dobyr numeric ,
+	agegrp int2 ,
+	emprel int2 ,
+	phyflag int2 ,
+	rx int2 ,
+	sex int2 ,
+	hlthplan int2 ,
+	enrmon numeric ,
+	
+	dattyp1 numeric ,dattyp2 numeric ,dattyp3 numeric ,dattyp4 numeric ,dattyp5 numeric ,dattyp6 numeric ,dattyp7 numeric ,dattyp8 numeric ,dattyp9 numeric ,dattyp10 numeric ,dattyp11 numeric ,dattyp12 numeric ,
+	enrind1 numeric ,enrind2 numeric ,enrind3 numeric ,enrind4 numeric ,enrind5 numeric ,enrind6 numeric ,enrind7 numeric ,enrind8 numeric ,enrind9 numeric ,enrind10 numeric ,enrind11 numeric ,enrind12 numeric ,
+	memday1 numeric ,memday2 numeric ,memday3 numeric ,memday4 numeric ,memday5 numeric ,memday6 numeric ,memday7 numeric ,memday8 numeric ,memday9 numeric ,memday10 numeric ,memday11 numeric ,memday12 numeric ,
+	plnkey1 numeric ,plnkey2 numeric ,plnkey3 numeric ,plnkey4 numeric ,plnkey5 numeric ,plnkey6 numeric ,plnkey7 numeric ,plnkey8 numeric ,plnkey9 numeric ,plnkey10 numeric ,plnkey11 numeric ,plnkey12 numeric ,
+	plntyp1 numeric ,plntyp2 numeric ,plntyp3 numeric ,plntyp4 numeric ,plntyp5 numeric ,plntyp6 numeric ,plntyp7 numeric ,plntyp8 numeric ,plntyp9 numeric ,plntyp10 numeric ,plntyp11 numeric ,plntyp12 numeric ,
+
+	eeclass int2 ,
+	eestatu int2 ,
+	egeoloc int2 ,
+	--empzip numeric ,
+	indstry bpchar(5) ,
+	mhsacovg bpchar(5) ,
+	msa bpchar(7) ,
+	region int2 ,
+	wgtkey text 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8081/ccaea*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+select nullif(trim(WGTKEY),'')::numeric as wgtkey
+from ext_ccaea_vDMS
+order by nullif(trim(WGTKEY),'')::numeric
+limit 1000;
+
+select seqnum, WGTKEY
+from ext_ccaea_vDMS
+where trim(wgtkey) = '';
+
+truncate table truven.ccaea;
+
+insert into truven.ccaea (SEQNUM,VERSION,EFAMID,ENROLID,MEMDAYS,YEAR,AGE,DOBYR,AGEGRP,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,ENRMON,
+DATTYP1,DATTYP2,DATTYP3,DATTYP4,DATTYP5,DATTYP6,DATTYP7,DATTYP8,DATTYP9,DATTYP10,DATTYP11,DATTYP12,
+ENRIND1,ENRIND2,ENRIND3,ENRIND4,ENRIND5,ENRIND6,ENRIND7,ENRIND8,ENRIND9,ENRIND10,ENRIND11,ENRIND12,
+MEMDAY1,MEMDAY2,MEMDAY3,MEMDAY4,MEMDAY5,MEMDAY6,MEMDAY7,MEMDAY8,MEMDAY9,MEMDAY10,MEMDAY11,MEMDAY12,
+PLNKEY1,PLNKEY2,PLNKEY3,PLNKEY4,PLNKEY5,PLNKEY6,PLNKEY7,PLNKEY8,PLNKEY9,PLNKEY10,PLNKEY11,PLNKEY12,
+PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10,PLNTYP11,PLNTYP12,
+EECLASS,EESTATU,EGEOLOC,INDSTRY,MHSACOVG,MSA,REGION/*,WGTKEY*/)
+select SEQNUM,VERSION,EFAMID,ENROLID,MEMDAYS,YEAR,AGE,DOBYR,AGEGRP,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,ENRMON,
+DATTYP1,DATTYP2,DATTYP3,DATTYP4,DATTYP5,DATTYP6,DATTYP7,DATTYP8,DATTYP9,DATTYP10,DATTYP11,DATTYP12,
+ENRIND1,ENRIND2,ENRIND3,ENRIND4,ENRIND5,ENRIND6,ENRIND7,ENRIND8,ENRIND9,ENRIND10,ENRIND11,ENRIND12,
+MEMDAY1,MEMDAY2,MEMDAY3,MEMDAY4,MEMDAY5,MEMDAY6,MEMDAY7,MEMDAY8,MEMDAY9,MEMDAY10,MEMDAY11,MEMDAY12,
+PLNKEY1,PLNKEY2,PLNKEY3,PLNKEY4,PLNKEY5,PLNKEY6,PLNKEY7,PLNKEY8,PLNKEY9,PLNKEY10,PLNKEY11,PLNKEY12,
+PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10,PLNTYP11,PLNTYP12,
+EECLASS,EESTATU,EGEOLOC,INDSTRY,MHSACOVG,MSA,REGION--,nullif(WGTKEY,' ')::numeric
+from ext_ccaea_vDMS;
+
 -- Verify
 
 select count(*), min(year), max(year)  from truven.ccaea;
-
+select count(*) from truven.ccaea;
 
 -- Fix storage options
 create table truven.ccaea_new 

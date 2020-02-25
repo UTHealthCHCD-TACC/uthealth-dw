@@ -22,6 +22,13 @@ POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
+vDMS Fields: (Drop EMPZIP, MSCLMID, Add MSA
+SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,DEDUCT
+,DX3,DX4,DX5,DX6,DX7,DX8,DX9,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,PROC2,PROC3,PROC4,PROC5,PROC6,PROVID
+,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,MSA,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,
+EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
+
 */
 
 drop table truven.ccaef;
@@ -74,6 +81,7 @@ CREATE TABLE truven.ccaef (
 	mdc bpchar(10) null,
 	dstatus int2 null,
 	region int2 null,
+	msa bpchar(7) ,
 	stdplac numeric NULL,
 	stdprov numeric NULL,
 	datatyp numeric null,
@@ -377,6 +385,97 @@ POADX,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaef_v3;
+
+
+-- vDMS
+
+drop external table ext_ccaef_vDMS;
+CREATE EXTERNAL TABLE ext_ccaef_vDMS (
+	seqnum numeric ,
+	version int2 ,
+	dx1 bpchar(10) ,
+	dx2 bpchar(10) ,
+	proc1 bpchar(10) ,
+	fachdid numeric ,
+	efamid numeric ,
+	enrolid numeric ,
+	dobyr numeric ,
+	year numeric ,
+	age numeric ,
+	billtyp bpchar(5) ,
+	cap_svc bpchar(1) ,
+	caseid numeric ,
+	cob numeric ,
+	coins numeric ,
+	copay numeric ,
+	
+	deduct numeric ,
+	dx3 bpchar(10) ,
+	dx4 bpchar(10) ,
+	dx5 bpchar(10) ,
+	dx6 bpchar(10) ,
+	dx7 bpchar(10) ,
+	dx8 bpchar(10) ,
+	dx9 bpchar(10) ,
+	mhsacovg int2 ,
+	netpay numeric ,
+	ntwkprov bpchar(1) ,
+	paidntwk bpchar(1) ,
+	pddate date ,
+	plantyp numeric ,
+	
+	proc2 bpchar(10) ,
+	proc3 bpchar(10) ,
+	proc4 bpchar(10) ,
+	proc5 bpchar(10) ,
+	proc6 bpchar(10) ,
+	provid numeric ,
+	svcdate date ,
+	tsvcdat date ,
+	mdc bpchar(10) ,
+	dstatus int2 ,
+	region int2 ,
+	msa bpchar(7) ,
+	stdplac numeric ,
+	stdprov numeric ,
+	datatyp numeric ,
+	plankey numeric ,
+	wgtkey numeric ,
+	agegrp int2 ,
+	
+	eeclass int2 ,
+	eestatu int2 ,
+	egeoloc int2 ,
+	eidflag int2 ,
+	emprel int2 ,
+	enrflag int2 ,
+	phyflag int2 ,
+	rx int2 ,
+	sex int2 ,
+	hlthplan int2 ,
+	indstry bpchar(5) 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8081/ccaef*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+select *
+from ext_ccaef_vDMS
+limit 1000;
+
+truncate table truven.ccaef;
+
+insert into truven.ccaef (SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,
+COINS,COPAY,DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,PROC2,PROC3,PROC4,PROC5,
+PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,MSA,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,
+EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
+select SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,
+COINS,COPAY,DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,PROC2,PROC3,PROC4,PROC5,
+PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,MSA,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,
+EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+from ext_ccaef_vDMS;
+
 
 -- Verify
 
