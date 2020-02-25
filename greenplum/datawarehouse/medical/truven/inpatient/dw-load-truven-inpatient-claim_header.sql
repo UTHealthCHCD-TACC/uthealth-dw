@@ -114,3 +114,5 @@ update dw_qa.claim_detail a set claim_sequence_number = rownum
 		         and a.claim_sequence_number = b.claim_sequence_number
 		         and a.table_id_src in ('mdcrs','ccaes');
 
+		        
+		        analyze dw_qa.claim_detail;

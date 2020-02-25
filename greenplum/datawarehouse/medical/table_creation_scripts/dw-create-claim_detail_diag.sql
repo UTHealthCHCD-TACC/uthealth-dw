@@ -55,5 +55,5 @@ from data_warehouse.medical
 group by 1;
 
 
-
+select * from dw_qa.claim_detail;
 
