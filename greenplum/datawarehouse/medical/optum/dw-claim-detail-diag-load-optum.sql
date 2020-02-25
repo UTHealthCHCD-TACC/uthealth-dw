@@ -1,38 +1,41 @@
 
-analyze dev.claim_header_optum;
-analyze dev.claim_detail_optum;
+analyze dw_qa.claim_header;
+analyze dw_qa.claim_detail;
 
-drop table if exists dev.claim_detail_diag_optum;
+--drop table if exists dw_qa.claim_detail_diag;
 
-create table dev.claim_detail_diag_optum (
-id bigserial NOT NULL,
+create table dw_qa.claim_detail_diag (
 	uth_claim_id int8,
 	claim_sequence_number int2,
-	diagnosis_code text,
-	diagnosis_sequence int2
+	date date,
+	diag_cd text,
+	diag_position int2,
+	icd_type text,
+	poa_src text
 ) 
 WITH (appendonly=true, orientation=column)
 distributed by (uth_claim_id);
 
+
 --Optum load: 
-insert into dev.claim_detail_diag_optum(uth_claim_id, claim_sequence_number, diagnosis_code, diagnosis_sequence)
-select distinct uth.uth_claim_id, d.claim_sequence_number, diag.diag, diag.diag_position
-from dev.claim_detail_optum d
-join dev.claim_header_optum h on d.uth_claim_id=h.uth_claim_id
+insert into dw_qa.claim_detail_diag(uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)
+select distinct uth.uth_claim_id, d.claim_sequence_number, diag.fst_dt, diag.diag, diag.diag_position, diag.icd_flag, diag.poa
+from dw_qa.claim_detail d
+join dw_qa.claim_header h on d.uth_claim_id=h.uth_claim_id
 join data_warehouse.dim_uth_claim_id uth on h.uth_claim_id=uth.uth_claim_id
-join optum_zip.diagnostic diag on diag.clmid=h.claim_id_src and diag.patid::text=h.member_id_src and diag.year=uth.data_year
-where h.data_source='optz';
+join optum_dod.diagnostic diag on diag.clmid=h.claim_id_src and diag.patid::text=h.member_id_src and diag.year=uth.data_year and diag.fst_dt=d.from_date_of_service
+where h.data_source='optd';
 
 limit 10;
 
 -- Diagnostics
 
-analyze dev.claim_detail_diag_optum;
+analyze dw_qa.claim_detail_diag;
 
 --Verify
 select data_source, count(*), count(distinct d.uth_claim_id)
-from dev.claim_detail_diag_optum d
-join dev.claim_detail_optum l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
+from dw_qa.claim_detail_diag_old d
+join dw_qa.claim_detail l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
 group by 1;
 
 select data_source, count(*)
@@ -40,9 +43,38 @@ from dev.claim_header_optum
 group by 1;
 
 --Missing diags???
-select distinct h.uth_claim_id, h.claim_id_src, h.member_id_src
-from dev.claim_header_optum h
-left outer join dev.claim_detail_diag_optum diag on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
-where h.data_source = 'optd' and diag.diagnosis_code is null;
+select count(distinct h.uth_claim_id) 
+--select h.uth_claim_id, h.claim_id_src, h.member_id_src
+from dw_qa.claim_header h
+left outer join dw_qa.claim_detail_diag diag on h.uth_claim_id=diag.uth_claim_id
+where h.data_source = 'optd' and diag.diag_cd is null;
+
+
+@set clmid = '2449466899'
+@set patid = 33171032334
+
+select *
+from optum_dod.diagnostic
+where patid=:patid
+order by clmid desc;
+
+
+--delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_header where data_source='optz');
+
+select distinct icd_flag
+from optum_zip.diagnostic;
+
+select distinct datatyp
+from truven.mdcrs
+limit 1;
+
+select distinct poadx1
+from truven.ccaei;
+
+CREATE INDEX ix_claim_detail_diag_diag_cd_bitmap
+ON dw_qa.claim_detail_diag
+USING bitmap (diag_cd);
+
+vacuum analyze dw_qa.claim_detail_diag;
 
 
