@@ -198,7 +198,7 @@ gwe.sess_id, sc.hostname
 
 
 SELECT gp_segment_id, count(*)
-FROM data_warehouse.medicare_enrollment_detail
+FROM dw_qa.claim_detail
 GROUP BY gp_segment_id;
 
 
@@ -207,6 +207,7 @@ SELECT  b.nspname||'.'||a.relname as TableName
    when 'f' THEN 'Row Orientation'        
    when 't' THEN 'Column Orientation'
 END as TableStorageType
+,pg_size_pretty( pg_total_relation_size(nspname||'.'||relname)) as size_gb
 ,CASE COALESCE(c.compresstype,'')
   WHEN '' THEN 'No Compression'        
    else c.compresstype
@@ -215,6 +216,7 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
+and b.nspname in ('dw_qa','optum_zip')
 AND a.oid=c.relid
 
 
@@ -274,11 +276,11 @@ FROM gp_toolkit.gp_size_of_database;
 
 
 SELECT sosdnsp, (sosdschematablesize/1048576) AS Size_in_MB
-FROM gp_toolkit.gp_size_of_schema_disk;
- 
+FROM gp_toolkit.gp_size_of_schema_disk
+
 SELECT sosdnsp, (sosdschematablesize/1073741824) AS Size_in_GB
-FROM gp_toolkit.gp_size_of_schema_disk;
- 
+FROM gp_toolkit.gp_size_of_schema_disk
+
 SELECT sosdnsp, (sosdschematablesize/1073741824)/1024 AS Size_in_TB
 FROM gp_toolkit.gp_size_of_schema_disk;
 

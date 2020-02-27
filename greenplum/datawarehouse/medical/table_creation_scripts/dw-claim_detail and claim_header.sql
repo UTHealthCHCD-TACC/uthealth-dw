@@ -51,7 +51,7 @@ analyze dw_qa.claim_detail;
 
 drop table if exists dw_qa.claim_header;
 
-create table dw_qa.claim_header (
+create table dw_qa.claim_header_temp (
 		data_source char(4),
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
@@ -68,6 +68,10 @@ create table dw_qa.claim_header (
 		table_id_src text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
+
+create index ch_temp_idx on dw_qa.claim_header_temp(uth_claim_id);
+
+cluster ch_temp_idx on dw_qa.claim_header_temp;
 
 
 analyze dw_qa.claim_header;
