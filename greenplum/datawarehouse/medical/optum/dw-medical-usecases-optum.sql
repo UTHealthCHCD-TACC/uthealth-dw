@@ -17,10 +17,29 @@
 --Case 4: Has confinement, but no admit info
 
 @set clmid = '187810755'
-@set patid = '33104078443'
+@set patid = 33104078443
+
+execute optum_use_case(:clmid, :patid);
+
+--Case 5: Duplicate Payors
+@set clmid = '4237722577'
+@set patid = 33061788874
+
+execute optum_use_case(:clmid, :patid);
+
+--Case 6: Missing diag records??
+--In this case, the claim spans from 12/31/2017 to 01/01/2018
+
+@set uth_claim_id = 3360497861
+@set clmid = '143885692'
+@set patid = 33048295705
+execute optum_use_case(:clmid, :patid);
+
 /*
  * Queries
  */
+DEALLOCATE optum_use_case;
+prepare optum_use_case(varchar, int8) as
 select distinct m.clmid, m.clmseq, m.fst_dt,
 d.clmid as has_diag, p.clmid as has_proc, fd.clmid as has_fd, 
 m.prov_par in_network,
@@ -34,18 +53,20 @@ m.*,
 con.*,
 'DIAGNOSTIC:',
 d.*
-from dev2016.optum_dod_medical m
+from optum_dod.medical m
 left join optum_dod.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
 left join optum_dod.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
-left join optum_dod_diagnostic d on m.clmid=d.clmid and m.fst_dt=d.fst_dt and d.diag_position=1
-left join optum_dod_confinement con on m.conf_id=con.conf_id
-left join optum_dod_procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
-left join optum_dod_facility_detail fd on m.clmid=fd.clmid
+left join optum_dod.confinement con on m.conf_id=con.conf_id
+left join optum_dod.procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
+left join optum_dod.facility_detail fd on m.clmid=fd.clmid
 left join reference_tables.hcpcs h on m.proc_cd=h.code
 left join reference_tables.cms_proc_codes c on m.proc_cd=c.code
-left join reference_tables.icd_10 i on d.diag=i.icd_10
-where m.clmid=:clmid -- and m.patid=:patid
+left outer join optum_dod.diagnostic d on m.clmid=d.clmid and m.patid=d.patid and m.fst_dt=d.fst_dt and d.diag_position=1
+left outer join reference_tables.icd_10 i on d.diag=i.icd_10
+where m.clmid=$1 and m.patid=$2
 order by m.clmseq;
+
+
 
 --Admit type and channels
 select rat.value as type, rac.value_derived as channel, count(*)
@@ -86,3 +107,9 @@ where conf_id is not null;
 select clmid from optum_dod_confinement
 
 select * from reference_tables.hcpcs where code like '%97116%';
+
+--Multiple pos entries?
+select clmid, patid, count(distinct pos)
+from dev2016.optum_dod_medical
+group by 1, 2
+having count(distinct pos) > 1;

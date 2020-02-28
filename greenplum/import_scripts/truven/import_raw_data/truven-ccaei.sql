@@ -28,6 +28,15 @@ POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,PO
 PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
 
+vDMS Fields: (Drop EMPZIP, Add MSA)
+
+SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,
+HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
+TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,MSA,DATATYP,PLANKEY,WGTKEY,
+DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
+PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
+AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
+
 */
 
 drop table truven.ccaei;
@@ -67,6 +76,7 @@ CREATE TABLE truven.ccaei (
 	mdc bpchar(10) null,
 	dstatus int2 null,
 	region int2 null,
+	msa bpchar(7) ,
 	datatyp numeric null,
 	plankey numeric null,
 	wgtkey numeric null,
@@ -346,9 +356,7 @@ LOCATION (
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select *
-from ext_ccaei_v3
-limit 1000;
+
 
 insert into truven.ccaei (SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
 EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
@@ -365,6 +373,94 @@ POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,PO
 PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
 from ext_ccaei_v3;
+
+
+-- vDMS
+
+drop external table ext_ccaei_vDMS;
+CREATE EXTERNAL TABLE ext_ccaei_vDMS (
+	seqnum numeric ,
+	version int2 ,
+	efamid numeric ,
+	enrolid numeric ,
+	dobyr numeric ,
+	year numeric ,
+	admdate date ,
+	age numeric ,
+	caseid numeric ,
+	days numeric ,
+	disdate date ,
+	drg numeric ,
+
+	hospnet numeric ,
+	hosppay numeric ,
+	mhsacovg int2 ,
+	pdx bpchar(10) ,
+	physid numeric ,
+	physnet numeric ,
+	physpay numeric ,
+	plantyp numeric ,
+	pproc bpchar(10) ,
+	
+	totcob numeric ,
+	totcoins numeric ,
+	totcopay numeric ,
+	totded numeric ,
+	totnet numeric ,
+	totpay numeric ,
+	admtyp int2 ,
+	mdc bpchar(10) ,
+	dstatus int2 ,
+	region int2 ,
+	msa bpchar(7) ,
+	datatyp numeric ,
+	plankey numeric ,
+	wgtkey numeric ,
+	
+	dx1 bpchar(10) ,dx2 bpchar(10) ,dx3 bpchar(10) ,dx4 bpchar(10) ,dx5 bpchar(10) ,dx6 bpchar(10) ,dx7 bpchar(10) ,dx8 bpchar(10) ,
+	dx9 bpchar(10) ,dx10 bpchar(10) ,dx11 bpchar(10) ,dx12 bpchar(10) ,dx13 bpchar(10) ,dx14 bpchar(10) ,dx15 bpchar(10) ,
+	proc1 bpchar(10) ,proc2 bpchar(10) ,proc3 bpchar(10) ,proc4 bpchar(10) ,proc5 bpchar(10) ,proc6 bpchar(10) ,proc7 bpchar(10) ,proc8 bpchar(10) ,
+	proc9 bpchar(10) ,proc10 bpchar(10) ,proc11 bpchar(10) ,proc12 bpchar(10) ,proc13 bpchar(10) ,proc14 bpchar(10) ,proc15 bpchar(10) ,
+	
+	agegrp int2 ,
+	eeclass int2 ,
+	eestatu int2 ,
+	egeoloc int2 ,
+	eidflag int2 ,
+	emprel int2 ,
+	enrflag int2 ,
+	phyflag int2 ,
+	rx int2 ,
+	sex int2 ,
+	state int2 ,
+	hlthplan int2 ,
+	indstry bpchar(5) 
+) 
+LOCATION ( 
+'gpfdist://c252-140:8081/ccaei*'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+select *
+from ext_ccaei_vDMS
+limit 1000;
+
+truncate table truven.ccaei;
+
+insert into truven.ccaei (SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,
+DRG,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,
+TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,MSA,DATATYP,PLANKEY,WGTKEY,DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,
+DX9,DX10,DX11,DX12,DX13,DX14,DX15,PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,
+PROC12,PROC13,PROC14,PROC15,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,
+EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY)
+select SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,
+DRG,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,
+TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,MSA,DATATYP,PLANKEY,WGTKEY,DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,
+DX9,DX10,DX11,DX12,DX13,DX14,DX15,PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,
+PROC12,PROC13,PROC14,PROC15,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,
+EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
+from ext_ccaei_vDMS;
+
 -- Verify
 
 select count(*), min(year), max(year) from truven.ccaei;
