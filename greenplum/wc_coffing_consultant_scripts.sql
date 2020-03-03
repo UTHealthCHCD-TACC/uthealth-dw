@@ -1,47 +1,4 @@
 
-select * 
-from pg_catalog.pg_stat_activity
-;
-
-
-create table sql_class.wc_optum_diag_row_zlib (like dev2016.optum_dod_diagnostic)
-with (appendonly=true, compresstype = zlib )
-
-
-select pg_size_pretty(pg_relation_size('sql_class.wc_optum_diag_row_zlib'))
-      ,pg_size_pretty(pg_relation_size('dev2016.optum_dod_diagnostic'))
-
-
-      
-      drop table sql_class.wc_Subscribers_Columnar_zlib5_rle
-      
-
-CREATE TABLE SQL_CLASS.wc_Subscribers_Columnar_zlib5
- (Subscriber_No INTEGER,
-  Member_No SMALLINT,
-  Last_Name CHAR(20),
-  First_Name VARCHAR(200),  --The next table will compress this column further
-  Gender CHAR(1),
-  SSN INTEGER)
-WITH (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5)
-DISTRIBUTED BY (Subscriber_No, Member_No)
-
-
-CREATE TABLE SQL_CLASS.wc_Subscribers_Columnar_zlib5_rle
-         (Subscriber_No INTEGER,
-  Member_No SMALLINT,
-  Last_Name CHAR(20),
-  First_Name VARCHAR(200) ENCODING(compresstype=RLE_TYPE, compresslevel=3),
-  Gender CHAR(1),
-  SSN INTEGER)
-WITH (appendonly=true, orientation=column)
-DISTRIBUTED BY (Subscriber_No, Member_No)
-
-
-INSERT INTO SQL_CLASS.wc_Subscribers_Columnar_zlib5
-SELECT * FROM SQL_Class.Subscribers;
-INSERT INTO SQL_CLASS. wc_Subscribers_Columnar_zlib5_rle
-SELECT * FROM SQL_Class.Subscribers order by first_name;
 
 
 SELECT
@@ -60,18 +17,12 @@ SELECT
               
  SELECT     pgn.nspname as table_owner, pgc.relname as table_name
 ,COALESCE(pga.attname,'DISTRIBUTED RANDOMLY') as DIST_KEYS
-FROM
-(
-
-SELECT gdp.localoid,
-  CASE
-     WHEN ( Array_upper(gdp.attrnums, 1) > 0 ) THEN Unnest(gdp.attrnums)
-       ELSE NULL
-  END AS attnum   
-   FROM gp_distribution_policy gdp ORDER BY gdp.localoid
-   
-   
-) AS distrokey
+from (
+	select a.localoid,
+	       case when ( array_upper(a.distkey,1)>0) then unnest(a.distkey) else null end as attnum
+	   FROM gp_distribution_policy a 
+	   order by a.localoid 
+ ) as distrokey  
 INNER JOIN pg_class AS pgc
     ON distrokey.localoid = pgc.oid
 INNER JOIN pg_namespace pgn
@@ -81,6 +32,11 @@ LEFT OUTER JOIN pg_attribute pga
         and distrokey.localoid = pga.attrelid
 ORDER BY pgn.nspname, pgc.relname;             
        
+select * from pg_namespace
+
+
+select * from pg
+
 
 select * from pg_catalog.pg_attribute
 
