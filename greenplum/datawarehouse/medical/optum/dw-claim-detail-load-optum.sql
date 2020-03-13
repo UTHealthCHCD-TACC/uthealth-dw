@@ -52,7 +52,7 @@ analyze dev.claim_header_optum;
 analyze dev.dim_uth_claim_id_optum;
 
 --Optum load: 23 min for 2016
-insert into dev.claim_detail_optum(data_source,	uth_claim_id, uth_member_id,
+insert into dw_qa.claim_detail(data_source,	uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
 	from_date_of_service, to_date_of_service, month_year_id,	
 	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
@@ -70,7 +70,7 @@ null, null, --No mappings for network fields
 conf.admit_date, conf.disch_date,
 m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
 m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
-bt.inst_cd, bt.class_cd, null, m.units, --NOTE: bill_type_freq is null for optum
+bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
 m.drg
 from dev.claim_header_optum ch
 join data_warehouse.dim_uth_claim_id uth on ch.uth_claim_id=uth.uth_claim_id
@@ -127,7 +127,7 @@ analyze dev.claim_header_optum;
 select prov::int8
 from dev2016.optum_zip_medical;
 
-analyze dev.claim_detail_optum_fix;
+analyze dw_qa.claim_detail;
 
 select get_my_from_date('2011-08-18'::date);
 

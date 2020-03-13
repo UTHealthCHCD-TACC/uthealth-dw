@@ -2,7 +2,7 @@
 select *
 from pg_stat_activity;
 
-select pg_terminate_backend(65968);
+select pg_terminate_backend(94497);
 
 select dbo.pg_kill_connection(119596)
 
@@ -24,6 +24,7 @@ FROM pg_class
 --Size by Table
 select
    n.nspname,
+   u.usename,
    relname,
    reloptions,
    relacl,
@@ -33,9 +34,11 @@ select
    pg_size_pretty( pg_total_relation_size(n.nspname||'.'||relname)) as size_new
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
+   join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
    and n.nspname in ('dev')
    ORDER BY 7 desc;
+ 
    
 --Greenplum Distribution of a table
 SELECT get_ao_distribution('dev.claim_header_optum');
