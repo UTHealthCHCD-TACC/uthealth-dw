@@ -27,5 +27,6 @@ create table dw_qa.pharmacy_claims (
 with (appendonly=true, orientation = column)
 distributed by (uth_member_id);
 
-
+---create login for Madhuri
+---add Chau on SAS side
 
