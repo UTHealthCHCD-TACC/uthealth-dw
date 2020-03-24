@@ -24,7 +24,7 @@ analyze data_warehouse.dim_uth_member_id;
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.member 
+	from optum_dod_refresh.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
 	              on b.data_source = 'optd'
 	             and b.member_id_src = patid::text
@@ -39,7 +39,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_zip.member
+	from optum_zip_refresh.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
              and b.member_id_src = patid::text
