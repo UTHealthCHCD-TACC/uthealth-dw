@@ -5,17 +5,14 @@
  *   	             Use dw-create-load-dim_member_id_src.sql in Git      
  */
 
+drop table if exists data_warehouse.member_enrollment_monthly cascade;
 
-drop table if exists data_warehouse.member_enrollment_monthly;
-
---Create member_enrollment_monthly table ---------------------------------------------------------
 
 create table data_warehouse.member_enrollment_monthly (
     --ID columns
 	data_source char(4), 
 	month_year_id int4,
 	uth_member_id bigint,		
-	--demographics
 	gender_cd char(1),
 	state varchar,
 	zip5 char(5),
@@ -23,14 +20,15 @@ create table data_warehouse.member_enrollment_monthly (
 	age_derived int,
 	dob_derived date, 
 	death_date date,
-	--enrollment type
 	plan_type char(4),
 	bus_cd char(4),
 	employee_status text, 
 	claim_created_flag bool default false
 )
 WITH (appendonly=true, orientation=column)
-distributed by(uth_member_id, month_year_id)
+distributed by(uth_member_id);
+
+
 partition by list (data_source)
 	subpartition by range(month_year_id)
 		subpartition template 
@@ -60,8 +58,6 @@ partition by list (data_source)
    --default partition xxxx 
 );
 
-
----------------------------------------------------------------------------------------------------
 
 analyze data_warehouse.member_enrollment_monthly;
 
@@ -93,8 +89,6 @@ from optum_dod.member m
    and d.plan_type_src = m.product
 ;
 ---------------------------------------------------------------------------------------------------
-
-select * from data_warehouse.member_enrollment_monthly;
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
@@ -129,7 +123,7 @@ from optum_zip.member m
 
 
 
--- Truven Commercial --------18 minutes ----------------------------------------------------------------------
+-- Truven Commercial --------7 minutes ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -248,9 +242,8 @@ group by data_source , substring(month_year_id::text,1,4);
 --- create indexes -------------------------------------------------------------------------------- 
 create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
 
-create index enrollment_seq_index on data_warehouse.member_enrollment_monthly (id);
 
-create index enrollment_data_source_index on data_warehouse.member_enrollment_monthly (data_source);
+--- Pharmacy member loads 
 
 
 

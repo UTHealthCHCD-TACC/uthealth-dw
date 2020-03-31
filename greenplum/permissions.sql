@@ -94,26 +94,18 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group uthea
  * UTHealth Analyst Role
  */
 
-create role analyst;
-grant connect on database uthealth to group analyst;
 
+drop owned by analyst cascade;
+
+drop role analyst;
+
+create role analyst;
+
+grant connect on database uthealth to analyst;
+
+grant analyst to cms2;
 
 --Schemas
-
---truven
-grant usage on schema truven to group analyst;
-grant select on all tables in schema truven to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant select on tables to group analyst; 
-
---optum_dod
-grant usage on schema optum_dod to group analyst;
-grant select on all tables in schema optum_dod to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group analyst; 
-
---optum_zip
-grant usage on schema optum_zip to group analyst;
-grant select on all tables in schema optum_zip to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant select on tables to group analyst; 
 
 --reference_tables
 grant usage on schema reference_tables to group analyst;
@@ -125,25 +117,14 @@ grant usage on schema data_warehouse to group analyst;
 grant select on all tables in schema data_warehouse to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to group analyst; 
 
---medicare
-grant usage on schema medicare to group analyst;
-grant select on all tables in schema medicare to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant select on tables to group analyst; 
-
---dev
-grant usage on schema dev to group analyst;
-grant select on all tables in schema dev to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant select on tables to group analyst; 
-
---dev2016
-grant usage on schema dev2016 to group analyst;
-grant select on all tables in schema dev2016 to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dev2016 grant select on tables to group analyst; 
 
 --tableau
 grant usage on schema tableau to group analyst;
 grant select on all tables in schema tableau to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analyst; 
+
+
+
 
 /*
  * Create User

@@ -1,4 +1,4 @@
-
+select *, relname, relacl from pg_class where relname like 'member_enrollment_monthly%'
 
 
 SELECT

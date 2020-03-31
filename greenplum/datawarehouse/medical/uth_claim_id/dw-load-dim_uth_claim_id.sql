@@ -83,7 +83,7 @@ and c.uth_claim_id is null
 --Optum Dod 15min
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year, uth_member_id)                                              
 select distinct  'optd', a.clmid::text, a.patid::text, trunc(a.year,0), b.uth_member_id                                              
-from optum_dod.medical a
+from optum_dod_refresh.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text 
@@ -100,7 +100,7 @@ and c.uth_claim_id is null
 --Optum Zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, data_year, uth_member_id)                                              
 select distinct  'optz', a.clmid::text, a.patid::text, trunc(a.year,0), b.uth_member_id                                              
-from optum_zip.medical a
+from optum_zip_refresh.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text 
