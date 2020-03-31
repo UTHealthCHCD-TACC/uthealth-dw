@@ -1,19 +1,18 @@
 /*
  * 
  */
-drop table if exists dev.claim_detail_optum;
-CREATE TABLE dev.claim_detail_optum_fix (
+drop table if exists dev.claim_detail_by_claim;
+CREATE TABLE dev.claim_detail_by_claim (
 	data_source bpchar(4) NULL,
-	uth_claim_id int8 NULL,
+	uth_claim_id numeric NULL,
 	claim_sequence_number int4 NULL,
-	claim_sequence_number_src text,
 	uth_member_id int8 NULL,
 	from_date_of_service date NULL,
 	to_date_of_service date NULL,
-	month_year_id int4 null, --int4 NULL,
-	perf_provider_id text null, --int4 NULL,
-	bill_provider_id text null, --int4 NULL,
-	ref_provider_id text null, --int4 NULL,
+	month_year_id int4 NULL,
+	perf_provider_id text NULL,
+	bill_provider_id text NULL,
+	ref_provider_id text NULL,
 	place_of_service text NULL,
 	network_ind bool NULL,
 	network_paid_ind bool NULL,
@@ -31,25 +30,32 @@ CREATE TABLE dev.claim_detail_optum_fix (
 	deductible numeric(13,2) NULL,
 	coins numeric(13,2) NULL,
 	cob numeric(13,2) NULL,
-	cob_type text null,
 	bill_type_inst bpchar(1) NULL,
 	bill_type_class bpchar(1) NULL,
 	bill_type_freq bpchar(1) NULL,
 	units int4 NULL,
-	drg_cd text NULL
+	drg_cd text NULL,
+	claim_id_src text NULL,
+	member_id_src text NULL,
+	table_id_src text NULL,
+	claim_sequence_number_src text NULL,
+	cob_type text NULL
 )
 WITH (
 	appendonly=true, orientation=column
 )
 DISTRIBUTED BY (uth_claim_id);
 
-alter sequence dev.claim_detail_optum_fix_id_seq cache 200;
+/*
+ * Remove old records
+ */
+delete from dw_qa.claim_detail where data_source like 'opt%';
+
 
 /*
  * This script assumes claim_header has already been loaded with mapped uth_*_ids
  */
-analyze dev.claim_header_optum;
-analyze dev.dim_uth_claim_id_optum;
+analyze dw_qa.claim_header;
 
 --Optum load: 23 min for 2016
 insert into dw_qa.claim_detail(data_source,	uth_claim_id, uth_member_id,
@@ -72,10 +78,10 @@ m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
 m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
 bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
 m.drg
-from dev.claim_header_optum ch
+from dw_qa.claim_header ch
 join data_warehouse.dim_uth_claim_id uth on ch.uth_claim_id=uth.uth_claim_id
-join optum_zip.medical m on ch.claim_id_src=m.clmid::text and ch.member_id_src=m.patid::text and uth.data_year=m.year
-left outer join optum_zip.confinement conf on m.conf_id=conf.conf_id
+join optum_zip_refresh.medical m on ch.claim_id_src=m.clmid::text and ch.member_id_src=m.patid::text and uth.data_year=m.year
+left outer join optum_zip_refresh.confinement conf on m.conf_id=conf.conf_id
 left outer join reference_tables.ref_optum_bill_type_from_tos bt on m.tos_cd=bt.tos
 where ch.data_source='optz' and m.year >= 2015 and m.year <= 2017;
 

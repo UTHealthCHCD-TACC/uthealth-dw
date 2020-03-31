@@ -13,7 +13,7 @@ PATID bigint, PAT_PLANID bigint, CHARGE_ALLOC numeric, CLMID char(19), CLMSEQ ch
 PROC_CD char(7), PROCMOD char(5), RVNU_CD char(4), STD_COST_ALLOC numeric, STD_COST_YR smallint, UNITS numeric, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*_fd2*'
+'gpfdist://c252-136:8081/*_fd2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

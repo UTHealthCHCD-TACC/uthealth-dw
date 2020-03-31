@@ -16,15 +16,29 @@ create table dw_qa.claim_detail_diag (
 WITH (appendonly=true, orientation=column)
 distributed by (uth_claim_id);
 
+--Remove Old
+delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_header where data_source like 'opt%');
 
 --Optum load: 
 insert into dw_qa.claim_detail_diag(uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)
 select distinct uth.uth_claim_id, d.claim_sequence_number, diag.fst_dt, diag.diag, diag.diag_position, diag.icd_flag, diag.poa
+
+explain
+select count(*)
 from dw_qa.claim_detail d
 join dw_qa.claim_header h on d.uth_claim_id=h.uth_claim_id
 join data_warehouse.dim_uth_claim_id uth on h.uth_claim_id=uth.uth_claim_id
-join optum_dod.diagnostic diag on diag.clmid=h.claim_id_src and diag.patid::text=h.member_id_src and diag.year=uth.data_year and diag.fst_dt=d.from_date_of_service
-where h.data_source='optd';
+join optum_zip_refresh.diagnostic diag on diag.clmid=h.claim_id_src and diag.patid::text=h.member_id_src and diag.year=uth.data_year and diag.fst_dt=d.from_date_of_service
+where h.data_source='optz';
+
+vacuum full dw_qa.claim_header;
+analyze dw_qa.claim_header;
+
+vacuum full dw_qa.claim_detail;
+analyze dw_qa.claim_detail;
+
+vacuum full dw_qa.claim_detail_diag;
+analyze dw_qa.claim_detail_diag;
 
 limit 10;
 
@@ -39,7 +53,7 @@ join dw_qa.claim_detail l on d.claim_sequence_number=l.claim_sequence_number and
 group by 1;
 
 select data_source, count(*)
-from dev.claim_header_optum
+from dw_qa.claim_header
 group by 1;
 
 --Missing diags???

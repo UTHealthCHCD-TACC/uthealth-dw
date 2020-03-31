@@ -9,7 +9,7 @@ PROCMOD char(5),PROV numeric,PROV_PAR char(5),PROVCAT char(4),REFER_PROV numeric
 UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6),
 ALT_UNITS text, BILL_TYPE text, NDC_UOM text, NDC_QTY text, OP_VISIT_ID text, PROCMOD2 text, PROCMOD3 text, PROCMOD4 text, TOS_EXT text
 ) 
-WITH (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed randomly;
 
 drop external table ext_medical;
@@ -23,13 +23,13 @@ UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6),
 ALT_UNITS text, BILL_TYPE text, NDC_UOM text, NDC_QTY text, OP_VISIT_ID text, PROCMOD2 text, PROCMOD3 text, PROCMOD4 text, TOS_EXT text
 ) 
 LOCATION ( 
-'gpfdist://c252-136:8081/dod/*_m2*'
+'gpfdist://192.168.58.179:8081/*_m2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 /*
-select *
+select count(*)
 from ext_medical
 limit 1000;
 */
@@ -37,8 +37,13 @@ limit 1000;
 insert into optum_dod_refresh.medical
 select 0, * from ext_medical;
 
+delete from optum_dod_refresh.medical where year=0;
 
-update optum_dod_refresh.medical set year=date_part('year', FST_DT);
+select count(*)
+from optum_dod_refresh.medical
+where year=0;
+
+update optum_dod_refresh.medical set year=date_part('year', FST_DT) where year=0;
 
 
 -- Analyze
@@ -46,7 +51,7 @@ analyze optum.medical;
 
 select count(*), min(year), max(year), count(distinct year) from optum_dod_refresh.medical;
 
-select year, count(*), min(FST_DT), max(FST_DT)
+select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from optum_dod_refresh.medical
-group by 1
-order by 1;
+group by 1, 2
+order by 1, 2;
