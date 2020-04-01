@@ -103,6 +103,7 @@ grant connect on database uthealth to analyst;
 
 grant analyst to cms2;
 
+grant analyst to smadhuri;
 --Schemas
 
 --reference_tables
@@ -129,7 +130,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analy
  */
 --Create User
 drop role dwtest;
-CREATE ROLE cms2 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+
+
+CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
 
 grant uthealthadmin to dwtest;
 grant uthealthdev to cms2;

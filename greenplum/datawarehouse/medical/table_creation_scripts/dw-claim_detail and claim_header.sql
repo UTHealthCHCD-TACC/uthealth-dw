@@ -4,6 +4,7 @@ drop table if exists dw_qa.claim_detail;
 
 create table dw_qa.claim_detail ( 
 		data_source char(4),
+		year int2,
 		uth_claim_id numeric, 
 		claim_sequence_number int4,
 		uth_member_id bigint, 
@@ -13,7 +14,7 @@ create table dw_qa.claim_detail (
 		perf_provider_id text,
 		bill_provider_id text,
 		ref_provider_id text,
-		place_of_service int, 
+		place_of_service text, 
 		network_ind bool,
 		network_paid_ind bool,
 		admit_date date,
@@ -51,8 +52,9 @@ analyze dw_qa.claim_detail;
 
 drop table if exists dw_qa.claim_header;
 
-create table dw_qa.claim_header_temp (
+create table dw_qa.claim_header (
 		data_source char(4),
+		year int2,
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
 		from_date_of_service date,
@@ -68,10 +70,6 @@ create table dw_qa.claim_header_temp (
 		table_id_src text
 ) with (appendonly=true, orientation = column)
 distributed by (uth_claim_id);
-
-create index ch_temp_idx on dw_qa.claim_header_temp(uth_claim_id);
-
-cluster ch_temp_idx on dw_qa.claim_header_temp;
 
 
 analyze dw_qa.claim_header;

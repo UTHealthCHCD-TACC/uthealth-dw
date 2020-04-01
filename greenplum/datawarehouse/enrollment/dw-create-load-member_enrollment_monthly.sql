@@ -59,7 +59,7 @@ partition by list (data_source)
 );
 
 
-analyze data_warehouse.member_enrollment_monthly;
+vacuum analyze data_warehouse.member_enrollment_monthly;
 
     ---------------- data loads --------------------
 
@@ -72,15 +72,14 @@ insert into data_warehouse.member_enrollment_monthly (
 	)	
 select 'optd', b.month_year_id, a.uth_member_id,
        c.gender_cd, state, null, null, 
-       b.year_int - yrdob, (yrdob::varchar || '-12-31')::date as birth_dt, (select max(death_ym) from optum_dod.member_wdeath dod where dod.patid = m.patid ) as death_dt,  
+       b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, (select max(death_ym) from optum_dod.member_wdeath dod where dod.patid = m.patid ) as death_dt,  
        d.plan_type, bus
-from optum_dod.member m
+from optum_dod_refresh.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optd'
   join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.eligeff) and m.eligend
-    and b.year_int between 2015 and 2017
   left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd 
@@ -89,6 +88,7 @@ from optum_dod.member m
    and d.plan_type_src = m.product
 ;
 ---------------------------------------------------------------------------------------------------
+
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
@@ -101,15 +101,14 @@ insert into data_warehouse.member_enrollment_monthly (
 select 
 	   'optz', b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
-       b.year_int - yrdob, (yrdob::varchar || '-12-31')::date, null, 
+       b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, null, 
        d.plan_type, bus
-from optum_zip.member m
+from optum_zip_refresh.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optz'
   join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.eligeff) and m.eligend
-   and b.year_int between 2015 and 2017
   left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd
@@ -143,7 +142,7 @@ from truven.ccaet m
     on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b 
     on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
-    and b.year_int between 2015 and 2017
+   -- and b.year_int between 2015 and 2017
   left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
@@ -153,7 +152,7 @@ from truven.ccaet m
 ;
 ---------------------------------------------------------------------------------------------------
 
-
+select count(*), data_source from data_warehouse.member_enrollment_monthly group by data_source;
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
@@ -175,7 +174,6 @@ from truven.mdcrt m
 	on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b
     on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
-    and b.year_int between 2015 and 2017
   left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
@@ -203,7 +201,6 @@ from medicare.mbsf_abcd_summary m
    and a.data_source = 'mdcr'
   join reference_tables.ref_month_year b
     on b.year_int = bene_enrollmt_ref_yr::int
-    and b.year_int between 2015 and 2017
    and 
    (	month_int = case when m.mdcr_entlmt_buyin_ind_01 in ('1','3','A','C') then 1 else 0 end
      or month_int = case when m.mdcr_entlmt_buyin_ind_02 in ('1','3','A','C') then 2 else 0 end
@@ -230,20 +227,17 @@ from medicare.mbsf_abcd_summary m
 	
 
 
-analyze data_warehouse.member_enrollment_monthly;
+vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
-select dbo.set_all_perms();
 
 select count(*), data_source , substring(month_year_id::text,1,4)
 from data_warehouse.member_enrollment_monthly
 group by data_source , substring(month_year_id::text,1,4);
 
 --- create indexes -------------------------------------------------------------------------------- 
-create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
+--create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
 
-
---- Pharmacy member loads 
 
 
 
