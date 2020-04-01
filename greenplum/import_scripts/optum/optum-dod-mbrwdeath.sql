@@ -1,9 +1,9 @@
 --optum_dod_refresh mbrwdeath load
 drop table optum_dod_refresh.mbrwdeath;
-create table optum_dod_refresh.member_wdeath (
+create table optum_dod_refresh.mbrwdeath2 (
 PatID bigint, Death_ym Date, Extract_ym Date, VERSION numeric
 ) 
-WITH (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed randomly;
 
 drop external table ext_mbrwdeath;
@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_mbrwdeath (
 PatID bigint, Death_ym int, Extract_ym int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/dod_mbrwdeath.txt'
+'gpfdist://192.168.58.179:8081/zip5_mbrwdeath.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -32,4 +32,4 @@ from ext_mbrwdeath ex;
 analyze optum_dod_refresh.mbrwdeath;
 
 --Verify
-select count(*) from optum_dod_refresh.mbrwdeath;
+select count(*) from optum_zip_refresh.mbrwdeath;

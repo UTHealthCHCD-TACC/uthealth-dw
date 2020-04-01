@@ -7,20 +7,22 @@ drop table if exists dw_qa.claim_detail_proc;
 create table dw_qa.claim_detail_proc (
 id bigserial NOT NULL,
 	uth_claim_id int8,
+	uth_member_id int8,
 	claim_sequence_number int2,
-	proc_ccd text,
-	proc_position int2
+	proc_cd text,
+	proc_position int2,
+	icd_type text
 ) 
 WITH (appendonly=true, orientation=column)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 --Optum load: 
-insert into dw_qa.claim_detail_proc(uth_claim_id, claim_sequence_number, proc_code, proc_sequence)
-select distinct uth.uth_claim_id, d.claim_sequence_number, proc.proc, proc.proc_position
+insert into dw_qa.claim_detail_proc(uth_claim_id, uth_member_id, claim_sequence_number, proc_cd, proc_position, icd_type)
+select distinct uth.uth_claim_id, h.uth_member_id, d.claim_sequence_number, proc.proc, proc.proc_position, proc.icd_flag
 from dw_qa.claim_detail d
 join dw_qa.claim_header h on d.uth_claim_id=h.uth_claim_id
 join data_warehouse.dim_uth_claim_id uth on h.uth_claim_id=uth.uth_claim_id
-join optum_dod.procedure proc on proc.clmid=h.claim_id_src and proc.patid::text=h.member_id_src and proc.year=uth.data_year and proc.fst_dt=
+join optum_dod.procedure proc on proc.clmid=h.claim_id_src and proc.patid::text=h.member_id_src and proc.year=uth.data_year and proc.fst_dt=d.from_date_of_service 
 where h.data_source='optd';
 
 -- Diagnostics
@@ -28,10 +30,11 @@ where h.data_source='optd';
 analyze dev.claim_detail_proc_optum;
 
 --Verify
-select data_source, count(*), count(distinct d.uth_claim_id)
-from dev.claim_detail_proc_optum d
-join dev.claim_detail_optum l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
-group by 1;
+select data_source, table_id_src, count(*), count(distinct d.uth_claim_id)
+from dw_qa.claim_detail_proc d
+join dw_qa.claim_detail l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
+group by 1, 2
+order by 1, 2;
 
 select data_source, count(*)
 from dev.claim_header_optum

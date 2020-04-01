@@ -12,15 +12,17 @@ from pg_stat_ssl;
 SELECT version();
 
 --Total DB Size
-select n.nspname, sum(relpages::bigint*8*1024) AS size
-FROM pg_class
-   JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
-   WHERE relpages >= 8
-   and n.nspname in ('dw')
-   group by 1;
-   
-  SELECT pg_size_pretty( pg_total_relation_size('truven'||'.'||'ccaeo') );
- 
+select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
+ FROM pg_tables;
+
+--Total Schema Size
+ SELECT schemaname, 
+ SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
+ FROM pg_tables 
+ --WHERE schemaname in ('dw_qa', 'data_warehouse', 'dev', 'truven')
+ group by 1
+order by 2 desc;
+
 --Size by Table
 select
    n.nspname,
@@ -28,16 +30,14 @@ select
    relname,
    reloptions,
    relacl,
-   reltuples AS "#entries", 
-   pg_size_pretty(relpages::bigint*8*1024) AS size_old,
-   pg_total_relation_size(n.nspname||'.'||relname) as size_int,
+   reltuples AS "#entries",
    pg_size_pretty( pg_total_relation_size(n.nspname||'.'||relname)) as size_new
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('dev')
-   ORDER BY 7 desc;
+   and n.nspname in ('optum_zip')
+   ORDER BY 3, 6 desc;
  
    
 --Greenplum Distribution of a table
@@ -46,7 +46,7 @@ SELECT get_ao_distribution('dev.claim_header_optum');
 --Server Settings
 SELECT *
 FROM   pg_settings
-WHERE  name like '%block%';
+WHERE  name like '%temp%';
 
 set gp_workfile_compress_algorithm to 'zlib';
 
@@ -66,6 +66,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
+where pgn.nspname in ('data_warehouse')
 ORDER BY pgn.nspname, pgc.relname;
 
 --Roles and Members
@@ -122,7 +123,7 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('data_warehouse', 'dev', 'truven', 'dw_qa')
+and nspname in ('medicare')
 order by 1, 2, 3;
 
 

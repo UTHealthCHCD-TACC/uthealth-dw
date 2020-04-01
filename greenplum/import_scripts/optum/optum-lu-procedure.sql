@@ -1,8 +1,8 @@
 
 
 --Medical
-drop table optum_dod_refresh.lu_procedure;
-create table optum_dod_refresh.lu_procedure (
+drop table optum_zip_refresh.lu_procedure;
+create table optum_zip_refresh.lu_procedure (
 CATEGORY_DTL_CD varchar(100), CATEGORY_DTL_CODE_DESC varchar(100), CATEGORY_GENL_CD varchar(100), CATEGORY_GENL_CODE_DESC varchar(100), 
 PROC_CD varchar(100), PROC_DESC varchar(100), PROC_END_DATE date, PROC_TYP_CD varchar(100)
 ) 
@@ -25,11 +25,11 @@ from ext_lu_procedure
 limit 1000;
 
 -- Insert
-insert into optum_dod_refresh.lu_procedure
+insert into optum_zip_refresh.lu_procedure
 select * from ext_lu_procedure;
 
 -- Analyze
-analyze optum_dod_refresh.lu_procedure;
+analyze optum_zip_refresh.lu_procedure;
 
 --Verify
 select count(*) from optum_dod.lu_procedure;
