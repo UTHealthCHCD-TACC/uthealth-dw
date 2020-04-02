@@ -7,13 +7,12 @@
 insert into dw_qa.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  						              
 select distinct on (uth_claim_id) 
-	   'trvc', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, null,
+	   'trvc', b.data_year, b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, null,
         null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
         a.msclmid, a.enrolid, 'ccaeo'
 from truven.ccaeo a
-  join data_warehouse.dim_uth_claim_id b 
+  join dw_qa.dim_uth_claim_id b 
     on b.data_source = 'trvc'
-   and b.data_year = trunc(a.year,0)
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
 ;
@@ -25,13 +24,12 @@ from truven.ccaeo a
 insert into dw_qa.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  						            
 select distinct on (uth_claim_id) 
-	   'trvm',extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, null,
+	   'trvm',b.data_year, b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, null,
         null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
         a.msclmid, a.enrolid, 'mdcro'   
 from truven.mdcro a
-  join data_warehouse.dim_uth_claim_id b 
+  join dw_qa.dim_uth_claim_id b 
     on b.data_source in ('trvm','trvc')
-   and b.data_year = trunc(a.year,0)
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
 ;
@@ -49,16 +47,15 @@ insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequenc
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src )										   								 								   
-select 'trvc', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
+select 'trvc',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
        null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'ccaeo'
 from truven.ccaeo a 
-  join data_warehouse.dim_uth_claim_id b 
+  join dw_qa.dim_uth_claim_id b 
     on b.data_source = 'trvc'
-   and b.data_year = trunc(a.year,0)
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
   join reference_tables.ref_month_year c
@@ -76,16 +73,15 @@ insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequenc
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src )										   								 								   
-select 'trvm',extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
+select 'trvm',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
        null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'mdcro'
 from truven.mdcro a 
-  join data_warehouse.dim_uth_claim_id b 
-    on b.data_source in ('trvm','trvc')
-   and b.data_year = trunc(a.year,0)
+  join dw_qa.dim_uth_claim_id b 
+    on b.data_source = 'trvm'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
   join reference_tables.ref_month_year c
@@ -100,7 +96,9 @@ vacuum analyze dw_qa.claim_detail;
 		       
 		       
 		       
-	select count(*), year, data_source, table_id_src from dw_qa.claim_detail group by year, data_source, table_id_src;	       
+	select count(*), year, data_source from dw_qa.claim_detail group by year, data_source;	 
+
+	select count(*), year, data_source from dw_qa.claim_header group by year, data_source;	 
 		       
 		       
 		       
