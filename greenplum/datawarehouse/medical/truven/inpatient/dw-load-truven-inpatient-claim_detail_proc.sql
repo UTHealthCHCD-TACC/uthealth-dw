@@ -3,14 +3,15 @@
 -------------------------------- truven commercial outpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 
-insert into dw_qa.claim_detail_proc (uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)  								        						              
+insert into dw_qa.claim_detail_icd_proc (uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)  								        						              
 select distinct d.uth_claim_id, d.uth_member_id, d.claim_sequence_number , d.from_date_of_service , a.dx1, 1, a.dxver 
-from dw_qa.claim_detail  d
-join truven.mdcri a on d.data_source ='trvm' 
-and d.claim_id_src = a.msclmid::text 
-and d.member_id_src = a.enrolid::text 
-and d.from_date_of_service = a.svcdate 
-and d.claim_sequence_number_src = a.seqnum::text;
+from data_warehouse.claim_detail  d
+join truven.mdcrs s on d.data_source ='trvm' 
+and d.claim_id_src = s.msclmid::text 
+and d.member_id_src = s.enrolid::text 
+and d.from_date_of_service = s.svcdate 
+and d.claim_sequence_number_src = s.seqnum::text
+join truven.mdcri i on i.caseid = s.caseid;
 
 --delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_detail where data_source='trvm')
 

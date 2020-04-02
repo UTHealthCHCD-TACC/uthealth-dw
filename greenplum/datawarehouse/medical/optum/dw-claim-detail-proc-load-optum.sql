@@ -2,13 +2,13 @@
 analyze dw_qa.claim_header;
 analyze dw_qa.claim_detail;
 
-drop table if exists dw_qa.claim_detail_proc;
+drop table if exists dw_qa.claim_detail_icd_proc;
 
-create table dw_qa.claim_detail_proc (
-id bigserial NOT NULL,
+create table dw_qa.claim_detail_icd_proc (
 	uth_claim_id int8,
 	uth_member_id int8,
 	claim_sequence_number int2,
+	date date,
 	proc_cd text,
 	proc_position int2,
 	icd_type text
@@ -17,10 +17,10 @@ WITH (appendonly=true, orientation=column)
 distributed by (uth_member_id);
 
 --Optum load: 
-insert into dw_qa.claim_detail_proc(uth_claim_id, uth_member_id, claim_sequence_number, proc_cd, proc_position, icd_type)
-select distinct uth.uth_claim_id, h.uth_member_id, d.claim_sequence_number, proc.proc, proc.proc_position, proc.icd_flag
-from dw_qa.claim_detail d
-join dw_qa.claim_header h on d.uth_claim_id=h.uth_claim_id
+insert into dw_qa.claim_detail_icd_proc(uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)
+select distinct uth.uth_claim_id, h.uth_member_id, d.claim_sequence_number, d.from_date_of_service, proc.proc, proc.proc_position, proc.icd_flag
+from data_warehouse.claim_detail d
+join data_warehouse.claim_header h on d.uth_claim_id=h.uth_claim_id
 join data_warehouse.dim_uth_claim_id uth on h.uth_claim_id=uth.uth_claim_id
 join optum_dod.procedure proc on proc.clmid=h.claim_id_src and proc.patid::text=h.member_id_src and proc.year=uth.data_year and proc.fst_dt=d.from_date_of_service 
 where h.data_source='optd';
