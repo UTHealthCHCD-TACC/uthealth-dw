@@ -29,12 +29,14 @@ select distinct on (uth_claim_id)
         a.msclmid, a.enrolid, 'mdcro'   
 from truven.mdcro a
   join dw_qa.dim_uth_claim_id b 
-    on b.data_source in ('trvm','trvc')
+    on b.data_source = 'trvm'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
 ;
 
 vacuum analyze dw_qa.claim_header;
+
+
 
 --- Claim Detail
 

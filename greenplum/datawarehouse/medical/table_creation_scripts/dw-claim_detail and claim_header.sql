@@ -42,7 +42,7 @@ create table dw_qa.claim_detail (
 		claim_sequence_number_src text,
 		cob_type text
 ) with (appendonly=true, orientation = column)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 
 analyze dw_qa.claim_detail;
@@ -69,7 +69,7 @@ create table dw_qa.claim_header (
 		member_id_src text,
 		table_id_src text
 ) with (appendonly=true, orientation = column)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 
 analyze dw_qa.claim_header;

@@ -28,12 +28,11 @@ select distinct on (uth_claim_id)
         a.msclmid, a.enrolid, 'mdcrs'
 from truven.mdcrs a
   join dw_qa.dim_uth_claim_id b 
-    on b.data_source in( 'trvc','trvm' )
+    on b.data_source ='trvm'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
 ;
 
-delete from dw_qa.claim_header where data_source in ('trvc','trvm');
 
 
 vacuum analyze dw_qa.claim_header;
@@ -86,7 +85,7 @@ select 'trvm', b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate
        a.msclmid, a.enrolid, 'mdcrs'
 from truven.mdcrs a 
   join dw_qa.dim_uth_claim_id b 
-    on b.data_source  in( 'trvc','trvm' )
+    on b.data_source = 'trvm'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
   join reference_tables.ref_month_year c
