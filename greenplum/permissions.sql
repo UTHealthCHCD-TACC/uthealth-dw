@@ -94,7 +94,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group uthea
  * UTHealth Analyst Role
  */
 
+CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
 
+CREATE ROLE chautruong NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+
+CREATE ROLE yliu26 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+
+grant analyst to cms2;
+
+grant analyst to smadhuri;
+
+grant analyst to chautruong;
+
+grant analyst to yliu26;
+
+
+-- analyst role definition
 drop owned by analyst cascade;
 
 drop role analyst;
@@ -103,29 +118,29 @@ create role analyst;
 
 grant connect on database uthealth to analyst;
 
-grant analyst to cms2;
-
-grant analyst to smadhuri;
 --Schemas
-
---reference_tables
+--reference_tables (select only)
 grant usage on schema reference_tables to group analyst;
 grant select on all tables in schema reference_tables to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA reference_tables grant select on tables to group analyst; 
 
---data_warehouse
+--data_warehouse (select only) 
 grant usage on schema data_warehouse to group analyst;
 grant select on all tables in schema data_warehouse to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to group analyst; 
 
 
---tableau
+--tableau (select only)
 grant usage on schema tableau to group analyst;
 grant select on all tables in schema tableau to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analyst; 
 
+--dev (all access)
+grant usage on schema dev to group analyst;
+grant all on all tables in schema dev to group analyst;
+alter default privileges in schema dev grant all on tables to group analyst;
 
-
+-------------------------------------------------------------------------------------------
 
 /*
  * Create User

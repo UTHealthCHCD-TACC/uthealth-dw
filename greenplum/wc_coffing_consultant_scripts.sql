@@ -271,3 +271,10 @@ LIMIT 50;
 
 
 select version();
+
+
+
+
+select *
+from gp_toolkit.gp_skew_coefficients
+where skcnamespace = 'dw_qa'

@@ -1,4 +1,4 @@
-
+--cpt_or_hcpcs_cd
 
 ----inpatient
 insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,

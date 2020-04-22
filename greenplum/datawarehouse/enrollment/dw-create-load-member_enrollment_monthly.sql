@@ -12,7 +12,8 @@ create table data_warehouse.member_enrollment_monthly (
 	data_source char(4), 
 	year int2,
 	month_year_id int4,
-	uth_member_id bigint,		
+	uth_member_id bigint,
+	consecutive_enrolled_months int2,
 	gender_cd char(1),
 	state varchar,
 	zip5 char(5),
@@ -23,7 +24,8 @@ create table data_warehouse.member_enrollment_monthly (
 	plan_type char(4),
 	bus_cd char(4),
 	employee_status text, 
-	claim_created_flag bool default false
+	claim_created_flag bool default false,
+	row_identifier bigserial
 )
 WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
@@ -56,6 +58,7 @@ partition by list (data_source)
  )
 ;
 
+alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache 200;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
@@ -150,7 +153,6 @@ from truven.ccaet m
 ;
 ---------------------------------------------------------------------------------------------------
 
-select count(*), data_source from data_warehouse.member_enrollment_monthly group by data_source;
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
@@ -233,9 +235,43 @@ select count(*), data_source , year
 from data_warehouse.member_enrollment_monthly
 group by data_source , year
 
---- create indexes -------------------------------------------------------------------------------- 
---create index enrollment_id_index on data_warehouse.member_enrollment_monthly (uth_member_id);
+--- 
+
+---logic to add consecutive enrolled months
+---------------------------------------------
+delete from data_warehouse.member_enrollment_monthly where row_identifier in ( 
+	select row_identifier
+	from
+	(		
+	select row_number() over(partition by uth_member_id, month_year_id order by month_year_id) as rn
+		      ,*
+		from data_warehouse.member_enrollment_monthly 		
+	) sub
+	where rn > 1
+);
 
 
+with row_build_cte as ( 
+	select row_identifier 
+	      ,row_number() over(partition by uth_member_id, my_grp order by  month_year_id) as in_streak
+	from ( 
+		   select a.row_identifier
+		         ,a.month_year_id
+		         ,a.uth_member_id
+		         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
+		   from data_warehouse.member_enrollment_monthly 	 a 
+		     join reference_tables.ref_month_year b 
+		       on a.month_year_id = b.month_year_id 	   		    
+		 ) sub    
+) 
+update data_warehouse.member_enrollment_monthly c 
+set consecutive_enrolled_months = d.in_streak 
+from row_build_cte d
+where c.row_identifier = d.row_identifier
+;
+
+vacuum analyze data_warehouse.member_enrollment_monthly;
+
+select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'trvc';
 
 
