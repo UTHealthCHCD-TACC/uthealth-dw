@@ -136,9 +136,21 @@ grant select on all tables in schema tableau to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analyst; 
 
 --dev (all access)
-grant usage on schema dev to group analyst;
-grant all on all tables in schema dev to group analyst;
-alter default privileges in schema dev grant all on tables to group analyst;
+grant all on schema dev to analyst;
+
+grant all on all tables in schema dev to analyst;
+
+grant all privileges on all sequences in schema dev to analyst;
+
+alter default privileges in schema dev grant all privileges to analyst;
+
+
+
+--raw data tables (select only)
+grant usage on schema truven, medicare, optum_dod, optum_zip to group analyst;
+grant select on all tables in schema truven, medicare, optum_dod, optum_zip to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA truven, medicare, optum_dod, optum_zip grant select on tables to group analyst; 
+
 
 -------------------------------------------------------------------------------------------
 
@@ -204,3 +216,6 @@ SELECT
 FROM pg_catalog.pg_roles r
 ORDER BY 1;
 
+
+
+select * from pg_catalog.pg_tables where tableowner = 'yliu26'

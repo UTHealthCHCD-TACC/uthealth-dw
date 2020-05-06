@@ -150,6 +150,7 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+ where m.year = 2018
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -180,6 +181,7 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+ where m.year = 2018
 ;
 ---------------------------------------------------------------------------------------------------
 
