@@ -7,7 +7,7 @@ WITH (
 	appendonly=true, orientation=column
 ) as
 select year, clmid, patid, clmseq, coalesce(conf_id, '0') as conf_id
-from optum_dod_refresh.medical
+from optum_zip.medical
 distributed by (year, clmid, patid, clmseq);
 
 analyze dev.qtemp_all;
@@ -27,21 +27,22 @@ group by 1, 2, 3, 4
 having count(distinct conf_id) > 1
 distributed randomly;
 
-analyze quarantine.uth_claim_ids;
+
 analyze quarantine.optum_multiple_confs;
-analyze data_warehouse.dim_uth_member_id;
+analyze dw_qa.dim_uth_member_id;
+analyze dw_qa.dim_uth_claim_id;
 
 --Check for missing uth_claim_ids
 select m.clmid, m.patid
 from quarantine.optum_multiple_confs m
-left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+left outer join dw_qa.dim_uth_claim_id uth on m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 where uth.uth_claim_id is null;
 
 --Load
 insert into quarantine.uth_claim_ids(data_source, uth_claim_id, note)
-select distinct 'optd', uth.uth_claim_id, 'multiple confinement records'
+select distinct 'optz', uth.uth_claim_id, 'multiple confinement records'
 from quarantine.optum_multiple_confs m
-join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+join dw_qa.dim_uth_claim_id uth on m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 left join quarantine.uth_claim_ids qid on uth.uth_claim_id = qid.uth_claim_id 
 where qid.uth_claim_id is null; --Don't add already added records
 
@@ -69,6 +70,8 @@ from dev.qtemp_all
 group by 1, 2, 3, 4
 having count(*) > 1 and count(distinct conf_id)=1;
 
+analyze quarantine.optum_dupe_clmseq;
+
 select count(*)
 from quarantine.optum_dupe_clmseq
 limit 10;
@@ -76,18 +79,25 @@ limit 10;
 --Check for missing uth_claim_ids
 select m.clmid, m.patid
 from quarantine.optum_dupe_clmseq m
-left outer join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+left outer join dw_qa.dim_uth_claim_id uth on m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 where uth.uth_claim_id is null;
 
 --Load
 insert into quarantine.uth_claim_ids(data_source, uth_claim_id, note)
-select distinct 'optd', uth.uth_claim_id, 'dupe clmseq'
+select distinct 'optz', uth.uth_claim_id, 'dupe clmseq'
 from quarantine.optum_dupe_clmseq m
-join data_warehouse.dim_uth_claim_id uth on m.year=uth.data_year and m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optd'=uth.data_source
+join dw_qa.dim_uth_claim_id uth on m.clmid=uth.claim_id_src and m.patid::text=uth.member_id_src and 'optz'=uth.data_source
 left join quarantine.uth_claim_ids qid on uth.uth_claim_id = qid.uth_claim_id 
 where qid.uth_claim_id is null; --Don't add already added records;
 
 
+--Scratch
+
+analyze quarantine.uth_claim_ids;
+
+select data_source, note, count(distinct uth_claim_id), count(*)
+from quarantine.uth_claim_ids 
+group by 1, 2;
 
 --Specific examples
 @set clmid = '1029863351'
@@ -118,13 +128,13 @@ m.*,
 con.*,
 'DIAGNOSTIC:',
 d.*
-from optum_dod.medical m
-left join optum_dod.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
-left join optum_dod.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
-left join optum_dod.diagnostic d on m.clmid=d.clmid and m.fst_dt=d.fst_dt and d.diag_position=1
-left join optum_dod.confinement con on m.conf_id=con.conf_id
-left join optum_dod.procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
-left join optum_dod.facility_detail fd on m.clmid=fd.clmid
+from optum_zip.medical m
+left join optum_zip.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
+left join optum_zip.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
+left join optum_zip.diagnostic d on m.clmid=d.clmid and m.fst_dt=d.fst_dt and d.diag_position=1
+left join optum_zip.confinement con on m.conf_id=con.conf_id
+left join optum_zip.procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
+left join optum_zip.facility_detail fd on m.clmid=fd.clmid
 left join reference_tables.hcpcs h on m.proc_cd=h.code
 left join reference_tables.cms_proc_codes c on m.proc_cd=c.code
 left join reference_tables.icd_10 i on d.diag=i.icd_10

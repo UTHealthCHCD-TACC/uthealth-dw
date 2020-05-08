@@ -385,7 +385,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v3 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/mdcrs/v3/*'
+'gpfdist://192.168.58.179:8081/truven/2018/mdcrs*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

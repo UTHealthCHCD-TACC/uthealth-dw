@@ -36,17 +36,28 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('truven')
+   and n.nspname in ('dw_qa', 'data_warehouse')
    ORDER BY 3, 6 desc;
  
-   
+
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dev.claim_header_optum');
+SELECT get_ao_distribution('dw_qa.claim_detail_diag');
+
+select uth_member_id, count(*)
+from dw_qa.dim_uth_claim_id
+group by 1
+order by 2 desc
+limit 10;
+
+select uth_member_id, count(*)
+from dw_qa.claim_detail_diag cdd 
+group by 1
+order by 2 desc;
 
 --Server Settings
 SELECT *
 FROM   pg_settings
-WHERE  name like '%temp%';
+WHERE  name like '%mem%'; or name like'gp_%';
 
 set gp_workfile_compress_algorithm to 'zlib';
 
@@ -66,7 +77,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('data_warehouse')
+where pgn.nspname in ('dw_qa')
 ORDER BY pgn.nspname, pgc.relname;
 
 --Roles and Members
@@ -123,8 +134,9 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('medicare')
+and nspname in ('dw_qa')
 order by 1, 2, 3;
 
+analyze dw_qa.claim_detail;
 
 

@@ -3,8 +3,8 @@
 -------------------------------- truven commercial inpatient --------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 
-insert into dw_qa.claim_detail_diag (uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)  								        						              
-select distinct d.uth_claim_id, d.claim_sequence_number , d.from_date_of_service , a.dx1, 1, a.dxver, null 
+insert into dw_qa.claim_detail_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)  								        						              
+select distinct d.data_source, d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number , d.from_date_of_service , a.dx3, 3, a.dxver, null 
 --select count(*)
 from dw_qa.claim_detail  d
 join truven.mdcro a on d.data_source ='trvm' 

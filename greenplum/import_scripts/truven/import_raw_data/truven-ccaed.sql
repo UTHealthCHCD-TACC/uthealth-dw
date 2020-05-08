@@ -228,7 +228,7 @@ CREATE EXTERNAL TABLE ext_ccaed_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/ccaed*'
+'gpfdist://192.168.58.179:8081/truven/2018/ccaed*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

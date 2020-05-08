@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE ext_mdcra_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/mdcra*'
+'gpfdist://192.168.58.179:8081/truven/2018/mdcra*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

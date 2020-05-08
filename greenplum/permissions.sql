@@ -131,13 +131,14 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analy
  * Create User
  */
 --Create User
-drop role dwtest;
+drop role uthtest;
 
 
-CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+CREATE ROLE uthtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'd3f@ult$';
 
 grant uthealthadmin to dwtest;
 grant uthealthdev to cms2;
+grant analyst to uthtest;
 
 grant connect on database uthealth to dwtest;
 
@@ -151,7 +152,7 @@ grant select on tables in SCHEMA pg_catalog TO public;
 /*
  * Password change
  */
-alter user turban with password 'changeme';
+alter user uthtest with password 'uthtest';
 
 /*
  * Superuser

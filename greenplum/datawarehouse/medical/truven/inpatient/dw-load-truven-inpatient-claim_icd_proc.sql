@@ -3,19 +3,20 @@
 -------------------------------- truven commercial outpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 
-insert into dw_qa.claim_detail_icd_proc (uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)  								        						              
-select distinct d.uth_claim_id, d.uth_member_id, d.claim_sequence_number , d.from_date_of_service , a.dx1, 1, a.dxver 
-from data_warehouse.claim_detail  d
-join truven.mdcrs s on d.data_source ='trvm' 
-and d.claim_id_src = s.msclmid::text 
-and d.member_id_src = s.enrolid::text 
-and d.from_date_of_service = s.svcdate 
-and d.claim_sequence_number_src = s.seqnum::text
-join truven.mdcri i on i.caseid = s.caseid;
+insert into dw_qa.claim_proc (data_source, YEAR, uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)  
+
+select distinct h.data_source, h.YEAR, h.uth_claim_id, h.uth_member_id, null, h.from_date_of_service , i.proc2, 2, i.dxver 
+from dw_qa.claim_header  h
+join truven.mdcrs s on h.data_source ='trvm' 
+and h.claim_id_src = s.msclmid::text 
+and h.member_id_src = s.enrolid::text 
+join truven.mdcri i on i.caseid = s.caseid and i.enrolid = s.enrolid 
+where i.proc2 is not null
+LIMIT 1;
 
 --delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_detail where data_source='trvm')
 
-alter table dw_qa.claim_detail_diag alter column claim_sequence_number type int4;
+alter table dw_qa.claim_icd_proc alter column claim_sequence_number type int4;
 
 
 -- SCRATCH
