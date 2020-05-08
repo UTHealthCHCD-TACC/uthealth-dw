@@ -26,10 +26,10 @@ order by 2 desc;
 --Size by Table
 select
    n.nspname,
-   u.usename,
+   --u.usename,
    relname,
    reloptions,
-   relacl,
+  -- relacl,
    reltuples AS "#entries",
    pg_size_pretty( pg_total_relation_size(n.nspname||'.'||relname)) as size_new
    FROM pg_class

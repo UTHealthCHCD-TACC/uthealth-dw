@@ -39,12 +39,15 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src )
+			
+			
 select 'trvc'
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	  ,a.enrolid || ndcnum::text || svcdate::text
 	  ,b.uth_member_id	  
       ,a.enrolid 
-from truven.ccaed_2015 a   -- 2016 2017
+      ,a.year 
+from truven.ccaed a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'trvc'
    and b.member_id_src = a.enrolid::text 
@@ -62,13 +65,13 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,uth_rx_claim_id
 			,rx_claim_id_src
 			,uth_member_id
-			,member_id_src )
+			,member_id_src )			
 select 'trvm'
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	  ,a.enrolid || ndcnum::text || svcdate::text
 	  ,b.uth_member_id	  
       ,a.enrolid 
-from truven.mdcrd a   -- 2016 2017
+from truven.mdcrd a  
   join data_warehouse.dim_uth_member_id b 
     on b.data_source in ('trvc', 'trvm')
    and b.member_id_src = a.enrolid::text 
