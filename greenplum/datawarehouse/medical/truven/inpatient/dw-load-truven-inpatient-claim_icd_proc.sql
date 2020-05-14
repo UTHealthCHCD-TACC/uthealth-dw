@@ -22,7 +22,7 @@ alter table dw_qa.claim_icd_proc alter column claim_sequence_number type int4;
 
 -- SCRATCH
 
-vacuum full dw_qa.claim_detail_diag;
+vacuum full data_warehouse.claim_icd_proc;
 analyze data_warehouse.claim_icd_proc;
 
 select *
