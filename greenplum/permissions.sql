@@ -131,7 +131,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to grou
 
 
 --tableau (select only)
-grant usage on schema tableau to group analyst;
+grant all on schema tableau to group analyst;
 grant select on all tables in schema tableau to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analyst; 
 
@@ -163,11 +163,13 @@ drop role uthtest;
 
 CREATE ROLE uthtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'd3f@ult$';
 
-grant uthealthadmin to dwtest;
+grant uthealthadmin to uthtest;
 grant uthealthdev to cms2;
 grant analyst to uthtest;
 
 grant connect on database uthealth to dwtest;
+
+alter role uthtest nosuperuser;
 
 /*
  * Public Schema settings

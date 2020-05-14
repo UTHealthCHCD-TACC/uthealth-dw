@@ -57,7 +57,7 @@ order by 2 desc;
 --Server Settings
 SELECT *
 FROM   pg_settings
-WHERE  name like '%mem%'; or name like'gp_%';
+WHERE  name like '%log%'; or name like'gp_%';
 
 set gp_workfile_compress_algorithm to 'zlib';
 

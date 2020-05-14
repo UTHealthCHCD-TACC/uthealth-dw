@@ -75,6 +75,7 @@ where a.msclmid is not null
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven medicare outpatient ---------------------------------------
 ---------------------------------------------------------------------------------------------------	
+explain
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,

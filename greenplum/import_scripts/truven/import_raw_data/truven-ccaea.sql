@@ -173,7 +173,7 @@ CREATE EXTERNAL TABLE ext_ccaea_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaea*'
+'gpfdist://192.168.58.179:8081/ccaea*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -232,7 +232,7 @@ CREATE EXTERNAL TABLE ext_ccaea_vDMS (
 	wgtkey text 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8081/ccaea*'
+'gpfdist://192.168.58.179:8081/ccaea*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -274,7 +274,9 @@ WITH (appendonly=true, orientation=column)
 as (select * from truven.ccaea)
 distributed randomly;
 
-drop table truven.ccaea;
+--drop table truven.ccaea;
 alter table truven.ccaea_new rename to ccaea;
+
+delete from truven.ccaea where year=2016;
 
 
