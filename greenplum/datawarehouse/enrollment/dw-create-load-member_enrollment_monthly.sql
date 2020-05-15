@@ -90,6 +90,7 @@ from optum_dod.mbr_enroll m
 ;
 ---------------------------------------------------------------------------------------------------
 
+vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
@@ -122,8 +123,14 @@ from optum_zip.mbr_enroll m
 ---------------------------------------------------------------------------------------------------
 
 
+vacuum analyze data_warehouse.member_enrollment_monthly;
 
--- Truven Commercial --------7 minutes ----------------------------------------------------------------------
+select distinct data_source, year  from data_warehouse.member_enrollment_monthly;
+
+
+
+
+-- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -150,7 +157,6 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
- where m.year = 2018
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -181,7 +187,6 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
- where m.year = 2018
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -237,6 +242,11 @@ select count(*), data_source , year
 from data_warehouse.member_enrollment_monthly
 group by data_source , year
 
+
+
+select count(*) , year 
+from truven.ccaea 
+group by year;
 --- 
 
 ---logic to add consecutive enrolled months

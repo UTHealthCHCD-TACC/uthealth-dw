@@ -6,23 +6,26 @@ create table data_warehouse.dim_uth_member_id (
 	uth_member_id bigserial,
 	member_id_src text, 
 	data_source char(4), 
-	unique ( member_id_src, data_source)
-) distributed by (member_id_src, data_source);
+	unique ( uth_member_id)
+) distributed by (uth_member_id);
 
 ---
 
-select max(uth_member_id) from data_warehouse.dim_uth_member_id
 
-create sequence data_warehouse.dim_uth_member_id_uth_member_id_seq;
 
-alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 344900940; 
 
+alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 100000000; 
+                                                                           
 alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq cache 200;
 
-analyze data_warehouse.dim_uth_member_id;
+vacuum analyze data_warehouse.dim_uth_member_id;
 
 
 ------ load dim_uth_member_id
+
+vacuum analyze optum_dod.mbr_enroll;
+
+select count(distinct patid) from optum_dod.mbr_enroll
 
 --Optum DoD 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -39,11 +42,15 @@ from cte_distinct_member
 ;
 
 
+vacuum analyze optum_zip.mbr_enroll;
+
+select count(distinct patid) from optum_zip.mbr_enroll
+
 ---Optum Zip 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_zip_refresh.mbr_enroll
+	from optum_zip.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
              and b.member_id_src = patid::text
@@ -54,11 +61,18 @@ from cte_distinct_member
 ;
 
 
+select * from data_warehouse.dim_uth_member_id where member_id_src is null;
+
+vacuum analyze truven.ccaet;
+
+select count(distinct enrolid) from truven.ccaet;
+
+select count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'trvc';
 
 ---Truven Commercial  
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct enrolid as v_member_id, 'trvc' as v_raw_data, year 
+	select distinct enrolid as v_member_id, 'trvc' as v_raw_data
 	from truven.ccaet
 	 left outer join data_warehouse.dim_uth_member_id b 
           on b.data_source = 'trvc'
@@ -70,9 +84,9 @@ from cte_distinct_member
 ;
 
 
+vacuum analyze truven.mdcrt;
 
-select count(*) from truven.ccaet where year = 2018
-
+select count(distinct enrolid) from truven.mdcrt;
 
 ---Truven Medicare 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -90,7 +104,7 @@ from cte_distinct_member
 
 
 
---- Medicare 1m
+--- Medicare
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
@@ -105,7 +119,7 @@ from cte_distinct_member
 ;
 
 
----Pharmacy tables
+---******************************** Pharmacy tables---------*****************************
 
 
 --medicare rx
@@ -182,5 +196,10 @@ from cte_distinct_member
 ;
 
 
+----Validate
+vacuum analyze data_warehouse.dim_uth_member_id;
+
+select count(*), count(distinct uth_member_id) 
+from data_warehouse.dim_uth_member_id;
 
 

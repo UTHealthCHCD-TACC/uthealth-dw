@@ -1,4 +1,5 @@
 --- Claim Header
+
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
@@ -14,7 +15,6 @@ from truven.ccaes a
     on b.data_source = 'trvc'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
- where a.year = 2018
 ;
 
 ---------------------------------------------------------------------------------------------------
@@ -32,12 +32,13 @@ from truven.mdcrs a
     on b.data_source ='trvm'
    and b.claim_id_src = a.msclmid::text
    and b.member_id_src = a.enrolid::text
- where a.year = 2018
 ;
 
 
 
 vacuum analyze data_warehouse.claim_header;
+
+
 
 
 -------- Claim Detail 
@@ -66,7 +67,6 @@ from truven.ccaes a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
- and  a.year = 2018
   ;
   
  
@@ -95,7 +95,6 @@ from truven.mdcrs a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
- and  a.year = 2018
   ;
   
  

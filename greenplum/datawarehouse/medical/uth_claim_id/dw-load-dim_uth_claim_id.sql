@@ -3,7 +3,7 @@
  * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
  */
 
----truven commercial, outpatient - 31min 2,479,688,920 rows
+---truven commercial, outpatient - 15min 2,479,688,920 rows
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'trvc', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
 from truven.ccaeo a
@@ -18,11 +18,9 @@ where a.enrolid is not null
 and c.uth_claim_id is NULL
 GROUP BY 1, 2, 3, 4;
 
-select count(*) from truven.ccaeo where year = 2018;
-
 
  
---truven commercial, inpatient 3min 110,482,008
+--truven commercial, inpatient 3min 122354685
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id, data_year)                                              
 select  'trvc', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
 from truven.ccaes a  
@@ -37,9 +35,15 @@ from truven.ccaes a
 and c.uth_claim_id is null
 group by 1, 2, 3, 4;
  
- select count(*) from truven.ccaes --where msclmid is null; 
- 
 
+
+vacuum analyze data_warehouse.dim_uth_claim_id;
+
+vacuum analyze truven.ccaes;
+
+select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'trvc';
+ 
+select count(distinct msclmid::text || enrolid::text || year::text ) from truven.ccaeo;
 
 
 --- truven medicare outpatient 2min, 506,266,398
@@ -59,12 +63,7 @@ group by 1, 2, 3, 4
 ;
 
 
-select * froqm data_warehouse.dim_uth_claim_id where data_source = 'trvm'
-order by claim_id_src;
 
-select count(distinct msclmid) from truven.mdcro where year = 2018
- 
- 
 ---Truven medicare inpatient  2min 50,129,682
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year )     
 select  'trvm', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
@@ -79,6 +78,11 @@ from truven.mdcrs a
 where a.enrolid is not null
 and c.uth_claim_id is null
 group by 1,2,3,4;
+
+vacuum analyze data_warehouse.dim_uth_claim_id
+
+select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'trvm';
+
 
 
 --Optum Dod 15min
@@ -112,10 +116,11 @@ where a.patid is not null
 and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
-analyze data_warehouse.dim_uth_member_id;
-analyze data_warehouse.dim_uth_claim_id;
+vacuum analyze data_warehouse.dim_uth_claim_id;
 
-
+select count(*), data_source 
+from data_warehouse.dim_uth_claim_id
+group by data_source;
 ---------------------------------------------------------------------------------------------------
 ---- Medicare :
 ---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,

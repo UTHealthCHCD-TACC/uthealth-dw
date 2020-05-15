@@ -112,6 +112,8 @@ grant analyst to chautruong;
 
 grant analyst to yliu26;
 
+grant analyst to lghosh1;
+
 
 -- analyst role definition
 drop owned by analyst cascade;
