@@ -45,9 +45,25 @@ vacuum analyze reference_tables.ref_month_year;
 
 --- Claim Detail
 
+--Need to use temp tables to optimize load and avoid 'broadcast motion' which can use up all disk space
+create table dev.truven_ccaeo
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select *
+from truven.ccaeo
+distributed by(msclmid);
+
+create table dev.dim_uth_claim_id
+with(appendonly=true,orientation=column)
+as select *
+from data_warehouse.dim_uth_claim_id
+distributed by(claim_id_src);
+
+select count(*) from dev.truven_ccaeo;
+
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven commercial outpatient--------------------------------------
----------------------------------------------------------------------------------------------------							       
+---------------------------------------------------------------------------------------------------	
+explain						       
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
@@ -72,6 +88,8 @@ where a.msclmid is not null
   and a.year = 2018
   ;
 
+table dev.truven_ccaeo;
+table dev.dim_uth_claim_id;
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven medicare outpatient ---------------------------------------
 ---------------------------------------------------------------------------------------------------	
@@ -96,19 +114,17 @@ from truven.mdcro a
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
-where a.msclmid is not null
-and a.year = 2018
-  ;
+where a.msclmid is not null;
 
 
 vacuum analyze data_warehouse.claim_detail;
 
-		       
-		       
-		       
-	select count(*), year, data_source from data_warehouse.claim_detail group by year, data_source;	 
 
-	select count(*), year, data_source from data_warehouse.claim_header group by year, data_source;	 
+select count(*), data_source, table_id_src, year from data_warehouse.claim_detail group by year, data_source, table_id_src order by 1, 2, 3;	 
+
+select count(*), year, data_source from data_warehouse.claim_detail group by year, data_source order by 1, 2;	 
+
+select count(*), year, data_source from data_warehouse.claim_header group by year, data_source order by 1, 2;	 
 		       
 		       
 		       

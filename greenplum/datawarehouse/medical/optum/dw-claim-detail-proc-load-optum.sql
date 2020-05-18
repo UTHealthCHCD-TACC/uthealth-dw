@@ -19,12 +19,12 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (uth_member_id);
 
 --Optum load: 
-insert into dw_qa.claim_icd_proc(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)
+insert into data_warehouse.claim_icd_proc(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)
 select distinct d.data_source, d.year, d.uth_claim_id, d.uth_member_id, d.claim_sequence_number, d.from_date_of_service, proc.proc, proc.proc_position, proc.icd_flag
-from dw_qa.claim_detail d
-join dw_qa.dim_uth_claim_id uth on d.uth_member_id = uth.uth_member_id and d.uth_claim_id = uth.uth_claim_id 
-join optum_zip.procedure proc on proc.clmid=uth.claim_id_src and proc.patid::text=uth.member_id_src and proc.fst_dt=d.from_date_of_service 
-where d.data_source='optz';
+from data_warehouse.claim_detail d
+join data_warehouse.dim_uth_claim_id uth on d.uth_member_id = uth.uth_member_id and d.uth_claim_id = uth.uth_claim_id 
+join optum_dod.procedure proc on proc.clmid=uth.claim_id_src and proc.patid::text=uth.member_id_src and proc.fst_dt=d.from_date_of_service 
+where d.data_source='optd';
 
 select *
 from optum_dod.procedure
@@ -52,14 +52,13 @@ select trunc(90934.0)::text
 
 -- Diagnostics
 
-analyze dev.claim_icd_proc;
+analyze data_warehouse.claim_icd_proc;
 
 --Verify
-select data_source, table_id_src, count(*), count(distinct d.uth_claim_id)
-from dw_qa.claim_icd_proc d
-join dw_qa.claim_detail l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
-group by 1, 2
-order by 1, 2;
+select data_source, count(*), count(distinct d.uth_claim_id)
+from data_warehouse.claim_icd_proc d
+group by 1
+order by 1;
 
 select data_source, count(*)
 from dw_qa.claim_icd_proc

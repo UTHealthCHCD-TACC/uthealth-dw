@@ -1,16 +1,16 @@
 --- Claim Detail Diag
 ---------------------------------------------------------------------------------------------------
--------------------------------- truven commercial outpatient--------------------------------------
+-------------------------------- truven commercial/medicare inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 
-insert into data_warehouse.claim_detail_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)  								        						              
+explain
+insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)  								        						              
 select distinct d.data_source, d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number, d.from_date_of_service , a.dx1, 1, a.dxver, null 
 from data_warehouse.claim_detail  d
-join truven.ccaes a on d.data_source ='trvc' 
+join truven.mdcrs a on d.data_source ='trvm' 
 and d.claim_id_src = a.msclmid::text 
 and d.member_id_src = a.enrolid::text 
-and d.claim_sequence_number_src = a.seqnum::text
-where a.year<2018;
+and d.claim_sequence_number_src = a.seqnum::text;
 
 --delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_detail where data_source='trvm')
 

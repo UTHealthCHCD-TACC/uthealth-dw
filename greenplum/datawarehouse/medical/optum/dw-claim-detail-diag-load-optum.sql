@@ -1,10 +1,10 @@
 
-analyze dw_qa.claim_header;
-analyze dw_qa.claim_detail;
+analyze data_warehouse.claim_header;
+analyze data_warehouse.claim_detail;
 
 --drop table if exists dw_qa.claim_detail_diag;
 
-create table dw_qa.claim_detail_diag (
+create table dw_qa.claim_diag (
 	uth_claim_id int8,
 	claim_sequence_number int2,
 	date date,
@@ -16,45 +16,35 @@ create table dw_qa.claim_detail_diag (
 WITH (appendonly=true, orientation=column)
 distributed by (uth_claim_id);
 
---Remove Old
-delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_header where data_source like 'opt%');
-
 --Optum load: 
-insert into dw_qa.claim_detail_diag(uth_claim_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)
-select distinct uth.uth_claim_id, d.claim_sequence_number, diag.fst_dt, diag.diag, diag.diag_position, diag.icd_flag, diag.poa
-
-explain
-select count(*)
-from dw_qa.claim_detail d
-join dw_qa.claim_header h on d.uth_claim_id=h.uth_claim_id
-join data_warehouse.dim_uth_claim_id uth on h.uth_claim_id=uth.uth_claim_id
-join optum_zip_refresh.diagnostic diag on diag.clmid=h.claim_id_src and diag.patid::text=h.member_id_src and diag.year=uth.data_year and diag.fst_dt=d.from_date_of_service
-where h.data_source='optz';
+insert into data_warehouse.claim_diag(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)
+select distinct d.data_source, d.year, d.uth_claim_id, d.uth_member_id, d.claim_sequence_number, diag.fst_dt, diag.diag, diag.diag_position, diag.icd_flag, diag.poa
+from data_warehouse.claim_detail d
+join  optum_dod.diagnostic diag on diag.clmid =d.claim_id_src::text and diag.patid::text=d.member_id_src and diag.fst_dt=d.from_date_of_service
+where d.data_source='optd';
 
 vacuum full dw_qa.claim_header;
-analyze dw_qa.claim_header;
+analyze data_warehouse.claim_header;
 
 vacuum full dw_qa.claim_detail;
-analyze dw_qa.claim_detail;
+analyze data_warehouse.claim_detail;
+
+analyze data_warehouse.uth_claim_id
 
 vacuum full dw_qa.claim_detail_diag;
-analyze dw_qa.claim_detail_diag;
+analyze data_warehouse.claim_diag;
 
-limit 10;
-
--- Diagnostics
-
-analyze dw_qa.claim_detail_diag;
 
 --Verify
-select data_source, count(*), count(distinct d.uth_claim_id)
-from dw_qa.claim_detail_diag_old d
-join dw_qa.claim_detail l on d.claim_sequence_number=l.claim_sequence_number and d.uth_claim_id=l.uth_claim_id
-group by 1;
-
 select data_source, count(*)
-from dw_qa.claim_header
-group by 1;
+from data_warehouse.claim_diag d
+group by 1
+order by 1;
+
+select data_source, year, count(*)
+from data_warehouse.claim_diag d
+group by 1, 2
+order by 1, 2;
 
 --Missing diags???
 select count(distinct h.uth_claim_id) 
@@ -91,4 +81,6 @@ USING bitmap (diag_cd);
 
 vacuum analyze dw_qa.claim_detail_diag;
 
+
+delete from data_warehouse.claim_diag where data_source is null;
 

@@ -26,22 +26,22 @@ order by 2 desc;
 --Size by Table
 select
    n.nspname,
-   --u.usename,
+   u.usename,
    relname,
    reloptions,
-  -- relacl,
+   relacl,
    reltuples AS "#entries",
    pg_size_pretty( pg_total_relation_size(n.nspname||'.'||relname)) as size_new
    FROM pg_class
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('dw_qa', 'data_warehouse')
+   and n.nspname in ('truven')
    ORDER BY 3, 6 desc;
  
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dw_qa.claim_detail_diag');
+SELECT get_ao_distribution('data_warehouse.claim_detail');
 
 select uth_member_id, count(*)
 from dw_qa.dim_uth_claim_id
@@ -77,7 +77,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('dw_qa')
+where pgn.nspname in ('data_warehouse')
 ORDER BY pgn.nspname, pgc.relname;
 
 --Roles and Members

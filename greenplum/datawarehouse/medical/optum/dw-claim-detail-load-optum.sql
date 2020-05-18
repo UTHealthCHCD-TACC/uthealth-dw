@@ -45,7 +45,7 @@ CREATE TABLE dev.claim_detail_by_claim (
 WITH (
 	appendonly=true, orientation=column
 )
-DISTRIBUTED BY (uth_claim_id);
+DISTRIBUTED BY (uth_member_id);
 
 /*
  * Remove old records
@@ -56,10 +56,11 @@ delete from dw_qa.claim_detail where data_source like 'opt%';
 /*
  * This script assumes claim_header has already been loaded with mapped uth_*_ids
  */
-analyze dw_qa.claim_header;
+analyze data_warehouse.claim_header;
 
 --Optum load: 23 min for 2016
-insert into dw_qa.claim_detail(data_source,	year, uth_claim_id, uth_member_id,
+explain
+insert into data_warehouse.claim_detail(data_source,	year, uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
 	from_date_of_service, to_date_of_service, month_year_id,	
 	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
@@ -70,7 +71,7 @@ insert into dw_qa.claim_detail(data_source,	year, uth_claim_id, uth_member_id,
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
 	drg_cd,
 	claim_id_src, member_id_src, table_id_src)
-select 'optd', ch.year, ch.uth_claim_id, ch.uth_member_id,
+select ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id,
 trunc(m.clmseq::int4), m.clmseq,
 m.fst_dt, m.lst_dt, get_my_from_date(m.fst_dt),
 m.prov::text, m.bill_prov::text, m.refer_prov::text, m.pos,
@@ -81,8 +82,8 @@ m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: 
 bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
 m.drg,
 uth.claim_id_src, uth.member_id_src, 'medical'
-from dw_qa.claim_header ch
-join dw_qa.dim_uth_claim_id uth on ch.uth_claim_id=uth.uth_claim_id
+from data_warehouse.claim_header ch
+join data_warehouse.dim_uth_claim_id uth on ch.uth_claim_id=uth.uth_claim_id
 join optum_dod.medical m on ch.claim_id_src=m.clmid::text and ch.member_id_src=m.patid::text
 left outer join optum_dod.confinement conf on m.conf_id=conf.conf_id
 left outer join reference_tables.ref_optum_bill_type_from_tos bt on m.tos_cd=bt.tos
@@ -104,10 +105,10 @@ select get_my_from_date('2011-08-18'::date);
 
 
 select data_source, count(*)
-from dw_qa.claim_detail
+from data_warehouse.claim_detail
 group by 1;
 
-insert into dw_qa.claim_detail(data_source, year, uth_claim_id, uth_member_id,
+insert into data_warehouse.claim_detail(data_source, year, uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,
 	from_date_of_service, to_date_of_service, month_year_id,	
 	perf_provider_id, bill_provider_id, ref_provider_id, place_of_service,
