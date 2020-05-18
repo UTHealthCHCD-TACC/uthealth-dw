@@ -1,8 +1,8 @@
 
 
-drop table if exists dw_qa.claim_detail;
+drop table if exists data_warehouse.claim_detail;
 
-create table dw_qa.claim_detail ( 
+create table data_warehouse.claim_detail ( 
 		data_source char(4),
 		year int2,
 		uth_claim_id numeric, 
@@ -45,14 +45,14 @@ create table dw_qa.claim_detail (
 distributed by (uth_member_id);
 
 
-analyze dw_qa.claim_detail;
+analyze data_warehouse.claim_detail;
 
 
 -----------------------------------------------------------------------------------------------
 
-drop table if exists dw_qa.claim_header;
+drop table if exists data_warehouse.claim_header;
 
-create table dw_qa.claim_header (
+create table data_warehouse.claim_header (
 		data_source char(4),
 		year int2,
 		uth_claim_id numeric, 
@@ -72,6 +72,6 @@ create table dw_qa.claim_header (
 distributed by (uth_member_id);
 
 
-analyze dw_qa.claim_header;
+analyze data_warehouse.claim_header;
 
 -----------------------------------------------------------------------------------------------
