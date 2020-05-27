@@ -157,7 +157,7 @@ from truven.mdcrd a
  ;
  
 
-vacuum analyze truven.ccaed;
+vacuum analyze data_warehouse.pharmacy_claims;
 
 --truven commercial
 insert into data_warehouse.pharmacy_claims (
@@ -188,6 +188,5 @@ select data_source, year, count(*)
 from data_warehouse.pharmacy_claims
 group by data_source,year
 order by data_source,year;
-
 
 

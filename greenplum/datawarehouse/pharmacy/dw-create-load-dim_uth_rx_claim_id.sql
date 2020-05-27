@@ -1,7 +1,5 @@
 drop table if exists data_warehouse.dim_uth_rx_claim_id; 
 
-
-
 create table data_warehouse.dim_uth_rx_claim_id ( 
 			data_source char(4),	
 			year int2,
