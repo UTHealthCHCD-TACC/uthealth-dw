@@ -5,16 +5,16 @@
 ---------------------------------------------------------------------------------------------------		
 -- 8m
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  								        						              
+total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)
 select distinct on (uth_claim_id) 
-	   'trvc', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, a.caseid,
-        null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
-        a.msclmid, a.enrolid, 'ccaes'
+'trvc', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, a.caseid,
+null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
+a.msclmid, a.enrolid, 'ccaes'
 from truven.ccaes a
-  join data_warehouse.dim_uth_claim_id b 
-    on b.data_source = 'trvc'
-   and b.claim_id_src = a.msclmid::text
-   and b.member_id_src = a.enrolid::text
+join data_warehouse.dim_uth_claim_id b 
+on b.data_source = 'trvc'
+and b.claim_id_src = a.msclmid::text
+and b.member_id_src = a.enrolid::text
 ;
 
 ---------------------------------------------------------------------------------------------------
