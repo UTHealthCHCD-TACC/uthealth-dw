@@ -148,7 +148,7 @@ grant all on all tables in schema dev to analyst;
 
 grant all privileges on all sequences in schema dev to analyst;
 
-alter default privileges in schema dev grant all privileges to analyst;
+alter default privileges in schema dev grant all privileges to group analyst;
 
 
 

@@ -1,12 +1,12 @@
  ---update claim sequence
- update dw_qa.claim_detail a set claim_sequence_number = rownum 
+ update data_warehouse.claim_detail a set claim_sequence_number = rownum 
         from (                         
         select uth_claim_id,
                claim_sequence_number_src,
                row_number() over ( partition by uth_claim_id
                                    order by claim_sequence_number_src
                                   ) as rownum 
-		       from dw_qa.claim_detail
+		       from data_warehouse.claim_detail
 		       where data_source in ('trvm','trvc')
 		       order by uth_claim_id, claim_sequence_number_src 		      
 		       		     ) b		       

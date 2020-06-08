@@ -1,7 +1,7 @@
---cpt_or_hcpcs_cd
+
 
 ----inpatient
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -17,7 +17,7 @@ from medicare.inpatient_revenue_center_k a
      join medicare.inpatient_base_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
-     join dw_qa.dim_uth_claim_id c
+     join data_warehouse.dim_uth_claim_id c
 	    on c.data_source = 'mdcr'
 	   and c.claim_id_src = a.clm_id
 	   and c.member_id_src = a.bene_id 
@@ -29,7 +29,7 @@ from medicare.inpatient_revenue_center_k a
 
 
 ---outpatient
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -45,7 +45,7 @@ from medicare.outpatient_revenue_center_k a
      join medicare.outpatient_base_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
-     join dw_qa.dim_uth_claim_id c
+     join data_warehouse.dim_uth_claim_id c
 	    on c.data_source = 'mdcr'
 	   and c.claim_id_src = a.clm_id
 	   and c.member_id_src = a.bene_id 
@@ -57,7 +57,7 @@ from medicare.outpatient_revenue_center_k a
 
 
 --bcarrier 
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -73,7 +73,7 @@ from medicare.bcarrier_line_k a
      join medicare.bcarrier_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
-     join dw_qa.dim_uth_claim_id c 
+     join data_warehouse.dim_uth_claim_id c 
         on c.data_source = 'mdcr'
 	   and c.claim_id_src = a.clm_id
 	   and c.member_id_src = a.bene_id 
@@ -87,7 +87,7 @@ where extract(year from b.clm_from_dt::date) between 2015 and 2017
 
 
 --dme
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -103,7 +103,7 @@ from medicare.dme_line_k a
   join medicare.dme_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
-  join dw_qa.dim_uth_claim_id c 
+  join data_warehouse.dim_uth_claim_id c 
     on c.data_source = 'mdcr' 
    and c.claim_id_src = a.clm_id
    and c.member_id_src = a.bene_id
@@ -115,7 +115,7 @@ where extract(year from b.clm_from_dt::date) between 2015 and 2017
 
 
 --hha
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -131,7 +131,7 @@ from medicare.hha_revenue_center_k a
      join medicare.hha_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
-  join dw_qa.dim_uth_claim_id c 
+  join data_warehouse.dim_uth_claim_id c 
     on c.data_source = 'mdcr' 
    and c.claim_id_src = a.clm_id
    and c.member_id_src = a.bene_id
@@ -143,7 +143,7 @@ from medicare.hha_revenue_center_k a
 
 
 --hospice
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -159,7 +159,7 @@ from medicare.hospice_revenue_center_k a
      join medicare.hospice_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
-  join dw_qa.dim_uth_claim_id c 
+  join data_warehouse.dim_uth_claim_id c 
     on c.data_source = 'mdcr' 
    and c.claim_id_src = a.clm_id
    and c.member_id_src = a.bene_id
@@ -170,7 +170,7 @@ where extract(year from b.clm_from_dt::date) between 2015 and 2017
 ;
 
 --snf
-insert into dw_qa.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
+insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
 								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
@@ -186,7 +186,7 @@ from medicare.snf_revenue_center_k a
      join medicare.snf_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
-  join dw_qa.dim_uth_claim_id c 
+  join data_warehouse.dim_uth_claim_id c 
     on c.data_source = 'mdcr' 
    and c.claim_id_src = a.clm_id
    and c.member_id_src = a.bene_id
@@ -197,6 +197,6 @@ from medicare.snf_revenue_center_k a
 
 
 
-vacuum analyze dw_qa.claim_detail;
+vacuum analyze data_warehouse.claim_detail;
 
 

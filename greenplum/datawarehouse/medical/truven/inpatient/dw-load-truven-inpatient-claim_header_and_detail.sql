@@ -98,4 +98,9 @@ where a.msclmid is not null
   ;
   
  
+ select * from truven.mdcri 
+ 
+ select * from data_warehouse.claim_detail where data_source = 'trvm';
+ 
+ 
 vacuum analyze data_warehouse.claim_detail;
