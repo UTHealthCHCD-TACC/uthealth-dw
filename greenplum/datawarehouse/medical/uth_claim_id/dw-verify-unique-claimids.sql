@@ -63,3 +63,9 @@ from dev2016.optum_dod_medical a
 join optum_dod.medical b on trim(a.clmid)=trim(b.clmid) and a.patid=b.patid
 where b.patid is not null;
 limit 5;
+
+--Scratch
+select data_source, data_year, count(*)
+from data_warehouse.dim_uth_claim_id
+group by 1, 2
+order by 1, 2;
