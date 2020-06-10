@@ -1,30 +1,4 @@
 /*
- * Keep DDL for reference and to generate new temp load tables
- */
---drop table data_warehouse.claim_header;
-CREATE TABLE data_warehouse.claim_header (
-	data_source bpchar(4) NULL,
-	year int2,
-	uth_claim_id numeric NULL,
-	uth_member_id int8 NULL,
-	from_date_of_service date NULL,
-	claim_type text NULL,
-	place_of_service bpchar(2) NULL,
-	uth_admission_id numeric NULL,
-	admission_id_src text NULL,
-	total_charge_amount numeric(13,2) NULL,
-	total_allowed_amount numeric(13,2) NULL,
-	total_paid_amount numeric(13,2) NULL,
-	claim_id_src text NULL,
-	member_id_src text NULL,
-	table_id_src text NULL
-)
-WITH (
-	appendonly=true, orientation=column
-)
-DISTRIBUTED BY (uth_member_id);
-
-/*
  * Remove old records
  */
 delete from dw_qa.claim_header where data_source like 'opt%';
@@ -52,6 +26,11 @@ left outer join quarantine.uth_claim_ids q on uthc.uth_claim_id=q.uth_claim_id
 where q.uth_claim_id is null
 group by 1, 2, 3, 4, 5, 6;
 
+?*
+
+/*
+ * Scratch Space
+ */
 select data_source, claim_id_src, member_id_src, uth_member_id, count(*)  
 from data_warehouse.dim_uth_claim_id
 group by 1,2,3,4
@@ -64,12 +43,7 @@ order by member_id_src;
 
 SET work_mem = '4024MB';
 SET statement_mem = '4024MB';
-
-
-
-/*
- * Scratch Space
- */
+select distinct claim_type from data_warehouse.claim_header ch ;
 
 select year, count(*)
 from optum_zip_refresh.medical m2
