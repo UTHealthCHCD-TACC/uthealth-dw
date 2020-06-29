@@ -1,4 +1,4 @@
-
+select * from optum_zip.mbr_enroll
 
 select uth_rx_claim_id, uth_member_id, ndc, fill_date,
        right(ndc,5) || month_year_id::text || lpad(extract(day from fill_date)::text,2,'0') || right(uth_member_id::text,5) as script_id
@@ -8,6 +8,31 @@ where refill_count = 0
 
 where refill_count is null --58,021,586
 
+
+
+select uth_rx_claim_id, uth_member_id, ndc, fill_date, refill_count
+  into dev.wc_script_secondary_fills
+from data_warehouse.pharmacy_claims a
+where refill_count <> 0 
+  and exists (  select 1 
+  				from data_warehouse.pharmacy_claims b 
+  				where b.ndc = a.ndc 
+  				  and b.uth_member_id = a.uth_member_id 
+  				  and b.refill_count = 0 
+  				  and b.fill_date < a.fill_date)
+
+  				  
+  				  
+select a.*, b.script_id, b.fill_date as script_date 
+into dev.wc_script_secondary_multiples
+from dev.wc_script_secondary_fills a 
+  join dev.wc_script_first_id b 
+    on b.uth_member_id = a.uth_member_id 
+   and b.ndc = a.ndc 
+   and b.fill_date < a.fill_date 
+  				  
+  				  
+  				  
 
 select * from dev.wc_script_first_id
 
@@ -51,6 +76,10 @@ from dev.wc_script_first_id b
     and a.refill_count = 0
  ;
 
+
+select count(*), count(distinct uth_rx_claim_id), data_source 
+from data_warehouse.pharmacy_claims 
+group by data_source;
 
 
 

@@ -3,62 +3,59 @@
  * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
  */
 
+delete from data_warehouse.dim_uth_claim_id where data_source in ('trvc','trvm','truv')
+
 ---truven commercial, outpatient - 15min 2,479,688,920 rows
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'trvc', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
 from truven.ccaeo a
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'trvc'
+    on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
   left join data_warehouse.dim_uth_claim_id c
          on  b.data_source = c.data_source
         and a.msclmid::text = c.claim_id_src 
         and a.enrolid::text = c.member_id_src 
 where a.enrolid is not null
-and c.uth_claim_id is NULL
-GROUP BY 1, 2, 3, 4;
-
-
- 
---truven commercial, inpatient 3min 122354685
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id, data_year)                                              
-select  'trvc', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
-from truven.ccaes a  
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'trvc'
-   and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-	    on  b.data_source = c.data_source
-	      and a.msclmid::text = c.claim_id_src 
-	      and a.enrolid::text = c.member_id_src
-  where a.enrolid is not null
 and c.uth_claim_id is null
 group by 1, 2, 3, 4;
+
+
  
+--truven commercial, inpatient
+insert into data_warehouse.dim_uth_claim_id ( data_source, claim_id_src, member_id_src , uth_member_id, data_year )                                              
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
+from truven.ccaes a  
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'truv'
+   and b.member_id_src = a.enrolid::text 
+--  left join data_warehouse.dim_uth_claim_id c
+--	    on  b.data_source = c.data_source
+--	      and a.msclmid::text = c.claim_id_src 
+--	      and a.enrolid::text = c.member_id_src
+  where a.enrolid is not null
+--and c.uth_claim_id is null
+group by 1, 2, 3, 4
+;
+
 
 
 vacuum analyze data_warehouse.dim_uth_claim_id;
 
-vacuum analyze truven.ccaes;
-
-select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'trvc';
- 
-select count(distinct msclmid::text || enrolid::text || year::text ) from truven.ccaeo;
-
 
 --- truven medicare outpatient 2min, 506,266,398
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'trvm', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
 from truven.mdcro a
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'trvm'
+    on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-    on  b.data_source = c.data_source
-      and a.msclmid::text = c.claim_id_src 
-      and a.enrolid::text = c.member_id_src 
+--  left join data_warehouse.dim_uth_claim_id c
+--    on  b.data_source = c.data_source
+--      and a.msclmid::text = c.claim_id_src 
+--      and a.enrolid::text = c.member_id_src 
 where a.enrolid is not null
-and c.uth_claim_id is null
+--and c.uth_claim_id is null
 group by 1, 2, 3, 4
 ;
 
@@ -66,22 +63,24 @@ group by 1, 2, 3, 4
 
 ---Truven medicare inpatient  2min 50,129,682
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year )     
-select  'trvm', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
 from truven.mdcrs a  
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'trvm'
+    on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-    on  b.data_source = c.data_source
-      and a.msclmid::text = c.claim_id_src 
-      and a.enrolid::text = c.member_id_src
+--  left join data_warehouse.dim_uth_claim_id c
+--    on  b.data_source = c.data_source
+--      and a.msclmid::text = c.claim_id_src 
+--      and a.enrolid::text = c.member_id_src
 where a.enrolid is not null
-and c.uth_claim_id is null
+--and c.uth_claim_id is null
 group by 1,2,3,4;
+
+
+
 
 vacuum analyze data_warehouse.dim_uth_claim_id
 
-select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'trvm';
 
 
 
