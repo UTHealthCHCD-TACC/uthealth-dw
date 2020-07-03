@@ -139,6 +139,28 @@ from optum_dod.rx a
 select distinct data_source from data_warehouse.pharmacy_claims;
 
 
+select count(*) from dev.truven_ccaeo
+
+
+
+create table dev.dim_uth_rx_truv
+with(appendonly=true, orientation=column)
+as select * 
+from data_warehouse.dim_uth_rx_claim_id 
+where data_source = 'truv' 
+distributed by (rx_claim_id_src)
+;
+
+
+create table dev.truven_mdcrd
+with(appendonly=true, orientation=column)
+as select * 
+from truven.mdcrd 
+distributed by (enrolid , ndcnum , svcdate)
+;
+
+delete from data_warehouse.pharmacy_claims where data_source in ('trvc','trvm')
+
 --truven medicare adv
 insert into data_warehouse.pharmacy_claims (
 		data_source, year, uth_rx_claim_id, uth_member_id, script_id, 
@@ -146,13 +168,15 @@ insert into data_warehouse.pharmacy_claims (
 		quantity, provider_npi, pharmacy_id, total_charge_amount, total_allowed_amount, total_paid_amount,
 		deductible, copay, coins, cob, rx_claim_id_src, member_id_src
 		)
-select 'trvm', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id, a.enrolid || lpad(ndcnum::text,11,'0') || svcdate::text,
+select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id, a.enrolid || lpad(ndcnum::text,11,'0') || svcdate::text,
        lpad(ndcnum::text,11,'0'), a.daysupp, a.refill, a.svcdate, c.month_year_id, a.genind, a.generid::text, null, 
        a.qty, a.ntwkprov, a.pharmid, null, a.pay, a.netpay, 
        a.deduct, a.copay, a.coins, a.cob, a.enrolid || ndcnum::text || svcdate::text, a.enrolid::text
-from truven.mdcrd a 
-  join data_warehouse.dim_uth_rx_claim_id b 
-     on b.data_source = 'trvm' 
+--from truven.mdcrd a 
+  --join data_warehouse.dim_uth_rx_claim_id b
+ from dev.truven_mdcrd a  
+  join dev.dim_uth_rx_truv b
+     on b.data_source = 'truv' 
     and b.member_id_src = a.enrolid::text
     and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c 
@@ -162,6 +186,15 @@ from truven.mdcrd a
  
 
 vacuum analyze data_warehouse.pharmacy_claims;
+
+
+create table dev.truven_ccaed
+with(appendonly=true, orientation=column)
+as select * 
+from truven.ccaed
+distributed by (enrolid , ndcnum , svcdate)
+;
+
 
 --truven commercial
 insert into data_warehouse.pharmacy_claims (
@@ -170,13 +203,15 @@ insert into data_warehouse.pharmacy_claims (
 		quantity, provider_npi, pharmacy_id, total_charge_amount, total_allowed_amount, total_paid_amount,
 		deductible, copay, coins, cob, rx_claim_id_src, member_id_src
 		)
-select 'trvc', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id, a.enrolid || lpad(ndcnum::text,11,'0') || svcdate::text,
+select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id, a.enrolid || lpad(ndcnum::text,11,'0') || svcdate::text,
        lpad(ndcnum::text,11,'0'), a.daysupp, a.refill, a.svcdate, c.month_year_id, a.genind, a.generid::text, null, 
        a.qty, a.ntwkprov, a.pharmid, null, a.pay, a.netpay, 
        a.deduct, a.copay, a.coins, a.cob, a.enrolid || ndcnum::text || svcdate::text, a.enrolid::text
-from truven.ccaed a 
-  join data_warehouse.dim_uth_rx_claim_id b 
-     on b.data_source = 'trvc' 
+--from truven.ccaed a 
+  --join data_warehouse.dim_uth_rx_claim_id b
+   from dev.truven_ccaed a  
+  join dev.dim_uth_rx_truv b 
+     on b.data_source = 'truv' 
     and b.member_id_src = a.enrolid::text
     and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c 
@@ -187,6 +222,10 @@ from truven.ccaed a
 
 vacuum analyze data_warehouse.pharmacy_claims;
 
+
+select * from data_warehouse.pharmacy_claims where data_source = 'trvc';
+
+select * from data_warehouse.pharmacy_claims where data_source = 'optz';
 
 update data_warehouse.pharmacy_claims set ndc = null where ndc = '00000000UNK'
 

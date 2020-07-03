@@ -26,6 +26,9 @@ vacuum analyze data_warehouse.dim_uth_rx_claim_id;
  
 vacuum analyze truven.ccaed;
 
+
+delete from data_warehouse.dim_uth_rx_claim_id where data_source in ('trvc','trvm')
+
 ---truven commercial
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -34,7 +37,7 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src )					
-select 'trvc'
+select 'truv'
       ,a.year 
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	  ,a.enrolid || ndcnum::text || svcdate::text
@@ -42,14 +45,14 @@ select 'trvc'
       ,a.enrolid 
 from truven.ccaed a
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'trvc'
+    on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
-left join data_warehouse.dim_uth_rx_claim_id c 
-  on c.data_source = 'trvc'
- and c.member_id_src = a.enrolid::text 
- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
-where c.uth_rx_claim_id is null 
-  and a.enrolid is not null;
+--left join data_warehouse.dim_uth_rx_claim_id c 
+ -- on c.data_source = 'truv'
+ --and c.member_id_src = a.enrolid::text 
+-- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+ --and  c.uth_rx_claim_id is null 
+where a.enrolid is not null;
 
 
 --truven medicare
@@ -60,7 +63,7 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src )			
-select 'trvm'
+select 'truv'
       ,a.year 
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	  ,a.enrolid || ndcnum::text || svcdate::text
@@ -68,14 +71,14 @@ select 'trvm'
       ,a.enrolid 
 from truven.mdcrd a  
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source in ('trvc', 'trvm')
+    on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
-left join data_warehouse.dim_uth_rx_claim_id c 
-  on c.data_source = 'trvm'
- and c.member_id_src = a.enrolid::text 
- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
-where c.uth_rx_claim_id is null 
-  and a.enrolid is not null;
+--left join data_warehouse.dim_uth_rx_claim_id c 
+--  on c.data_source = 'trvm'
+-- and c.member_id_src = a.enrolid::text 
+-- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+-- and c.uth_rx_claim_id is null 
+where a.enrolid is not null;
 
  
  select count(*), data_source, year 

@@ -67,15 +67,17 @@ vacuum analyze truven.ccaet;
 
 select count(distinct enrolid) from truven.ccaet;
 
-select count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'trvc';
+vacuum analyze data_warehouse.dim_uth_member_id
+
+update data_warehouse.dim_uth_member_id set data_source = 'truv' where data_source = 'trv'
 
 ---Truven Commercial  
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct enrolid as v_member_id, 'trvc' as v_raw_data
+	select distinct enrolid as v_member_id, 'truv' as v_raw_data
 	from truven.ccaet
 	 left outer join data_warehouse.dim_uth_member_id b 
-          on b.data_source = 'trvc'
+          on b.data_source = 'truv'
          and b.member_id_src = enrolid::text
 	where b.member_id_src is null 	
 )
@@ -91,10 +93,10 @@ select count(distinct enrolid) from truven.mdcrt;
 ---Truven Medicare 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct enrolid as v_member_id, 'trvm' as v_raw_data
+	select distinct enrolid as v_member_id, 'truv' as v_raw_data
 	from truven.mdcrt
 	 left outer join data_warehouse.dim_uth_member_id b 
-      on b.data_source = 'trvm'
+      on b.data_source = 'truv'
      and b.member_id_src = enrolid::text
 where b.member_id_src is null 
 )
@@ -143,11 +145,11 @@ with cte_distinct_member as (
     select distinct enrolid as v_member_id
     from truven.ccaed 
     left outer join data_warehouse.dim_uth_member_id 
-      on data_source = 'trvc'
+      on data_source = 'truv'
      and member_id_src = enrolid::text 
     where member_id_src is null 
 ) 
-select v_member_id, 'trvc', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+select v_member_id, 'truv', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member
 ;
 
@@ -157,11 +159,11 @@ with cte_distinct_member as (
     select distinct enrolid as v_member_id
     from truven.mdcrd 
     left outer join data_warehouse.dim_uth_member_id 
-      on data_source = 'trvm'
+      on data_source = 'truv'
      and member_id_src = enrolid::text 
     where member_id_src is null 
 ) 
-select v_member_id, 'trvm', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+select v_member_id, 'truv', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member
 ;
 
@@ -199,7 +201,8 @@ from cte_distinct_member
 ----Validate
 vacuum analyze data_warehouse.dim_uth_member_id;
 
-select count(*), count(distinct uth_member_id) 
-from data_warehouse.dim_uth_member_id;
+select count(*), data_source 
+from data_warehouse.dim_uth_member_id
+group by data_source ;
 
 

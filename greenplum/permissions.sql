@@ -136,6 +136,11 @@ grant select on all tables in schema data_warehouse to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to group analyst; 
 
 
+--dw_qa (select only) 
+grant usage on schema dw_qa to group analyst;
+grant select on all tables in schema dw_qa to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA dw_qa grant select on tables to group analyst; 
+
 --tableau (select only)
 grant all on schema tableau to group analyst;
 grant select on all tables in schema tableau to group analyst;

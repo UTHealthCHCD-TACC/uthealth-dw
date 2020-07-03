@@ -125,7 +125,7 @@ from optum_zip.mbr_enroll m
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
-select distinct data_source, year  from data_warehouse.member_enrollment_monthly;
+delete from data_warehouse.member_enrollment_monthly where data_source in ('trvm','trvc');
 
 
 
@@ -135,17 +135,19 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd         
+	plan_type, bus_cd, employee_status         
 	)	
+	
 select 
-	   'trvc',b.year_int, b.month_year_id, a.uth_member_id,
+	   'truv',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
-       d.plan_type, 'COM'
+       d.plan_type, 'COM', eestatu 
 from truven.ccaet m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
-   and a.data_source = 'trvc'
+   and a.data_source = 'truv'
+   and a.uth_member_id = 419260389
   join reference_tables.ref_truven_state_codes s 
     on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b 
@@ -166,17 +168,20 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd         
-	)		
+	plan_type, bus_cd, employee_status       
+	)	
+	
+	
 select 
-       'trvm', b.year_int,b.month_year_id, a.uth_member_id,
+       'truv', b.year_int,b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
-       d.plan_type, 'MCR'
+       d.plan_type, 'MCR', eestatu 
 from truven.mdcrt m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
-   and a.data_source = 'trvm'
+   and a.data_source = 'truv'
+   and a.uth_member_id  = 419260389
   join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b
