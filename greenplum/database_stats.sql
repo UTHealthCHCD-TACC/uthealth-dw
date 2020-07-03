@@ -36,8 +36,9 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('dev')
-   and u.usename = 'wcough'
+   --and n.nspname in ('dev')
+   and n.nspname like 'optum_dod'
+   --and u.usename = 'wcough'
    ORDER BY 3, 6 desc;
  
 

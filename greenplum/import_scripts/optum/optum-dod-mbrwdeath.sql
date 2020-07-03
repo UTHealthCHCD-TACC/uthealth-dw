@@ -1,6 +1,6 @@
 --optum_dod_refresh mbrwdeath load
 drop table optum_dod_refresh.mbrwdeath;
-create table optum_dod_refresh.mbrwdeath2 (
+create table optum_dod_refresh.mbrwdeath (
 PatID bigint, Death_ym Date, Extract_ym Date, VERSION numeric
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_mbrwdeath (
 PatID bigint, Death_ym int, Extract_ym int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/zip5_mbrwdeath.txt'
+'gpfdist://192.168.58.179:8081/dod_mbrwdeath.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
