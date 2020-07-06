@@ -34,7 +34,7 @@ where a.uth_member_id = b.uth_member_id
 
 vacuum analyze data_warehouse.claim_detail;
 
-select * from data_warehouse.claim_detail where data_source = 'truv' and claim_sequence_number is null ;
+select * from data_warehouse.claim_detail where data_source = 'truv' ;
 
 drop table dev.wc_truv_sequences;
 
