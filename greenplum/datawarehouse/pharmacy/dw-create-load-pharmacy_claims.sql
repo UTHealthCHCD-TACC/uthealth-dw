@@ -220,19 +220,37 @@ select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id,
  ;
  
 
+
+---cleanup
+
 vacuum analyze data_warehouse.pharmacy_claims;
 
 
-select * from data_warehouse.pharmacy_claims where data_source = 'trvc';
+drop table dev.truven_ccaed;
 
-select * from data_warehouse.pharmacy_claims where data_source = 'optz';
+drop table dev.truven_mdcrd;
 
-update data_warehouse.pharmacy_claims set ndc = null where ndc = '00000000UNK'
+drop table dev.dim_uth_rx_truv; 
 
-select data_source, year, count(*) 
+drop table dev.dim_uth_claim_id; 
+
+
+---quarantine dupes so 1 row per claim
+select uth_rx_claim_id 
+into quarantine.rx_duplicate_claims 
+from ( 
+    select uth_rx_claim_id , count(uth_rx_claim_id ) as cnt 
+    from data_warehouse.pharmacy_claims 
+    group by uth_rx_claim_id 
+    ) x where cnt >  1 
+ 
+    
+delete from data_warehouse.pharmacy_claims 
+where uth_rx_claim_id in ( select uth_rx_claim_id from quarantine.rx_duplicate_claims);
+
+
+---- validate
+
+select count(*), count(distinct uth_rx_claim_id), data_source
 from data_warehouse.pharmacy_claims
-group by data_source,year
-order by data_source,year;
-
-
-select count(*) from data_warehouse.claim_diag where data_source = 'mdcr'
+group by data_source 

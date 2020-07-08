@@ -92,6 +92,7 @@ from truven.ccaeo a --dev.truven_ccaeo;
    and c.year_int = a.year
 where a.msclmid is not null
   ;
+ 
 
 -------------------------------- truven medicare outpatient ---------------------------------------
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
@@ -100,7 +101,7 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src )										   								 								   
-select 'trvm',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
+select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
        null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
