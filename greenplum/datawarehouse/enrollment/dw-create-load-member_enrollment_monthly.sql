@@ -256,7 +256,11 @@ group by year;
 
 ---logic to add consecutive enrolled months
 ---------------------------------------------
+
+
+---- delete duplicate rows
 delete from data_warehouse.member_enrollment_monthly where row_identifier in ( 
+--select * from data_warehouse.member_enrollment_monthly mem where row_identifier in ( 
 	select row_identifier
 	from
 	(		
@@ -266,6 +270,7 @@ delete from data_warehouse.member_enrollment_monthly where row_identifier in (
 	) sub
 	where rn > 1
 );
+
 
 
 with row_build_cte as ( 
@@ -289,6 +294,6 @@ where c.row_identifier = d.row_identifier
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
-select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'trvc';
+select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'truv';
 
 

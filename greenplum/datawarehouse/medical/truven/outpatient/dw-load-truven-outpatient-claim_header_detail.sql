@@ -46,7 +46,7 @@ select count(*) from truven.ccaeo where enrolid is not null
 
 --Need to use temp tables to optimize load and avoid 'broadcast motion' which can use up all disk space
 create table dev.truven_ccaeo
-with(appendonly=true,orientation=column,compresstype=zlib)
+with(appendonly=true,orientation=column)
 as select *
 from truven.ccaeo
 distributed by(msclmid);

@@ -6,18 +6,18 @@ create table data_warehouse.member_enrollment_yearly (
 	year int2,
 	uth_member_id bigint,
 	total_enrolled_months int2,
-	enrolled_jan bool,
-	enrolled_feb bool,
-	enrolled_mar bool,
-	enrolled_apr bool,
-	enrolled_may bool,
-	enrolled_jun bool,
-	enrolled_jul bool,
-	enrolled_aug bool,
-	enrolled_sep bool,
-	enrolled_oct bool, 
-	enrolled_nov bool, 
-	enrolled_dec bool,
+	enrolled_jan bool default false,
+	enrolled_feb bool default false,
+	enrolled_mar bool default false,
+	enrolled_apr bool default false,
+	enrolled_may bool default false,
+	enrolled_jun bool default false,
+	enrolled_jul bool default false,
+	enrolled_aug bool default false,
+	enrolled_sep bool default false,
+	enrolled_oct bool default false,
+	enrolled_nov bool default false,
+	enrolled_dec bool default false,
 	gender_cd char(1),
 	state varchar,
 	zip5 char(5),
@@ -36,6 +36,8 @@ distributed by(uth_member_id);
 
 
 alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200;
+
+vacuum analyze data_warehouse.member_enrollment_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
@@ -57,22 +59,30 @@ select uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
 distributed by(uth_member_id);
 
-analyze dev.temp_member_enrollment_month;
+vacuum analyze dev.temp_member_enrollment_month;
 
-select count(*) from dev.temp_member_enrollment_month;
+
+select * from dev.temp_member_enrollment_month;
+
+select count(*), count(distinct uth_member_id), year, month 
+from dev.temp_member_enrollment_month
+group by year , month 
+order by year , month ;
 
 --Add month flags
---explain
 update data_warehouse.member_enrollment_yearly y
-set enrolled_may = true
+set enrolled_dec = true
 from dev.temp_member_enrollment_month m 
-where y.year=m.year and y.uth_member_id=m.uth_member_id and m.month=5;
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 12
+;
 
-update data_warehouse.member_enrollment_yearly
-set enrolled_may = false 
-where enrolled_may is null;
+vacuum analyze data_warehouse.member_enrollment_yearly;
 
-analyze data_warehouse.member_enrollment_yearly;
+select * from data_warehouse.member_enrollment_yearly 
+where uth_member_id = 102981849
+
 
 -- Drop temp table
 drop table dev.temp_member_enrollment_month;

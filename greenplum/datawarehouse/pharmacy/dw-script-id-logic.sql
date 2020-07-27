@@ -27,89 +27,62 @@ order by a.ndc, a.fill_date, b.fill_date;
  */
 select * from optum_zip.mbr_enroll
 
+drop table dev.wc_script_first_id 
+
+
 select uth_rx_claim_id, uth_member_id, ndc, fill_date,
-       right(ndc,5) || month_year_id::text || lpad(extract(day from fill_date)::text,2,'0') || right(uth_member_id::text,5) as script_id
+       right(ndc,5) || right(uth_member_id::text,5) || month_year_id::text || lpad(extract(day from fill_date)::text,2,'0') as script_id
    into dev.wc_script_first_id
 from data_warehouse.pharmacy_claims
 where refill_count = 0
 
-where refill_count is null --58,021,586
 
 
-
-select uth_rx_claim_id, uth_member_id, ndc, fill_date, refill_count
-  into dev.wc_script_secondary_fills
-from data_warehouse.pharmacy_claims a
-where refill_count <> 0 
-  and exists (  select 1 
-  				from data_warehouse.pharmacy_claims b 
-  				where b.ndc = a.ndc 
-  				  and b.uth_member_id = a.uth_member_id 
-  				  and b.refill_count = 0 
-  				  and b.fill_date < a.fill_date)
-
-  				  
-  				  
-select a.*, b.script_id, b.fill_date as script_date 
-into dev.wc_script_secondary_multiples
-from dev.wc_script_secondary_fills a 
-  join dev.wc_script_first_id b 
-    on b.uth_member_id = a.uth_member_id 
-   and b.ndc = a.ndc 
-   and b.fill_date < a.fill_date 
-  				  
-  				  
-  				  
-
-select * from dev.wc_script_first_id
-
-
-
-select * 
-into dev.wc_script_temp_trvm
-from data_warehouse.pharmacy_claims
-where data_source = 'trvm'
-
-
-vacuum analyze dev.wc_script_temp_trvm
-
-update dev.wc_script_temp_trvm set script_id = null; 
-
-select uth_rx_claim_id 
-into dev.wc_script_quarantine_trvm
-from ( 
-select count(*), uth_rx_claim_id 
-from dev.wc_script_temp_trvm
-group by uth_rx_claim_id 
-having count(*) > 1
-) a
-
-
-delete from dev.wc_script_temp_trvm
-where uth_rx_claim_id in ( select uth_rx_claim_id from dev.wc_script_quarantine_trvm)
-
-select *
-from dev.wc_script_temp_trvm
-
-
-select count(*), count(distinct uth_rx_claim_id) from dev.wc_script_temp_trvm;
-
-
-
-update dev.wc_script_temp_trvm a set script_id = b.script_id 
+---15min
+update data_warehouse.pharmacy_claims a set script_id = b.script_id 
 from dev.wc_script_first_id b 
-  where b.uth_member_id = a.uth_member_id
-    and b.uth_rx_claim_id = a.uth_rx_claim_id
-    and a.refill_count = 0
- ;
+where a.uth_member_id = b.uth_member_id 
+  and a.uth_rx_claim_id = b.uth_rx_claim_id 
+;
 
 
-select count(*), count(distinct uth_rx_claim_id), data_source 
-from data_warehouse.pharmacy_claims 
-group by data_source;
+----
+
+drop table dev.wc_temp_rx
 
 
+  select * 
+  into dev.wc_temp_rx 
+  from data_warehouse.pharmacy_claims pc where uth_member_id = 358436946 
 
+  
+  select * 
+  into dev.wc_temp_rx2
+  from dev.wc_temp_rx
+  
+  select ndc, fill_date, refill_count, script_id
+  from dev.wc_temp_rx
+ order by ndc, fill_date;
+  
+
+ 
+ update data_warehouse.pharmacy_claims a set script_id = b.script_id 
+ from data_warehouse.pharmacy_claims b 
+ where b.uth_member_id = a.uth_member_id 
+    and b.ndc = a.ndc 
+    and b.refill_count = 0 
+    and a.refill_count <> 0 
+    and b.fill_date = ( select max(c.fill_date) 
+                       from data_warehouse.pharmacy_claims c 
+                       where c.uth_member_id = a.uth_member_id
+                         and c.ndc = a.ndc 
+                         and c.refill_count = 0 
+                         and c.fill_date < a.fill_date ) 
+   
+ 
+ 
+  
+  
 
 update dev.wc_script_temp_trvm a set script_id = b.script_id 
 from dev.wc_script_temp_trvm b 
