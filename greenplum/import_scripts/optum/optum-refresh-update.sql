@@ -1,4 +1,9 @@
 /*
+ * Refresh dates for each table 
+ */
+
+
+/*
  * Confinement
 select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_dod_backup.confinement group by 1, 2 order by 1, 2;
 select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_dod.confinement group by 1, 2 order by 1, 2;

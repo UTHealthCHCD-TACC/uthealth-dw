@@ -1,3 +1,30 @@
+/*
+ * David Code
+ */
+
+drop table dev.temp_script_id;
+create table dev.temp_script_id(like data_warehouse.pharmacy_claims)
+with(appendonly=true, orientation=column, compresstype=zlib);
+
+
+insert into dev.temp_script_id
+select *
+from data_warehouse.pharmacy_claims
+where uth_member_id=100000000;
+
+
+select count(*) from dev.temp_script_id;
+
+select ndc, fill_date, refill_count from dev.temp_script_id order by fill_date;
+
+select distinct on (a.ndc, a.fill_date) a.ndc, a.fill_date, a.refill_count, b.ndc, b.fill_date, b.refill_count 
+from dev.temp_script_id a
+left outer join dev.temp_script_id b on a.uth_member_id = b.uth_member_id and a.ndc = b.ndc and a.fill_date <= b.fill_date and a.refill_count = 0 and b.refill_count > 0
+order by a.ndc, a.fill_date, b.fill_date;
+
+/*
+ * Will Code
+ */
 select * from optum_zip.mbr_enroll
 
 select uth_rx_claim_id, uth_member_id, ndc, fill_date,
