@@ -89,6 +89,21 @@ from medicare.pde_file a
  ;
  
 
+delete from data_warehouse.pharmacy_claims where data_source in ('optz','optd');
+
+
+select count(*), count(distinct clmid), year 
+from optum_dod.rx a 
+group by year 
+order by year 
+
+
+select count(*), count(distinct uth_rx_claim_id ), year 
+from data_warehouse.dim_uth_rx_claim_id 
+where data_source = 'optd'
+group by year
+order by year 
+
 ---optum zip
 insert into data_warehouse.pharmacy_claims (
 		data_source, year, uth_rx_claim_id, uth_member_id, script_id, 

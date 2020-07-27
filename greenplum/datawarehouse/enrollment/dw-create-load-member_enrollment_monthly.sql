@@ -63,6 +63,8 @@ alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
     ---------------- data loads --------------------
+    
+delete from data_warehouse.member_enrollment_monthly where data_source in ('optd','optz');
 
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (

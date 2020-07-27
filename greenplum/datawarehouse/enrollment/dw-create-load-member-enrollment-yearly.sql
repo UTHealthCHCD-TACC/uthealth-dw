@@ -51,6 +51,8 @@ from data_warehouse.member_enrollment_monthly
 order by uth_member_id
 ;
 
+drop table dev.temp_member_enrollment_month;
+
 --Create temp join tables
 create table dev.temp_member_enrollment_month
 WITH (appendonly=true, orientation=column)
@@ -71,6 +73,94 @@ order by year , month ;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
+set enrolled_jan = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 1
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_feb = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 2
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_mar = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 3
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_apr = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 4
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_may = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 5
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_jun = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 6
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_jul = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 7
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_aug = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 8
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_sep = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 9
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_oct = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 10
+;
+
+update data_warehouse.member_enrollment_yearly y
+set enrolled_nov = true
+from dev.temp_member_enrollment_month m 
+where y.uth_member_id = m.uth_member_id 
+  and y.year = m.year 
+  and m.month = 11
+;
+
+update data_warehouse.member_enrollment_yearly y
 set enrolled_dec = true
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
@@ -80,9 +170,6 @@ where y.uth_member_id = m.uth_member_id
 
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
-select * from data_warehouse.member_enrollment_yearly 
-where uth_member_id = 102981849
-
 
 -- Drop temp table
 drop table dev.temp_member_enrollment_month;
@@ -91,10 +178,14 @@ drop table dev.temp_member_enrollment_month;
 update data_warehouse.member_enrollment_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int
 
---Set claim_created flag
+
+select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 10;
+
 
 --Scratch
-select count(*) from  data_warehouse.member_enrollment_yearly;
+select count(*), count(distinct uth_member_id ), year 
+from  data_warehouse.member_enrollment_yearly
+group by year;
 
 select * from  data_warehouse.member_enrollment_yearly where enrolled_jul is false limit 10;
 select month_year_id, month_year_id % year as month from  data_warehouse.member_enrollment_monthly order by uth_member_id limit 10;

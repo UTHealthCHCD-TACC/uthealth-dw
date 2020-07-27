@@ -36,13 +36,16 @@ from truven.mdcro a
 
 vacuum analyze data_warehouse.claim_header;
 
+
+delete from data_warehouse.claim_header where table_id_src in ('ccaes','mdcrs');
+
 -------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 -- 8m
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)
 select distinct on (uth_claim_id) 
-'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, a.caseid,
+'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, trunc(a.caseid,0)::text,
 null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
 a.msclmid, a.enrolid, 'ccaes'
 from truven.ccaes a
@@ -58,7 +61,7 @@ and b.member_id_src = a.enrolid::text
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  								        						              
 select distinct on (uth_claim_id) 
-	   'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, a.caseid,
+	   'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, trunc(stdplac,0)::text, null, trunc(a.caseid,0)::text,
         null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
         a.msclmid, a.enrolid, 'mdcrs'
 from truven.mdcrs a
@@ -75,9 +78,8 @@ vacuum analyze data_warehouse.claim_header;
 ----this will eliminate duplicate records from claim header and put them aside for further research
 drop table quarantine.duplicate_claim_headers ;
 
-
+insert into quarantine.duplicate_claim_headers 
 select uth_claim_id, data_source 
-into quarantine.duplicate_claim_headers
 from (
 	select count(*) as rc, uth_claim_id, data_source
 	from data_warehouse.claim_header 
@@ -88,7 +90,9 @@ where rc > 1
 
 vacuum analyze quarantine.duplicate_claim_headers; 
 
-select distinct data_source from quarantine.duplicate_claim_headers;
+select count(*), data_source 
+from quarantine.duplicate_claim_headers
+group by data_source;
 
 delete from data_warehouse.claim_header where uth_claim_id in ( select uth_claim_id from quarantine.duplicate_claim_headers);
 
