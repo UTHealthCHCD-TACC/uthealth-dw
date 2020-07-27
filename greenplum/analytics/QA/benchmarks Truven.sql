@@ -309,25 +309,116 @@ where a.uth_member_id = b.uth_member_id
 select * from truven.ccaef where enrolid = 3967816901.0
 
 
-select * from dev.wc_bench_trv_members wbtm 
+---------------------------------------------------------------------------------------------------------
 
+------------***************************Utilization*****************************************************************
 
-select count(distinct caseid ), sum(a.netpay ), a.year, b.emp_status 
-from truven.ccaef a 
- join dev.wc_bench_trv_members b 
-    on enrolid::text = myenrolid 
-   and b.year = a.year 
-where substring(billtyp,1,2) = '11'
-group by a.year, b.emp_status 
-;
+-----------------------------------------------------------------------------------------------------
 
+----Do Active vs FT first across all rows
 
-select count(distinct uth_claim_id ), sum(total_allowed_amount ), a.year, b.emp_status 
+--inpatient
+select count(distinct admission_id_src ), sum(total_allowed_amount ), a.year, b.emp_status 
 from data_warehouse.claim_header a 
    join dev.wc_bench_trv_members b 
      on a.uth_member_id  = b.uth_member_id 
+     and a.year = b.year 
+where substring(bill_type,1,2) = '11' 
+group by a.year, emp_status 
+order by a.year, emp_status 
+;
+
+
+
+
+
+select count(distinct uth_claim_id ), sum(total_allowed_amount ), a.year, b.emp_status
+from data_warehouse.claim_header a 
+   join dev.wc_bench_trv_members b 
+     on a.uth_member_id  = b.uth_member_id 
+     and a.year = b.year 
+where substring(bill_type,1,2) = '11' 
+group by a.year, emp_status
+order by a.year, emp_status 
+;
+
+
+
+--ED Visits
+select count(distinct uth_claim_id ), sum(total_allowed_amount ), a.year, b.emp_status 
+from data_warehouse.claim_detail a 
+   join dev.wc_bench_trv_members b 
+     on a.uth_member_id  = b.uth_member_id 
     and a.year = b.year 
-where a.place_of_service = '11' 
-  and a.claim_type = 'F'
+where revenue_cd in ('0760','0761','0762','0769')
 group by a.year, b.emp_status 
 order by a.year, emp_status 
+
+
+select count(*) , data_source, year  
+from data_warehouse.claim_detail cd 
+group by data_source , year 
+
+
+-----truven bill type updates - needs to be moved to claim load scripts -------
+---************************************************
+
+update data_warehouse.claim_header set admission_id_src = trunc(admission_id_src::numeric,0)::text,
+                                       member_id_src = trunc(member_id_src::numeric,0)::text,
+                                       claim_id_src = trunc(claim_id_src::numeric,0)::text
+ where data_source = 'truv' 
+ ;
+
+
+select count (distinct caseid), year 
+from truven.ccaef 
+group by year ;
+
+select count(distinct uth_claim_id), year 
+from data_warehouse.claim_header 
+where data_source = 'truv' and admission_id_src is not null 
+group by year; 
+
+select count(distinct admission_id_src ), year 
+from data_warehouse.claim_header 
+where data_source = 'truv' and admission_id_src is not null 
+group by year; 
+
+
+drop table dev.wc_temp_ccaef;
+
+select min(billtyp) as bt, caseid, enrolid, f."year" as yr 
+into dev.wc_temp_ccaef
+from truven.ccaef f 
+where caseid is not null
+group by caseid, enrolid, year ;
+
+select min(billtyp) as bt, caseid, enrolid, f."year" as yr 
+into dev.wc_temp_mdcrf
+from truven.mdcrf f 
+where caseid is not null
+group by caseid, enrolid, year ;
+
+
+update data_warehouse.claim_header set bill_type = bt
+from dev.wc_temp_ccaef
+where caseid::text = admission_id_src 
+  and enrolid::text = member_id_src 
+  and data_source = 'truv'
+  and year = yr 
+  ;
+ 
+ update data_warehouse.claim_header set bill_type = bt
+from dev.wc_temp_mdcrf
+where trunc(caseid,0)::text = admission_id_src 
+  and trunc(enrolid,0)::text = member_id_src 
+  and data_source = 'truv'
+  and year = yr 
+  ;
+ 
+ 
+ select enrolid::text 
+ from dev.wc_temp_mdcrf;
+ 
+ 
+update data_warehouse.claim_header set bill_type = null where data_source = 'truv';
