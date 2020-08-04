@@ -242,6 +242,22 @@ from optum_zip.medical a
  order by b.year, b.bus_cd
  ;
 
+--ED Visits
+select count(distinct a.uth_claim_id::text || from_date_of_service::text), sum(a.allowed_amount ), 
+       b.year, b.bus_cd 
+from data_warehouse.claim_detail a
+   join dev.wc_bench_optz_members b 
+    on a.uth_member_id  = b.uth_member_id 
+    and a.year = b.year
+    and a.revenue_cd in ('450','451','452','456','459','0450','0451','0452','0456','0459')
+    and a.bill_type_class = '3'
+    and a.bill_type_inst = '1' 
+ group by b.year, b.bus_cd
+ order by b.year, b.bus_cd
+ ;
+
+
+
 --30 day readmissions
 drop table  dev.wc_optz_readmissions
 
