@@ -19,7 +19,7 @@ SVCDATE,SVCSCAT,TSVCDAT,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,WGTKEY,
 EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,PLANKEY,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
-v3 Fields: (Drop PLANKEY and WGTKEY, Add DXVER, UNITS and NPI)
+v3 Fields: (Drop PLANKEY and WGTKEY, Add DXVER, UNITS and NPI) 2016
 
 SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
 CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
@@ -113,6 +113,7 @@ CREATE TABLE truven.mdcrs (
 	hlthplan int2 null,
 	indstry bpchar(5) null
 )
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 DISTRIBUTED RANDOMLY;
 
 drop external table ext_mdcrs_v1;
@@ -188,7 +189,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://192.168.58.179:8081/mdcrs/v1/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -286,7 +287,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://192.168.58.179:8081/mdcrs/v2/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -384,7 +385,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v3 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/mdcrs162*'
+'gpfdist://192.168.58.179:8081/truven/2018/mdcrs*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -487,7 +488,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v4 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/mdcrs171*'
+'gpfdist://192.168.58.179:8081/mdcrs/v4/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

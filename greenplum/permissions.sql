@@ -1,22 +1,28 @@
+revoke all on schema public from public;
+
+
+
+
+---making a note 
 /*
  * UTHealth Admin Role
  */
 create role uthealthadmin;
 grant connect on database uthealth to group uthealthdev;
 
-
---uthealthadmin
 grant all on database uthealth to uthealthadmin;
 
 --Schemas
 grant all on schema truven to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant all on tables to group uthealthadmin; 
 
-grant all on schema optum_dod to group uthealthadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant all on tables to group uthealthadmin; 
+grant all on schema optum_dod_refresh to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod_refresh grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA optum_dod_refresh TO uthealthadmin;
 
-grant all on schema optum_zip to group uthealthadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant all on tables to group uthealthadmin; 
+grant all on schema optum_zip_refresh to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip_refresh grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA optum_zip_refresh TO uthealthadmin;
 
 grant all on schema reference_tables to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA reference_tables grant all on tables to group uthealthadmin; 
@@ -32,7 +38,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant all on tables to group uthealthadmi
 
 grant all on schema dev2016 to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA dev2016 grant all on tables to group uthealthadmin; 
-
 
 
 /*
@@ -51,14 +56,14 @@ grant select on all tables in schema truven to group uthealthdev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant select on tables to group uthealthdev; 
 
 --optum_dod
-grant usage on schema optum_dod to group uthealthdev;
-grant select on all tables in schema optum_dod to group uthealthdev;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uthealthdev; 
+grant usage on schema optum_dod_refresh to group uthealthdev;
+grant select on all tables in schema optum_dod_refresh to group uthealthdev;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod_refresh grant select on tables to group uthealthdev; 
 
 --optum_zip
-grant usage on schema optum_zip to group uthealthdev;
-grant select on all tables in schema optum_zip to group uthealthdev;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant select on tables to group uthealthdev; 
+grant usage on schema optum_zip_refresh to group uthealthdev;
+grant select on all tables in schema optum_zip_refresh to group uthealthdev;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip_refresh grant select on tables to group uthealthdev; 
 
 --reference_tables
 grant usage on schema reference_tables to group uthealthdev;
@@ -93,68 +98,89 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group uthea
  * UTHealth Analyst Role
  */
 
-create role analyst;
-grant connect on database uthealth to group analyst;
+CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
 
+CREATE ROLE chautruong NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+
+CREATE ROLE mschief3 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+
+grant analyst to mschief3;
+
+grant analyst to smadhuri;
+
+grant analyst to chautruong;
+
+grant analyst to yliu26;
+
+grant analyst to lghosh1;
+
+
+-- analyst role definition
+drop owned by analyst cascade;
+
+drop role analyst;
+
+create role analyst;
+
+grant connect on database uthealth to analyst;
 
 --Schemas
-
---truven
-grant usage on schema truven to group analyst;
-grant select on all tables in schema truven to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant select on tables to group analyst; 
-
---optum_dod
-grant usage on schema optum_dod to group analyst;
-grant select on all tables in schema optum_dod to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group analyst; 
-
---optum_zip
-grant usage on schema optum_zip to group analyst;
-grant select on all tables in schema optum_zip to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant select on tables to group analyst; 
-
---reference_tables
+--reference_tables (select only)
 grant usage on schema reference_tables to group analyst;
 grant select on all tables in schema reference_tables to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA reference_tables grant select on tables to group analyst; 
 
---data_warehouse
+--data_warehouse (select only) 
 grant usage on schema data_warehouse to group analyst;
 grant select on all tables in schema data_warehouse to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to group analyst; 
 
---medicare
-grant usage on schema medicare to group analyst;
-grant select on all tables in schema medicare to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant select on tables to group analyst; 
 
---dev
-grant usage on schema dev to group analyst;
-grant select on all tables in schema dev to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant select on tables to group analyst; 
+--dw_qa (select only) 
+grant usage on schema dw_qa to group analyst;
+grant select on all tables in schema dw_qa to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA dw_qa grant select on tables to group analyst; 
 
---dev2016
-grant usage on schema dev2016 to group analyst;
-grant select on all tables in schema dev2016 to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dev2016 grant select on tables to group analyst; 
-
---tableau
-grant usage on schema tableau to group analyst;
+--tableau (select only)
+grant all on schema tableau to group analyst;
 grant select on all tables in schema tableau to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group analyst; 
+
+--dev (all access)
+grant all on schema dev to analyst;
+
+grant all on all tables in schema dev to analyst;
+
+grant all privileges on all sequences in schema dev to analyst;
+
+alter default privileges in schema dev grant all privileges to group analyst;
+
+
+
+--raw data tables (select only)
+grant usage on schema truven, medicare, optum_dod, optum_zip to group analyst;
+grant select on all tables in schema truven, medicare, optum_dod, optum_zip to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA truven, medicare, optum_dod, optum_zip grant select on tables to group analyst; 
+
+
+-------------------------------------------------------------------------------------------
 
 /*
  * Create User
  */
 --Create User
-drop role dwtest;
-CREATE ROLE cms2 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
+drop role uthtest;
 
-grant uthealthadmin to dwtest;
+
+CREATE ROLE uthtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'd3f@ult$';
+
+grant uthealthadmin to uthtest;
 grant uthealthdev to cms2;
+grant analyst to uthtest;
 
 grant connect on database uthealth to dwtest;
+
+alter role uthtest nosuperuser;
 
 /*
  * Public Schema settings
@@ -166,7 +192,7 @@ grant select on tables in SCHEMA pg_catalog TO public;
 /*
  * Password change
  */
-alter user turban with password 'changeme';
+alter user uthtest with password 'uthtest';
 
 /*
  * Superuser
@@ -204,3 +230,6 @@ SELECT
 FROM pg_catalog.pg_roles r
 ORDER BY 1;
 
+
+
+select * from pg_catalog.pg_tables where tableowner = 'yliu26'

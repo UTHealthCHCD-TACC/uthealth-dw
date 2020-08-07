@@ -2,6 +2,10 @@
 * Examine various claim 'stories' at the raw data level.
 */
 
+SELECT * 
+FROM dw_qa.dim_uth_claim_id
+WHERE uth_member_id = 339826076 and uth_claim_id = 9368354758;
+
 /*
  * Case 1: Abnormal weight loss, ct scans + drugs
  */
@@ -42,6 +46,11 @@ order by o.seqnum;
 @set clmid = 266334
 @set enrolid = 14516012
 
+/*
+ * Case 3: Random Proc Case
+ */
+@set clmid = 910974166.0
+@set enrolid = 268861401.0
 --Inpatient
 select distinct c.code as proc_code, c.desc, s.dx1, ic.description dx1_desc, 
 'ADMISSIONS:', 
@@ -52,9 +61,9 @@ i.*,
 p.value as place_of_service,
 st.value as service_type,
 s.*
-from truven_ccaes s 
+from truven.mdcri s 
 left join truven.ref_place_of_service p on s.stdplac=p.key
-left join truven.ccaei i on s.caseid=i.caseid and s.enrolid=i.enrolid
+left join truven.mdcri i on s.caseid=i.caseid and s.enrolid=i.enrolid
 left join truven.ref_admit_type atyp on i.admtyp=atyp.key
 left join truven.ref_discharge_status ds on i.dstatus=ds."key"
 left join truven.ref_service_type st on s.svcscat=st.key
@@ -65,10 +74,18 @@ and s.enrolid=:enrolid
 order by s.seqnum;
 
 -- Individual tables
-select *
-from truven.ccaeo
-where msclmid=:clmid
-and enrolid=:enrolid;
+
+
+/*
+ * ICD Procs?
+ */
+
+
+
+/*
+ * End Procedure
+ */
+
 
 select msclmid, enrolid
 from truven_ccaeo

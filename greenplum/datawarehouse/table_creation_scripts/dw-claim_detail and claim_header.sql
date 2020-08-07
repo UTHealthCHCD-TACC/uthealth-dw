@@ -1,9 +1,10 @@
 
 
-drop table if exists dw_qa.claim_detail;
+drop table if exists data_warehouse.claim_detail;
 
-create table dw_qa.claim_detail ( 
+create table data_warehouse.claim_detail ( 
 		data_source char(4),
+		year int2,
 		uth_claim_id numeric, 
 		claim_sequence_number int4,
 		uth_member_id bigint, 
@@ -13,7 +14,7 @@ create table dw_qa.claim_detail (
 		perf_provider_id text,
 		bill_provider_id text,
 		ref_provider_id text,
-		place_of_service int, 
+		place_of_service text, 
 		network_ind bool,
 		network_paid_ind bool,
 		admit_date date,
@@ -37,24 +38,23 @@ create table dw_qa.claim_detail (
 		drg_cd text,
 		claim_id_src text,
 		member_id_src text,
-		table_id_src text
+		table_id_src text,
+		claim_sequence_number_src text,
+		cob_type text
 ) with (appendonly=true, orientation = column)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 
-analyze dw_qa.claim_detail;
+analyze data_warehouse.claim_detail;
 
 
-
-select version();
-
-alter table dw_qa.claim_detail alter column ref_provider_id type text;
 -----------------------------------------------------------------------------------------------
 
-drop table if exists dw_qa.claim_header;
+drop table if exists data_warehouse.claim_header;
 
-create table dw_qa.claim_header (
+create table data_warehouse.claim_header (
 		data_source char(4),
+		year int2,
 		uth_claim_id numeric, 
 		uth_member_id bigint, 
 		from_date_of_service date,
@@ -69,9 +69,9 @@ create table dw_qa.claim_header (
 		member_id_src text,
 		table_id_src text
 ) with (appendonly=true, orientation = column)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 
-analyze dw_qa.claim_header;
+analyze data_warehouse.claim_header;
 
 -----------------------------------------------------------------------------------------------

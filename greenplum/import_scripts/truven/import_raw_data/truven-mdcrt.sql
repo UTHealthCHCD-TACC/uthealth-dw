@@ -76,7 +76,7 @@ CREATE EXTERNAL TABLE ext_mdcrt_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://192.168.58.179:8081/v1/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -122,7 +122,7 @@ CREATE EXTERNAL TABLE ext_mdcrt_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/mdcrt*'
+'gpfdist://192.168.58.179:8081/truven/2018/mdcrt*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -143,9 +143,9 @@ select count(*), min(year), max(year) from truven.mdcrt;
 
 
 -- Fix storage options
-create table truven.mdcrt_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcrt)
+create table truven.mdcrs_new 
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcrs)
 distributed randomly;
 
 drop table truven.mdcrt;

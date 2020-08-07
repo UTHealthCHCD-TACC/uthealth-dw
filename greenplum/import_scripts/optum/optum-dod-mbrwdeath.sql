@@ -1,35 +1,35 @@
---Optum_DOD mbrwdeath load
-drop table optum_dod.member_wdeath;
-create table optum_dod.member_wdeath (
+--optum_dod_refresh mbrwdeath load
+drop table optum_dod_refresh.mbrwdeath;
+create table optum_dod_refresh.mbrwdeath (
 PatID bigint, Death_ym Date, Extract_ym Date, VERSION numeric
 ) 
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed randomly;
 
-drop external table ext_member_wdeath;
-CREATE EXTERNAL TABLE ext_member_wdeath (
+drop external table ext_mbrwdeath;
+CREATE EXTERNAL TABLE ext_mbrwdeath (
 PatID bigint, Death_ym int, Extract_ym int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/optum/dod/dod_mbrwdeath.txt'
+'gpfdist://192.168.58.179:8081/dod_mbrwdeath.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_member_wdeath
+from ext_mbrwdeath
 limit 1000;
 
 -- Insert
-insert into optum_dod.member_wdeath
+insert into optum_dod_refresh.mbrwdeath
 select ex.PatID
       ,(ex.Death_ym::varchar || '01')::date
       ,(ex.Extract_ym::varchar || '01')::date
       ,ex.Version
-from ext_member_wdeath ex;
+from ext_mbrwdeath ex;
 
 -- Analyze
-analyze optum_dod.member_wdeath;
+analyze optum_dod_refresh.mbrwdeath;
 
 --Verify
-select count(*) from optum_dod.member_wdeath;
+select count(*) from optum_zip_refresh.mbrwdeath;

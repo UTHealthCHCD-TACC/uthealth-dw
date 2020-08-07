@@ -16,5 +16,5 @@ analyze truven.mdcrf;
 analyze truven.mdcri;
 analyze truven.mdcro;
 analyze truven.mdcrp;
-analyze truven.mdcrs;
-analyze truven.mdcrt;
+analyze truven.mdcrs_new;
+analyze truven.mdcrt_new;
