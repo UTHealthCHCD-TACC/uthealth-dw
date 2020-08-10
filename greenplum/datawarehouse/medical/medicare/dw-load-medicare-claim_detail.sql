@@ -1,3 +1,4 @@
+delete from data_warehouse.claim_detail where data_source = 'mdcr';
 
 
 ----inpatient
@@ -80,9 +81,7 @@ from medicare.bcarrier_line_k a
    join reference_tables.ref_month_year d
 	    on d.month_int = extract(month from b.clm_from_dt::date) 
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
-where extract(year from b.clm_from_dt::date) between 2015 and 2017
 ;
-
 
 
 
@@ -110,7 +109,6 @@ from medicare.dme_line_k a
  join reference_tables.ref_month_year d 
     on d.month_int = extract(month from b.clm_from_dt::date)
    and d.year_int = extract(year from b.clm_from_dt::date)
-where extract(year from b.clm_from_dt::date) between 2015 and 2017
 ;
 
 
@@ -166,7 +164,6 @@ from medicare.hospice_revenue_center_k a
  join reference_tables.ref_month_year d 
     on d.month_int = extract(month from b.clm_from_dt::date)
    and d.year_int = extract(year from b.clm_from_dt::date)
-where extract(year from b.clm_from_dt::date) between 2015 and 2017
 ;
 
 --snf

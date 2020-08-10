@@ -106,6 +106,11 @@ from cte_distinct_member
 
 
 
+update  medicare.mbsf_abcd_summary 
+set bene_enrollmt_ref_yr = trunc(bene_enrollmt_ref_yr::numeric,0)::text
+where bene_enrollmt_ref_yr = '2016.0'
+
+
 --- Medicare
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
