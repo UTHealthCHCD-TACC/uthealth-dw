@@ -1,6 +1,8 @@
 
 delete from data_warehouse.claim_header where data_source = 'mdcr'
 
+vacuum analyze data_warehouse.claim_header 
+
 --inpatient
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)					        
@@ -117,7 +119,9 @@ vacuum analyze data_warehouse.claim_header;
 
 
 
-select count(*) from data_warehouse.claim_header where data_source = 'mdcr';
+select count(*), year, table_id_src  from data_warehouse.claim_header where data_source = 'mdcr'
+group by year, table_id_src 
+order by year, table_id_src ;
 
 
 

@@ -1,11 +1,40 @@
-/* code to populate dim_uth_claim_id, run dw-create-dim_uth_claim_id.sql to build table first
+--This table is used to generate a de-identified claim id that will be used to populate claim_detail and claim_header tables
+--The uth_claim_id column will be a sequence that is initially set to a 100,000,000
+
+
+select count(*), data_source, data_year 
+from data_warehouse.dim_uth_claim_id 
+group by data_source, data_year
+order by data_source, data_year
+
+drop table if exists data_warehouse.dim_uth_claim_id;
+
+CREATE TABLE data_warehouse.dim_uth_claim_id (
+	uth_claim_id bigserial NOT NULL,
+	uth_member_id int8 null,
+	data_source bpchar(4) NULL,
+	claim_id_src text NOT NULL,
+	member_id_src text NOT NULL,
+	data_year int4 NOT NULL
+)
+WITH (appendonly=true, orientation=column)
+DISTRIBUTED BY (uth_member_id);
+
+alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq restart with 100000000;
+
+alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq cache 200;
+
+
+analyze data_warehouse.dim_uth_claim_id;
+
+
+/* code to populate dim_uth_claim_id
  * 
  * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
  */
 
-delete from data_warehouse.dim_uth_claim_id where data_source in ('trvc','trvm','truv')
 
----truven commercial, outpatient - 15min 2,479,688,920 rows
+---truven commercial, outpatient 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
 from truven.ccaeo a
@@ -21,7 +50,10 @@ and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
- 
+vacuum analyze truven.ccaes; 
+
+vacuum analyze data_warehouse.dim_uth_claim_id;
+
 --truven commercial, inpatient
 insert into data_warehouse.dim_uth_claim_id ( data_source, claim_id_src, member_id_src , uth_member_id, data_year )                                              
 select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
@@ -29,12 +61,12 @@ from truven.ccaes a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
---  left join data_warehouse.dim_uth_claim_id c
---	    on  b.data_source = c.data_source
---	      and a.msclmid::text = c.claim_id_src 
---	      and a.enrolid::text = c.member_id_src
+  left join data_warehouse.dim_uth_claim_id c
+	    on  b.data_source = c.data_source
+	      and a.msclmid::text = c.claim_id_src 
+	      and a.enrolid::text = c.member_id_src
   where a.enrolid is not null
---and c.uth_claim_id is null
+and c.uth_claim_id is null
 group by 1, 2, 3, 4
 ;
 
@@ -43,48 +75,43 @@ group by 1, 2, 3, 4
 vacuum analyze data_warehouse.dim_uth_claim_id;
 
 
---- truven medicare outpatient 2min, 506,266,398
+---truven medicare, outpatient 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
 from truven.mdcro a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
---  left join data_warehouse.dim_uth_claim_id c
---    on  b.data_source = c.data_source
---      and a.msclmid::text = c.claim_id_src 
---      and a.enrolid::text = c.member_id_src 
+  left join data_warehouse.dim_uth_claim_id c
+    on  b.data_source = c.data_source
+      and a.msclmid::text = c.claim_id_src 
+      and a.enrolid::text = c.member_id_src 
 where a.enrolid is not null
---and c.uth_claim_id is null
+and c.uth_claim_id is null
 group by 1, 2, 3, 4
 ;
 
 
-
----Truven medicare inpatient  2min 50,129,682
+---truven medicare inpatient
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year )     
 select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
 from truven.mdcrs a  
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
---  left join data_warehouse.dim_uth_claim_id c
---    on  b.data_source = c.data_source
---      and a.msclmid::text = c.claim_id_src 
---      and a.enrolid::text = c.member_id_src
+  left join data_warehouse.dim_uth_claim_id c
+    on  b.data_source = c.data_source
+      and a.msclmid::text = c.claim_id_src 
+      and a.enrolid::text = c.member_id_src
 where a.enrolid is not null
---and c.uth_claim_id is null
+and c.uth_claim_id is null
 group by 1,2,3,4;
-
-
 
 
 vacuum analyze data_warehouse.dim_uth_claim_id
 
 
-
-
---Optum Dod 15min
+--Optum dod 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
 from optum_dod.medical a
@@ -100,7 +127,7 @@ and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
---Optum Zip 20m
+--Optum zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
 from optum_zip.medical a
@@ -226,13 +253,14 @@ where c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
+vacuum analyze  data_warehouse.dim_uth_claim_id;
 
 -- Scratch
 
-select count(distinct uth_claim_id), count(*), data_source, data_year 
+select  count(*), data_source, data_year 
 from data_warehouse.dim_uth_claim_id
---where data_source = 'trvc'
-group by data_source, data_year;
+group by data_source, data_year
+order by data_source, data_year ;
 
 
 select count(distinct msclmid::text || enrolid::text || year::text ) from truven.ccaeo;

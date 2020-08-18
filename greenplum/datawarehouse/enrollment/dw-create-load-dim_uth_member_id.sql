@@ -125,6 +125,14 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+select count(*), count(distinct bene_id), mas.bene_enrollmt_ref_yr  
+from medicare.mbsf_abcd_summary mas 
+group by mas.bene_enrollmt_ref_yr
+
+select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mdcr';
+
+select count(distinct bene_id) from medicare.mbsf_abcd_summary mas ;
+
 
 ---******************************** Pharmacy tables---------*****************************
 

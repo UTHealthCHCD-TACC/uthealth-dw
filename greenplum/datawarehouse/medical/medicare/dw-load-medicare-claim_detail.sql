@@ -28,6 +28,22 @@ from medicare.inpatient_revenue_center_k a
 ;
 
 
+select count(*), year 
+from data_warehouse.claim_detail 
+where table_id_src = 'inpatient_revenue_center_k'
+group by year 
+
+
+select count(*), count(distinct clm_id), extract(year from clm_from_dt::date) 
+from medicare.inpatient_base_claims_k s
+group by extract(year from clm_from_dt::date) 
+
+
+select count(*), count(distinct uth_claim_id), year 
+from data_warehouse.claim_header 
+where data_source = 'mdcr'
+group by year ; 
+
 
 ---outpatient
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
@@ -83,6 +99,20 @@ from medicare.bcarrier_line_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+
+select count(*), extract (year from clm_from_dt::date)
+from medicare.bcarrier_claims_k 
+group by extract (year from clm_from_dt::date)
+
+
+select count(*), year 
+from data_warehouse.claim_detail cd 
+where table_id_src = 'bcarrier_claims_k'
+group by year;
+
+
+select * from medicare.bcarrier_claims_k 
+where extract (year from clm_from_dt::date) = 2015
 
 
 --dme

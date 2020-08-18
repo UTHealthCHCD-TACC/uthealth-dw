@@ -48,8 +48,6 @@ select distinct on( data_source, year, uth_member_id )
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag
 from data_warehouse.member_enrollment_monthly
-where data_source = 'mdcr' and year = 2016 
-order by uth_member_id
 ;
 
 drop table dev.temp_member_enrollment_month;
@@ -60,7 +58,6 @@ WITH (appendonly=true, orientation=column)
 as
 select uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source = 'mdcr' and year = 2016 
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;

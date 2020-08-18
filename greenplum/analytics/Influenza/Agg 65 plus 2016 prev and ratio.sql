@@ -1,13 +1,12 @@
 
-drop table dev.wc_temp_mdcd65_2016x
+drop table dev.wc_temp_mdcd65_2016
 
-create table dev.wc_temp_mdcd65_2016x ( client_num text, sex char(1), age text, vacc_flag text);
-
-
-select count(*) from dev.wc_temp_mdcd65_2016x
+create table dev.wc_temp_mdcd65_2016 ( client_num text, sex char(1), age text, zip3 char(3), vacc_flag text);
 
 
-delete from dev.wc_temp_mdcd65_2016
+select count(*) from dev.wc_temp_mdcd65_2016
+
+
 
 ---optum and truven cohorts from DW
 drop table dev.wc_flu_65plus_2016;
@@ -48,15 +47,18 @@ update dev.wc_flu_65plus_2016 a set vacc_flag = 1
  ;
 
 
+drop table dev.wc_flu_65plus_all_2016
+
+update dev.wc_temp_mdcd65_2016 set vacc_flag = '0' where vacc_flag = '';
+
+select * from dev.wc_flu_65plus_2016
 
 select * 
 into dev.wc_flu_65plus_all_2016
 from ( 
 select * from dev.wc_flu_65plus_2016
 union 
-select client_num::bigint, sex, 'mdcd' as data_source,  vacc_flag::int from dev.wc_temp_mdcd65_2016x
-union 
-select client_num::bigint, sex, 'mdcd' as data_source,  vacc_flag::int  from dev.wc_temp_mdcd65_2016
+select client_num::bigint, sex, zip3, 'mdcd' as data_source,  vacc_flag::int from dev.wc_temp_mdcd65_2016
 ) inr 
 
 
@@ -132,17 +134,16 @@ where  a.gender_cd = 'M'
 ---********************** Prevalance by ZIP **************************
 ----------------------------------------------------------------------------------------
 
--- truven 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
 from dev.wc_flu_65plus_all_2016 a 
-where a.data_source = 'truv'
+where a.data_source = 'mdcr'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
 from dev.wc_flu_65plus_all_2016 a 
-where a.data_source = 'truv'
+where a.data_source = 'mdcr'
   and a.gender_cd = 'F'
   group by a.zip3 
 order by a.zip3
@@ -151,7 +152,7 @@ order by a.zip3
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
 from dev.wc_flu_65plus_all_2016 a 
-where a.data_source = 'truv'
+where a.data_source = 'mdcr'
   and a.gender_cd = 'M'
   group by a.zip3 
 order by a.zip3
