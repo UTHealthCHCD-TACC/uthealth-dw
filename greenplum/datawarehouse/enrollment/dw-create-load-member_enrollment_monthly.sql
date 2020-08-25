@@ -226,7 +226,6 @@ from medicare.mbsf_abcd_summary m
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code
-where m.bene_enrollmt_ref_yr in ('2014','2015')
 ;
 	
 

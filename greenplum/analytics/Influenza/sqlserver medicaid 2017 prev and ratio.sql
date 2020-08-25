@@ -2,6 +2,7 @@
 
 drop table stage.dbo.wc_mdcd_flu_2017;
 
+
 select client_nbr, min(zip3) as zip3, max(sex) as sex, min(age) as age , min(age_Group) as age_group
 into stage.dbo.wc_mdcd_flu_2017
 from 
@@ -49,7 +50,6 @@ delete from stage.dbo.wc_mdcd_flu_2017 where age_group is null;
 delete from stage.dbo.wc_mdcd_flu_2017 where zip3 = '771';
 
 
-select distinct zip3 from stage.dbo.wc_mdcd_flu_2017;
 
 drop table stage.dbo.wc_mdcd_vacc_derv_enc_2017 ;
 
@@ -80,11 +80,11 @@ into stage.dbo.wc_mdcd_vacc_mem_2017
 from 
 (
 select distinct a.mem_id 
-from medicaid.dbo.enc_proc_18 a 
+from medicaid.dbo.enc_proc_17 a 
 where a.DERV_ENC in ( select derv_enc from stage.dbo.wc_mdcd_vacc_derv_enc_2017) 
 union 
 select distinct a.mem_id 
-from medicaid.dbo.enc_proc_17 a 
+from medicaid.dbo.enc_proc_18 a 
 where a.DERV_ENC in ( select derv_enc from stage.dbo.wc_mdcd_vacc_derv_enc_2017) 
 ) inr ; 
 
@@ -148,3 +148,6 @@ from stage.dbo.wc_mdcd_flu_2017
 where age_group = 6
 group by zip3
 order by zip3;
+
+
+

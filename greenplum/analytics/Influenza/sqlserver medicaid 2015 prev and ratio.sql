@@ -50,7 +50,6 @@ delete from stage.dbo.wc_mdcd_flu_2015 where age_group is null;
 delete from stage.dbo.wc_mdcd_flu_2015 where zip3 = '771';
 
 
-select distinct zip3 from stage.dbo.wc_mdcd_flu_2015;
 
 drop table stage.dbo.wc_mdcd_vacc_derv_enc_2015 ;
 
@@ -149,3 +148,6 @@ from stage.dbo.wc_mdcd_flu_2015
 where age_group = 6
 group by zip3
 order by zip3;
+
+
+

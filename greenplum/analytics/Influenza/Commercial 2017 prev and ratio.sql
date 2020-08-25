@@ -1,5 +1,5 @@
 ---optum and truven cohorts from DW
-drop table dev.wc_flu_com_2017_vacc;
+drop table dev.wc_flu_com_2017;
 
 select uth_member_id, 
        a.zip3, 
@@ -110,10 +110,11 @@ where a.data_source = 'truv'
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag)
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag), age_group
 from dev.wc_flu_com_2017 a 
 where a.data_source = 'truv'
-  and a.age_group = '6'
+ group by age_group
+ order by age_group 
 ;
 
 --prevalance all OPTZ - row 51  
@@ -135,10 +136,11 @@ where a.data_source = 'optz'
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id), sum(vacc_flag)
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag), age_group
 from dev.wc_flu_com_2017 a 
 where a.data_source = 'optz'
-  and a.age_group = '6'
+ group by age_group
+ order by age_group 
 ;
 
 ----------------------------------------------------------------------------------------
@@ -180,7 +182,7 @@ order by a.zip3
   ;
   
  
- -- optum by zip 
+ -- OPTUM -------------
 select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, a.zip3 
 from dev.wc_flu_com_2017 a 
 where a.data_source = 'optz'
