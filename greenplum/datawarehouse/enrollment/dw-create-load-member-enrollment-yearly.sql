@@ -186,6 +186,37 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 10;
 
 
+
+---states are calculated base on most lived state in a given year 
+drop table dev.wc_state_yearly_final ;
+  
+select count(*), min(month_year_id) as my, uth_member_id, state, year 
+ into dev.wc_state_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, state, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_state_yearly_final
+from dev.wc_state_yearly
+--where uth_member_id = 100000030 --100000061
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set state = b.state 
+from dev.wc_state_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+
+vacuum analyze data_warehouse.member_enrollment_yearly;
+
+
+-----------------------------------------
+
+
 --Scratch
 select count(*), count(distinct uth_member_id ), year , data_source 
 from  data_warehouse.member_enrollment_yearly
