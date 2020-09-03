@@ -42,13 +42,17 @@ vacuum analyze data_warehouse.member_enrollment_yearly;
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
+select a.uth_member_id , a.zip3, a.zip5, year, count(*)
+from data_warehouse.member_enrollment_monthly a 
+group by a.uth_member_id, zip3, zip5 , year 
+
+
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag
 from data_warehouse.member_enrollment_monthly
-order by uth_member_id
 ;
 
 drop table dev.temp_member_enrollment_month;
@@ -183,9 +187,10 @@ select * from data_warehouse.member_enrollment_yearly where total_enrolled_month
 
 
 --Scratch
-select count(*), count(distinct uth_member_id ), year 
+select count(*), count(distinct uth_member_id ), year , data_source 
 from  data_warehouse.member_enrollment_yearly
-group by year;
+group by year, data_source 
+order by data_source , year ;
 
 select * from  data_warehouse.member_enrollment_yearly where enrolled_jul is false limit 10;
 select month_year_id, month_year_id % year as month from  data_warehouse.member_enrollment_monthly order by uth_member_id limit 10;

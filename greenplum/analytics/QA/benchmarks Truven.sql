@@ -53,6 +53,18 @@ update dev.wc_bench_trv_members set emp_status = case when employee_status_raw i
 
 
         										      
+alter table dev.wc_bench_trv_members add column gender char(1);
+
+update dev.wc_bench_trv_members a set gender = b.gender_cd
+from data_warehouse.member_enrollment_yearly b 
+  where a.uth_member_id = b.uth_member_id 
+ and a.year = b.year 
+ ;
+
+
+----
+        										      
+        										      
 drop table dev.wc_trv_family
 
 select distinct efamid, enrolid, '0' as flg , year, 0 as uth_mem 
@@ -329,35 +341,170 @@ order by a.year, emp_status
 ;
 
 
+--ED Visits
+select count(distinct a.uth_claim_id::text || from_date_of_service::text), count(a.uth_claim_id ), sum(a.allowed_amount ), 
+       b.year , b.emp_status 
+from data_warehouse.claim_detail a
+   join dev.wc_bench_trv_members b 
+     on a.uth_member_id  = b.uth_member_id 
+    and a.year = b.year
+    and a.revenue_cd in ('450','451','452','456','459','0450','0451','0452','0456','0459')
+group by b.year , b.emp_status 
+order by b.year , b.emp_status 
+;
+
+
+--30 day readmissions
+drop table  dev.wc_trv_readmissions;
+
+select a.uth_member_id, a.admission_id_src,  b.year, b.age_group , b.gender ,b.emp_status , min(a.from_date_of_service) as fst_dt
+into dev.wc_trv_readmissions
+from data_warehouse.claim_header a 
+ join dev.wc_bench_trv_members b 
+    on b.uth_member_id = a.uth_member_id 
+   and b.year = a.year 
+where substring(bill_type,1,2) = '11' 
+ group by a.uth_member_id, a.admission_id_src,  b.year, b.age_group , b.gender, b.emp_status 
+;
+
+
+select count(distinct admission_id_src), year, emp_status 
+from dev.wc_trv_readmissions a 
+where exists ( select 1 from dev.wc_trv_readmissions b 
+						where a.uth_member_id = b.uth_member_id 
+						 and b.fst_dt > a.fst_dt 
+						and b.fst_dt < a.fst_dt + interval'30 days' )
+group by year,  emp_status 
+order by year,  emp_status 
+;
 
 
 
-select count(distinct uth_claim_id ), sum(total_allowed_amount ), a.year, b.emp_status
+
+------------------------ HCC -------------------- PMPY 
+--- *****************************************************************************************
+--inpatient
+select count(distinct admission_id_src ), sum(total_allowed_amount ), a.year, b.emp_status 
 from data_warehouse.claim_header a 
    join dev.wc_bench_trv_members b 
      on a.uth_member_id  = b.uth_member_id 
      and a.year = b.year 
 where substring(bill_type,1,2) = '11' 
-group by a.year, emp_status
+  and b.uth_member_id in ( select uth_member_id from dev.wc_bench_trv_pmpy )
+group by a.year, emp_status 
 order by a.year, emp_status 
 ;
 
 
-
 --ED Visits
-select count(distinct uth_claim_id ), sum(total_allowed_amount ), a.year, b.emp_status 
-from data_warehouse.claim_detail a 
+select count(distinct a.uth_claim_id::text || from_date_of_service::text), count(a.uth_claim_id ), sum(a.allowed_amount ), 
+       b.year , b.emp_status 
+from data_warehouse.claim_detail a
+   join dev.wc_bench_trv_members b 
+     on b.uth_member_id in ( select uth_member_id from dev.wc_bench_trv_pmpy )
+    and a.uth_member_id  = b.uth_member_id 
+    and a.year = b.year
+    and a.revenue_cd in ('450','451','452','456','459','0450','0451','0452','0456','0459')
+group by b.year , b.emp_status 
+order by b.year , b.emp_status 
+;
+
+
+--30 day readmissions
+drop table  dev.wc_trv_readmissions;
+
+select a.uth_member_id, a.admission_id_src,  b.year, b.age_group , b.gender ,b.emp_status , min(a.from_date_of_service) as fst_dt
+into dev.wc_trv_readmissions
+from data_warehouse.claim_header a 
+ join dev.wc_bench_trv_members b 
+    on b.uth_member_id = a.uth_member_id 
+   and b.year = a.year 
+where substring(bill_type,1,2) = '11' 
+ group by a.uth_member_id, a.admission_id_src,  b.year, b.age_group , b.gender, b.emp_status 
+;
+
+
+select count(distinct admission_id_src), year, emp_status 
+from dev.wc_trv_readmissions a 
+where a.uth_member_id in ( select uth_member_id from dev.wc_bench_trv_pmpy ) 
+and exists ( select 1 from dev.wc_trv_readmissions b 
+						where a.uth_member_id = b.uth_member_id 
+						 and b.fst_dt > a.fst_dt 
+						and b.fst_dt < a.fst_dt + interval'30 days' )
+group by year,  emp_status 
+order by year,  emp_status 
+;
+
+
+------------------------------------------------***************************************************
+----------------------------active / retired by age group Utilizations
+---------------------------------------------------**********************************************
+
+ --unique # employee status                                            
+select count(uth_member_id), count(distinct uth_member_id), year, substring(emp_status,1,5), age_group 
+ from dev.wc_bench_trv_members
+ where  emp_status in ('Active FT','Retiree MP', 'Retiree MS')
+   -- and gender = 'F'
+group by year, substring(emp_status,1,5), age_group   
+order by year, substring(emp_status,1,5), age_group 
+; 	
+
+--mm count
+select count(*), a.year, substring(emp_status,1,5), age_group 
+from data_warehouse.member_enrollment_monthly a 
+  join dev.wc_bench_trv_members b 
+    on a.uth_member_id = b.uth_member_id 
+   and a.year = b.year
+ where  emp_status in ('Active FT','Retiree MP', 'Retiree MS')
+    and gender = 'F'
+group by a.year, substring(emp_status,1,5), age_group   
+order by a.year, substring(emp_status,1,5), age_group 
+; 	
+
+--inpatient
+select count(distinct admission_id_src ), sum(total_allowed_amount ),  a.year, substring(emp_status,1,5), age_group   
+from data_warehouse.claim_header a 
    join dev.wc_bench_trv_members b 
      on a.uth_member_id  = b.uth_member_id 
-    and a.year = b.year 
-where revenue_cd in ('0760','0761','0762','0769')
-group by a.year, b.emp_status 
-order by a.year, emp_status 
+     and a.year = b.year 
+     and b.gender = 'F'
+where substring(bill_type,1,2) = '11' 
+    and b.emp_status in ('Active FT','Retiree MP', 'Retiree MS')
+group by a.year, substring(emp_status,1,5), age_group   
+order by a.year, substring(emp_status,1,5), age_group 
+; 	
 
 
-select count(*) , data_source, year  
-from data_warehouse.claim_detail cd 
-group by data_source , year 
+--ED Visits
+select count(distinct a.uth_claim_id::text || from_date_of_service::text), sum(a.allowed_amount ), 
+       a.year, substring(emp_status,1,5), age_group 
+from data_warehouse.claim_detail a
+   join dev.wc_bench_trv_members b 
+    on a.uth_member_id  = b.uth_member_id 
+    and a.year = b.year
+    and a.revenue_cd in ('450','451','452','456','459','0450','0451','0452','0456','0459')
+    and b.gender = 'F'
+    and b.emp_status in ('Active FT','Retiree MP', 'Retiree MS')
+group by a.year, substring(emp_status,1,5), age_group   
+order by a.year, substring(emp_status,1,5), age_group 
+;
+
+
+
+
+---30 day readmits
+select count(distinct admission_id_src), a.year, substring(emp_status,1,5), age_group 
+from dev.wc_trv_readmissions a 
+where  exists ( select 1 from dev.wc_trv_readmissions b 
+						where a.uth_member_id = b.uth_member_id 
+						 and a.emp_status = b.emp_status 
+						 and b.fst_dt > a.fst_dt 
+						and b.fst_dt < a.fst_dt + interval'30 days' )
+    and a.emp_status in ('Active FT','Retiree MP', 'Retiree MS')
+   -- and a.gender = 'F'
+group by a.year, substring(emp_status,1,5), age_group   
+order by a.year, substring(emp_status,1,5), age_group 
+;
 
 
 -----truven bill type updates - needs to be moved to claim load scripts -------

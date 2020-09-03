@@ -127,10 +127,6 @@ from optum_zip.mbr_enroll m
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
-delete from data_warehouse.member_enrollment_monthly where data_source in ('trvm','trvc');
-
-
-
 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
@@ -138,10 +134,9 @@ insert into data_warehouse.member_enrollment_monthly (
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status         
-	)	
-	
+	)		
 select 
-	   'truv',b.year_int, b.month_year_id, a.uth_member_id,
+	   'truv', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
        d.plan_type, 'COM', eestatu 
@@ -149,18 +144,17 @@ from truven.ccaet m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
-   and a.uth_member_id = 419260389
   join reference_tables.ref_truven_state_codes s 
     on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b 
     on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
-   -- and b.year_int between 2015 and 2017
   left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+ where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -171,9 +165,7 @@ insert into data_warehouse.member_enrollment_monthly (
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status       
-	)	
-	
-	
+	)		
 select 
        'truv', b.year_int,b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
@@ -183,7 +175,6 @@ from truven.mdcrt m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
-   and a.uth_member_id  = 419260389
   join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
   join reference_tables.ref_month_year b
@@ -194,6 +185,7 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -234,9 +226,6 @@ from medicare.mbsf_abcd_summary m
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code
- -- left outer join data_warehouse.ref_plan_type d
- --   on d.data_source = 'mdcr'
- -- and d.plan_type_src::int = m.plantyp
 ;
 	
 
@@ -298,4 +287,12 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'truv';
 
+
+----
+
+
+select count(*), data_source, year 
+from data_warehouse.member_enrollment_monthly mem 
+group by data_source, year 
+order by data_source, year 
 

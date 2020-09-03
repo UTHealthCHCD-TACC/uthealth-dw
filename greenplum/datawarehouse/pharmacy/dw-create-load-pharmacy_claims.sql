@@ -174,7 +174,6 @@ from truven.mdcrd
 distributed by (enrolid , ndcnum , svcdate)
 ;
 
-delete from data_warehouse.pharmacy_claims where data_source in ('trvc','trvm')
 
 --truven medicare adv
 insert into data_warehouse.pharmacy_claims (
@@ -197,6 +196,9 @@ select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id,
   join reference_tables.ref_month_year c 
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
+   left outer join data_warehouse.pharmacy_claims d 
+     on d.uth_rx_claim_id = b.uth_rx_claim_id 
+  where d.uth_rx_claim_id is null
  ;
  
 
@@ -232,7 +234,10 @@ select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id,
   join reference_tables.ref_month_year c 
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
- ;
+  left outer join data_warehouse.pharmacy_claims d 
+     on d.uth_rx_claim_id = b.uth_rx_claim_id 
+  where d.uth_rx_claim_id is null
+;
  
 
 
