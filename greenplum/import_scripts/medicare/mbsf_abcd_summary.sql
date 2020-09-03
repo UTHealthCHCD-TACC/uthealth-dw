@@ -32,6 +32,7 @@ CST_SHR_GRP_CD_07,CST_SHR_GRP_CD_08,CST_SHR_GRP_CD_09,CST_SHR_GRP_CD_10,CST_SHR_
 */
 drop external table ext_mbsf_abcd_summary;
 CREATE EXTERNAL TABLE ext_mbsf_abcd_summary (
+year text,
 BENE_ID varchar,BENE_ENROLLMT_REF_YR varchar,ENRL_SRC varchar,SAMPLE_GROUP varchar,ENHANCED_FIVE_PERCENT_FLAG varchar,CRNT_BIC_CD varchar,STATE_CODE varchar,COUNTY_CD varchar,ZIP_CD varchar,
 STATE_CNTY_FIPS_CD_01 varchar,STATE_CNTY_FIPS_CD_02 varchar,STATE_CNTY_FIPS_CD_03 varchar,STATE_CNTY_FIPS_CD_04 varchar,STATE_CNTY_FIPS_CD_05 varchar,STATE_CNTY_FIPS_CD_06 varchar,STATE_CNTY_FIPS_CD_07 varchar,STATE_CNTY_FIPS_CD_08 varchar,
 STATE_CNTY_FIPS_CD_09 varchar,STATE_CNTY_FIPS_CD_10 varchar,STATE_CNTY_FIPS_CD_11 varchar,STATE_CNTY_FIPS_CD_12 varchar,
@@ -64,7 +65,7 @@ CST_SHR_GRP_CD_01 varchar,CST_SHR_GRP_CD_02 varchar,CST_SHR_GRP_CD_03 varchar,CS
 CST_SHR_GRP_CD_07 varchar,CST_SHR_GRP_CD_08 varchar,CST_SHR_GRP_CD_09 varchar,CST_SHR_GRP_CD_10 varchar,CST_SHR_GRP_CD_11 varchar,CST_SHR_GRP_CD_12 varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/2017/mbsf_abcd_summary.csv'
+'gpfdist://192.168.58.179:8081/medicare/*/*mbsf_abcd_summary.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -73,8 +74,11 @@ from ext_mbsf_abcd_summary
 limit 1000;
 
 create table medicare.mbsf_abcd_summary
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--insert into medicare.mbsf_abcd_summary
 select * 
 from ext_mbsf_abcd_summary
+
 distributed randomly;

@@ -1,6 +1,7 @@
 drop external table ext_dme_line_k;
 
 CREATE EXTERNAL TABLE ext_dme_line_k (
+year text,
 BENE_ID varchar, CLM_ID varchar, LINE_NUM varchar, NCH_CLM_TYPE_CD varchar, CLM_THRU_DT varchar, TAX_NUM varchar, PRVDR_SPCLTY varchar, 
 PRTCPTNG_IND_CD varchar, LINE_SRVC_CNT varchar, LINE_CMS_TYPE_SRVC_CD varchar, LINE_PLACE_OF_SRVC_CD varchar, LINE_1ST_EXPNS_DT varchar, 
 LINE_LAST_EXPNS_DT varchar, HCPCS_CD varchar, HCPCS_1ST_MDFR_CD varchar, HCPCS_2ND_MDFR_CD varchar, BETOS_CD varchar, LINE_NCH_PMT_AMT varchar, 
@@ -16,7 +17,7 @@ LINE_OTHR_APLD_IND_CD6 varchar, LINE_OTHR_APLD_IND_CD7 varchar, LINE_OTHR_APLD_A
 LINE_OTHR_APLD_AMT3 varchar, LINE_OTHR_APLD_AMT4 varchar, LINE_OTHR_APLD_AMT5 varchar, LINE_OTHR_APLD_AMT6 varchar, LINE_OTHR_APLD_AMT7 varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/dme_line_k.csv'
+'gpfdist://192.168.58.179:8081/medicare/*/*dme_line_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -25,10 +26,13 @@ from ext_dme_line_k
 limit 1000;
 
 create table medicare.dme_line_k
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--insert into medicare.dme_line_k 
 select * 
 from ext_dme_line_k
+
 distributed randomly;
 
 select count(*)

@@ -122,7 +122,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaet*'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaet*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -144,13 +144,13 @@ from truven.ccaet;
 
 
 -- Fix storage options
-create table truven.ccaet_new 
+/*create table truven.ccaet_new 
 WITH (appendonly=true, orientation=column)
 as (select * from truven.ccaet)
-distributed randomly;
+distributed randomly;*/
 
 --drop table truven.ccaet;
-alter table truven.ccaet_new rename to ccaet;
+--alter table truven.ccaet_new rename to ccaet;
 
 select distinct empzip
 from truven.ccaet;

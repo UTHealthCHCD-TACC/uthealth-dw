@@ -51,6 +51,7 @@ DISTRIBUTED BY (uth_member_id);
  * Remove old records
  */
 
+delete from data_warehouse.claim_detail where data_source in ('optd','optz');
 
 /*
  * This script assumes claim_header has already been loaded with mapped uth_*_ids
@@ -59,7 +60,6 @@ vacuum analyze data_warehouse.claim_header;
 
 vacuum analyze optum_dod.medical;
 
-delete from data_warehouse.claim_detail where data_source in ('optz','optd')
 
 --Optum load: 23 min for 2016
 explain
@@ -157,7 +157,7 @@ order by year, data_source
  * Scratch Space
  */
 
-analyze dev.claim_header_optum;
+analyze data_warehouse.claim_detail;
 
 select prov::int8
 from dev2016.optum_zip_medical;
@@ -167,9 +167,10 @@ analyze dw_qa.claim_detail;
 select get_my_from_date('2011-08-18'::date);
 
 
-select data_source, count(*)
+select year, data_source, count(*)
 from data_warehouse.claim_detail
-group by 1;
+group by 1, 2
+order by 1, 2;
 
 insert into data_warehouse.claim_detail(data_source, year, uth_claim_id, uth_member_id,
     claim_sequence_number, claim_sequence_number_src,

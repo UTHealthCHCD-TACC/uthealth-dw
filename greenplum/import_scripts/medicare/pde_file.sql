@@ -1,6 +1,7 @@
 drop external table ext_pde_file;
 
 CREATE EXTERNAL TABLE ext_pde_file (
+year text,
 PDE_ID varchar, BENE_ID varchar, DOB_DT varchar, GNDR_CD varchar, SRVC_DT varchar, PD_DT varchar, SRVC_PRVDR_ID_QLFYR_CD varchar, 
 SRVC_PRVDR_ID varchar, PRSCRBR_ID_QLFYR_CD varchar, PRSCRBR_ID varchar, RX_SRVC_RFRNC_NUM varchar, PROD_SRVC_ID varchar, 
 PLAN_CNTRCT_REC_ID varchar, PLAN_PBP_REC_NUM varchar, CMPND_CD varchar, DAW_PROD_SLCTN_CD varchar, QTY_DSPNSD_NUM varchar, 
@@ -12,7 +13,7 @@ RX_ORGN_CD varchar, RPTD_GAP_DSCNT_NUM varchar, BRND_GNRC_CD varchar, PHRMCY_SRV
 SUBMSN_CLR_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/pde_file.csv'
+'gpfdist://192.168.58.179:8081/medicare/temp/*pde_file.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -21,10 +22,13 @@ from ext_pde_file
 limit 1000;
 
 create table medicare.pde_file
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+insert into medicare.pde_file 
 select * 
-from ext_pde_file
+from ext_pde_file;
+
 distributed randomly;
 
 select count(*)

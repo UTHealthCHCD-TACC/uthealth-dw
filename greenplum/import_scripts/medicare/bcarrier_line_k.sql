@@ -1,6 +1,7 @@
 drop external table ext_bcarrier_line_k;
 
 CREATE EXTERNAL TABLE ext_bcarrier_line_k (
+year text,
 BENE_ID varchar, CLM_ID varchar, LINE_NUM varchar, NCH_CLM_TYPE_CD varchar, CLM_THRU_DT varchar, CARR_PRFRNG_PIN_NUM varchar, 
 PRF_PHYSN_UPIN varchar, PRF_PHYSN_NPI varchar, ORG_NPI_NUM varchar, CARR_LINE_PRVDR_TYPE_CD varchar, TAX_NUM varchar, PRVDR_STATE_CD varchar, 
 PRVDR_ZIP varchar, PRVDR_SPCLTY varchar, PRTCPTNG_IND_CD varchar, CARR_LINE_RDCD_PMT_PHYS_ASTN_C varchar, LINE_SRVC_CNT varchar, 
@@ -20,7 +21,7 @@ THRPY_CAP_IND_CD5 varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_AC
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar,CARR_LINE_MDPP_NPI_NUM varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/bcarrier_line_k.csv'
+'gpfdist://192.168.58.179:8081/medicare/2015/*bcarrier_line_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -29,11 +30,16 @@ from ext_bcarrier_line_k
 limit 1000;
 
 create table medicare.bcarrier_line_k
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+insert into medicare.bcarrier_line_k 
 select * 
-from ext_bcarrier_line_k
+from ext_bcarrier_line_k;
+
 distributed randomly;
 
-select count(*)
-from medicare.bcarrier_line_k;
+select year, count(*)
+from medicare.bcarrier_line_k pf 
+group by 1
+order by 1;

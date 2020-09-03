@@ -1,6 +1,7 @@
 drop external table ext_dme_claims_k;
 
 CREATE EXTERNAL TABLE ext_dme_claims_k (
+year text,
 BENE_ID varchar, CLM_ID varchar, NCH_NEAR_LINE_REC_IDENT_CD varchar, NCH_CLM_TYPE_CD varchar, CLM_FROM_DT varchar, CLM_THRU_DT varchar, 
 NCH_WKLY_PROC_DT varchar, CARR_CLM_ENTRY_CD varchar, CLM_DISP_CD varchar, CARR_NUM varchar, CARR_CLM_PMT_DNL_CD varchar, CLM_PMT_AMT varchar, 
 CARR_CLM_PRMRY_PYR_PD_AMT varchar, CARR_CLM_PRVDR_ASGNMT_IND_SW varchar, NCH_CLM_PRVDR_PMT_AMT varchar, NCH_CLM_BENE_PMT_AMT varchar, 
@@ -15,7 +16,7 @@ BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTC
 CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/dme_claims_k.csv'
+'gpfdist://192.168.58.179:8081/medicare/*/*dme_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,10 +25,13 @@ from ext_dme_claims_k
 limit 1000;
 
 create table medicare.dme_claims_k
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--insert into medicare.dme_claims_k 
 select * 
 from ext_dme_claims_k
+
 distributed randomly;
 
 select count(*)

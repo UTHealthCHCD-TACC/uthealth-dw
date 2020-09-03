@@ -207,7 +207,7 @@ CREATE EXTERNAL TABLE ext_ccaeo_v2 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaeo*'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaeo*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

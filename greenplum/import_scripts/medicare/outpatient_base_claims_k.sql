@@ -1,6 +1,7 @@
 drop external table ext_outpatient_base_claims_k;
 
 CREATE EXTERNAL TABLE ext_outpatient_base_claims_k (
+year text,
 BENE_ID varchar, CLM_ID varchar, NCH_NEAR_LINE_REC_IDENT_CD varchar, NCH_CLM_TYPE_CD varchar, CLM_FROM_DT varchar, CLM_THRU_DT varchar, 
 NCH_WKLY_PROC_DT varchar, FI_CLM_PROC_DT varchar, CLAIM_QUERY_CODE varchar, PRVDR_NUM varchar, CLM_FAC_TYPE_CD varchar, 
 CLM_SRVC_CLSFCTN_TYPE_CD varchar, CLM_FREQ_CD varchar, FI_NUM varchar, CLM_MDCR_NON_PMT_RSN_CD varchar, CLM_PMT_AMT varchar, 
@@ -33,7 +34,7 @@ CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT
 CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/outpatient_base_claims_k.csv'
+'gpfdist://192.168.58.179:8081/medicare/*/*outpatient_base_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -42,10 +43,13 @@ from ext_outpatient_base_claims_k
 limit 1000;
 
 create table medicare.outpatient_base_claims_k
-WITH (appendonly=true, orientation=column)
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--insert into medicare.outpatient_base_claims_k 
 select * 
 from ext_outpatient_base_claims_k
+
 distributed randomly;
 
 select count(*)

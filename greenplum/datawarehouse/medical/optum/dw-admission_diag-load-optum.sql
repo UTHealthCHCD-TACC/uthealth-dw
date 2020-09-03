@@ -1,4 +1,6 @@
 
+
+
 --Optum load: 
 insert into dw_qa.admission_diag(data_source, year, uth_admission_id, uth_member_id, admit_date, diag_cd, diag_position, icd_type)
 select distinct a.data_source, c.year, a.uth_admission_id, a.uth_member_id, c.admit_date , c.diag5, 5, c.icd_flag 
