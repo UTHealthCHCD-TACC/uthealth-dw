@@ -56,3 +56,24 @@ or diag_cd in ('6442','64421'))
 and year = 2018
 and data_source in ('truv', 'optz')
 group by diag_cd, dx.description, data_source;
+
+
+-- Find specific codes for pre-term birth related DXs in 2018 grouped by DX code
+select diag_cd, dx.description, data_source, cd.uth_member_id, cd."date" 
+from data_warehouse.claim_diag cd 
+left join reference_tables.icd_10_diags dx on dx.code = cd.diag_cd 
+where (diag_cd in ('O6012X0','O6012X1','O6012X2','O6012X3','O6012X5','O6012X9','O6012X4','O6013X0','O6013X1','O6013X2','O6013X9','O6013X3','O6013X4','O6014X1','O6014X2','O6014X3','O6014X9','O6014X4','O6014X0','O6014X5','O6010X1','O6010X2','O6010X3','O6010X4','O6010X5','O6010X0','O6010X9')
+or diag_cd in ('6442','64421'))
+and year = 2018
+and data_source in ('truv', 'optz')
+limit 10;
+
+-- Find specific codes for pre-term birth related DXs in 2018 grouped by DX code
+select distinct diag_cd, dx.description, data_source, cd.uth_member_id, cd."date"
+from data_warehouse.claim_diag cd 
+left join reference_tables.icd_10_diags dx on dx.code = cd.diag_cd 
+where uth_member_id = 180319098;
+
+select *
+from data_warehouse.pharmacy_claims pc 
+where uth_member_id = 180319098;
