@@ -16,7 +16,7 @@ BENE_RACE_CD varchar,BENE_CNTY_CD varchar,BENE_STATE_CD varchar,BENE_MLG_CNTCT_Z
 CPO_ORG_NPI_NUM varchar,CARR_CLM_BLG_NPI_NUM varchar,ACO_ID_NUM varchar,CARR_CLM_SOS_NPI_NUM varchar,CLM_BENE_ID_TYPE_CD varchar
 )
 location (
-'gpfdist://192.168.58.179:8081/medicare/*/*bcarrier_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_national/*/*bcarrier_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,7 +24,7 @@ select *
 from ext_bcarrier_claims_k
 limit 1000;
 
-create table medicare.bcarrier_claims_k
+create table medicare_national.bcarrier_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
@@ -34,7 +34,7 @@ as
 select * 
 from ext_bcarrier_claims_k
 
-distributed randomly;
+distributed by (BENE_ID);
 
 select min(clm_from_dt), max(clm_from_dt), count(*)
 from medicare.bcarrier_claims_k;

@@ -13,15 +13,15 @@ select *
 from ext_bcarrier_demo_codes
 limit 1000;
 
-create table medicare.bcarrier_demo_codes
+create table medicare_national.bcarrier_demo_codes
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.bcarrier_demo_codes 
+--insert into medicare_national.bcarrier_demo_codes 
 select * 
 from ext_bcarrier_demo_codes
 
-distributed randomly;
+distributed by (BENE_ID);
 
 select count(*)
-from medicare.bcarrier_demo_codes;
+from medicare_national.bcarrier_demo_codes;
