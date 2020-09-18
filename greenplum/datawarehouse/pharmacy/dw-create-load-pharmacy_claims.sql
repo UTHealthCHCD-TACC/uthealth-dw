@@ -32,6 +32,8 @@ with (appendonly=true, orientation = column)
 distributed by (uth_member_id);
 
 
+
+---Medicare Texas 
 insert into data_warehouse.pharmacy_claims (
 		data_source, 
 		year, 
@@ -57,7 +59,7 @@ insert into data_warehouse.pharmacy_claims (
 		member_id_src
 		)		
 select 'mdcr',
-       2016,
+       a.year::int,
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
 	   bene_id || prod_srvc_id || srvc_dt, --script_id
@@ -89,20 +91,65 @@ from medicare.pde_file a
  ;
  
 
-delete from data_warehouse.pharmacy_claims where data_source in ('optz','optd');
+
+---Medicare National
+insert into data_warehouse.pharmacy_claims (
+		data_source, 
+		year, 
+		uth_rx_claim_id, 
+		uth_member_id, 
+		script_id, 
+		ndc, 
+		days_supply,
+		refill_count,
+		fill_date, 
+		month_year_id, 
+		generic_ind, 
+		generic_name, 
+		brand_name,
+		quantity, 
+		provider_npi, 
+		pharmacy_id, 
+		total_charge_amount,
+		total_allowed_amount, 
+		total_paid_amount,
+		deductible, copay, coins, cob,
+		rx_claim_id_src, 
+		member_id_src
+		)		
+select 'mcrn',
+       extract (year from srvc_dt::date),
+	   b.uth_rx_claim_id,
+	   b.uth_member_id,
+	   bene_id || prod_srvc_id || srvc_dt, --script_id
+	   prod_srvc_id, --ndc
+	   trunc(a.days_suply_num::numeric,0)::int,
+	   fill_num::numeric,
+	   srvc_dt::date,
+	   c.month_year_id,
+       brnd_gnrc_cd,
+       gnn,
+       bn,
+       qty_dspnsd_num::numeric,
+       srvc_prvdr_id,
+       rx_srvc_rfrnc_num,  
+       tot_rx_cst_amt::numeric, 
+       null, --total_allowed_amount,
+       ptnt_pay_amt::numeric,
+       null, null, null, null, --	   deductible, copay, coins, cob,
+	   pde_id, 
+	   bene_id	   
+from medicare_national.pde_file a 
+  join data_warehouse.dim_uth_rx_claim_id b 
+     on b.data_source = 'mcrn' 
+    and b.member_id_src = a.bene_id
+    and b.rx_claim_id_src = a.pde_id
+  join reference_tables.ref_month_year c 
+    on c.month_int = extract(month from srvc_dt::date)
+    and c.year_int = extract(year from srvc_dt::date)
+ ;
 
 
-select count(*), count(distinct clmid), year 
-from optum_dod.rx a 
-group by year 
-order by year 
-
-
-select count(*), count(distinct uth_rx_claim_id ), year 
-from data_warehouse.dim_uth_rx_claim_id 
-where data_source = 'optd'
-group by year
-order by year 
 
 ---optum zip
 insert into data_warehouse.pharmacy_claims (
@@ -271,6 +318,10 @@ where uth_rx_claim_id in ( select uth_rx_claim_id from quarantine.rx_duplicate_c
 
 ---- validate
 
-select count(*), count(distinct uth_rx_claim_id), data_source
+select count(*), data_source, year 
 from data_warehouse.pharmacy_claims
-group by data_source 
+group by data_source, year 
+order by data_source, year 
+
+  
+

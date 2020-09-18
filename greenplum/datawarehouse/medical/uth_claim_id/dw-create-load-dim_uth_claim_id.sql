@@ -253,6 +253,117 @@ where c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
+-------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+---- Medicare **National**:
+---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,
+---- and snf tables to generate uth_claim_ids.
+---------------------------------------------------------------------------------------------------
+
+--bcarrier
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)      
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.bcarrier_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null 
+group by 1, 2, 3, 4;
+
+--dme
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.dme_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null
+group by 1, 2, 3, 4;
+
+--hha
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.hha_base_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null 
+group by 1, 2, 3, 4;
+
+--hospice
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.hospice_base_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null
+group by 1, 2, 3, 4;
+
+
+--inpatient
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.inpatient_base_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.member_id_src = bene_id
+   and b.data_source = 'mcrn'
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.member_id_src = a.bene_id 
+   and c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+where c.uth_claim_id is null
+group by 1, 2, 3, 4;
+
+--outpatient
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select 'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.outpatient_base_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null 
+group by 1, 2, 3, 4;
+
+--snf
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
+select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
+from medicare_national.snf_base_claims_k a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = bene_id
+  left join data_warehouse.dim_uth_claim_id c 
+    on c.data_source = b.data_source
+   and c.claim_id_src = a.clm_id
+   and c.member_id_src = a.bene_id 
+where c.uth_claim_id is null 
+group by 1, 2, 3, 4;
+
+
+
+
+--------------------------------------------------------------------/End/-------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------
 vacuum analyze  data_warehouse.dim_uth_claim_id;
 
 -- Scratch

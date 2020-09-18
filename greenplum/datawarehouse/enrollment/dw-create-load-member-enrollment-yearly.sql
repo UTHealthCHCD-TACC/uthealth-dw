@@ -35,16 +35,14 @@ WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
 
 
-alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200;
+alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200
 
+
+------------------------------------------------------------
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
-
-select a.uth_member_id , a.zip3, a.zip5, year, count(*)
-from data_warehouse.member_enrollment_monthly a 
-group by a.uth_member_id, zip3, zip5 , year 
 
 
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
@@ -53,6 +51,7 @@ select distinct on( data_source, year, uth_member_id )
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag
 from data_warehouse.member_enrollment_monthly
+where data_source = 'mcrn'
 ;
 
 drop table dev.temp_member_enrollment_month;
@@ -63,6 +62,7 @@ WITH (appendonly=true, orientation=column)
 as
 select uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
+where data_source = 'mcrn'
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -70,10 +70,10 @@ vacuum analyze dev.temp_member_enrollment_month;
 
 select * from dev.temp_member_enrollment_month;
 
-select count(*), count(distinct uth_member_id), year, month 
+select count(*), count(distinct uth_member_id), year, data_source
 from dev.temp_member_enrollment_month
-group by year , month 
-order by year , month ;
+group by year ,  data_source
+order by year , data_source ;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
@@ -183,7 +183,7 @@ update data_warehouse.member_enrollment_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int
 
 
-select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 10;
+select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 10 and data_source = 'mcrn';
 
 
 
@@ -193,6 +193,7 @@ drop table dev.wc_state_yearly_final ;
 select count(*), min(month_year_id) as my, uth_member_id, state, year 
  into dev.wc_state_yearly
 from data_warehouse.member_enrollment_monthly
+where data_source = 'mcrn'
 group by uth_member_id, state, year 
 
 

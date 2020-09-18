@@ -85,6 +85,9 @@ select count(*) from medicare.pde_file;
 select count(distinct pde_id) from medicare.pde_file;
 
 
+
+
+
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
@@ -93,7 +96,7 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,uth_member_id
 			,member_id_src ) 					
 select 'mdcr'
-       ,2016
+       ,a.year::int
        ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	   ,a.pde_id
 	   ,b.uth_member_id
@@ -109,6 +112,36 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where c.uth_rx_claim_id is null 
   and a.bene_id is not null
  ;
+
+
+
+---Medicare National
+insert into data_warehouse.dim_uth_rx_claim_id (
+			 data_source
+			,year 
+			,uth_rx_claim_id
+			,rx_claim_id_src
+			,uth_member_id
+			,member_id_src ) 					
+select 'mcrn'
+       ,a.year::int
+       ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
+	   ,a.pde_id
+	   ,b.uth_member_id
+	   ,a.bene_id 
+from medicare_national.pde_file a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = a.bene_id
+left join data_warehouse.dim_uth_rx_claim_id c 
+  on c.data_source = 'mcrn'
+ and c.member_id_src = a.bene_id 
+ and c.rx_claim_id_src = a.pde_id
+where c.uth_rx_claim_id is null 
+  and a.bene_id is not null
+ ;
+
+
 
 
 vacuum analyze optum_zip.rx 

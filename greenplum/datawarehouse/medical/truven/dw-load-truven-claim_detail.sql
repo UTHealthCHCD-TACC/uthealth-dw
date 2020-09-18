@@ -1,4 +1,3 @@
-delete from data_warehouse.claim_detail where data_source = 'truv';
 
 vacuum analyze data_warehouse.claim_detail;
 
@@ -8,13 +7,17 @@ create table dev.truven_ccaeo
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select *
 from truven.ccaeo
+where year = 2019
 distributed by(msclmid);
 
 create table dev.dim_uth_claim_id
 with(appendonly=true,orientation=column)
 as select *
 from data_warehouse.dim_uth_claim_id
+where data_source = 'truv'
 distributed by(claim_id_src);
+
+
 
 
 -------- Claim Detail 
@@ -25,7 +28,7 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src )										   								   								   
-select 'truv', b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
+select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
        a.admdate, a.disdate, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
@@ -40,6 +43,7 @@ from truven.ccaes a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
+  and a.year = 2019
  ;
    
 
@@ -50,7 +54,7 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src )										   								   								   
-select 'truv', b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
+select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
        a.admdate, a.disdate, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
@@ -65,6 +69,7 @@ from truven.mdcrs a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
+  and a.year = 2019
  ;
   
  
@@ -82,7 +87,7 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'ccaeo'
-from truven.ccaeo a --dev.truven_ccaeo;
+from dev.truven_ccaeo a
   join dev.dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
@@ -91,6 +96,7 @@ from truven.ccaeo a --dev.truven_ccaeo;
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
+  and a.year = 2019 
   ;
  
 
@@ -115,7 +121,8 @@ from truven.mdcro a
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
-where a.msclmid is not null;
+where a.msclmid is not null
+and a.year = 2019;
 
 
 vacuum analyze data_warehouse.claim_detail;
