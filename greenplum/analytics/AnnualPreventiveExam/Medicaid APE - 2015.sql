@@ -1,4 +1,4 @@
-/****** Script for SelectTopNRows command from SSMS  ******/
+/****** Medicaid Annual Prev Exam 2015 ******/
 
 drop table stage.dbo.wc_mdcd_ape_2015;
 

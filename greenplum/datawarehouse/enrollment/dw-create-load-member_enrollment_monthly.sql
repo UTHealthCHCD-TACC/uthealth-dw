@@ -25,38 +25,12 @@ create table data_warehouse.member_enrollment_monthly (
 	bus_cd char(4),
 	employee_status text, 
 	claim_created_flag bool default false,
-	row_identifier bigserial
+	row_identifier bigserial,
+	rx_coverage int2
 )
 WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
 
-
-partition by list (data_source)
-/*	subpartition by range(month_year_id)
-		subpartition template (	
-		subpartition sp2007 start(200701) INCLUSIVE,
-		subpartition sp2008 start(200801) INCLUSIVE,
-		subpartition sp2009 start(200901) INCLUSIVE,
-		subpartition sp2010 start(201001) INCLUSIVE,
-		subpartition sp2011 start(201101) INCLUSIVE,
-		subpartition sp2012 start(201201) INCLUSIVE,
-		subpartition sp2013 start(201301) INCLUSIVE,
-		subpartition sp2014 start(201401) INCLUSIVE,
-		subpartition sp2015 start(201501) INCLUSIVE,
-		subpartition sp2016 start(201601) INCLUSIVE,
-		subpartition sp2017 start(201701) INCLUSIVE,
-		subpartition sp2018 start(201801) inclusive,
-		subpartition sp2019 start(201901) inclusive,
-		default subpartition otherdates
-	                           )	                 */          
-(  partition optz values('optz'),
-   partition trvc values('trvc'),
-   partition trvm values('trvm'),
-   partition optd values('optd'),
-   partition mdcr values('mdcr'),
-   default partition xxxx
- )
-;
 
 alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache 200;
 
@@ -127,19 +101,20 @@ from optum_zip.mbr_enroll m
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
+delete from data_warehouse.member_enrollment_monthly where data_source = 'truv';
 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status         
+	plan_type, bus_cd, employee_status, rx_coverage         
 	)		
 select 
 	   'truv', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
-       d.plan_type, 'COM', eestatu 
+       d.plan_type, 'COM', eestatu, m.rx
 from truven.ccaet m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
@@ -154,9 +129,15 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
- where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
+
+create table dev.truven_mdcrt
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select *
+from truven.mdcrt
+distributed by(enrolid);
+
 
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
@@ -164,14 +145,15 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status       
+	plan_type, bus_cd, employee_status, rx_coverage      
 	)		
 select 
        'truv', b.year_int,b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
-       d.plan_type, 'MCR', eestatu 
-from truven.mdcrt m
+       d.plan_type, 'MCR', eestatu, m.rx
+from dev.truven_mdcrt m  
+--truven.mdcrt m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
@@ -185,7 +167,6 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -262,7 +243,7 @@ from medicare_national.mbsf_abcd_summary m
      or month_int = case when m.mdcr_entlmt_buyin_ind_12 in ('1','3','A','C') then 12 else 0 end
     )
   left outer join reference_tables.ref_gender c
-    on c.data_source = 'mcrn'
+    on c.data_source = 'mdcr'
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code

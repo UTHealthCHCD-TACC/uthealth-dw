@@ -29,7 +29,8 @@ create table data_warehouse.member_enrollment_yearly (
 	bus_cd char(4),
 	employee_status text, 
 	claim_created_flag bool default false,
-	row_identifier bigserial
+	row_identifier bigserial,
+	rx_coverage int2
 )
 WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
@@ -45,13 +46,16 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 
+
+
+
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
-      ,plan_type, bus_cd, employee_status, claim_created_flag )
+      ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
-      ,plan_type, bus_cd, employee_status, claim_created_flag
+      ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
-where data_source = 'mcrn'
+where data_source = 'truv'
 ;
 
 drop table dev.temp_member_enrollment_month;
@@ -62,7 +66,7 @@ WITH (appendonly=true, orientation=column)
 as
 select uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source = 'mcrn'
+where data_source = 'truv'
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -70,10 +74,6 @@ vacuum analyze dev.temp_member_enrollment_month;
 
 select * from dev.temp_member_enrollment_month;
 
-select count(*), count(distinct uth_member_id), year, data_source
-from dev.temp_member_enrollment_month
-group by year ,  data_source
-order by year , data_source ;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
@@ -188,19 +188,16 @@ select * from data_warehouse.member_enrollment_yearly where total_enrolled_month
 
 
 ---states are calculated base on most lived state in a given year 
-drop table dev.wc_state_yearly_final ;
-  
 select count(*), min(month_year_id) as my, uth_member_id, state, year 
  into dev.wc_state_yearly
 from data_warehouse.member_enrollment_monthly
-where data_source = 'mcrn'
+where data_source = 'truv'
 group by uth_member_id, state, year 
 
 
 select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
 into dev.wc_state_yearly_final
 from dev.wc_state_yearly
---where uth_member_id = 100000030 --100000061
 order by uth_member_id, year ;
   
 
@@ -211,6 +208,66 @@ and a.year = b.year
  and b.my_grp = 1;
 
 
+drop table dev.wc_state_yearly;
+
+drop table dev.wc_state_yearly_final;
+
+---same logic for zip3
+select count(*), min(month_year_id) as my, uth_member_id, zip3, year 
+ into dev.wc_zip3_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, zip3, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_zip3_yearly_final
+from dev.wc_zip3_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set zip3 = b.zip3
+from dev.wc_zip3_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_zip3_yearly;
+
+drop table dev.wc_zip3_yearly_final;
+
+---same logic for zip5
+select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
+ into dev.wc_zip5_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, zip5, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_zip5_yearly_final
+from dev.wc_zip5_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set zip5 = b.zip5
+from dev.wc_zip5_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_zip5_yearly;
+
+drop table dev.wc_zip5_yearly_final;
+
+
+---when bus cd changes in yearly create a new record for that member
+
+---
+
+----cleanup
+
+select * from data_warehouse.member_enrollment_yearly
 
 vacuum analyze data_warehouse.member_enrollment_yearly;
 

@@ -10,15 +10,6 @@ from truven.ccaeo
 where year = 2019
 distributed by(msclmid);
 
-create table dev.dim_uth_claim_id
-with(appendonly=true,orientation=column)
-as select *
-from data_warehouse.dim_uth_claim_id
-where data_source = 'truv'
-distributed by(claim_id_src);
-
-
-
 
 -------- Claim Detail 
 -------------------------------- truven commercial inpatient--------------------------------------
@@ -34,7 +25,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, a.drg,  
        a.msclmid, a.enrolid, 'ccaes'
-from truven.ccaes a 
+from dev.truven_ccaes a 
+--from truven.ccaes a 
   join dev.dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
@@ -43,7 +35,6 @@ from truven.ccaes a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
-  and a.year = 2019
  ;
    
 
@@ -60,7 +51,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, a.drg,  
        a.msclmid, a.enrolid, 'mdcrs'
-from truven.mdcrs a 
+from dev.truven_mdcrs a 
+--from truven.mdcrs a 
   join dev.dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
@@ -69,7 +61,6 @@ from truven.mdcrs a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
-  and a.year = 2019
  ;
   
  
@@ -96,7 +87,6 @@ from dev.truven_ccaeo a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
-  and a.year = 2019 
   ;
  
 
@@ -113,7 +103,8 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'mdcro'
-from truven.mdcro a 
+from dev.truven_mdcro a 
+--from truven.mdcro a 
   join dev.dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
@@ -122,7 +113,7 @@ from truven.mdcro a
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
 where a.msclmid is not null
-and a.year = 2019;
+;
 
 
 vacuum analyze data_warehouse.claim_detail;

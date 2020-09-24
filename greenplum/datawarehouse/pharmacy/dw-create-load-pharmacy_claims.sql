@@ -204,6 +204,10 @@ select distinct data_source from data_warehouse.pharmacy_claims;
 select count(*) from dev.truven_ccaeo
 
 
+delete from data_warehouse.pharmacy_claims where data_source = 'truv';
+
+vacuum 
+
 
 create table dev.dim_uth_rx_truv
 with(appendonly=true, orientation=column)
