@@ -80,9 +80,9 @@ where a.enrolid is not null;
 
 
 --medicare
-select count(*) from medicare.pde_file;
+select count(*) from medicare_texas.pde_file;
 
-select count(distinct pde_id) from medicare.pde_file;
+select count(distinct pde_id) from medicare_texas.pde_file;
 
 
 
@@ -101,7 +101,7 @@ select 'mdcr'
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from medicare.pde_file a
+from medicare_texas.pde_file a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mdcr'
    and b.member_id_src = a.bene_id
