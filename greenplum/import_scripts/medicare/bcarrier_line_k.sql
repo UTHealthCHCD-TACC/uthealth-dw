@@ -21,7 +21,7 @@ THRPY_CAP_IND_CD5 varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_AC
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar,CARR_LINE_MDPP_NPI_NUM varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/2015/*bcarrier_line_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/2015/*bcarrier_line_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -29,17 +29,17 @@ select *
 from ext_bcarrier_line_k
 limit 1000;
 
-create table medicare.bcarrier_line_k
+create table medicare_texas.bcarrier_line_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare.bcarrier_line_k 
+insert into medicare_texas.bcarrier_line_k 
 select * 
 from ext_bcarrier_line_k;
 
 distributed randomly;
 
 select year, count(*)
-from medicare.bcarrier_line_k pf 
+from medicare_texas.bcarrier_line_k pf 
 group by 1
 order by 1;

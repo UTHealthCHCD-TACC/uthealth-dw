@@ -12,7 +12,7 @@ REV_CNTR_IDE_NDC_UPC_NUM varchar, REV_CNTR_PRVDR_PMT_AMT varchar, REV_CNTR_PTNT_
 THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*hha_revenue_center_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*hha_revenue_center_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -20,15 +20,15 @@ select *
 from ext_hha_revenue_center_k
 limit 1000;
 
-create table medicare.hha_revenue_center_k
+create table medicare_texas.hha_revenue_center_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.hha_revenue_center_k 
+--insert into medicare_texas.hha_revenue_center_k 
 select * 
 from ext_hha_revenue_center_k
 
 distributed randomly;
 
 select count(*)
-from medicare.hha_revenue_center_k;
+from medicare_texas.hha_revenue_center_k;

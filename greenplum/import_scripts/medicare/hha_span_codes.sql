@@ -6,7 +6,7 @@ BENE_ID varchar, CLM_ID varchar, NCH_CLM_TYPE_CD varchar, RLT_SPAN_CD_SEQ varcha
 CLM_SPAN_CD varchar, CLM_SPAN_FROM_DT varchar, CLM_SPAN_THRU_DT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/2014/*hha_span_codes.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/2014/*hha_span_codes.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -14,16 +14,16 @@ select *
 from ext_hha_span_codes
 limit 1000;
 
-create table medicare.hha_span_codes
+create table medicare_texas.hha_span_codes
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare.hha_span_codes 
+insert into medicare_texas.hha_span_codes 
 select * 
 from ext_hha_span_codes;
 
 distributed randomly;
 
 select count(*)
-from medicare.hha_span_codes;
+from medicare_texas.hha_span_codes;
 

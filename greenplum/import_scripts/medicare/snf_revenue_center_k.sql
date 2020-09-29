@@ -9,7 +9,7 @@ REV_CNTR_NDC_QTY_QLFR_CD varchar, RNDRNG_PHYSN_UPIN varchar, RNDRNG_PHYSN_NPI va
 REV_CNTR_IDE_NDC_UPC_NUM varchar, REV_CNTR_PRCNG_IND_CD varchar, THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*snf_revenue_center_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*snf_revenue_center_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -17,15 +17,15 @@ select *
 from ext_snf_revenue_center_k
 limit 1000;
 
-create table medicare.snf_revenue_center_k
+create table medicare_texas.snf_revenue_center_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.snf_revenue_center_k 
+--insert into medicare_texas.snf_revenue_center_k 
 select * 
 from ext_snf_revenue_center_k
 
 distributed randomly;
 
 select count(*)
-from medicare.snf_revenue_center_k;
+from medicare_texas.snf_revenue_center_k;

@@ -11,7 +11,7 @@ RNDRNG_PHYSN_SPCLTY_CD varchar, REV_CNTR_IDE_NDC_UPC_NUM varchar, REV_CNTR_STUS_
 THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*hospice_revenue_center_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*hospice_revenue_center_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -19,15 +19,15 @@ select *
 from ext_hospice_revenue_center_k
 limit 1000;
 
-create table medicare.hospice_revenue_center_k
+create table medicare_texas.hospice_revenue_center_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.hospice_revenue_center_k 
+--insert into medicare_texas.hospice_revenue_center_k 
 select * 
 from ext_hospice_revenue_center_k
 
 distributed randomly;
 
 select count(*)
-from medicare.hospice_revenue_center_k;
+from medicare_texas.hospice_revenue_center_k;

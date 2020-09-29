@@ -16,7 +16,7 @@ BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTC
 CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*dme_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*dme_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,15 +24,15 @@ select *
 from ext_dme_claims_k
 limit 1000;
 
-create table medicare.dme_claims_k
+create table medicare_texas.dme_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.dme_claims_k 
+--insert into medicare_texas.dme_claims_k 
 select * 
 from ext_dme_claims_k
 
 distributed randomly;
 
 select count(*)
-from medicare.dme_claims_k;
+from medicare_texas.dme_claims_k;

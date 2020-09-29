@@ -16,7 +16,7 @@ REV_CNTR_PRCNG_IND_CD varchar, THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varc
 TRNSTNL_DRUG_ADD_ON_PYMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,15 +24,15 @@ select *
 from ext_outpatient_revenue_center_k
 limit 1000;
 
-create table medicare.outpatient_revenue_center_k
+create table medicare_texas.outpatient_revenue_center_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.outpatient_revenue_center_k 
+--insert into medicare_texas.outpatient_revenue_center_k 
 select * 
 from ext_outpatient_revenue_center_k
 
 distributed randomly;
 
 select count(*)
-from medicare.outpatient_revenue_center_k;
+from medicare_texas.outpatient_revenue_center_k;

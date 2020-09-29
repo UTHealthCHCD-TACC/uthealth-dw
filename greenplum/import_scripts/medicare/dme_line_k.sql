@@ -17,7 +17,7 @@ LINE_OTHR_APLD_IND_CD6 varchar, LINE_OTHR_APLD_IND_CD7 varchar, LINE_OTHR_APLD_A
 LINE_OTHR_APLD_AMT3 varchar, LINE_OTHR_APLD_AMT4 varchar, LINE_OTHR_APLD_AMT5 varchar, LINE_OTHR_APLD_AMT6 varchar, LINE_OTHR_APLD_AMT7 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*dme_line_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*dme_line_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -25,15 +25,15 @@ select *
 from ext_dme_line_k
 limit 1000;
 
-create table medicare.dme_line_k
+create table medicare_texas.dme_line_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.dme_line_k 
+--insert into medicare_texas.dme_line_k 
 select * 
 from ext_dme_line_k
 
 distributed randomly;
 
 select count(*)
-from medicare.dme_line_k;
+from medicare_texas.dme_line_k;

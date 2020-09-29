@@ -65,7 +65,7 @@ CST_SHR_GRP_CD_01 varchar,CST_SHR_GRP_CD_02 varchar,CST_SHR_GRP_CD_03 varchar,CS
 CST_SHR_GRP_CD_07 varchar,CST_SHR_GRP_CD_08 varchar,CST_SHR_GRP_CD_09 varchar,CST_SHR_GRP_CD_10 varchar,CST_SHR_GRP_CD_11 varchar,CST_SHR_GRP_CD_12 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*mbsf_abcd_summary.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*mbsf_abcd_summary.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -73,11 +73,11 @@ select *
 from ext_mbsf_abcd_summary
 limit 1000;
 
-create table medicare.mbsf_abcd_summary
+create table medicare_texas.mbsf_abcd_summary
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.mbsf_abcd_summary
+--insert into medicare_texas.mbsf_abcd_summary
 select * 
 from ext_mbsf_abcd_summary
 

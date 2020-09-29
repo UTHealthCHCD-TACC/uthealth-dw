@@ -22,7 +22,7 @@ CLM_SRVC_FAC_ZIP_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*hospice_base_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*hospice_base_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -30,15 +30,15 @@ select *
 from ext_hospice_base_claims_k
 limit 1000;
 
-create table medicare.hospice_base_claims_k
+create table medicare_texas.hospice_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.hospice_base_claims_k 
+--insert into medicare_texas.hospice_base_claims_k 
 select * 
 from ext_hospice_base_claims_k
 
 distributed randomly;
 
 select count(*)
-from medicare.hospice_base_claims_k;
+from medicare_texas.hospice_base_claims_k;

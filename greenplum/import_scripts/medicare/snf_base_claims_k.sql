@@ -37,7 +37,7 @@ NCH_PROFNL_CMPNT_CHRG_AMT varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare/*/*snf_base_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*snf_base_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -45,15 +45,15 @@ select *
 from ext_snf_base_claims_k
 limit 1000;
 
-create table medicare.snf_base_claims_k
+create table medicare_texas.snf_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare.snf_base_claims_k 
+--insert into medicare_texas.snf_base_claims_k 
 select * 
 from ext_snf_base_claims_k
 
 distributed randomly;
 
 select count(*)
-from medicare.snf_base_claims_k;
+from medicare_texas.snf_base_claims_k;
