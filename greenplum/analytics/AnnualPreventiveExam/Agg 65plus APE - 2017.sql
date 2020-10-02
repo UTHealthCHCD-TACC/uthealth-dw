@@ -3,12 +3,14 @@
 ---bring in medicaid data
 drop table dev.wc_temp_mdcd65_ape_2017
 
-create table dev.wc_temp_mdcd65_ape_2017 ( client_num text, zip3 char(3), sex char(1), age text, age_group text, vacc_flag text);
+create table dev.wc_temp_mdcd65_ape_2017 ( client_num text, fst_elig text, lst_elig text, zip3 char(3), sex char(1), age text, age_group text, vacc_flag text);
 
-
-delete from dev.wc_temp_mdcd65_ape_2017 where sex = 'U';
 
 update dev.wc_temp_mdcd65_ape_2017 set vacc_flag = '0' where vacc_flag = '';
+
+select count(*), sum(vacc_flag::int ) from dev.wc_temp_mdcd65_ape_2017
+
+delete from dev.wc_temp_mdcd65_ape_2017 where sex = 'U';
 
 select count(*) , sum (vacc_flag::int)
  from dev.wc_temp_mdcd65_ape_2017
@@ -22,7 +24,27 @@ select uth_member_id,
        data_source 
  into dev.wc_ape_65plus_2017
 from data_warehouse.member_enrollment_yearly a
-where a.data_source in ('truv','optz','mdcr')
+where a.data_source in ('truv','optz')
+  and a.year = 2017
+  and a.state = 'TX'
+  and a.age_derived >= 65
+  and a.zip3 between '750' and '799'
+  and a.total_enrolled_months = 12
+  and a.gender_cd in ('M','F')
+;
+
+insert into dev.wc_ape_65plus_2017
+select a.uth_member_id, 
+       a.gender_cd, 
+       a.zip3,
+       a.data_source 
+from data_warehouse.member_enrollment_yearly a
+  join data_warehouse.medicare_mbsf_abcd_enrollment b 
+    on a.uth_member_id = b.uth_member_id 
+   and b.bene_hi_cvrage_tot_mons = 12
+   and b.bene_smi_cvrage_tot_mons > 0
+   and b.year  = a.year  
+where a.data_source = 'mdcr'
   and a.year = 2017 
   and a.state = 'TX'
   and a.age_derived >= 65
@@ -33,6 +55,10 @@ where a.data_source in ('truv','optz','mdcr')
 
 delete from dev.wc_ape_65plus_2017 where length(zip3::text) = 2;
 
+
+
+---
+drop table dev.wc_ape_65plus_2017_vacc;
 
 select distinct uth_member_id 
 into dev.wc_ape_65plus_2017_vacc
@@ -107,6 +133,7 @@ begin
 	select count(*), data_source 
 	from dev.wc_ape_65plus_all_2017
 	group by data_source 
+	order by data_source 
 	
 	loop 
 	    r_result = r_num / r_den;
@@ -124,6 +151,7 @@ begin
 	from dev.wc_ape_65plus_all_2017
 	where gender_cd = 'F'
 	group by data_source 
+	order by data_source 
 	
 	loop 
 	    r_result = r_num / r_den;
@@ -141,6 +169,7 @@ begin
 	from dev.wc_ape_65plus_all_2017
 	where gender_cd = 'M'
 	group by data_source 
+	order by data_source 
 	
 	loop 
 	    r_result = r_num / r_den;
@@ -248,7 +277,7 @@ order by a.zip3
 ;
  
 
----medicare / medicaid
+---medicare
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , a.zip3 
 from dev.wc_ape_65plus_all_2017 a 
 where a.data_source = 'mdcr'
@@ -268,6 +297,31 @@ order by a.zip3
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , a.zip3 
 from dev.wc_ape_65plus_all_2017 a 
 where a.data_source = 'mdcr'
+  and a.gender_cd = 'M'
+  group by a.zip3 
+order by a.zip3
+;
+
+---medicaid
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , a.zip3 
+from dev.wc_ape_65plus_all_2017 a 
+where a.data_source = 'mdcd'
+group by a.zip3 
+order by a.zip3
+;
+
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , a.zip3 
+from dev.wc_ape_65plus_all_2017 a 
+where a.data_source =  'mdcd'
+  and a.gender_cd = 'F'
+  group by a.zip3 
+order by a.zip3
+;
+
+
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , a.zip3 
+from dev.wc_ape_65plus_all_2017 a 
+where a.data_source = 'mdcd'
   and a.gender_cd = 'M'
   group by a.zip3 
 order by a.zip3

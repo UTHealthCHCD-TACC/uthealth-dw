@@ -2,11 +2,10 @@
 
 drop table stage.dbo.wc_mdcd_ape_2017;
 
-select * from MEDICAID.dbo.CHIP_UTH_SFY2017_Final
 
 select client_nbr, min(elig_month) as fst_elig, max(elig_month) as lst_elig, 
        min(zip3) as zip3, max(sex) as sex, min(age) as age , min(age_Group) as age_group
-into stage.dbo.wc_mdcd_ape_2017
+into stage.dbo.wc_mdcd_ape_2017_temp
 from 
 (
 select client_nbr
@@ -79,22 +78,21 @@ SELECT [CLIENT_NBR]
   ) inr 
   group by client_nbr;
 
-
+ 
+--get only members covered all year  
+select * 
+into stage.dbo.wc_mdcd_ape_2017 
+from stage.dbo.wc_mdcd_ape_2017_temp a 
+where a.fst_elig = '201701' 
+  and a.lst_elig = '201712'
+;  
 
 delete from stage.dbo.wc_mdcd_ape_2017 where age_group is null;
 
 delete from stage.dbo.wc_mdcd_ape_2017 where zip3 = '771';
 
 
-
-select *
---count(*) 
-from stage.dbo.wc_mdcd_ape_2017 where fst_elig = 201701 and lst_elig = 201711;
-
-
-select * 
-from [MEDICAID].[dbo].[ENRL_2018]
-where client_nbr = '513415709'
+drop table stage.dbo.wc_mdcd_ape_2017_temp
 
 ---------------------------------------------------------------------------------------------------------
 ----proc and hcpc
@@ -143,10 +141,9 @@ insert into stage.dbo.wc_mdcd_ape_diag values
 ('Z0000'),('Z0001'),('Z00110'),('Z00111'),('Z00121'),('Z00129'),('Z003'),('Z01411'),('Z01419'),
 				  ('V700'),('V700'),('V7231'),('V705'),('V703'),('V7284'),('V7285') ;
 
-insert into stage.dbo.wc_mdcd_ape_clm_2017
-select distinct ICN
-from ( 
+
   select d.ICN 
+into  stage.dbo.wc_mdcd_ape_dx_2017
   from medicaid.dbo.CLM_DX_17 d 
     join MEDICAID.dbo.CLM_HEADER_17 h 
       on h.ICN = d.ICN 
@@ -161,7 +158,9 @@ from (
         or d.DX_CD_8 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         or d.DX_CD_9 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         )
-union 
+;
+
+insert into  stage.dbo.wc_mdcd_ape_dx_2017
   select d.ICN 
   from medicaid.dbo.CLM_DX_18 d
     join MEDICAID.dbo.CLM_HEADER_18 h 
@@ -177,7 +176,9 @@ union
         or d.DX_CD_8 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         or d.DX_CD_9 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         )
-union 
+;
+
+insert into  stage.dbo.wc_mdcd_ape_dx_2017
   select d.DERV_ENC 
   from MEDICAID.dbo.enc_dx_17 d 
     join MEDICAID.dbo.ENC_HEADER_17 h 
@@ -193,7 +194,10 @@ union
         or d.DX_CD_8 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         or d.DX_CD_9 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         )
-union 
+;
+
+
+insert into  stage.dbo.wc_mdcd_ape_dx_2017
   select d.DERV_ENC 
   from MEDICAID.dbo.enc_dx_18 d 
     join MEDICAID.dbo.ENC_HEADER_18 h 
@@ -209,8 +213,14 @@ union
         or d.DX_CD_8 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         or d.DX_CD_9 in (select dx_cd from stage.dbo.wc_mdcd_ape_diag) 
         )
-) inr ;
+;
 
+
+
+insert into stage.dbo.wc_mdcd_ape_clm_2017
+select distinct ICN
+from  stage.dbo.wc_mdcd_ape_dx_2017
+;
 
 ---------------------------------------------------------------------------------------------------------
 ----Members from claim ids
@@ -252,6 +262,8 @@ update stage.dbo.wc_mdcd_ape_2017 set vacc_flag = 1
  ;
 
 --agg table to be sent to gp
+drop table stage.dbo.wc_mdcd_ape_agg_2017 ;
+
 select * 
 into stage.dbo.wc_mdcd_ape_agg_2017 
 from stage.dbo.wc_mdcd_ape_2017 a 
@@ -310,5 +322,33 @@ where age_group = 1
 group by zip3
 order by zip3;
 
+select ( cast(sum(vacc_flag) as float) / cast(count(client_nbr) as float ) )*100 as prev, count(client_nbr), sum(vacc_flag), zip3 
+from stage.dbo.wc_mdcd_ape_2017
+where age_group = 2
+group by zip3
+order by zip3;
 
+select ( cast(sum(vacc_flag) as float) / cast(count(client_nbr) as float ) )*100 as prev, count(client_nbr), sum(vacc_flag), zip3 
+from stage.dbo.wc_mdcd_ape_2017
+where age_group = 3
+group by zip3
+order by zip3;
+
+select ( cast(sum(vacc_flag) as float) / cast(count(client_nbr) as float ) )*100 as prev, count(client_nbr), sum(vacc_flag), zip3 
+from stage.dbo.wc_mdcd_ape_2017
+where age_group = 4
+group by zip3
+order by zip3;
+
+select ( cast(sum(vacc_flag) as float) / cast(count(client_nbr) as float ) )*100 as prev, count(client_nbr), sum(vacc_flag), zip3 
+from stage.dbo.wc_mdcd_ape_2017
+where age_group = 5
+group by zip3
+order by zip3;
+
+select ( cast(sum(vacc_flag) as float) / cast(count(client_nbr) as float ) )*100 as prev, count(client_nbr), sum(vacc_flag), zip3 
+from stage.dbo.wc_mdcd_ape_2017
+where age_group = 6
+group by zip3
+order by zip3;
 

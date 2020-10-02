@@ -70,9 +70,9 @@ CREATE OR REPLACE FUNCTION public.flu_weights ( )
 RETURNS int AS $FUNC$	 
 	declare
 	r_data_source text; 
-	r_den float;
-	r_num float; 
-	r_result float;
+	r_den numeric;
+	r_num numeric; 
+	r_result numeric;
 begin
 	
 ---all
@@ -87,6 +87,7 @@ begin
 	
 	loop 
 	    r_result = r_num / r_den;
+	    r_result = trunc(r_result,4);
 	    raise notice 'Overall Weight % is % ', r_data_source, r_result;
 	end loop;
 
@@ -103,6 +104,7 @@ begin
 	
 	loop 
 	    r_result = r_num / r_den;
+	    r_result = trunc(r_result,4);
 	    raise notice 'Female Weight % is % ', r_data_source, r_result;
 	end loop;
 
@@ -119,6 +121,7 @@ begin
 	
 	loop 
 	    r_result = r_num / r_den;
+	    r_result = trunc(r_result,4);
 	    raise notice 'Male Weight % is % ', r_data_source, r_result;
 	end loop;
 

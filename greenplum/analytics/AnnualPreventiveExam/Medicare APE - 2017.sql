@@ -3,13 +3,18 @@
 ---optum and truven cohorts from DW
 drop table dev.wc_ape_mdcr_2017;
 
-select uth_member_id, 
+select a.uth_member_id, 
        a.zip3, 
 	   7 as age_group,
        a.gender_cd, 
-       data_source 
+       a.data_source 
  into dev.wc_ape_mdcr_2017
 from data_warehouse.member_enrollment_yearly a
+  join data_warehouse.medicare_mbsf_abcd_enrollment b 
+     on b.uth_member_id = a.uth_member_id 
+   and b.bene_hi_cvrage_tot_mons = 12
+   and b.bene_smi_cvrage_tot_mons > 0
+   and b.year = a.year 
 where a.data_source = 'mdcr'
   and a.year = 2017 
   and a.state = 'TX'
@@ -20,7 +25,11 @@ where a.data_source = 'mdcr'
 
 
 
+
 delete from dev.wc_ape_mdcr_2017 where length(zip3::text) = 2
+
+
+select count(*) from dev.wc_ape_mdcr_2017
 
 
 drop table dev.wc_ape_mdcr_2017_vacc

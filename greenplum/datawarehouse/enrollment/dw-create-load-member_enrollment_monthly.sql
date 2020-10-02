@@ -171,44 +171,92 @@ from dev.truven_mdcrt m
 ---------------------------------------------------------------------------------------------------
 
 
+create table reference_tables.ref_medicare_entlmt_buyin (buyin_cd char(1), plan_type text);
+
+insert into reference_tables.ref_medicare_entlmt_buyin values 
+			('0',null),('1','A'),('2','B'),('3','AB'),
+			('A','A'),('B','B'),('C','AB');
+
+create table reference_tables.ref_medicare_ptd_cntrct (ptd_first_char char(1), ptd_coverage int2);
+
+insert into reference_tables.ref_medicare_ptd_cntrct values 
+            ('E',1),('H',1),('R',1),('S',1),
+            ('X',1),('N',0),('0',0),(null,0);
+
+
+
+select distinct substring(mas.ptd_cntrct_id_01,1,1) from medicare_national.mbsf_abcd_summary mas 
+
+
+delete from data_warehouse.member_enrollment_monthly where data_source in ('mdcr','mcrn');
+
 -- Medicare  --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd         
-	)	
+	plan_type, bus_cd, rx_coverage     
+	)		
 select 'mdcr',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   'ABCD' as plan_type, 'MDCR'
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
    and a.data_source = 'mdcr'
-  join reference_tables.ref_month_year b
-    on b.year_int = bene_enrollmt_ref_yr::int
-   and 
-   (	month_int = case when m.mdcr_entlmt_buyin_ind_01 in ('1','3','A','C') then 1 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_02 in ('1','3','A','C') then 2 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_03 in ('1','3','A','C') then 3 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_04 in ('1','3','A','C') then 4 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_05 in ('1','3','A','C') then 5 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_06 in ('1','3','A','C') then 6 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_07 in ('1','3','A','C') then 7 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_08 in ('1','3','A','C') then 8 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_09 in ('1','3','A','C') then 9 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_10 in ('1','3','A','C') then 10 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_11 in ('1','3','A','C') then 11 else 0 end
-     or month_int = case when m.mdcr_entlmt_buyin_ind_12 in ('1','3','A','C') then 12 else 0 end
-    )
   left outer join reference_tables.ref_gender c
     on c.data_source = 'mdcr'
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
-     on e.medicare_state_cd = m.state_code
+     on e.medicare_state_cd = m.state_code   
+  join reference_tables.ref_month_year b
+    on b.year_int = bene_enrollmt_ref_yr::int
+   and 
+   (	month_int = case when m.mdcr_status_code_01 in ('10','11','20','21','31') then 1 else 0 end
+     or month_int = case when m.mdcr_status_code_02 in ('10','11','20','21','31') then 2 else 0 end
+     or month_int = case when m.mdcr_status_code_03 in ('10','11','20','21','31') then 3 else 0 end
+     or month_int = case when m.mdcr_status_code_04 in ('10','11','20','21','31') then 4 else 0 end
+     or month_int = case when m.mdcr_status_code_05 in ('10','11','20','21','31') then 5 else 0 end
+     or month_int = case when m.mdcr_status_code_06 in ('10','11','20','21','31')then 6 else 0 end
+     or month_int = case when m.mdcr_status_code_07 in ('10','11','20','21','31') then 7 else 0 end
+     or month_int = case when m.mdcr_status_code_08 in ('10','11','20','21','31') then 8 else 0 end
+     or month_int = case when m.mdcr_status_code_09 in ('10','11','20','21','31') then 9 else 0 end
+     or month_int = case when m.mdcr_status_code_10 in ('10','11','20','21','31') then 10 else 0 end
+     or month_int = case when m.mdcr_status_code_11 in ('10','11','20','21','31') then 11 else 0 end
+     or month_int = case when m.mdcr_status_code_12 in ('10','11','20','21','31') then 12 else 0 end
+    )
+  join reference_tables.ref_medicare_entlmt_buyin ent 
+    on ent.buyin_cd = case when b.month_int = 1 then m.mdcr_entlmt_buyin_ind_01 
+                           when b.month_int = 2 then m.mdcr_entlmt_buyin_ind_02 
+                           when b.month_int = 3 then m.mdcr_entlmt_buyin_ind_03 
+                           when b.month_int = 4 then m.mdcr_entlmt_buyin_ind_04 
+                           when b.month_int = 5 then m.mdcr_entlmt_buyin_ind_05 
+                           when b.month_int = 6 then m.mdcr_entlmt_buyin_ind_06 
+                           when b.month_int = 7 then m.mdcr_entlmt_buyin_ind_07 
+                           when b.month_int = 8 then m.mdcr_entlmt_buyin_ind_08
+                           when b.month_int = 9 then m.mdcr_entlmt_buyin_ind_09 
+                           when b.month_int = 10 then m.mdcr_entlmt_buyin_ind_10 
+                           when b.month_int = 11 then m.mdcr_entlmt_buyin_ind_11 
+                           when b.month_int = 12 then m.mdcr_entlmt_buyin_ind_12 
+                           else null end      
+  join reference_tables.ref_medicare_ptd_cntrct ptd 
+    on ptd.ptd_first_char = case when b.month_int = 1 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_01,1,1)
+                           else null end
 ;
 	
+
 
 
 -- Medicare National --------------------------------------------------------------------------------------
@@ -216,16 +264,21 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd         
+	plan_type, bus_cd, rx_coverage          
 	)	
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   'ABCD' as plan_type, 'MDCR'
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage
 from medicare_national.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
    and a.data_source = 'mcrn'
+  left outer join reference_tables.ref_gender c
+    on c.data_source = 'mdcr'
+   and c.gender_cd_src = m.sex_ident_cd
+  left outer join reference_tables.ref_medicare_state_codes e 
+     on e.medicare_state_cd = m.state_code   
   join reference_tables.ref_month_year b
     on b.year_int = bene_enrollmt_ref_yr::int
    and 
@@ -242,11 +295,34 @@ from medicare_national.mbsf_abcd_summary m
      or month_int = case when m.mdcr_entlmt_buyin_ind_11 in ('1','3','A','C') then 11 else 0 end
      or month_int = case when m.mdcr_entlmt_buyin_ind_12 in ('1','3','A','C') then 12 else 0 end
     )
-  left outer join reference_tables.ref_gender c
-    on c.data_source = 'mdcr'
-   and c.gender_cd_src = m.sex_ident_cd
-  left outer join reference_tables.ref_medicare_state_codes e 
-     on e.medicare_state_cd = m.state_code
+  join reference_tables.ref_medicare_entlmt_buyin ent 
+    on ent.buyin_cd = case when b.month_int = 1 then m.mdcr_entlmt_buyin_ind_01 
+                           when b.month_int = 2 then m.mdcr_entlmt_buyin_ind_02 
+                           when b.month_int = 3 then m.mdcr_entlmt_buyin_ind_03 
+                           when b.month_int = 4 then m.mdcr_entlmt_buyin_ind_04 
+                           when b.month_int = 5 then m.mdcr_entlmt_buyin_ind_05 
+                           when b.month_int = 6 then m.mdcr_entlmt_buyin_ind_06 
+                           when b.month_int = 7 then m.mdcr_entlmt_buyin_ind_07 
+                           when b.month_int = 8 then m.mdcr_entlmt_buyin_ind_08
+                           when b.month_int = 9 then m.mdcr_entlmt_buyin_ind_09 
+                           when b.month_int = 10 then m.mdcr_entlmt_buyin_ind_10 
+                           when b.month_int = 11 then m.mdcr_entlmt_buyin_ind_11 
+                           when b.month_int = 12 then m.mdcr_entlmt_buyin_ind_12 
+                           else null end      
+  join reference_tables.ref_medicare_ptd_cntrct ptd 
+    on ptd.ptd_first_char = case when b.month_int = 1 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_01,1,1)
+                           else null end
 ;
 
 
@@ -256,11 +332,15 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 
-select count(*), data_source , year
+select count(*), count(distinct uth_member_id ), data_source , year
 from data_warehouse.member_enrollment_monthly
 group by data_source , year
 order by data_source , year 
 
+
+select count(*), year 
+from medicare_texas.mbsf_abcd_summary mas 
+group by year;
 
 
 select count(*) , year 

@@ -1,5 +1,7 @@
 --- claim diag load for truven
 
+delete from data_warehouse.claim_diag where data_source = 'truv';
+
 -------------------------------- truven commercial outpatient --------------------------------------
 insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number
 									  ,date, diag_cd, diag_position, icd_type)  								        						              
@@ -34,6 +36,11 @@ from dev.truven_mdcro a
    and d.claim_sequence_number_src = a.seqnum::text
   ;
   
+ 
+ select count(*), year 
+ from data_warehouse.claim_diag 
+ where data_source = 'truv'
+ group by year;
   
   
  -------------------------------- truven commercial inpatient ------

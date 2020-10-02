@@ -1,68 +1,105 @@
+ ---table contains extra medicare columns with very detailed information about enrollment 
 
- 
+drop table data_warehouse.medicare_mbsf_abcd_enrollment;
 
-drop table data_warehouse.medicare_supplemental_enrollment; --supplemental;
-
-create table data_warehouse.medicare_supplemental_enrollment 
+create table data_warehouse.medicare_mbsf_abcd_enrollment 
 with(appendonly=true,orientation=column,compresstype=zlib)
 as 
- select b.uth_member_id, a.bene_enrollmt_ref_yr::int as enrollment_year, a.covstart::date as original_coverage_start, a.entlmt_rsn_orig as entitlement_reason_original, 
- 		a.entlmt_rsn_curr as entitlement_reason_current,
-        a.esrd_ind as esrd_indicator, a.bene_pta_trmntn_cd as bene_part_a_treatment_cd, a.bene_ptb_trmntn_cd as bene_part_b_treatment_cd, 
-        a.bene_hi_cvrage_tot_mons::float::int as part_a_coverage_months, a.bene_smi_cvrage_tot_mons::float::int as part_b_coverage_months,
-        a.bene_state_buyin_tot_mons::float::int as state_buyin_total_months, a.bene_hmo_cvrage_tot_mons::float::int as hmo_coverage_months, 
-        a.ptd_plan_cvrg_mons::float::int as part_d_coverage_months, a.rds_cvrg_mons::float::int as rds_coverage_months, a.dual_elgbl_mons::float::int as dual_eligible_months,
-        a.* 
- from medicare.mbsf_abcd_summary a 
+select  b.uth_member_id, 'mdcr' as data_source, "year"::int as "year",
+         enrl_src, sample_group,
+         enhanced_five_percent_flag,
+         crnt_bic_cd,
+         state_code, county_cd, zip_cd,
+         state_cnty_fips_cd_01,	state_cnty_fips_cd_02,	state_cnty_fips_cd_03,	state_cnty_fips_cd_04,	state_cnty_fips_cd_05,	state_cnty_fips_cd_06,
+         state_cnty_fips_cd_07,	state_cnty_fips_cd_08,	state_cnty_fips_cd_09,	state_cnty_fips_cd_10,	state_cnty_fips_cd_11,	state_cnty_fips_cd_12,
+         age_at_end_ref_yr::int as age_at_end_ref_yr,	bene_birth_dt::date as bene_birth_dt,	valid_death_dt_sw,	bene_death_dt::date as bene_death_dt,
+         sex_ident_cd,	bene_race_cd,	rti_race_cd	covstart,
+         entlmt_rsn_orig,	entlmt_rsn_curr	esrd_ind,	
+         mdcr_status_code_01,	mdcr_status_code_02,	mdcr_status_code_03,	mdcr_status_code_04,	mdcr_status_code_05,	mdcr_status_code_06,
+         mdcr_status_code_07,	mdcr_status_code_08,	mdcr_status_code_09,	mdcr_status_code_10,	mdcr_status_code_11,	mdcr_status_code_12,
+         bene_pta_trmntn_cd,	bene_ptb_trmntn_cd,
+         bene_hi_cvrage_tot_mons::int as bene_hi_cvrage_tot_mons,	bene_smi_cvrage_tot_mons::int as bene_smi_cvrage_tot_mons,	
+         bene_state_buyin_tot_mons::int as bene_state_buyin_tot_mons,	bene_hmo_cvrage_tot_mons::int as bene_hmo_cvrage_tot_mons,
+         ptd_plan_cvrg_mons::int as ptd_plan_cvrg_mons,	
+         rds_cvrg_mons::int as rds_cvrg_mons,	dual_elgbl_mons::int as dual_elgbl_mons,	
+         mdcr_entlmt_buyin_ind_01,	mdcr_entlmt_buyin_ind_02,	mdcr_entlmt_buyin_ind_03,	mdcr_entlmt_buyin_ind_04,	mdcr_entlmt_buyin_ind_05,	mdcr_entlmt_buyin_ind_06,
+         mdcr_entlmt_buyin_ind_07,	mdcr_entlmt_buyin_ind_08,	mdcr_entlmt_buyin_ind_09,	mdcr_entlmt_buyin_ind_10,	mdcr_entlmt_buyin_ind_11,	mdcr_entlmt_buyin_ind_12,
+         hmo_ind_01,	hmo_ind_02,	hmo_ind_03,	hmo_ind_04,	hmo_ind_05,	hmo_ind_06,	hmo_ind_07,	hmo_ind_08,	hmo_ind_09,	hmo_ind_10,	hmo_ind_11,	hmo_ind_12,
+         ptc_cntrct_id_01,	ptc_cntrct_id_02,	ptc_cntrct_id_03,	ptc_cntrct_id_04,	ptc_cntrct_id_05,	ptc_cntrct_id_06,
+         ptc_cntrct_id_07,	ptc_cntrct_id_08,	ptc_cntrct_id_09,	ptc_cntrct_id_10,	ptc_cntrct_id_11,	ptc_cntrct_id_12,
+         ptc_pbp_id_01,	ptc_pbp_id_02,	ptc_pbp_id_03,	ptc_pbp_id_04,	ptc_pbp_id_05,	ptc_pbp_id_06,
+         ptc_pbp_id_07,	ptc_pbp_id_08,	ptc_pbp_id_09,	ptc_pbp_id_10,	ptc_pbp_id_11,	ptc_pbp_id_12,	
+         ptc_plan_type_cd_01,	ptc_plan_type_cd_02,	ptc_plan_type_cd_03,	ptc_plan_type_cd_04,	ptc_plan_type_cd_05,	ptc_plan_type_cd_06,
+         ptc_plan_type_cd_07,	ptc_plan_type_cd_08,	ptc_plan_type_cd_09, ptc_plan_type_cd_10,	ptc_plan_type_cd_11,	ptc_plan_type_cd_12,
+         ptd_cntrct_id_01,	ptd_cntrct_id_02,	ptd_cntrct_id_03,	ptd_cntrct_id_04,	ptd_cntrct_id_05,	ptd_cntrct_id_06,
+         ptd_cntrct_id_07,	ptd_cntrct_id_08,	ptd_cntrct_id_09,	ptd_cntrct_id_10,	ptd_cntrct_id_11,	ptd_cntrct_id_12,
+         ptd_pbp_id_01,	ptd_pbp_id_02,	ptd_pbp_id_03,	ptd_pbp_id_04,	ptd_pbp_id_05,	ptd_pbp_id_06,
+         ptd_pbp_id_07,	ptd_pbp_id_08,	ptd_pbp_id_09,	ptd_pbp_id_10,	ptd_pbp_id_11,	ptd_pbp_id_12,
+         ptd_sgmt_id_01,	ptd_sgmt_id_02,	ptd_sgmt_id_03,	ptd_sgmt_id_04,	ptd_sgmt_id_05,	ptd_sgmt_id_06,
+         ptd_sgmt_id_07,	ptd_sgmt_id_08,	ptd_sgmt_id_09,	ptd_sgmt_id_10,	ptd_sgmt_id_11,	ptd_sgmt_id_12,
+         rds_ind_01,	rds_ind_02,	rds_ind_03,	rds_ind_04,	rds_ind_05,	rds_ind_06,	rds_ind_07,	rds_ind_08,	rds_ind_09,	rds_ind_10,	rds_ind_11,	rds_ind_12,
+         dual_stus_cd_01,	dual_stus_cd_02,	dual_stus_cd_03,	dual_stus_cd_04,	dual_stus_cd_05,	dual_stus_cd_06,
+         dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
+         cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
+         cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
+from medicare_texas.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
      on b.member_id_src = a.bene_id 
     and b.data_source = 'mdcr'
 distributed by(uth_member_id );
+
+--medicare national 
+insert into data_warehouse.medicare_mbsf_abcd_enrollment
+select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
+         enrl_src, sample_group,
+         enhanced_five_percent_flag,
+         crnt_bic_cd,
+         state_code, county_cd, zip_cd,
+         state_cnty_fips_cd_01,	state_cnty_fips_cd_02,	state_cnty_fips_cd_03,	state_cnty_fips_cd_04,	state_cnty_fips_cd_05,	state_cnty_fips_cd_06,
+         state_cnty_fips_cd_07,	state_cnty_fips_cd_08,	state_cnty_fips_cd_09,	state_cnty_fips_cd_10,	state_cnty_fips_cd_11,	state_cnty_fips_cd_12,
+         age_at_end_ref_yr::int as age_at_end_ref_yr,	bene_birth_dt::date as bene_birth_dt,	valid_death_dt_sw,	bene_death_dt::date as bene_death_dt,
+         sex_ident_cd,	bene_race_cd,	rti_race_cd	covstart,
+         entlmt_rsn_orig,	entlmt_rsn_curr	esrd_ind,	
+         mdcr_status_code_01,	mdcr_status_code_02,	mdcr_status_code_03,	mdcr_status_code_04,	mdcr_status_code_05,	mdcr_status_code_06,
+         mdcr_status_code_07,	mdcr_status_code_08,	mdcr_status_code_09,	mdcr_status_code_10,	mdcr_status_code_11,	mdcr_status_code_12,
+         bene_pta_trmntn_cd,	bene_ptb_trmntn_cd,
+         bene_hi_cvrage_tot_mons::int as bene_hi_cvrage_tot_mons,	bene_smi_cvrage_tot_mons::int as bene_smi_cvrage_tot_mons,	
+         bene_state_buyin_tot_mons::int as bene_state_buyin_tot_mons,	bene_hmo_cvrage_tot_mons::int as bene_hmo_cvrage_tot_mons,
+         ptd_plan_cvrg_mons::int as ptd_plan_cvrg_mons,	
+         rds_cvrg_mons::int as rds_cvrg_mons,	dual_elgbl_mons::int as dual_elgbl_mons,	
+         mdcr_entlmt_buyin_ind_01,	mdcr_entlmt_buyin_ind_02,	mdcr_entlmt_buyin_ind_03,	mdcr_entlmt_buyin_ind_04,	mdcr_entlmt_buyin_ind_05,	mdcr_entlmt_buyin_ind_06,
+         mdcr_entlmt_buyin_ind_07,	mdcr_entlmt_buyin_ind_08,	mdcr_entlmt_buyin_ind_09,	mdcr_entlmt_buyin_ind_10,	mdcr_entlmt_buyin_ind_11,	mdcr_entlmt_buyin_ind_12,
+         hmo_ind_01,	hmo_ind_02,	hmo_ind_03,	hmo_ind_04,	hmo_ind_05,	hmo_ind_06,	hmo_ind_07,	hmo_ind_08,	hmo_ind_09,	hmo_ind_10,	hmo_ind_11,	hmo_ind_12,
+         ptc_cntrct_id_01,	ptc_cntrct_id_02,	ptc_cntrct_id_03,	ptc_cntrct_id_04,	ptc_cntrct_id_05,	ptc_cntrct_id_06,
+         ptc_cntrct_id_07,	ptc_cntrct_id_08,	ptc_cntrct_id_09,	ptc_cntrct_id_10,	ptc_cntrct_id_11,	ptc_cntrct_id_12,
+         ptc_pbp_id_01,	ptc_pbp_id_02,	ptc_pbp_id_03,	ptc_pbp_id_04,	ptc_pbp_id_05,	ptc_pbp_id_06,
+         ptc_pbp_id_07,	ptc_pbp_id_08,	ptc_pbp_id_09,	ptc_pbp_id_10,	ptc_pbp_id_11,	ptc_pbp_id_12,	
+         ptc_plan_type_cd_01,	ptc_plan_type_cd_02,	ptc_plan_type_cd_03,	ptc_plan_type_cd_04,	ptc_plan_type_cd_05,	ptc_plan_type_cd_06,
+         ptc_plan_type_cd_07,	ptc_plan_type_cd_08,	ptc_plan_type_cd_09, ptc_plan_type_cd_10,	ptc_plan_type_cd_11,	ptc_plan_type_cd_12,
+         ptd_cntrct_id_01,	ptd_cntrct_id_02,	ptd_cntrct_id_03,	ptd_cntrct_id_04,	ptd_cntrct_id_05,	ptd_cntrct_id_06,
+         ptd_cntrct_id_07,	ptd_cntrct_id_08,	ptd_cntrct_id_09,	ptd_cntrct_id_10,	ptd_cntrct_id_11,	ptd_cntrct_id_12,
+         ptd_pbp_id_01,	ptd_pbp_id_02,	ptd_pbp_id_03,	ptd_pbp_id_04,	ptd_pbp_id_05,	ptd_pbp_id_06,
+         ptd_pbp_id_07,	ptd_pbp_id_08,	ptd_pbp_id_09,	ptd_pbp_id_10,	ptd_pbp_id_11,	ptd_pbp_id_12,
+         ptd_sgmt_id_01,	ptd_sgmt_id_02,	ptd_sgmt_id_03,	ptd_sgmt_id_04,	ptd_sgmt_id_05,	ptd_sgmt_id_06,
+         ptd_sgmt_id_07,	ptd_sgmt_id_08,	ptd_sgmt_id_09,	ptd_sgmt_id_10,	ptd_sgmt_id_11,	ptd_sgmt_id_12,
+         rds_ind_01,	rds_ind_02,	rds_ind_03,	rds_ind_04,	rds_ind_05,	rds_ind_06,	rds_ind_07,	rds_ind_08,	rds_ind_09,	rds_ind_10,	rds_ind_11,	rds_ind_12,
+         dual_stus_cd_01,	dual_stus_cd_02,	dual_stus_cd_03,	dual_stus_cd_04,	dual_stus_cd_05,	dual_stus_cd_06,
+         dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
+         cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
+         cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
+from medicare_national.mbsf_abcd_summary  a 
+   join data_warehouse.dim_uth_member_id b
+     on b.member_id_src = a.bene_id 
+    and b.data_source = 'mcrn'
+    
+    
+alter table data_warehouse.medicare_mbsf_abcd_enrollment alter column data_source type char(4);
+
+---validate
+vacuum analyze data_warehouse.medicare_mbsf_abcd_enrollment;
+
  
---remove unneeded columns			
-
-
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_id;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_enrollmt_ref_yr;
-alter table data_warehouse.medicare_supplemental_enrollment drop column enrl_src;
-alter table data_warehouse.medicare_supplemental_enrollment drop column sample_group;
-alter table data_warehouse.medicare_supplemental_enrollment drop column enhanced_five_percent_flag;
-alter table data_warehouse.medicare_supplemental_enrollment drop column crnt_bic_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column state_code;
-alter table data_warehouse.medicare_supplemental_enrollment drop column county_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column zip_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column age_at_end_ref_yr;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_birth_dt;
-alter table data_warehouse.medicare_supplemental_enrollment drop column valid_death_dt_sw;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_death_dt;
-alter table data_warehouse.medicare_supplemental_enrollment drop column sex_ident_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_race_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column rti_race_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column covstart;
-alter table data_warehouse.medicare_supplemental_enrollment drop column entlmt_rsn_orig;
-alter table data_warehouse.medicare_supplemental_enrollment drop column entlmt_rsn_curr;
-alter table data_warehouse.medicare_supplemental_enrollment drop column esrd_ind;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_pta_trmntn_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_ptb_trmntn_cd;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_hi_cvrage_tot_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_smi_cvrage_tot_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_state_buyin_tot_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column bene_hmo_cvrage_tot_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column ptd_plan_cvrg_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column rds_cvrg_mons;
-alter table data_warehouse.medicare_supplemental_enrollment drop column dual_elgbl_mons;
-
-
-vacuum analyze data_warehouse.medicare_supplemental_enrollment;
-
-
-select count(*)
-from data_warehouse.medicare_supplemental_enrollment
-
-
-select count(*)
-from medicare.mbsf_abcd_summary;
-
-
-select * 
-from data_warehouse.medicare_supplemental_enrollment
+ select count(*), count(distinct uth_member_id), data_source, year 
+ from data_warehouse.medicare_mbsf_abcd_enrollment
+ group by data_source, year 
+  order by data_source, year 

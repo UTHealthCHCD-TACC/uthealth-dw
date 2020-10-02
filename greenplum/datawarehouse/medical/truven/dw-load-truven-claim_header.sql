@@ -10,6 +10,20 @@ as select *
 from truven.ccaeo
 distributed by(enrolid);
 
+vacuum analyze dev.truven_ccaeo;
+
+
+create table dev.truven_dim_uth_claim_id
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select *
+from data_warehouse.dim_uth_claim_id
+where data_source = 'truv'
+distributed by(member_id_src);
+
+vacuum analyze dev.truven_dim_uth_claim_id;
+
+
+
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
 						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  						              
 select distinct on (uth_claim_id) 
@@ -23,6 +37,9 @@ from dev.truven_ccaeo a
    and b.data_source = 'truv'
    and b.claim_id_src = a.msclmid::text
 ;
+
+
+select * from truven.ccaeo;
 
 
 
