@@ -29,26 +29,34 @@ create table data_warehouse.member_enrollment_yearly (
 	bus_cd char(4),
 	employee_status text, 
 	claim_created_flag bool default false,
-	row_identifier bigserial
+	row_identifier bigserial,
+	rx_coverage int2
 )
 WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
 
 
-alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200;
+alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200
 
+
+------------------------------------------------------------
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
+
+
+delete from data_warehouse.member_enrollment_yearly where data_source in ('mdcr','mcrn');
+
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
-      ,plan_type, bus_cd, employee_status, claim_created_flag )
+      ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
-      ,plan_type, bus_cd, employee_status, claim_created_flag
+      ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
-order by uth_member_id
+where data_source in ('mdcr','mcrn')
+order by data_source, year, uth_member_id, month_year_id 
 ;
 
 drop table dev.temp_member_enrollment_month;
@@ -59,6 +67,7 @@ WITH (appendonly=true, orientation=column)
 as
 select uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
+where data_source in ('mdcr','mcrn')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -66,10 +75,6 @@ vacuum analyze dev.temp_member_enrollment_month;
 
 select * from dev.temp_member_enrollment_month;
 
-select count(*), count(distinct uth_member_id), year, month 
-from dev.temp_member_enrollment_month
-group by year , month 
-order by year , month ;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
@@ -179,21 +184,130 @@ update data_warehouse.member_enrollment_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int
 
 
-select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 10;
+select * from data_warehouse.member_enrollment_yearly where total_enrolled_months > 11 and data_source = 'mcrn';
 
 
+
+---states are calculated base on most lived state in a given year 
+select count(*), min(month_year_id) as my, uth_member_id, state, year 
+ into dev.wc_state_yearly
+from data_warehouse.member_enrollment_monthly
+where data_source in ('mdcr','mcrn')
+group by uth_member_id, state, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_state_yearly_final
+from dev.wc_state_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set state = b.state 
+from dev.wc_state_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_state_yearly;
+
+drop table dev.wc_state_yearly_final;
+
+---same logic for zip3
+select count(*), min(month_year_id) as my, uth_member_id, zip3, year 
+ into dev.wc_zip3_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, zip3, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_zip3_yearly_final
+from dev.wc_zip3_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set zip3 = b.zip3
+from dev.wc_zip3_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_zip3_yearly;
+
+drop table dev.wc_zip3_yearly_final;
+
+---same logic for zip5
+select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
+ into dev.wc_zip5_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, zip5, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_zip5_yearly_final
+from dev.wc_zip5_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set zip5 = b.zip5
+from dev.wc_zip5_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_zip5_yearly;
+
+drop table dev.wc_zip5_yearly_final;
+
+
+---same logic for plan type
+select count(*), min(month_year_id) as my, uth_member_id, plan_type, year 
+ into dev.wc_plan_type_yearly
+from data_warehouse.member_enrollment_monthly
+group by uth_member_id, plan_type, year 
+
+
+select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+into dev.wc_plan_type_yearly_final
+from dev.wc_plan_type_yearly
+order by uth_member_id, year ;
+  
+
+update data_warehouse.member_enrollment_yearly a set plan_type = b.plan_type
+from dev.wc_plan_type_yearly_final b 
+where a.uth_member_id = b.uth_member_id
+and a.year = b.year 
+ and b.my_grp = 1;
+
+
+drop table dev.wc_plan_type_yearly;
+
+drop table dev.wc_plan_type_yearly_final;
+
+---when bus cd changes in yearly create a new record for that member
+---
+
+----cleanup
+select * from data_warehouse.member_enrollment_yearly
+
+vacuum analyze data_warehouse.member_enrollment_yearly;
+
+
+-----------------------------------------
 --Scratch
-select count(*), count(distinct uth_member_id ), year 
+select count(*), count(distinct uth_member_id ), year , data_source 
 from  data_warehouse.member_enrollment_yearly
-group by year;
+group by year, data_source 
+order by data_source , year ;
 
 select * from  data_warehouse.member_enrollment_yearly where enrolled_jul is false limit 10;
-select month_year_id, month_year_id % year as month from  data_warehouse.member_enrollment_monthly order by uth_member_id limit 10;
 
-select year, enrolled_jan, count(*)
-from data_warehouse.member_enrollment_yearly
-group by 1, 2
-order by 1, 2;
+select month_year_id, month_year_id % year as month 
+from  data_warehouse.member_enrollment_monthly 
+order by uth_member_id limit 10;
+
 
 --Pick a random uth_member_id and verify
 select *
@@ -205,13 +319,4 @@ select *
 from data_warehouse.member_enrollment_yearly mem 
 where uth_member_id = 100312028
 order by year;
-
-select count(*), count(distinct uth_member_id)
-from data_warehouse.dim_uth_member_id;
-
-select count(*), count(distinct uth_claim_id)
-from data_warehouse.dim_uth_claim_id;
-
-select count(*), count(distinct uth_rx_claim_id)
-from data_warehouse.dim_uth_rx_claim_id;
 

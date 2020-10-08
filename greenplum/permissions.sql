@@ -33,6 +33,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant all on tables to group u
 grant all on schema medicare to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant all on tables to group uthealthadmin; 
 
+grant all on schema medicare_national to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_national grant all on tables to group uthealthadmin; 
+
 grant all on schema dev to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant all on tables to group uthealthadmin; 
 
@@ -79,6 +82,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to grou
 grant usage on schema medicare to group uthealthdev;
 grant select on all tables in schema medicare to group uthealthdev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant select on tables to group uthealthdev; 
+
+--medicare_national
+grant usage on schema medicare_national to group uthealthdev;
+grant select on all tables in schema medicare_national to group uthealthdev;
+ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_national grant select on tables to group uthealthdev; 
 
 --dev
 grant usage on schema dev to group uthealthdev;
@@ -136,6 +144,11 @@ grant select on all tables in schema data_warehouse to group analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA data_warehouse grant select on tables to group analyst; 
 
 
+--data_warehouse (select only) 
+grant usage on schema medicare to group analyst;
+grant select on all tables in schema medicare to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant select on tables to group analyst; 
+
 --dw_qa (select only) 
 grant usage on schema dw_qa to group analyst;
 grant select on all tables in schema dw_qa to group analyst;
@@ -158,9 +171,9 @@ alter default privileges in schema dev grant all privileges to group analyst;
 
 
 --raw data tables (select only)
-grant usage on schema truven, medicare, optum_dod, optum_zip to group analyst;
-grant select on all tables in schema truven, medicare, optum_dod, optum_zip to group analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA truven, medicare, optum_dod, optum_zip grant select on tables to group analyst; 
+grant usage on schema truven, medicare, medicare_national, optum_dod, optum_zip to group analyst;
+grant select on all tables in schema truven, medicare, medicare_national, optum_dod, optum_zip to group analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA truven, medicare, medicare_national, optum_dod, optum_zip grant select on tables to group analyst; 
 
 
 -------------------------------------------------------------------------------------------

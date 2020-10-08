@@ -220,7 +220,7 @@ CREATE EXTERNAL TABLE ext_mdcrd_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/mdcrd*'
+'gpfdist://192.168.58.179:8081/truven/2019/mdcrd*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

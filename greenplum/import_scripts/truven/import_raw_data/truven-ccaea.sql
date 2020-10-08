@@ -173,7 +173,7 @@ CREATE EXTERNAL TABLE ext_ccaea_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/ccaea*'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaea*.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

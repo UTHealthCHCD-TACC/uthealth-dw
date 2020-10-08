@@ -1,6 +1,7 @@
 drop external table ext_outpatient_revenue_center_k;
 
 CREATE EXTERNAL TABLE ext_outpatient_revenue_center_k (
+year text,
 BENE_ID varchar, CLM_ID varchar, CLM_THRU_DT varchar, CLM_LINE_NUM varchar, NCH_CLM_TYPE_CD varchar, REV_CNTR varchar, REV_CNTR_DT varchar, 
 REV_CNTR_1ST_ANSI_CD varchar, REV_CNTR_2ND_ANSI_CD varchar, REV_CNTR_3RD_ANSI_CD varchar, REV_CNTR_4TH_ANSI_CD varchar, 
 REV_CNTR_APC_HIPPS_CD varchar, HCPCS_CD varchar, HCPCS_1ST_MDFR_CD varchar, HCPCS_2ND_MDFR_CD varchar, HCPCS_3RD_MDFR_CD varchar, 
@@ -15,7 +16,7 @@ REV_CNTR_PRCNG_IND_CD varchar, THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varc
 TRNSTNL_DRUG_ADD_ON_PYMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/medicare/201*/outpatient_revenue_center_k.csv'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -23,12 +24,15 @@ select *
 from ext_outpatient_revenue_center_k
 limit 1000;
 
-create table medicare.outpatient_revenue_center_k
-WITH (appendonly=true, orientation=column)
+create table medicare_texas.outpatient_revenue_center_k
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--insert into medicare_texas.outpatient_revenue_center_k 
 select * 
 from ext_outpatient_revenue_center_k
+
 distributed randomly;
 
 select count(*)
-from medicare.outpatient_revenue_center_k;
+from medicare_texas.outpatient_revenue_center_k;

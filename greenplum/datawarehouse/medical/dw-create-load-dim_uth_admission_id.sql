@@ -52,43 +52,63 @@ and c.uth_admission_id is null
 
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'trvc', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
+select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.ccaef a 
   join data_warehouse.dim_uth_member_id b 
-    on data_source = 'trvc'
+    on data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_admission_id c
+     on  b.data_source = c.data_source
+    and a.caseid::text = c.admission_id_src 
+    and a.enrolid::text = c.member_id_src 
 where a.caseid is not null 
   and a.enrolid is not null 
+  and c.uth_admission_id is null 
 ;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'trvc', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
+select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
 from truven.ccaei a 
   join data_warehouse.dim_uth_member_id b 
-    on data_source = 'trvc'
+    on data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_admission_id c
+     on  b.data_source = c.data_source
+    and a.caseid::text = c.admission_id_src 
+    and a.enrolid::text = c.member_id_src 
 where a.caseid is not null 
   and a.enrolid is not null 
+  and c.uth_admission_id is null  
 ;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'trvm', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
+select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.mdcrf a 
   join data_warehouse.dim_uth_member_id b 
-    on data_source = 'trvm'
+    on data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_admission_id c
+     on  b.data_source = c.data_source
+    and a.caseid::text = c.admission_id_src 
+    and a.enrolid::text = c.member_id_src 
 where a.caseid is not null 
   and a.enrolid is not null 
+  and c.uth_admission_id is null 
 ;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'trvm', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
+select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
 from truven.mdcri a 
   join data_warehouse.dim_uth_member_id b 
-    on data_source = 'trvm'
+    on data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_admission_id c
+     on  b.data_source = c.data_source
+    and a.caseid::text = c.admission_id_src 
+    and a.enrolid::text = c.member_id_src 
 where a.caseid is not null 
   and a.enrolid is not null 
+  and c.uth_admission_id is null 
 ;
 
 

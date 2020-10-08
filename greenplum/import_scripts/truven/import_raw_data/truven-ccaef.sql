@@ -367,7 +367,7 @@ CREATE EXTERNAL TABLE ext_ccaef_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaef*'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaef*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

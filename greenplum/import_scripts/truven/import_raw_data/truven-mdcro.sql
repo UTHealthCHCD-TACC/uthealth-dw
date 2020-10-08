@@ -207,7 +207,7 @@ CREATE EXTERNAL TABLE ext_mdcro_v2 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/mdcro*'
+'gpfdist://192.168.58.179:8081/truven/2019/mdcro*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

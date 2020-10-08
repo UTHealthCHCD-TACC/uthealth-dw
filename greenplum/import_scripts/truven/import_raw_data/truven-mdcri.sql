@@ -278,7 +278,7 @@ from ext_mdcri_v2;
 
 -- V3
 
-drop external table ext_ccaei_v3;
+drop external table ext_mdcri_v3;
 CREATE EXTERNAL TABLE ext_mdcri_v3 (
 	seqnum numeric ,
 	version int2 ,
@@ -341,7 +341,7 @@ CREATE EXTERNAL TABLE ext_mdcri_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/mdcri*'
+'gpfdist://192.168.58.179:8081/truven/2019/mdcri*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

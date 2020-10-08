@@ -27,8 +27,6 @@ vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 vacuum analyze truven.ccaed;
 
 
-delete from data_warehouse.dim_uth_rx_claim_id where data_source in ('trvc','trvm')
-
 ---truven commercial
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -47,11 +45,11 @@ from truven.ccaed a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
---left join data_warehouse.dim_uth_rx_claim_id c 
- -- on c.data_source = 'truv'
- --and c.member_id_src = a.enrolid::text 
--- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
- --and  c.uth_rx_claim_id is null 
+left join data_warehouse.dim_uth_rx_claim_id c 
+  on c.data_source = 'truv'
+ and c.member_id_src = a.enrolid::text 
+ and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+ and  c.uth_rx_claim_id is null 
 where a.enrolid is not null;
 
 
@@ -73,29 +71,21 @@ from truven.mdcrd a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
    and b.member_id_src = a.enrolid::text 
---left join data_warehouse.dim_uth_rx_claim_id c 
---  on c.data_source = 'trvm'
--- and c.member_id_src = a.enrolid::text 
--- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
--- and c.uth_rx_claim_id is null 
+left join data_warehouse.dim_uth_rx_claim_id c 
+  on c.data_source = 'truv'
+ and c.member_id_src = a.enrolid::text 
+ and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+ and c.uth_rx_claim_id is null 
 where a.enrolid is not null;
 
- 
- select count(*), data_source, year 
- from data_warehouse.dim_uth_rx_claim_id
- group by data_source, year;
- 
-
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
-
-
-
-select distinct data_year from data_warehouse.dim_uth_claim_id where data_source = 'medicare'
 
 --medicare
-select count(*) from medicare.pde_file;
+select count(*) from medicare_texas.pde_file;
 
-select count(distinct pde_id) from medicare.pde_file;
+select count(distinct pde_id) from medicare_texas.pde_file;
+
+
+
 
 
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -106,12 +96,12 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,uth_member_id
 			,member_id_src ) 					
 select 'mdcr'
-       ,2016
+       ,a.year::int
        ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from medicare.pde_file a
+from medicare_texas.pde_file a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mdcr'
    and b.member_id_src = a.bene_id
@@ -122,6 +112,36 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where c.uth_rx_claim_id is null 
   and a.bene_id is not null
  ;
+
+
+
+---Medicare National
+insert into data_warehouse.dim_uth_rx_claim_id (
+			 data_source
+			,year 
+			,uth_rx_claim_id
+			,rx_claim_id_src
+			,uth_member_id
+			,member_id_src ) 					
+select 'mcrn'
+       ,a.year::int
+       ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
+	   ,a.pde_id
+	   ,b.uth_member_id
+	   ,a.bene_id 
+from medicare_national.pde_file a
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'mcrn'
+   and b.member_id_src = a.bene_id
+left join data_warehouse.dim_uth_rx_claim_id c 
+  on c.data_source = 'mcrn'
+ and c.member_id_src = a.bene_id 
+ and c.rx_claim_id_src = a.pde_id
+where c.uth_rx_claim_id is null 
+  and a.bene_id is not null
+ ;
+
+
 
 
 vacuum analyze optum_zip.rx 

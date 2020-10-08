@@ -511,7 +511,7 @@ CREATE EXTERNAL TABLE ext_ccaes_v4 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaes*'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaes*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -534,6 +534,9 @@ EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaes_v4;
 
 
+/*
+ * The following versions are for DMS versions of the rawdata
+ */
 --VDMS
 drop external table ext_ccaes_vDMS;
 CREATE EXTERNAL TABLE ext_ccaes_vDMS (
@@ -705,7 +708,7 @@ CREATE EXTERNAL TABLE ext_ccaes_vDMS2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/ccaes141.csv'
+'gpfdist://192.168.58.179:8081/truven/2019/ccaes*.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

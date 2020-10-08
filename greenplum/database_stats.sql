@@ -79,7 +79,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('data_warehouse')
+where pgn.nspname in ('medicare_national')
 ORDER BY pgn.nspname, pgc.relname;
 
 --Roles and Members
@@ -136,7 +136,7 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('dw_qa')
+and nspname in ('medicare_national')
 order by 1, 2, 3;
 
 analyze dw_qa.claim_detail;

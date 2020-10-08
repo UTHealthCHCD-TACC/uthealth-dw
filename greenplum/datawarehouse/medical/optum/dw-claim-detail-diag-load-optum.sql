@@ -2,6 +2,8 @@
 analyze data_warehouse.claim_header;
 analyze data_warehouse.claim_detail;
 
+delete from data_warehouse.claim_diag where data_source in ('optz', 'optd');
+
 --drop table if exists dw_qa.claim_detail_diag;
 
 create table dw_qa.claim_diag (
@@ -17,6 +19,7 @@ WITH (appendonly=true, orientation=column)
 distributed by (uth_claim_id);
 
 --Optum load: 
+explain
 insert into data_warehouse.claim_diag(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, diag_cd, diag_position, icd_type, poa_src)
 select distinct d.data_source, d.year, d.uth_claim_id, d.uth_member_id, d.claim_sequence_number, diag.fst_dt, diag.diag, diag.diag_position, diag.icd_flag, diag.poa
 from data_warehouse.claim_detail d

@@ -106,11 +106,16 @@ from cte_distinct_member
 
 
 
+update  medicare_texas.mbsf_abcd_summary 
+set bene_enrollmt_ref_yr = trunc(bene_enrollmt_ref_yr::numeric,0)::text
+where bene_enrollmt_ref_yr = '2016.0'
+
+
 --- Medicare
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
-	from medicare.mbsf_abcd_summary
+	from medicare_texas.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
       on b.data_source = 'mdcr'
      and b.member_id_src = bene_id::text
@@ -120,6 +125,33 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+select count(*), count(distinct bene_id), mas.bene_enrollmt_ref_yr  
+from medicare_texas.mbsf_abcd_summary mas 
+group by mas.bene_enrollmt_ref_yr
+
+select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mdcr';
+
+select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
+
+
+
+--- Medicare National
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
+with cte_distinct_member as (
+	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
+	from medicare_national.mbsf_abcd_summary
+	 left outer join data_warehouse.dim_uth_member_id b 
+      on b.data_source = 'mcrn'
+     and b.member_id_src = bene_id::text
+    where b.member_id_src is null 
+)
+select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+from cte_distinct_member
+;
+
+select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mcrn';
+
+select count(distinct bene_id) from medicare_national.mbsf_abcd_summary mas ;
 
 ---******************************** Pharmacy tables---------*****************************
 
@@ -128,13 +160,28 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct bene_id as v_member_id
-    from medicare.pde_file
+    from medicare_texas.pde_file
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mdcr'
      and member_id_src = bene_id::text 
     where member_id_src is null 
 ) 
 select v_member_id, 'mdcr', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+from cte_distinct_member
+;
+
+
+--medicare National rx
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
+with cte_distinct_member as (
+    select distinct bene_id as v_member_id
+    from medicare_national.pde_file
+    left outer join data_warehouse.dim_uth_member_id 
+      on data_source = 'mcrn'
+     and member_id_src = bene_id::text 
+    where member_id_src is null 
+) 
+select v_member_id, 'mcrn', nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member
 ;
 

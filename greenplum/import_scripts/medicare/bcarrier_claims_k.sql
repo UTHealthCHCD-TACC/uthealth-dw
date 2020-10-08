@@ -1,6 +1,7 @@
 drop external table ext_bcarrier_claims_k;
 
 CREATE EXTERNAL TABLE ext_bcarrier_claims_k (
+parentname text,
 BENE_ID varchar,CLM_ID varchar,NCH_NEAR_LINE_REC_IDENT_CD varchar,NCH_CLM_TYPE_CD varchar,CLM_FROM_DT varchar,CLM_THRU_DT varchar,
 NCH_WKLY_PROC_DT varchar,CARR_CLM_ENTRY_CD varchar,CLM_DISP_CD varchar,CARR_NUM varchar,CARR_CLM_PMT_DNL_CD varchar,CLM_PMT_AMT varchar,
 CARR_CLM_PRMRY_PYR_PD_AMT varchar,RFR_PHYSN_UPIN varchar,RFR_PHYSN_NPI varchar,CARR_CLM_PRVDR_ASGNMT_IND_SW varchar,
@@ -15,7 +16,7 @@ BENE_RACE_CD varchar,BENE_CNTY_CD varchar,BENE_STATE_CD varchar,BENE_MLG_CNTCT_Z
 CPO_ORG_NPI_NUM varchar,CARR_CLM_BLG_NPI_NUM varchar,ACO_ID_NUM varchar,CARR_CLM_SOS_NPI_NUM varchar,CLM_BENE_ID_TYPE_CD varchar
 )
 location (
-'gpfdist://c252-140:8801/medicare/201*/bcarrier_claims_k.csv'
+'gpfdist://192.168.58.179:8081/medicare_texas_national/*/*bcarrier_claims_k.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -23,12 +24,17 @@ select *
 from ext_bcarrier_claims_k
 limit 1000;
 
-create table medicare.bcarrier_claims_k
-WITH (appendonly=true, orientation=column)
+create table medicare_texas_national.bcarrier_claims_k
+WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
+
+--truncate medicare_texas.bcarrier_claims_k;
+
+--insert into medicare_texas.bcarrier_claims_k 
 select * 
 from ext_bcarrier_claims_k
-distributed randomly;
 
-select count(*)
-from medicare.bcarrier_claims_k;
+distributed by (BENE_ID);
+
+select min(clm_from_dt), max(clm_from_dt), count(*)
+from medicare_texas.bcarrier_claims_k;
