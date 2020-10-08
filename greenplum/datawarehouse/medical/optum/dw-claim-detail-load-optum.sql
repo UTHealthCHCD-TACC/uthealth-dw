@@ -76,29 +76,23 @@ insert into data_warehouse.claim_detail(
 	bill_type_inst,	bill_type_class, bill_type_freq, units,
 	drg_cd,
 	claim_id_src, member_id_src, table_id_src)
-select ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id,
+select uth.data_source, uth.data_year, uth.uth_claim_id, uth.uth_member_id,
 	trunc(m.clmseq::int4), m.clmseq,
 	m.fst_dt, m.lst_dt, get_my_from_date(m.fst_dt),
 	m.prov::text, m.bill_prov::text, m.refer_prov::text, m.pos,
 	null, null, --No mappings for network fields
 	conf.admit_date, conf.disch_date,
 	m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
-	m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
+	m.rvnu_cd, m.charge, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
 	bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
 	m.drg,
 	uth.claim_id_src, uth.member_id_src, 'medical'
-from data_warehouse.claim_header ch
-	join data_warehouse.dim_uth_claim_id uth 
-		on ch.uth_claim_id=uth.uth_claim_id
-	join optum_dod.medical m 
-		on ch.claim_id_src=m.clmid::text 
-	   and ch.member_id_src=m.patid::text
-	left outer join optum_dod.confinement conf 
-		on m.conf_id=conf.conf_id
-	left outer join reference_tables.ref_optum_bill_type_from_tos bt 
-		on m.tos_cd=bt.tos
-where ch.data_source='optd'
-;
+from --data_warehouse.claim_header ch join 
+data_warehouse.dim_uth_claim_id uth --on ch.uth_member_id = uth.uth_member_id and ch.uth_claim_id=uth.uth_claim_id
+join optum_dod.medical m on uth.claim_id_src=m.clmid::text and uth.member_id_src=m.patid::text
+left outer join optum_dod.confinement conf on m.conf_id=conf.conf_id
+left outer join reference_tables.ref_optum_bill_type_from_tos bt on m.tos_cd=bt.tos
+where uth.data_source='optd';
 
 
 select count(*), count(distinct conf_id) 
@@ -130,7 +124,7 @@ select ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id,
 	null, null, --No mappings for network fields
 	conf.admit_date, conf.disch_date,
 	m.proc_cd, null, substring(m.procmod, 1,1), substring(m.procmod, 2,1),
-	m.rvnu_cd, null, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
+	m.rvnu_cd, m.charge, m.std_cost, null, m.copay, null, m.coins, null, m.cob, --NOTE: cob is an int, but optum is varchar -> m.cob (Find where it is a numeric value, set other to zero), 	--NOTE: Left pad revenu_cd to 4 digits with leading zero
 	bt.inst_code, bt.class_code, null, m.units, --NOTE: bill_type_freq is null for optum
 	m.drg,
 	uth.claim_id_src, uth.member_id_src, 'medical'
