@@ -26,6 +26,7 @@ where a.data_source in ('truv','optz')
 ;
 
 
+
 delete from dev.wc_ape_mdcradv_2015 where length(zip3::text) = 2;
 
 drop table dev.wc_ape_mdcradv_2015_vacc;

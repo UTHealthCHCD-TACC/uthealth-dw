@@ -22,7 +22,7 @@ select client_nbr
 	         else 7
 	   end as age_group
 	   ,elig_month 
-FROM MEDICAID.dbo.CHIP_UTH_SFY2015_Final
+FROM MEDICAID.dbo.CHIP_UTH_SFY2015_Final a
   where elig_month between 201501 and 201512
   and substring(mailing_zip,1,3) between '750' and '799'
  union 
@@ -43,6 +43,7 @@ FROM MEDICAID.dbo.CHIP_UTH_SFY2016_Final
   where elig_month between 201501 and 201512
   and substring(mailing_zip,1,3) between '750' and '799'
  union 
+ 
 SELECT [CLIENT_NBR]
       ,substring([ZIP],1,3) as zip3
       ,[SEX]
@@ -56,7 +57,7 @@ SELECT [CLIENT_NBR]
 	         else 7
 	   end as age_group
 	   ,elig_date 
-  FROM [MEDICAID].[dbo].[ENRL_2015]
+  FROM [MEDICAID].[dbo].[ENRL_2015] a 
   where elig_date between 201501 and 201512
   and substring(zip,1,3) between '750' and '799'
  union 
@@ -80,6 +81,28 @@ SELECT [CLIENT_NBR]
   group by client_nbr;
 
  
+--exclude anyone in texas women or duel eligible
+drop table if exists stage.dbo.wc_mdcd_ape_wmde_2015
+ 
+ select distinct client_nbr 
+ into stage.dbo.wc_mdcd_ape_wmde_2015
+ from ( 
+ select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2015 a
+ where elig_date between 201501 and 201512 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+union 
+  select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2016 a
+ where elig_date between 201501 and 201512 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+  ) x 
+  ;
+ 
+--texas women and duel elig
+ delete from stage.dbo.wc_mdcd_ape_2015_temp where client_nbr in ( select client_nbr from stage.dbo.wc_mdcd_ape_wmde_2015 )
+ 
+ 
 --get only members covered all year  
 select * 
 into stage.dbo.wc_mdcd_ape_2015 
@@ -91,6 +114,10 @@ where a.fst_elig = '201501'
 delete from stage.dbo.wc_mdcd_ape_2015 where age_group is null;
 
 delete from stage.dbo.wc_mdcd_ape_2015 where zip3 = '771';
+
+delete from stage.dbo.wc_mdcd_ape_2015 where sex = 'U';
+
+select count(*), age_group from stage.dbo.wc_mdcd_ape_2015  group by age_group 
 
 drop table stage.dbo.wc_mdcd_ape_2015_temp
 
@@ -222,6 +249,7 @@ insert into stage.dbo.wc_mdcd_ape_dx_2015
 insert into stage.dbo.wc_mdcd_ape_clm_2015
 select distinct ICN
 from  stage.dbo.wc_mdcd_ape_dx_2015
+
 
 ---------------------------------------------------------------------------------------------------------
 ----Members from claim ids

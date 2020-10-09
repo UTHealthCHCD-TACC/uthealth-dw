@@ -79,10 +79,31 @@ SELECT [CLIENT_NBR]
   ) inr 
   group by client_nbr;
 
+--exclude anyone in texas women or duel eligible
+drop table if exists stage.dbo.wc_mdcd_ape_wmde_2016
+ 
+ select distinct client_nbr 
+ into stage.dbo.wc_mdcd_ape_wmde_2016
+ from ( 
+ select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2016 a
+ where elig_date between 201601 and 201612 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+union 
+  select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2017 a
+ where elig_date between 201601 and 201612 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+  ) x 
+  ;
+ 
+--texas women and duel elig
+ delete from stage.dbo.wc_mdcd_ape_2016_temp where client_nbr in ( select client_nbr from stage.dbo.wc_mdcd_ape_wmde_2016 )
+ 
  
 --get only members covered all year  
 select * 
-into stage.dbo.wc_mdcd_ape_2016 
+into stage.dbo.wc_mdcd_ape_2016
 from stage.dbo.wc_mdcd_ape_2016_temp a 
 where a.fst_elig = '201601' 
   and a.lst_elig = '201612'
@@ -91,6 +112,10 @@ where a.fst_elig = '201601'
 delete from stage.dbo.wc_mdcd_ape_2016 where age_group is null;
 
 delete from stage.dbo.wc_mdcd_ape_2016 where zip3 = '771';
+
+delete from stage.dbo.wc_mdcd_ape_2016 where sex = 'U';
+
+select count(*), age_group from stage.dbo.wc_mdcd_ape_2016  group by age_group 
 
 drop table stage.dbo.wc_mdcd_ape_2016_temp
 

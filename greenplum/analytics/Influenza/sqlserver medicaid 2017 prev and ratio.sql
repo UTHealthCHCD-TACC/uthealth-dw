@@ -78,30 +78,50 @@ where elig_date between 201701 and 201712
 ) inr 
   group by client_nbr;
 
-
- --get only members covered all year  
+--exclude anyone in texas women or duel eligible
+drop table if exists stage.dbo.wc_mdcd_flu_wmde_2017
+ 
+ select distinct client_nbr 
+ into stage.dbo.wc_mdcd_flu_wmde_2017
+ from ( 
+ select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2017 a
+ where elig_date between 201701 and 201712 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+union 
+  select distinct client_nbr 
+ FROM MEDICAID.dbo.ENRL_2018 a
+ where elig_date between 201701 and 201712 
+   and ( a.SMIB <> '0'  or a.ME_CODE = 'W' )
+  ) x 
+  ;
+ 
+--texas women and duel elig
+ delete from stage.dbo.wc_mdcd_flu_2017_temp where client_nbr in ( select client_nbr from stage.dbo.wc_mdcd_flu_wmde_2017 )
+ 
+ 
+--get only members covered all year  
 select * 
 into stage.dbo.wc_mdcd_flu_2017 
 from stage.dbo.wc_mdcd_flu_2017_temp a 
 where a.fst_elig = '201701' 
   and a.lst_elig = '201712'
 ;  
- 
---drop temp table 
- drop table stage.dbo.wc_mdcd_flu_2017_temp;
- 
- ---remove junk records
+
 delete from stage.dbo.wc_mdcd_flu_2017 where age_group is null;
 
 delete from stage.dbo.wc_mdcd_flu_2017 where zip3 = '771';
 
-delete from stage.dbo.wc_mdcd_flu_2017 where sex = 'U'
+delete from stage.dbo.wc_mdcd_flu_2017 where sex = 'U';
+
+select count(*), age_group from stage.dbo.wc_mdcd_flu_2017  group by age_group 
+
+drop table stage.dbo.wc_mdcd_flu_2017_temp
 
 --sanity check - should be a few million age group 1, and much less other age groups
 select count(*), age_group 
 from stage.dbo.wc_mdcd_flu_2017
 group by age_group order by age_group ;
-
 
 ---get encounters
 drop table stage.dbo.wc_mdcd_flu_clm_2017;
