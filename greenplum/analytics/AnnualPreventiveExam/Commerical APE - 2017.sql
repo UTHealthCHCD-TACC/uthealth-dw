@@ -167,11 +167,11 @@ select public.flu_weights ();
 --prevalance all - row 51  -- optum 
 select * 
 from (
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, 'all' as grp 
+select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems, 'all' as grp
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
 union all
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, gender_cd
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, gender_cd
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
 group by a.gender_cd
@@ -180,7 +180,7 @@ order by grp
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, age_group 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, age_group 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
 group by age_group 
@@ -190,11 +190,11 @@ order by age_group;
 --prevalance all - row 51  -- truven
 select * 
 from (
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, 'all' as grp
+select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems, 'all' as grp
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
 union all 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, gender_cd
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, gender_cd
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
 group by a.gender_cd 
@@ -203,7 +203,7 @@ order by grp
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, age_group 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, age_group 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
 group by age_group 
@@ -215,14 +215,14 @@ order by age_group;
 ----------------------------------------------------------------------------------------
 
 -- truven
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems --, a.zip3 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
 group by a.zip3 
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , count(uth_member_id) as mems--, a.zip3 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
   and a.gender_cd = 'F'
@@ -230,7 +230,7 @@ where a.data_source = 'truv'
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , count(uth_member_id) as mems--, a.zip3 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
   and a.gender_cd = 'M'
@@ -238,10 +238,10 @@ where a.data_source = 'truv'
 order by a.zip3
 ;
   
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev --, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems --, a.zip3 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'truv'
-  and a.age_group = '1'
+  and a.age_group = '6'
   group by a.zip3 
 order by a.zip3
  ;
@@ -264,14 +264,14 @@ insert into dev.wc_ape_com_2017 values
 (0011, 772,5,'F','optz',0),
 (0012, 772,6,'F','optz',0)
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
 group by a.zip3 
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'F'
@@ -279,7 +279,7 @@ where a.data_source = 'optz'
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'M'
@@ -287,10 +287,10 @@ where a.data_source = 'optz'
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev --, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems 
 from dev.wc_ape_com_2017 a 
 where a.data_source = 'optz'
-  and a.age_group = '1'
+  and a.age_group = '6'
   group by a.zip3 
 order by a.zip3
  ;

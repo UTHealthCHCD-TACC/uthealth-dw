@@ -51,170 +51,69 @@ group by data_source;
 ------ Calculations ---------------------------
 
 ----------------------------------------------------------------------------------------
----********************** Weights **************************
-----------------------------------------------------------------------------------------
- 		
-CREATE OR REPLACE FUNCTION public.flu_weights ( )
-RETURNS int AS $FUNC$	 
-	declare
-	r_data_source text; 
-	r_den numeric;
-	r_num numeric; 
-	r_result numeric;
-	r_ag int;
-begin
-	
----all
-	r_num := 0;
-	r_den := (	select count(*) from dev.wc_flu_mcradv_2016  );
-
-	for r_num , r_data_source
-	  in 
-	select count(*), data_source 
-	from dev.wc_flu_mcradv_2016 
-	group by data_source 
-	order by data_source 
-	
-	loop 
-	    r_result = r_num / r_den;
-	    r_result = trunc(r_result,4);
-	    raise notice 'Overall Weight % is % ', r_data_source, r_result;
-	end loop;
-
----female 
-	r_num := 0;
-	r_den := (	select count(*) from dev.wc_flu_mcradv_2016  where gender_cd = 'F' );
-
-	for r_num , r_data_source
-	  in 
-	select count(*), data_source 
-	from dev.wc_flu_mcradv_2016 
-	where gender_cd = 'F'
-	group by data_source 
-	order by data_source 
-	
-	loop 
-	    r_result = r_num / r_den;
-	    r_result = trunc(r_result,4);
-	    raise notice 'Female Weight % is % ', r_data_source, r_result;
-	end loop;
-
----male 
-	r_num := 0;
-	r_den := (	select count(*) from dev.wc_flu_mcradv_2016  where gender_cd = 'M' );
-
-	for r_num , r_data_source
-	  in 
-	select count(*), data_source 
-	from dev.wc_flu_mcradv_2016 
-	where gender_cd = 'M'
-	group by data_source 
-	order by data_source 
-	
-	loop 
-	    r_result = r_num / r_den;
-	    r_result = trunc(r_result,4);
-	    raise notice 'Male Weight % is % ', r_data_source, r_result;
-	end loop;
-
-
-	return 0;
-end $FUNC$ language 'plpgsql';
- 
-
-select public.flu_weights ();
-
-
-----------------------------------------------------------------------------------------
 ---********************** Prevalance All **************************
 ----------------------------------------------------------------------------------------
 
---prevalance all OPTZ - row 51  
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id), sum(vacc_flag)
+--prevalance all - row 51  -- optum 
+select * 
+from (
+select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems, 'all' as grp 
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'optz'
-;
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag)
+union all
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, gender_cd
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'optz'
-  and a.gender_cd = 'F'
+group by a.gender_cd
+) x 
+order by grp
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag)
-from dev.wc_flu_mcradv_2016 a 
-where a.data_source = 'optz'
-  and a.gender_cd = 'M'
-;
-
-
---prevalance all TRUVEN - row 51  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id), sum(vacc_flag)
+--prevalance all - row 51  -- truven weight
+select * 
+from (
+select ( sum(vacc_flag) / count(uth_member_id)::float )as prev,count(uth_member_id) as mems,  'all' as grp 
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'truv'
-;
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag)
+union all
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev,count(uth_member_id) as mems,  gender_cd
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'truv'
-  and a.gender_cd = 'F'
+group by a.gender_cd
+) x 
+order by grp
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag)
-from dev.wc_flu_mcradv_2016 a 
-where a.data_source = 'truv'
-  and a.gender_cd = 'M'
-;
+
 
 ----------------------------------------------------------------------------------------
 ---********************** Prevalance by ZIP **************************
 ----------------------------------------------------------------------------------------
-
--- truven 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
-from dev.wc_flu_mcradv_2016 a 
-where a.data_source = 'truv'
-group by a.zip3 
-order by a.zip3
-;
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
-from dev.wc_flu_mcradv_2016 a 
-where a.data_source = 'truv'
-  and a.gender_cd = 'F'
-  group by a.zip3 
-order by a.zip3
-;
-
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev --, a.zip3 
-from dev.wc_flu_mcradv_2016 a 
-where a.data_source = 'truv'
-  and a.gender_cd = 'M'
-  group by a.zip3 
-order by a.zip3
-;
-
- select * from dev.wc_flu_mcradv_2016
  
- -- optum by zip 
- --missing zip 753 772 
-insert into dev.wc_flu_mcradv_2016 values 
-(0001,753,7,'M','optz',0),
-(0006,753,7,'F','optz',0),
-(0007,772,7,'M','optz',0),
-(0012,772,7,'F','optz',0)
+ -- optum weight  missing zip 753 772 
+ insert into dev.wc_flu_mcradv_2016 values 
+(0001, 753,1,'M','optz',0),
+(0002, 753,2,'M','optz',0),
+(0003, 753,3,'M','optz',0),
+(0004, 753,4,'F','optz',0),
+(0005, 753,5,'F','optz',0),
+(0006, 753,6,'F','optz',0),
+(0007, 772,1,'M','optz',0),
+(0008, 772,2,'M','optz',0),
+(0009, 772,3,'M','optz',0),
+(0010, 772,4,'F','optz',0),
+(0011, 772,5,'F','optz',0),
+(0012, 772,6,'F','optz',0)
 ;
 
-
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'optz'
 group by a.zip3 
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'F'
@@ -223,11 +122,38 @@ order by a.zip3
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, a.zip3 
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
 from dev.wc_flu_mcradv_2016 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'M'
   group by a.zip3 
 order by a.zip3
 ;
+  
+ 
+ -- truven
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , count(uth_member_id) as mems
+from dev.wc_flu_mcradv_2016 a 
+where a.data_source = 'truv'
+group by a.zip3 
+order by a.zip3
+;
+
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
+from dev.wc_flu_mcradv_2016 a 
+where a.data_source = 'truv'
+  and a.gender_cd = 'F'
+  group by a.zip3 
+order by a.zip3
+;
+
+
+select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
+from dev.wc_flu_mcradv_2016 a 
+where a.data_source = 'truv'
+  and a.gender_cd = 'M'
+  group by a.zip3 
+order by a.zip3
+;
+
 

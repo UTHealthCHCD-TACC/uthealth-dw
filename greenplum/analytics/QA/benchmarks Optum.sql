@@ -1,33 +1,24 @@
+drop table dev.wc_bench_optz_members
 
-
-select uth_member_id, min(age_derived) as age , bus_cd, year 
+select uth_member_id, age_derived as age , a.total_enrolled_months , bus_cd, year 
 into dev.wc_bench_optz_members
-from data_warehouse.member_enrollment_monthly 
+from data_warehouse.member_enrollment_yearly a
+where year between 2016 and 2019
+  and data_source = 'optz' 
+ and state = 'TX'
+;
+
+select uth_member_id, age_derived as age , a.total_enrolled_months , bus_cd, year 
+into dev.wc_bench_optz_members
+from data_warehouse.member_enrollment_yearly a
 where year = 2016
   and data_source = 'optz' 
  and state = 'TX'
- group by uth_member_id, bus_cd, year 
+;
+ 
 
- 
-insert into dev.wc_bench_optz_members 
-select uth_member_id, min(age_derived) as age , bus_cd, year
-from data_warehouse.member_enrollment_monthly 
-where year = 2017
-  and data_source = 'optz' 
- and state = 'TX'
- group by uth_member_id, bus_cd, year
- 
- insert into dev.wc_bench_optz_members 
-select uth_member_id, min(age_derived) as age , bus_cd, year
-from data_warehouse.member_enrollment_monthly 
-where year = 2018
-  and data_source = 'optz' 
- and state = 'TX'
- group by uth_member_id, bus_cd, year
- 
- 
  --unique # Active vs Retired 
- select count(uth_member_id), count(distinct uth_member_id), bus_cd, year 
+ select count(uth_member_id), count(distinct uth_member_id), '' as fam_ratio, sum(total_enrolled_months), bus_cd, year 
  from dev.wc_bench_optz_members
  group by bus_cd, year 
 order by year, bus_Cd 
@@ -37,26 +28,26 @@ order by year, bus_Cd
 ---medical FT
 select count(uth_claim_id),  sum(a.total_charge_amount) as chg, sum(a.total_allowed_amount) as alw 
 from data_warehouse.claim_header a 
-where a.year = 2017 
+where a.year = 2019 
   and uth_member_id in ( select uth_member_id from dev.wc_bench_optz_members where bus_cd = 'COM' and year = a.year )
   
 ---RX FT  
 select count(uth_rx_claim_id), sum(a.total_allowed_amount ) 
 from data_warehouse.pharmacy_claims a 
-where a.year = 2016
+where a.year = 2019
   and uth_member_id in ( select uth_member_id from dev.wc_bench_optz_members where bus_cd = 'COM' and year = a.year )
 ; 			
 
 ---medical Retiree
 select count(uth_claim_id),  sum(a.total_charge_amount) as chg, sum(a.total_allowed_amount) as alw 
 from data_warehouse.claim_header a 
-where a.year = 2016 
+where a.year = 2019
   and uth_member_id in ( select uth_member_id from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = a.year)
   
 --RX Retiree  
 select count(uth_rx_claim_id), sum(a.total_charge_amount ) 
 from data_warehouse.pharmacy_claims a 
-where a.year = 2016
+where a.year = 2019
   and uth_member_id in ( select uth_member_id from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = a.year)
 ; 		
 
