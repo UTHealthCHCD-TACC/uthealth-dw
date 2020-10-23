@@ -26,7 +26,8 @@ create table data_warehouse.member_enrollment_monthly (
 	employee_status text, 
 	claim_created_flag bool default false,
 	row_identifier bigserial,
-	rx_coverage int2
+	rx_coverage int2,
+	data_year int2
 )
 WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
@@ -35,6 +36,8 @@ distributed by(uth_member_id);
 alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache 200;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
+
+
 
     ---------------- data loads --------------------
     
@@ -99,24 +102,36 @@ from optum_zip.mbr_enroll m
 ---------------------------------------------------------------------------------------------------
 
 
-vacuum analyze data_warehouse.member_enrollment_monthly;
 
-delete from data_warehouse.member_enrollment_monthly where data_source = 'truv';
+------ **** Truven *******
+
+create table dev.truven_uth_mem
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select *
+from data_warehouse.dim_uth_member_id where data_source = 'truv'
+distributed by(member_id_src);
+
+
+vacuum analyze dev.truven_uth_mem;
+
+delete from data_warehouse.member_enrollment_monthly where data_source = 'truv' and year = 2019;
+
 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage         
+	plan_type, bus_cd, employee_status, rx_coverage, data_year         
 	)		
 select 
 	   'truv', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
-       d.plan_type, 'COM', eestatu, m.rx
+       d.plan_type, 'COM', eestatu, m.rx, m.year 
 from truven.ccaet m
-  join data_warehouse.dim_uth_member_id a
+  --join data_warehouse.dim_uth_member_id a
+  join dev.truven_uth_mem a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -129,14 +144,11 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
-create table dev.truven_mdcrt
-with(appendonly=true,orientation=column,compresstype=zlib)
-as select *
-from truven.mdcrt
-distributed by(enrolid);
+
 
 
 
@@ -145,16 +157,16 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage      
+	plan_type, bus_cd, employee_status, rx_coverage , data_year      
 	)		
 select 
        'truv', b.year_int,b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
-       d.plan_type, 'MCR', eestatu, m.rx
-from dev.truven_mdcrt m  
---truven.mdcrt m
-  join data_warehouse.dim_uth_member_id a
+       d.plan_type, 'MCR', eestatu, m.rx, m.year
+from truven.mdcrt m
+  --join data_warehouse.dim_uth_member_id a
+  join dev.truven_uth_mem a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -167,8 +179,16 @@ from dev.truven_mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
+where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
+
+
+drop table dev.truven_uth_mem;
+
+
+----- End Truven ******
+
 
 
 create table reference_tables.ref_medicare_entlmt_buyin (buyin_cd char(1), plan_type text);
