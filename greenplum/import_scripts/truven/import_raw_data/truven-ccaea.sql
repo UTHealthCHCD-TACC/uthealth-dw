@@ -269,10 +269,12 @@ select count(*), min(year), max(year)  from truven.ccaea;
 select count(*) from truven.ccaea;
 
 -- Fix storage options
-create table truven.ccaea_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaea)
+create table truven.ccaea_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaea where year=2019)
 distributed randomly;
+
+delete from truven.ccaea where year=2019;
 
 --drop table truven.ccaea;
 alter table truven.ccaea_new rename to ccaea;

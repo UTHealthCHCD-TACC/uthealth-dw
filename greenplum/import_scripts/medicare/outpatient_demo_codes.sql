@@ -5,7 +5,7 @@ year text,
 BENE_ID varchar, CLM_ID varchar, NCH_CLM_TYPE_CD varchar, DEMO_ID_SQNC_NUM varchar, DEMO_ID_NUM varchar, DEMO_INFO_TXT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_demo_codes.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_national/*/*outpatient_demo_codes.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -13,16 +13,16 @@ select *
 from ext_outpatient_demo_codes
 limit 1000;
 
---drop table medicare_texas.outpatient_demo_codes;
-create table medicare_texas.outpatient_demo_codes
+--drop table medicare_national.outpatient_demo_codes;
+create table medicare_national.outpatient_demo_codes
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare_texas.outpatient_demo_codes 
+--insert into medicare_national.outpatient_demo_codes 
 select * 
 from ext_outpatient_demo_codes
 
 distributed randomly;
 
 select count(*)
-from medicare_texas.outpatient_demo_codes;
+from medicare_national.outpatient_demo_codes;

@@ -232,10 +232,12 @@ select count(*), min(year), max(year) from truven.mdcro;
 
 
 -- Fix storage options
-create table truven.mdcro_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcro)
+create table truven.mdcro_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcro where year=2019)
 distributed randomly;
+
+delete from truven.mdcro where year=2019;
 
 drop table truven.mdcro;
 alter table truven.mdcro_new rename to mdcro;

@@ -80,7 +80,7 @@ select 'mdcr',
        null, null, null, null, --	   deductible, copay, coins, cob,
 	   pde_id, 
 	   bene_id	   
-from medicare_texas.pde_file a 
+from medicare_national.pde_file a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'mdcr' 
     and b.member_id_src = a.bene_id

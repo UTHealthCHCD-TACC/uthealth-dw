@@ -13,7 +13,7 @@ RX_ORGN_CD varchar, RPTD_GAP_DSCNT_NUM varchar, BRND_GNRC_CD varchar, PHRMCY_SRV
 SUBMSN_CLR_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/temp/*pde_file.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_national/*/*pde_file.csv.gz#transform=add_parentname'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -21,15 +21,18 @@ select *
 from ext_pde_file
 limit 1000;
 
-create table medicare_texas.pde_file
+create table medicare_national.pde_file
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare_texas.pde_file 
+insert into medicare_national.pde_file 
 select * 
 from ext_pde_file;
 
 distributed randomly;
 
-select count(*)
-from medicare_texas.pde_file;
+-- Scratch
+select year, count(*)
+from medicare_national.pde_file
+group by 1
+order by 1;

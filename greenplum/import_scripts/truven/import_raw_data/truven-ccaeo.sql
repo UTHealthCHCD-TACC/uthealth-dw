@@ -224,7 +224,6 @@ AGE,CAP_SVC,COB,COINS,COPAY,DEDUCT,DX3,DX4,EMPZIP,FACHDID,FACPROF,MHSACOVG,MSCLM
 PLANTYP,PROCGRP,PROCMOD,PROVID,QTY, SVCSCAT,TSVCDAT,UNITS,MDC,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaeo_v2;
-limit 1000;
 
 -- Verify
 
@@ -232,10 +231,12 @@ select count(*) from truven.ccaes;
 select count(*) from truven.ccaes_distinct;
 
 -- Fix storage options
-create table truven.ccaeo_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaeo)
+create table truven.ccaeo_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaeo where year=2019)
 distributed randomly;
+
+delete from truven.ccaeo where year=2019;
 
 drop table truven.ccaeo;
 alter table truven.ccaeo_distinct rename to ccaeo;

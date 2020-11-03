@@ -1,7 +1,7 @@
 /*
  * Remove old records
  */
-delete from data_warehouse.claim_header where data_source in ('optd','optz')
+delete from data_warehouse.claim_header where data_source in ('optd','optz');
 
 /*
  * We assume the matching records exist in dim_uth_claim_id
@@ -133,6 +133,16 @@ select *
 from data_warehouse.claim_detail 
 where data_source not like 'opt%';
 
+explain
+select count(*)
+from data_warehouse.claim_detail cd 
+join optum_dod.medical m on cd.claim_id_src = m.clmid and cd.claim_sequence_number_src = m.clmseq
+where cd.data_source = 'optd';
+
+select data_source, count(*)
+from data_warehouse.claim_detail cd 
+group by 1;
+where cd.data_source = 'optd';
 
 
 

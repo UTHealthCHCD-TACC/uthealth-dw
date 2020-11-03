@@ -122,11 +122,11 @@ CREATE EXTERNAL TABLE ext_mdcrt_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/mdcrt*'
+'gpfdist://192.168.58.179:8081/truven/mdcrt*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select *
+select distinct year
 from ext_mdcrt_v2
 limit 1000;
 
@@ -143,11 +143,17 @@ select count(*), min(year), max(year) from truven.mdcrt;
 
 
 -- Fix storage options
-create table truven.mdcrs_new 
+create table truven.mdcrt_2019
 WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcrs)
+as (select * from truven.mdcrt where year=2019)
 distributed randomly;
+
+delete from truven.mdcrt where year=2019;
 
 drop table truven.mdcrt;
 alter table truven.mdcrt_new rename to mdcrt;
+
+select count(*)
+from truven.mdcrt m 
+where year = 2019;
 

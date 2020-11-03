@@ -23,7 +23,7 @@ UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6),
 ALT_UNITS text, BILL_TYPE text, NDC_UOM text, NDC_QTY text, OP_VISIT_ID text, PROCMOD2 text, PROCMOD3 text, PROCMOD4 text, TOS_EXT text
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/zip5_m2*'
+'gpfdist://192.168.58.179:8081/optum_zip/zip5_m2*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
