@@ -32,9 +32,8 @@ from data_warehouse.claim_header  h
 
 --cleanup
 
-delete from data_warehouse.claim_icd_proc where data_source = 'truv' and proc_cd is null;
+delete from data_warehouse.claim_icd_proc where proc_cd is null;
 
-vacuum full data_warehouse.claim_icd_proc;
+vacuum analyze data_warehouse.claim_icd_proc;
 
-analyze data_warehouse.claim_icd_proc;
 
