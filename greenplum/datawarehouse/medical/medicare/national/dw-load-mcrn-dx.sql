@@ -9,8 +9,8 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-from medicare_national.inpatient_revenue_center_k a 
-     join medicare_national.inpatient_base_claims_k b
+from medicare_texas.inpatient_revenue_center_k a 
+     join medicare_texas.inpatient_base_claims_k b
        on b.bene_id = a.bene_id 
       and b.clm_id = a.clm_id    
   join data_warehouse.claim_detail d 
@@ -29,8 +29,8 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-from medicare_national.outpatient_revenue_center_k a 
-     join medicare_national.outpatient_base_claims_k b
+from medicare_texas.outpatient_revenue_center_k a 
+     join medicare_texas.outpatient_base_claims_k b
        on b.bene_id = a.bene_id   
       and b.clm_id = a.clm_id  
   join data_warehouse.claim_detail d 
@@ -48,7 +48,7 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-from medicare_national.bcarrier_claims_k a
+from medicare_texas.bcarrier_claims_k a
   join data_warehouse.claim_detail d 
     on d.member_id_src = a.bene_id 
    and d.claim_id_src = a.clm_id  
@@ -65,7 +65,7 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-from medicare_national.dme_claims_k  a
+from medicare_texas.dme_claims_k  a
   join data_warehouse.claim_detail d 
     on d.member_id_src = a.bene_id 
    and d.claim_id_src = a.clm_id  
@@ -82,7 +82,7 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-from medicare_national.hha_base_claims_k a
+from medicare_texas.hha_base_claims_k a
   join data_warehouse.claim_detail d 
     on d.member_id_src = a.bene_id 
    and d.claim_id_src = a.clm_id  
@@ -98,7 +98,7 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-from medicare_national.hospice_base_claims_k a
+from medicare_texas.hospice_base_claims_k a
   join data_warehouse.claim_detail d 
     on d.member_id_src = a.bene_id 
    and d.claim_id_src = a.clm_id  
@@ -114,7 +114,7 @@ select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-from medicare_national.snf_base_claims_k a
+from medicare_texas.snf_base_claims_k a
   join data_warehouse.claim_detail d 
     on d.member_id_src = a.bene_id 
    and d.claim_id_src = a.clm_id  

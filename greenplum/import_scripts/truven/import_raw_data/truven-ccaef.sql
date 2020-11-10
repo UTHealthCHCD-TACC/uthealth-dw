@@ -484,10 +484,12 @@ select count(*), min(year), max(year) from truven.ccaef;
 
 
 -- Fix storage options
-create table truven.ccaef_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaef)
+create table truven.ccaef_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaef where year=2019)
 distributed randomly;
+
+delete from truven.ccaef where year=2019;
 
 drop table truven.ccaef;
 alter table truven.ccaef_new rename to ccaef;

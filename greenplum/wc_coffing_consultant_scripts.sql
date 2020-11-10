@@ -172,7 +172,7 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('dw_qa','optum_zip')
+and b.nspname in ('dw_qa','optum_dod')
 AND a.oid=c.relid
 
 

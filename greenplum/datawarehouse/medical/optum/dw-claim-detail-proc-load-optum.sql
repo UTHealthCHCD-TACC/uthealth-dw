@@ -18,13 +18,23 @@ create table dw_qa.claim_icd_proc (
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (uth_member_id);
 
+
+delete from data_warehouse.claim_icd_proc where data_source = 'optd';
+
+
 --Optum load: 
 insert into data_warehouse.claim_icd_proc(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)
 select distinct d.data_source, d.year, d.uth_claim_id, d.uth_member_id, d.claim_sequence_number, d.from_date_of_service, proc.proc, proc.proc_position, proc.icd_flag
 from data_warehouse.claim_detail d
-join data_warehouse.dim_uth_claim_id uth on d.uth_member_id = uth.uth_member_id and d.uth_claim_id = uth.uth_claim_id 
-join optum_dod.procedure proc on proc.clmid=uth.claim_id_src and proc.patid::text=uth.member_id_src and proc.fst_dt=d.from_date_of_service 
-where d.data_source='optd';
+join optum_dod.procedure proc 
+   on proc.clmid= d.claim_id_src 
+  and proc.patid::text= d.member_id_src  
+  and proc.fst_dt=d.from_date_of_service 
+where d.data_source='optd'
+  and proc.year between 2009 and 2012
+;
+
+
 
 select *
 from optum_dod.procedure

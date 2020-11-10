@@ -22,7 +22,7 @@ key int,
 value varchar
 );
 
-create table optum_zip.ref_admit_type 
+create table optum_dod.ref_admit_type 
 as select *
 from optum_dod.ref_admit_type;
 
@@ -34,6 +34,6 @@ value_original varchar,
 category varchar
 );
 
-create table optum_zip.ref_admit_channel
+create table optum_dod.ref_admit_channel
 as select *
 from optum_dod.ref_admit_channel;

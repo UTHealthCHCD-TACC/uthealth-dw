@@ -144,10 +144,12 @@ from truven.ccaet;
 
 
 -- Fix storage options
-/*create table truven.ccaet_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaet)
-distributed randomly;*/
+create table truven.ccaet_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaet where year=2019)
+distributed randomly;
+
+delete from truven.ccaet where year=2019;
 
 --drop table truven.ccaet;
 --alter table truven.ccaet_new rename to ccaet;

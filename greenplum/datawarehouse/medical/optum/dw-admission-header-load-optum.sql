@@ -11,23 +11,23 @@ delete from dw_qa.admission_header where data_source like 'opt%';
 
 --
 drop table dev.optz_conf;
-create table dev.optz_conf (like optum_zip.confinement)
+create table dev.optz_conf (like optum_dod.confinement)
 WITH (appendonly=true, orientation=column)
 distributed by (patid);
 
 insert into dev.optz_conf
-select * from optum_zip.confinement;
+select * from optum_dod.confinement;
 
 analyze dev.optz_conf;
 
 --
 drop table dev.optz_med;
-create table dev.optz_med (like optum_zip.medical)
+create table dev.optz_med (like optum_dod.medical)
 WITH (appendonly=true, orientation=column)
 distributed by (patid);
 
 insert into dev.optz_med
-select * from optum_zip.medical;
+select * from optum_dod.medical;
 
 analyze dev.optz_med;
 

@@ -10,7 +10,6 @@ AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHP
 
 
 v2 Fields: (Drop PLANKEY and WGTKEY, Add DXVER)
-
 SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
 EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
 TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
@@ -372,10 +371,12 @@ select count(*), min(year), max(year) from truven.mdcri;
 
 
 -- Fix storage options
-create table truven.mdcri_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcri)
+create table truven.mdcri_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcri where year=2019)
 distributed randomly;
+
+delete from truven.mdcri where year=2019;
 
 drop table truven.mdcri;
 alter table truven.mdcri_new rename to mdcri;

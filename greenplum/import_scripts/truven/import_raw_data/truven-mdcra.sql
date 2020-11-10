@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE ext_mdcra_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/mdcra*'
+'gpfdist://192.168.58.179:8081/truven/2019/mdcra*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -179,10 +179,12 @@ select count(*), min(year), max(year) from truven.mdcra;
 
 
 -- Fix storage options
-create table truven.mdcra_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcra)
+create table truven.mdcra_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcra where year=2019)
 distributed randomly;
+
+delete from truven.mdcra where year=2019;
 
 drop table truven.mdcra;
 alter table truven.mdcra_new rename to mdcra;

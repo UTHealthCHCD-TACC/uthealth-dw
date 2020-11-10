@@ -386,7 +386,14 @@ POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_mdcrf_v3;
+
 -- Verify
+create table truven.mdcrf_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcrf where year=2019)
+distributed randomly;
+
+delete from truven.mdcrf where year=2019;
 
 select count(*), min(year), max(year) from truven.mdcrf;
 
