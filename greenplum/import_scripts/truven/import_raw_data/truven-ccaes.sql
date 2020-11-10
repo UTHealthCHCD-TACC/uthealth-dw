@@ -738,10 +738,12 @@ select date('2017');
 
 
 -- Fix storage options
-create table truven.ccaes_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaes)
+create table truven.ccaes_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaes where year=2019)
 distributed randomly;
+
+delete from truven.ccaes where year=2019;
 
 drop table truven.ccaes;
 alter table truven.ccaes_new rename to ccaes;

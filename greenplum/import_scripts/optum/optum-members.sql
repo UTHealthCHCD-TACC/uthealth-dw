@@ -1,6 +1,8 @@
+--DEPRECATED
+
 --Medical
-drop table optum_dod.member;
-create table optum_dod.member (
+drop table optum_zip.member;
+create table optum_zip.member (
 PATID bigint, ASO char(1), BUS char(5), CDHP char(1), ELIGEFF date, ELIGEND date, FAMILY_ID numeric, GDR_CD char(1), GROUP_NBR char(20), 
 HEALTH_EXCH char(1), PRODUCT char(5), STATE char(2), YRDOB smallint, EXTRACT_YM int , VERSION numeric
 ) 
@@ -13,7 +15,7 @@ PATID bigint, ASO char(1), BUS char(5), CDHP char(1), ELIGEFF date, ELIGEND date
 HEALTH_EXCH char(1), PRODUCT char(5), STATE char(2), YRDOB smallint, EXTRACT_YM int , VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/dod_mbr.txt'
+'gpfdist://c252-140:8801/optum_zipzip5_mbr.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -23,11 +25,11 @@ from ext_member
 limit 1000;
 
 -- Insert
-insert into optum_dod.member
+insert into optum_zip.member
 select * from ext_member;
 
 -- Analyze
-analyze optum_dod.member;
+analyze optum_zip.member;
 
 --Verify
-select count(*) from optum_dod.member;
+select count(*) from optum_zip.member;

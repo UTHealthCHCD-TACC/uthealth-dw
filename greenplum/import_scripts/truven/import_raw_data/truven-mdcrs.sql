@@ -488,11 +488,12 @@ CREATE EXTERNAL TABLE ext_mdcrs_v4 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/mdcrs*'
+'gpfdist://192.168.58.179:8081/truven/mdcrs*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select disdate, *
+select count(*)
 from ext_mdcrs_v4
 limit 1000;
 
@@ -513,15 +514,18 @@ from ext_mdcrs_v4;
 
 -- Verify
 
-select count(*), min(year), max(year) from truven.mdcrs;
+select count(*), min(year), max(year) from truven.mdcrs
+where year=2019;
 
 
 
 -- Fix storage options
-create table truven.mdcrs_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcrs)
+create table truven.mdcrs_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcrs where year=2019)
 distributed randomly;
+
+delete from truven.mdcrs where year=2019;
 
 drop table truven.mdcrs;
 alter table truven.mdcrs_new rename to mdcrs;

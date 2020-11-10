@@ -140,7 +140,7 @@ select 'mcrn',
        null, null, null, null, --	   deductible, copay, coins, cob,
 	   pde_id, 
 	   bene_id	   
-from medicare_national.pde_file a 
+from medicare_texas.pde_file a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'mcrn' 
     and b.member_id_src = a.bene_id
@@ -163,7 +163,7 @@ select 'optz', extract(year from a.fill_dt), b.uth_rx_claim_id, b.uth_member_id,
        lpad(ndc, 11,'0'), a.days_sup, a.rfl_nbr::numeric, a.fill_dt, c.month_year_id, a.gnrc_ind, a.gnrc_nm, a.brnd_nm,
        a.quantity, a.prescriber_prov, a.pharm, a.charge, a.std_cost, null, 
        a.deduct, a.copay, null, null, a.clmid, a.patid::text
-from optum_zip.rx a 
+from optum_dod.rx a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'optz' 
     and b.member_id_src = a.patid::text

@@ -6,7 +6,7 @@ ADMIT_ID varchar,PERS_ID varchar,CLM_ID varchar,BILL varchar,ADM_DT varchar,DSCH
 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*admit_clm_20*.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*admit_clm_20*.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

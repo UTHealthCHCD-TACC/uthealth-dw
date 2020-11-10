@@ -129,8 +129,8 @@ select uth.data_source, uth.data_year, uth.uth_claim_id, uth.uth_member_id,
 	m.drg,
 	uth.claim_id_src, uth.member_id_src, 'medical'
 from data_warehouse.dim_uth_claim_id uth 
-join optum_zip.medical m on uth.claim_id_src=m.clmid::text and uth.member_id_src=m.patid::text
-left outer join optum_zip.confinement conf on m.conf_id=conf.conf_id
+join optum_dod.medical m on uth.claim_id_src=m.clmid::text and uth.member_id_src=m.patid::text
+left outer join optum_dod.confinement conf on m.conf_id=conf.conf_id
 left outer join reference_tables.ref_optum_bill_type_from_tos bt on m.tos_cd=bt.tos
 where uth.data_source='optz';
 
@@ -147,7 +147,7 @@ order by year, data_source
 analyze data_warehouse.claim_detail;
 
 select prov::int8
-from dev2016.optum_zip_medical;
+from dev2016.optum_dod_medical;
 
 analyze dw_qa.claim_detail;
 
@@ -191,14 +191,14 @@ limit 10;
 select trunc(0002);
 
 SELECT DISTINCT cob
-FROM optum_zip_medical
+FROM optum_dod_medical
 where pos not in (select place_of_treatment_cd from reference_tables.ref_place_of_service);
 
 select *
 from reference_tables.ref_place_of_service;
 
 SELECT DISTINCT tos_cd
-FROM optum_zip_medical;
+FROM optum_dod_medical;
 
 
 select case when a in 

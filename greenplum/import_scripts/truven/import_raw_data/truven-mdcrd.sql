@@ -243,10 +243,12 @@ from ext_mdcrd_v2;
 select count(*), min(year), max(year) from truven.mdcrd;
 
 -- Fix storage options
-create table truven.mdcrd_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.mdcrd)
+create table truven.mdcrd_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.mdcrd where year=2019)
 distributed randomly;
+
+delete from truven.mdcrd where year=2019;
 
 drop table truven.mdcrd;
 alter table truven.mdcrd_new rename to mdcrd;

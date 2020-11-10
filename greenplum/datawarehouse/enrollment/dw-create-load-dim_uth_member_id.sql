@@ -23,6 +23,9 @@ vacuum analyze data_warehouse.dim_uth_member_id;
 
 ------ load dim_uth_member_id
 
+vacuum analyze optum_dod.mbr_enroll;
+
+select count(distinct patid) from optum_dod.mbr_enroll
 
 --Optum DoD 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -38,36 +41,16 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
---optd enroll with race
-insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
-with cte_distinct_member as (
-	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.mbr_enroll_r
-	 left outer join data_warehouse.dim_uth_member_id b 
-	              on b.data_source = 'optd'
-	             and b.member_id_src = patid::text
-	where b.member_id_src is null 	
-)
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
-from cte_distinct_member 
-;
 
-select count(distinct patid) from optum_dod.mbr_enroll_r;
+vacuum analyze optum_dod.mbr_enroll;
 
-select count(uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'optd';
-
----optz
-vacuum analyze optum_zip.mbr_enroll;
-
-select count(distinct patid) from optum_zip.mbr_enroll
-
-select count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'optz';
+select count(distinct patid) from optum_dod.mbr_enroll
 
 ---Optum Zip 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_zip.mbr_enroll
+	from optum_dod.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
              and b.member_id_src = patid::text
@@ -128,7 +111,7 @@ set bene_enrollmt_ref_yr = trunc(bene_enrollmt_ref_yr::numeric,0)::text
 where bene_enrollmt_ref_yr = '2016.0'
 
 
---- Medicare Texas
+--- Medicare
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
@@ -141,8 +124,6 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member
 ;
-
-
 
 select count(*), count(distinct bene_id), mas.bene_enrollmt_ref_yr  
 from medicare_texas.mbsf_abcd_summary mas 
@@ -158,7 +139,7 @@ select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
-	from medicare_national.mbsf_abcd_summary
+	from medicare_texas.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
       on b.data_source = 'mcrn'
      and b.member_id_src = bene_id::text
@@ -170,7 +151,7 @@ from cte_distinct_member
 
 select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mcrn';
 
-select count(distinct bene_id) from medicare_national.mbsf_abcd_summary mas ;
+select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 
 ---******************************** Pharmacy tables---------*****************************
 
@@ -194,7 +175,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct bene_id as v_member_id
-    from medicare_national.pde_file
+    from medicare_texas.pde_file
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mcrn'
      and member_id_src = bene_id::text 
@@ -253,7 +234,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct patid as v_member_id
-    from optum_zip.rx
+    from optum_dod.rx
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'optz'
      and member_id_src = patid::text 

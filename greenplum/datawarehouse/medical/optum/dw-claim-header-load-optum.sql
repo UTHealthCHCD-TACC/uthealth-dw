@@ -1,7 +1,7 @@
 /*
  * Remove old records
  */
-delete from data_warehouse.claim_header where data_source in ('optd','optz')
+delete from data_warehouse.claim_header where data_source in ('optd','optz');
 
 /*
  * We assume the matching records exist in dim_uth_claim_id
@@ -41,7 +41,7 @@ insert into data_warehouse.claim_header(
 	sum(m.charge) as total_charge_amount, 
 	sum(m.std_cost) as total_allowed_amount, 
 	null as total_paid_amount 
-from optum_zip.medical m
+from optum_dod.medical m
 	join data_warehouse.dim_uth_claim_id uthc 
 		on uthc.data_source = 'optz' 
 		and m.patid::text = uthc.member_id_src 
@@ -76,11 +76,11 @@ SET statement_mem = '4024MB';
 select distinct claim_type from data_warehouse.claim_header ch ;
 
 select year, count(*)
-from optum_zip_refresh.medical m2
+from optum_dod.medical m2
 group by 1;
 
 select *
-from optum_zip_refresh.medical m
+from optum_dod.medical m
 join data_warehouse.dim_uth_claim_id uthc on uthc.data_source='optz' and m.patid::text=uthc.member_id_src and m.clmid=uthc.claim_id_src
 limit 10;
 
@@ -133,6 +133,16 @@ select *
 from data_warehouse.claim_detail 
 where data_source not like 'opt%';
 
+explain
+select count(*)
+from data_warehouse.claim_detail cd 
+join optum_dod.medical m on cd.claim_id_src = m.clmid and cd.claim_sequence_number_src = m.clmseq
+where cd.data_source = 'optd';
+
+select data_source, count(*)
+from data_warehouse.claim_detail cd 
+group by 1;
+where cd.data_source = 'optd';
 
 
 

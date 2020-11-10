@@ -7,7 +7,7 @@ WITH (
 	appendonly=true, orientation=column
 ) as
 select year, clmid, patid, clmseq, coalesce(conf_id, '0') as conf_id
-from optum_zip.medical
+from optum_dod.medical
 distributed by (year, clmid, patid, clmseq);
 
 analyze dev.qtemp_all;
@@ -128,13 +128,13 @@ m.*,
 con.*,
 'DIAGNOSTIC:',
 d.*
-from optum_zip.medical m
-left join optum_zip.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
-left join optum_zip.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
-left join optum_zip.diagnostic d on m.clmid=d.clmid and m.fst_dt=d.fst_dt and d.diag_position=1
-left join optum_zip.confinement con on m.conf_id=con.conf_id
-left join optum_zip.procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
-left join optum_zip.facility_detail fd on m.clmid=fd.clmid
+from optum_dod.medical m
+left join optum_dod.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
+left join optum_dod.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
+left join optum_dod.diagnostic d on m.clmid=d.clmid and m.fst_dt=d.fst_dt and d.diag_position=1
+left join optum_dod.confinement con on m.conf_id=con.conf_id
+left join optum_dod.procedure p on m.clmid=p.clmid and m.fst_dt = p.fst_dt
+left join optum_dod.facility_detail fd on m.clmid=fd.clmid
 left join reference_tables.hcpcs h on m.proc_cd=h.code
 left join reference_tables.cms_proc_codes c on m.proc_cd=c.code
 left join reference_tables.icd_10 i on d.diag=i.icd_10

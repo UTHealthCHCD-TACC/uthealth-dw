@@ -26,7 +26,7 @@ order by a.ndc, a.fill_date, b.fill_date;
 /*
  * Will Code
  */
-select * from optum_zip.mbr_enroll
+select * from optum_dod.mbr_enroll
 
 drop table dev.wc_script_first_id 
 

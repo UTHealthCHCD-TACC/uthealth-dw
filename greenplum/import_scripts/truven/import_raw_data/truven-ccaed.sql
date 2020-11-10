@@ -336,10 +336,12 @@ select count(*), min(year), max(year)  from truven.ccaed;
 
 
 -- Fix storage options
-create table truven.ccaed_new 
-WITH (appendonly=true, orientation=column)
-as (select * from truven.ccaed)
+create table truven.ccaed_2019
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as (select * from truven.ccaed where year=2019)
 distributed randomly;
+
+delete from truven.ccaed where year=2019;
 
 drop table truven.ccaed;
 alter table truven.ccaed_new rename to ccaed;

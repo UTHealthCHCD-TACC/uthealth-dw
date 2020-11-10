@@ -16,7 +16,7 @@ create table data_warehouse.member_enrollment_monthly (
 	consecutive_enrolled_months int2,
 	gender_cd char(1),
 	state varchar,
-	zip5 char(5),
+	dod char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 
@@ -39,23 +39,22 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 
----------------- data loads --------------------
-   
+    ---------------- data loads --------------------
+    
 delete from data_warehouse.member_enrollment_monthly where data_source in ('optd','optz');
-
 
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage   
+	plan_type, bus_cd         
 	)	
 select 'optd', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, state, null, null, 
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, (select max(death_ym) from optum_dod.mbrwdeath dod where dod.patid = m.patid ) as death_dt,  
-       d.plan_type, bus, 1 as rx_cov
-from optum_dod.mbr_enroll_r m
+       d.plan_type, bus
+from optum_dod.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optd'
@@ -70,26 +69,22 @@ from optum_dod.mbr_enroll_r m
 ;
 ---------------------------------------------------------------------------------------------------
 
-select count(*), year 
-from data_warehouse.member_enrollment_monthly mem where data_source = 'optd'
-group by year order by year;
-
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage        
+	plan_type, bus_cd         
 	)
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, null, 
-       d.plan_type, bus, 1 as rx_cov
-from optum_zip.mbr_enroll m
+       d.plan_type, bus
+from optum_dod.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optz'
@@ -106,7 +101,6 @@ from optum_zip.mbr_enroll m
 ; 
 ---------------------------------------------------------------------------------------------------
 
-select distinct data_source from data_warehouse.member_enrollment_monthly;
 
 
 ------ **** Truven *******
@@ -120,10 +114,13 @@ distributed by(member_id_src);
 
 vacuum analyze dev.truven_uth_mem;
 
+delete from data_warehouse.member_enrollment_monthly where data_source = 'truv' and year = 2019;
+
+
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage, data_year         
 	)		
@@ -147,7 +144,7 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where m.year = 2020
+where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -158,7 +155,7 @@ where m.year = 2020
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage , data_year      
 	)		
@@ -182,11 +179,10 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where m.year between 2018 and 2019
+where m.year = 2019
 ;
 ---------------------------------------------------------------------------------------------------
 
-select distinct year from truven.mdcrt;
 
 drop table dev.truven_uth_mem;
 
@@ -194,11 +190,6 @@ drop table dev.truven_uth_mem;
 ----- End Truven ******
 
 
-select count(*), data_source, year 
-from data_warehouse.member_enrollment_monthly a 
-group by data_source , year 
-order by data_source , year
-;
 
 create table reference_tables.ref_medicare_entlmt_buyin (buyin_cd char(1), plan_type text);
 
@@ -214,22 +205,22 @@ insert into reference_tables.ref_medicare_ptd_cntrct values
 
 
 
-select distinct substring(mas.ptd_cntrct_id_01,1,1) from medicare_national.mbsf_abcd_summary mas 
+select distinct substring(mas.ptd_cntrct_id_01,1,1) from medicare_texas.mbsf_abcd_summary mas 
 
 
 delete from data_warehouse.member_enrollment_monthly where data_source in ('mdcr','mcrn');
 
--- Medicare Texas --------------------------------------------------------------------------------------
+-- Medicare  --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage , data_year    
+	plan_type, bus_cd, rx_coverage     
 	)		
 select 'mdcr',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m."year"::int2
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
@@ -287,22 +278,19 @@ from medicare_texas.mbsf_abcd_summary m
 	
 
 
-delete from data_warehouse.member_enrollment_monthly where data_source ='mcrn';
-
-
 
 -- Medicare National --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage, data_year          
+	plan_type, bus_cd, rx_coverage          
 	)	
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m."year"::int2 
-from medicare_national.mbsf_abcd_summary m
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage
+from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
    and a.data_source = 'mcrn'
@@ -393,12 +381,12 @@ delete from data_warehouse.member_enrollment_monthly where row_identifier in (
 	select row_number() over(partition by uth_member_id, month_year_id order by month_year_id) as rn
 		      ,*
 		from data_warehouse.member_enrollment_monthly 		
-		where data_source = 'optd'
 	) sub
 	where rn > 1
 );
 
----consec months
+
+
 with row_build_cte as ( 
 	select row_identifier 
 	      ,row_number() over(partition by uth_member_id, my_grp order by  month_year_id) as in_streak
@@ -409,8 +397,7 @@ with row_build_cte as (
 		         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
 		   from data_warehouse.member_enrollment_monthly 	 a 
 		     join reference_tables.ref_month_year b 
-		       on a.month_year_id = b.month_year_id 	 
-		    where a.data_source = 'optd'
+		       on a.month_year_id = b.month_year_id 	   		    
 		 ) sub    
 ) 
 update data_warehouse.member_enrollment_monthly c 
@@ -419,8 +406,16 @@ from row_build_cte d
 where c.row_identifier = d.row_identifier
 ;
 
-select * from data_warehouse.member_enrollment_monthly mem where data_source = 'optd'
-
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
+select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'truv';
+
+
 ----
+
+
+select count(*), data_source, year 
+from data_warehouse.member_enrollment_monthly mem 
+group by data_source, year 
+order by data_source, year 
+
