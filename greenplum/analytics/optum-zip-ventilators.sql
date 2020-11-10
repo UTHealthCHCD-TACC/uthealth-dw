@@ -24,7 +24,7 @@ where b.code between '78580' and '78598';
 --What zip and date and counts
 create table tableau.optz_ventilators_by_zip_and_year
 as
-select d.year, m.zip5, count(*)
+select d.year, m.dod, count(*)
 from data_warehouse.claim_detail d
 join data_warehouse.claim_header h on d.uth_member_id = h.uth_member_id and d.uth_claim_id = h.uth_claim_id 
 join dev.ventilator_cms_hcpcs_proc_codes v on v.code = d.procedure_cd

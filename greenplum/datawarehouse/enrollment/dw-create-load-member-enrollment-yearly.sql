@@ -20,7 +20,7 @@ create table data_warehouse.member_enrollment_yearly (
 	enrolled_dec bool default false,
 	gender_cd char(1),
 	state varchar,
-	zip5 char(5),
+	dod char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 
@@ -49,10 +49,10 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 delete from data_warehouse.member_enrollment_yearly where data_source ='truv'
 
-insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
+insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, dod, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage )
 select distinct on( data_source, year, uth_member_id ) 
-       data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
+       data_source, year, uth_member_id, gender_cd, state, dod, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
 where data_source = 'truv'
@@ -240,29 +240,29 @@ drop table dev.wc_zip3_yearly;
 
 drop table dev.wc_zip3_yearly_final;
 
----same logic for zip5
-select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
- into dev.wc_zip5_yearly
+---same logic for dod
+select count(*), min(month_year_id) as my, uth_member_id, dod, year 
+ into dev.wc_dod_yearly
 from data_warehouse.member_enrollment_monthly
-group by uth_member_id, zip5, year 
+group by uth_member_id, dod, year 
 
 
 select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
-into dev.wc_zip5_yearly_final
-from dev.wc_zip5_yearly
+into dev.wc_dod_yearly_final
+from dev.wc_dod_yearly
 order by uth_member_id, year ;
   
 
-update data_warehouse.member_enrollment_yearly a set zip5 = b.zip5
-from dev.wc_zip5_yearly_final b 
+update data_warehouse.member_enrollment_yearly a set dod = b.dod
+from dev.wc_dod_yearly_final b 
 where a.uth_member_id = b.uth_member_id
 and a.year = b.year 
  and b.my_grp = 1;
 
 
-drop table dev.wc_zip5_yearly;
+drop table dev.wc_dod_yearly;
 
-drop table dev.wc_zip5_yearly_final;
+drop table dev.wc_dod_yearly_final;
 
 
 ---same logic for plan type

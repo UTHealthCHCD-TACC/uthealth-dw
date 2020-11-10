@@ -130,7 +130,7 @@ group by 1, 2, 3, 4;
 --Optum zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_zip.medical a
+from optum_dod.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text 
@@ -263,7 +263,7 @@ group by 1, 2, 3, 4;
 --bcarrier
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)      
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.bcarrier_claims_k a
+from medicare_texas.bcarrier_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id
@@ -277,7 +277,7 @@ group by 1, 2, 3, 4;
 --dme
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.dme_claims_k a
+from medicare_texas.dme_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id
@@ -291,7 +291,7 @@ group by 1, 2, 3, 4;
 --hha
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.hha_base_claims_k a
+from medicare_texas.hha_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id
@@ -305,7 +305,7 @@ group by 1, 2, 3, 4;
 --hospice
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.hospice_base_claims_k a
+from medicare_texas.hospice_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id
@@ -320,7 +320,7 @@ group by 1, 2, 3, 4;
 --inpatient
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.inpatient_base_claims_k a
+from medicare_texas.inpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.member_id_src = bene_id
    and b.data_source = 'mcrn'
@@ -334,7 +334,7 @@ group by 1, 2, 3, 4;
 --outpatient
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select 'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.outpatient_base_claims_k a
+from medicare_texas.outpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id
@@ -348,7 +348,7 @@ group by 1, 2, 3, 4;
 --snf
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
 select  'mcrn', clm_id, bene_id, b.uth_member_id, min(extract(year from clm_from_dt::date))
-from medicare_national.snf_base_claims_k a
+from medicare_texas.snf_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = bene_id

@@ -40,39 +40,39 @@ distributed by (patid);
 
 
 --Optum ZIP
-create table optum_zip_medical
+create table optum_dod_medical
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.medical where year=2016
+as select * from optum_dod.medical where year=2016
 distributed by (patid);
 
-create table optum_zip_diagnostic
+create table optum_dod_diagnostic
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.diagnostic where year=2016
+as select * from optum_dod.diagnostic where year=2016
 distributed by (patid);
 
-create table optum_zip_procedure
+create table optum_dod_procedure
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.procedure where year=2016
+as select * from optum_dod.procedure where year=2016
 distributed by (patid);
 
-create table optum_zip_facility_detail
+create table optum_dod_facility_detail
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.facility_detail where year=2016
+as select * from optum_dod.facility_detail where year=2016
 distributed by (patid);
 
-create table optum_zip_confinement
+create table optum_dod_confinement
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.confinement where year=2016
+as select * from optum_dod.confinement where year=2016
 distributed by (patid);
 
-create table optum_zip_member
+create table optum_dod_member
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.member
+as select * from optum_dod.member
 distributed by (patid);
 
-create table optum_zip_member_detail
+create table optum_dod_member_detail
 WITH (appendonly=true, orientation=column)
-as select * from optum_zip.member_detail
+as select * from optum_dod.member_detail
 distributed by (patid);
 
 

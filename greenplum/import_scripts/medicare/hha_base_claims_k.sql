@@ -23,7 +23,7 @@ CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, FINL_STD_AMT varchar, CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*hha_base_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -31,10 +31,10 @@ select *
 from ext_hha_base_claims_k
 limit 1000;
 
-create table medicare_national.hha_base_claims_k
+create table medicare_texas.hha_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
---insert into medicare_national.hha_base_claims_k 
+--insert into medicare_texas.hha_base_claims_k 
 select * 
 from ext_hha_base_claims_k
 distributed randomly;
@@ -65,11 +65,11 @@ CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,FINL_STD_AMT,CL
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,PPS_STD_VAL_PYMT_AMT,CLM_MODEL_REIMBRSMT_AMT
  */
 
-alter table medicare_national.hha_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
-alter table medicare_national.hha_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
-alter table medicare_national.hha_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
-alter table medicare_national.hha_base_claims_k add column PPS_STD_VAL_PYMT_AMT varchar;
-alter table medicare_national.hha_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
+alter table medicare_texas.hha_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
+alter table medicare_texas.hha_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
+alter table medicare_texas.hha_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
+alter table medicare_texas.hha_base_claims_k add column PPS_STD_VAL_PYMT_AMT varchar;
+alter table medicare_texas.hha_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
 
 drop external table ext_hha_base_claims_k;
 
@@ -97,7 +97,7 @@ CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_N
 CLM_RSDL_PYMT_IND_CD varchar, PRVDR_VLDTN_TYPE_CD varchar, RR_BRD_EXCLSN_IND_SW varchar, PPS_STD_VAL_PYMT_AMT varchar, CLM_MODEL_REIMBRSMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -105,7 +105,7 @@ select *
 from ext_hha_base_claims_k
 limit 1000;
 
-insert into medicare_national.hha_base_claims_k (year,
+insert into medicare_texas.hha_base_claims_k (year,
 BENE_ID,CLM_ID,NCH_NEAR_LINE_REC_IDENT_CD,NCH_CLM_TYPE_CD,CLM_FROM_DT,CLM_THRU_DT,
 NCH_WKLY_PROC_DT,FI_CLM_PROC_DT,PRVDR_NUM,CLM_FAC_TYPE_CD,CLM_SRVC_CLSFCTN_TYPE_CD,
 CLM_FREQ_CD,FI_NUM,CLM_MDCR_NON_PMT_RSN_CD,CLM_PMT_AMT,NCH_PRMRY_PYR_CLM_PD_AMT,
@@ -151,6 +151,6 @@ from ext_hha_base_claims_k;
 
 -- Scratch
 select year, count(*)
-from medicare_national.hha_base_claims_k
+from medicare_texas.hha_base_claims_k
 group by 1
 order by 1;

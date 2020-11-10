@@ -80,9 +80,9 @@ where a.enrolid is not null;
 
 
 --medicare
-select count(*) from medicare_national.pde_file;
+select count(*) from medicare_texas.pde_file;
 
-select count(distinct pde_id) from medicare_national.pde_file;
+select count(distinct pde_id) from medicare_texas.pde_file;
 
 
 
@@ -101,7 +101,7 @@ select 'mdcr'
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from medicare_national.pde_file a
+from medicare_texas.pde_file a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mdcr'
    and b.member_id_src = a.bene_id
@@ -129,7 +129,7 @@ select 'mcrn'
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from medicare_national.pde_file a
+from medicare_texas.pde_file a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
    and b.member_id_src = a.bene_id
@@ -144,7 +144,7 @@ where c.uth_rx_claim_id is null
 
 
 
-vacuum analyze optum_zip.rx 
+vacuum analyze optum_dod.rx 
 
 --optum dod 
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -186,7 +186,7 @@ select 'optz'
       ,a.clmid
       ,b.uth_member_id
       ,a.patid 
-from optum_zip.rx a
+from optum_dod.rx a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text

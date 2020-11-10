@@ -16,7 +16,7 @@ BENE_RACE_CD varchar,BENE_CNTY_CD varchar,BENE_STATE_CD varchar,BENE_MLG_CNTCT_Z
 CPO_ORG_NPI_NUM varchar,CARR_CLM_BLG_NPI_NUM varchar,ACO_ID_NUM varchar,CARR_CLM_SOS_NPI_NUM varchar,CLM_BENE_ID_TYPE_CD varchar
 )
 location (
-'gpfdist://192.168.58.179:8081/medicare_national/*/*bcarrier_claims_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*bcarrier_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,19 +24,19 @@ select *
 from ext_bcarrier_claims_k
 limit 1000;
 
-create table medicare_national_national.bcarrier_claims_k
+create table medicare_texas.bcarrier_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
---truncate medicare_national.bcarrier_claims_k;
---insert into medicare_national.bcarrier_claims_k 
+--truncate medicare_texas.bcarrier_claims_k;
+--insert into medicare_texas.bcarrier_claims_k 
 select * 
 from ext_bcarrier_claims_k
 distributed by (BENE_ID);
 
 -- 2018 & 2019
 
-alter table medicare_national.bcarrier_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
-alter table medicare_national.bcarrier_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
+alter table medicare_texas.bcarrier_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
+alter table medicare_texas.bcarrier_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
 
 drop external table ext_bcarrier_claims_k;
 
@@ -57,7 +57,7 @@ CPO_ORG_NPI_NUM varchar,CARR_CLM_BLG_NPI_NUM varchar,ACO_ID_NUM varchar,CARR_CLM
 CLM_RSDL_PYMT_IND_CD varchar, PRVDR_VLDTN_TYPE_CD varchar
 )
 location (
-'gpfdist://192.168.58.179:8081/medicare_national/2018/*bcarrier_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_texas/2019/*bcarrier_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -65,7 +65,7 @@ select *
 from ext_bcarrier_claims_k
 limit 1000;
 
-insert into medicare_national.bcarrier_claims_k (year, 
+insert into medicare_texas.bcarrier_claims_k (year, 
 BENE_ID,CLM_ID,NCH_NEAR_LINE_REC_IDENT_CD,NCH_CLM_TYPE_CD,CLM_FROM_DT,CLM_THRU_DT,
 NCH_WKLY_PROC_DT,CARR_CLM_ENTRY_CD,CLM_DISP_CD,CARR_NUM,CARR_CLM_PMT_DNL_CD,CLM_PMT_AMT,
 CARR_CLM_PRMRY_PYR_PD_AMT,RFR_PHYSN_UPIN,RFR_PHYSN_NPI,CARR_CLM_PRVDR_ASGNMT_IND_SW,
@@ -97,6 +97,6 @@ from ext_bcarrier_claims_k;
 
 -- Scratch
 select year, min(clm_from_dt), max(clm_from_dt), count(*)
-from medicare_national.bcarrier_claims_k
+from medicare_texas.bcarrier_claims_k
 group by 1
 order by 1;

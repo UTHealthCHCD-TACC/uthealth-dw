@@ -102,7 +102,7 @@ insert into dev.tu_claim_header(
 	sum((m.std_cost * cf.cost_factor)) as total_allowed_amount_adj, 
 	null as total_paid_amount_adj
 	-- END NEW
-from optum_zip.medical m
+from optum_dod.medical m
 	join dev.tu_dim_uth_claim_id uthc 
 		on uthc.data_source = 'optz' 
 		and m.patid::text = uthc.member_id_src 
@@ -234,24 +234,24 @@ where uth.data_source='optd';
 
 
 -- Insert
---insert into optum_zip_refresh.confinement
+--insert into optum_dod.confinement
 --select 0, * from ext_confinement;
 -- *** TCU ***
 -- Using existing import table as fake external source.
 --select c.std_cost, c.std_cost_yr, c.tos_cd, cf.cost_factor, left(c.tos_cd, (position('.' in c.tos_cd)-1)) as service_type_code, (c.std_cost * cf.cost_factor) as adj_cost
---from optum_zip.confinement c
+--from optum_dod.confinement c
 --join reference_tables.ref_optum_cost_factor cf on cf.service_type = left(c.tos_cd, (position('.' in c.tos_cd)-1)) and cf.standard_price_year = c.std_cost_yr 
 --where c.std_cost_yr <> 2019
 --limit 100;
 -- Looking at records in medical table so we can find some non-2019 cost years.
 --select c.std_cost, c.std_cost_yr::int, c.tos_cd, cf.cost_factor, left(c.tos_cd, (position('.' in c.tos_cd)-1)) as service_type_code, (c.std_cost * cf.cost_factor) as adj_cost
---from optum_zip.medical c
+--from optum_dod.medical c
 --join reference_tables.ref_optum_cost_factor cf on cf.service_type = left(c.tos_cd, (position('.' in c.tos_cd)-1)) and cf.standard_price_year = c.std_cost_yr::int
 --where c.std_cost_yr::int <> 2019
 --limit 100;
 -- Looking at records in rx table so we can find some non-2019 cost years.
 --select c.std_cost, c.std_cost_yr, cf.cost_factor, 'PHARM' as service_type_code, (c.std_cost * cf.cost_factor) as adj_cost
---from optum_zip.rx c
+--from optum_dod.rx c
 --join reference_tables.ref_optum_cost_factor cf on cf.service_type = 'PHARM' and cf.standard_price_year = c.std_cost_yr
 --where c.std_cost_yr::int <> 2019
 --limit 100;

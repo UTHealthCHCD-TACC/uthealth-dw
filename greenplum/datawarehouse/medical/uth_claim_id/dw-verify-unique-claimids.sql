@@ -27,7 +27,7 @@ order by member_id_src
 select count(distinct a.data_source || a.member_id_src || a.claim_id_src)
 from data_warehouse.dim_uth_claim_id a
 join data_warehouse.dim_uth_claim_id b on a.member_id_src = b.member_id_src and a.claim_id_src = b.claim_id_src and a.data_source = b.data_source
-left outer join optum_zip.medical m on a.claim_id_src = trim(m.clmid) and a.member_id_src=m.patid::text
+left outer join optum_dod.medical m on a.claim_id_src = trim(m.clmid) and a.member_id_src=m.patid::text
 where a.data_year = 2016 and b.data_year = 2017 and a.data_source = 'optz' and m.clmid is not null
 order by a.member_id_src
 limit 10;
@@ -55,7 +55,7 @@ from optum_dod.medical m
 where trim(m.clmid)='2417639193' and m.patid::text='33003559895';
 
 select *
-from optum_zip.medical m 
+from optum_dod.medical m 
 where trim(m.clmid)='J883V3L3J' and m.patid=560499898927193;
 
 select a.patid, a.clmid

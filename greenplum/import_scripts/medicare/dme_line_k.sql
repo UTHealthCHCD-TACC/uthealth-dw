@@ -17,7 +17,7 @@ LINE_OTHR_APLD_IND_CD6 varchar, LINE_OTHR_APLD_IND_CD7 varchar, LINE_OTHR_APLD_A
 LINE_OTHR_APLD_AMT3 varchar, LINE_OTHR_APLD_AMT4 varchar, LINE_OTHR_APLD_AMT5 varchar, LINE_OTHR_APLD_AMT6 varchar, LINE_OTHR_APLD_AMT7 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*dme_line_k.csv.gz#transform=add_parentname'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*dme_line_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -25,11 +25,11 @@ select *
 from ext_dme_line_k
 limit 1000;
 
-create table medicare_national.dme_line_k
+create table medicare_texas.dme_line_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare_national.dme_line_k 
+--insert into medicare_texas.dme_line_k 
 select * 
 from ext_dme_line_k
 
@@ -54,10 +54,10 @@ LINE_OTHR_APLD_AMT3,LINE_OTHR_APLD_AMT4,LINE_OTHR_APLD_AMT5,LINE_OTHR_APLD_AMT6,
 LINE_RSDL_PYMT_IND_CD,LINE_RP_IND_CD,DMERC_LINE_FRGN_ADR_IND,LINE_RR_BRD_EXCLSN_IND_SW
  */
 
-alter table medicare_national.dme_line_k add column LINE_RSDL_PYMT_IND_CD varchar;
-alter table medicare_national.dme_line_k add column LINE_RP_IND_CD varchar;
-alter table medicare_national.dme_line_k add column DMERC_LINE_FRGN_ADR_IND varchar;
-alter table medicare_national.dme_line_k add column LINE_RR_BRD_EXCLSN_IND_SW varchar;
+alter table medicare_texas.dme_line_k add column LINE_RSDL_PYMT_IND_CD varchar;
+alter table medicare_texas.dme_line_k add column LINE_RP_IND_CD varchar;
+alter table medicare_texas.dme_line_k add column DMERC_LINE_FRGN_ADR_IND varchar;
+alter table medicare_texas.dme_line_k add column LINE_RR_BRD_EXCLSN_IND_SW varchar;
 
 drop external table ext_dme_line_k;
 
@@ -79,7 +79,7 @@ LINE_OTHR_APLD_AMT3 varchar, LINE_OTHR_APLD_AMT4 varchar, LINE_OTHR_APLD_AMT5 va
 LINE_RSDL_PYMT_IND_CD varchar, LINE_RP_IND_CD varchar, DMERC_LINE_FRGN_ADR_IND varchar, LINE_RR_BRD_EXCLSN_IND_SW varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*dme_line_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*dme_line_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -87,7 +87,7 @@ select *
 from ext_dme_line_k
 limit 1000;
 
-insert into medicare_national.dme_line_k (year,
+insert into medicare_texas.dme_line_k (year,
 BENE_ID,CLM_ID,LINE_NUM,NCH_CLM_TYPE_CD,CLM_THRU_DT,TAX_NUM,PRVDR_SPCLTY,
 PRTCPTNG_IND_CD,LINE_SRVC_CNT,LINE_CMS_TYPE_SRVC_CD,LINE_PLACE_OF_SRVC_CD,LINE_1ST_EXPNS_DT,
 LINE_LAST_EXPNS_DT,HCPCS_CD,HCPCS_1ST_MDFR_CD,HCPCS_2ND_MDFR_CD,BETOS_CD,LINE_NCH_PMT_AMT,
@@ -121,6 +121,6 @@ from ext_dme_line_k;
 
 -- Scratch
 select year, count(*)
-from medicare_national.dme_line_k
+from medicare_texas.dme_line_k
 group by 1
 order by 1;

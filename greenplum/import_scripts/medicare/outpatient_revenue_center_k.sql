@@ -16,7 +16,7 @@ REV_CNTR_PRCNG_IND_CD varchar, THRPY_CAP_IND_CD1 varchar, THRPY_CAP_IND_CD2 varc
 TRNSTNL_DRUG_ADD_ON_PYMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -24,10 +24,10 @@ select *
 from ext_outpatient_revenue_center_k
 limit 1000;
 
-create table medicare_national.outpatient_revenue_center_k
+create table medicare_texas.outpatient_revenue_center_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
---insert into medicare_national.outpatient_revenue_center_k 
+--insert into medicare_texas.outpatient_revenue_center_k 
 select * 
 from ext_outpatient_revenue_center_k
 
@@ -36,8 +36,8 @@ distributed randomly;
 -- 2018+
 -- New Cols: REV_CNTR_RP_IND_CD,RC_MODEL_REIMBRSMT_AMT
 
-alter table medicare_national.outpatient_revenue_center_k add column REV_CNTR_RP_IND_CD varchar;
-alter table medicare_national.outpatient_revenue_center_k add column RC_MODEL_REIMBRSMT_AMT varchar;
+alter table medicare_texas.outpatient_revenue_center_k add column REV_CNTR_RP_IND_CD varchar;
+alter table medicare_texas.outpatient_revenue_center_k add column RC_MODEL_REIMBRSMT_AMT varchar;
 
 drop external table ext_outpatient_revenue_center_k;
 
@@ -58,7 +58,7 @@ TRNSTNL_DRUG_ADD_ON_PYMT_AMT varchar,
 REV_CNTR_RP_IND_CD varchar, RC_MODEL_REIMBRSMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_revenue_center_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -66,7 +66,7 @@ select *
 from ext_outpatient_revenue_center_k
 limit 1000;
 
-insert into medicare_national.outpatient_revenue_center_k (year,
+insert into medicare_texas.outpatient_revenue_center_k (year,
 BENE_ID, CLM_ID, CLM_THRU_DT, CLM_LINE_NUM, NCH_CLM_TYPE_CD, REV_CNTR, REV_CNTR_DT, 
 REV_CNTR_1ST_ANSI_CD, REV_CNTR_2ND_ANSI_CD, REV_CNTR_3RD_ANSI_CD, REV_CNTR_4TH_ANSI_CD, 
 REV_CNTR_APC_HIPPS_CD, HCPCS_CD, HCPCS_1ST_MDFR_CD, HCPCS_2ND_MDFR_CD, HCPCS_3RD_MDFR_CD, 
@@ -99,6 +99,6 @@ from ext_outpatient_revenue_center_k;
 
 -- Scratch
 select year, count(*)
-from medicare_national.outpatient_revenue_center_k
+from medicare_texas.outpatient_revenue_center_k
 group by 1
 order by 1;

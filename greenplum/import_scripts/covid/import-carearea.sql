@@ -29,6 +29,6 @@ select * from ext_covid_carearea;
 
 --Scratch
 select year, count(*), min(admit_date), max(admit_date)
-from optum_zip_refresh.confinement
+from optum_dod.confinement
 group by 1
 order by 1;

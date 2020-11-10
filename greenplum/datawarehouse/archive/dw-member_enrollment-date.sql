@@ -44,7 +44,7 @@ uth_mbr_id varchar,
 gndr_cd char(1), 
 mbr_dob smallint, 
 fam_id_src varchar, 
-zip5 char(5),
+dod char(5),
 state char(2),
 
 --Plan information
@@ -62,7 +62,7 @@ alter table member_enrollment_month alter column state type varchar;
 
 --Optum DOD - 6 min
 insert into data_warehouse.member_enrollment_month(date_id, source, mbr_id_src, uth_mbr_id, 
-gndr_cd, mbr_dob, fam_id_src, zip5, state, 
+gndr_cd, mbr_dob, fam_id_src, dod, state, 
 plan_typ, plan_typ_src)
 select d.id, 'OPTD', patid, md5('OPTD' || cast(patid as varchar)), 
 gdr_cd, yrdob, family_id, null, state, 
@@ -72,18 +72,18 @@ join dim_date d on d.date between date_trunc('month', m.eligeff) and m.eligend; 
 
 --Optum ZIP - 6 min
 insert into data_warehouse.member_enrollment_month(date_id, source, mbr_id_src, uth_mbr_id, 
-gndr_cd, mbr_dob, fam_id_src, zip5, state, 
+gndr_cd, mbr_dob, fam_id_src, dod, state, 
 plan_typ, plan_typ_src)
 select d.id, 'OPTZ', patid, md5('OPTZ' || cast(patid as varchar)), 
 gdr_cd, yrdob, family_id, split_part(zipcode_5, '_', 1), null, 
 null, product
-from optum_zip.member m
+from optum_dod.member m
 join dim_date d on d.date between date_trunc('month', m.eligeff) and m.eligend; --date_trunc to match 1/1/2010 in dim_date to eligeff of 1/15/2010
 
 --Truven
 insert into data_warehouse.member_enrollment_month(date_id, source, mbr_id_src, uth_mbr_id, 
 gndr_cd, 
-mbr_dob, fam_id_src, zip5, state, 
+mbr_dob, fam_id_src, dod, state, 
 plan_typ, plan_typ_src)
 select d.id, 'trvc', enrolid, md5('trvc' || cast(enrolid as varchar)),
 case when sex=1 then 'M' else 'F' end, 
@@ -95,7 +95,7 @@ join dim_date d on d.date between date_trunc('month', c.dtstart) and c.dtend;
 
 insert into data_warehouse.member_enrollment_month(date_id, source, mbr_id_src, uth_mbr_id, 
 gndr_cd, 
-mbr_dob, fam_id_src, zip5, state, 
+mbr_dob, fam_id_src, dod, state, 
 plan_typ, plan_typ_src)
 select d.id, 'trvm', enrolid, md5('trvc' || cast(enrolid as varchar)),
 case when sex=1 then 'M' else 'F' end, 

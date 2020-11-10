@@ -18,7 +18,7 @@ create table data_warehouse.member_enrollment_monthly_02oct (
 	--demographics
 	gender_cd char(1),
 	state varchar,
-	zip5 char(5),
+	dod char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 

@@ -69,7 +69,7 @@ order by clmid desc;
 --delete from dw_qa.claim_detail_diag where uth_claim_id in (select uth_claim_id from dw_qa.claim_header where data_source='optz');
 
 select distinct icd_flag
-from optum_zip.diagnostic;
+from optum_dod.diagnostic;
 
 select distinct datatyp
 from truven.mdcrs
