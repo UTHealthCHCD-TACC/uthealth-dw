@@ -3,11 +3,13 @@ delete from data_warehouse.claim_header where data_source = 'mcrn'
 
 vacuum analyze data_warehouse.claim_header 
 
+select distinct data_year from data_warehouse.claim_header where data_source = 'mcrn';
+
 --inpatient
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)					        
-select 'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, a.clm_fac_type_cd, NULL, NULL, 
-        a.clm_tot_chrg_amt::numeric, NULL, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'inpatient_base_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year)					        
+select 'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, NULL, NULL, 
+        a.clm_tot_chrg_amt::numeric, NULL, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'inpatient_base_claims_k', a.year::int2
 from medicare_national.inpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -19,10 +21,10 @@ from medicare_national.inpatient_base_claims_k a
 ;
 
 --outpatient
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  
-select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, a.clm_fac_type_cd, null, null, 
-        a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'outpatient_base_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  
+select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, 
+        a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'outpatient_base_claims_k',a.year::int2
 from medicare_national.outpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -36,10 +38,10 @@ from medicare_national.outpatient_base_claims_k a
 
 
 --bcarrier 
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  
-select  'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, null, 
-        a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'bcarrier_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  
+select  'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, 
+        a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'bcarrier_claims_k',a.year::int2
 from medicare_national.bcarrier_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.member_id_src = bene_id
@@ -52,10 +54,10 @@ from medicare_national.bcarrier_claims_k a
 
 
 --dme
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  
-select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, null, 
-        a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'dme_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  
+select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, 
+        a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'dme_claims_k', a.year::int2
 from medicare_national.dme_claims_k a
   join data_warehouse.dim_uth_member_id b 
    on b.member_id_src = bene_id
@@ -67,10 +69,10 @@ from medicare_national.dme_claims_k a
 ;
 
 --hha
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  						        						        
-select  'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, a.clm_fac_type_cd, null, null, 
-        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'hha_base_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  						        						        
+select  'mcrn', c.data_year,c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, 
+        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'hha_base_claims_k', a."year"::int2
 from medicare_national.hha_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -84,10 +86,10 @@ from medicare_national.hha_base_claims_k a
 
 
 --hospice
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  
-select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, null, 
-        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'hospice_base_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  
+select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd,  null, null, 
+        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'hospice_base_claims_k', a.year::int2
 from medicare_national.hospice_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -100,10 +102,10 @@ from medicare_national.hospice_base_claims_k a
 
 
 --snf
-insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, place_of_service, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  
-select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, null, 
-        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'snf_base_claims_k'
+insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year )  
+select  'mcrn', c.data_year, c.uth_claim_id, b.uth_member_id, a.clm_from_dt::date, a.nch_clm_type_cd, null, null, 
+        a.clm_tot_chrg_amt::numeric,null, a.clm_pmt_amt::numeric, a.clm_id, a.bene_id, 'snf_base_claims_k', a.year::int2
 from medicare_national.snf_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -118,15 +120,10 @@ from medicare_national.snf_base_claims_k a
 vacuum analyze data_warehouse.claim_header;
 
 
-
-select count(*), year, table_id_src  from data_warehouse.claim_header where data_source = 'mcrn'
-group by year, table_id_src 
-order by year, table_id_src ;
-
-
-
-
-
+select count(*), data_year, table_id_src  
+from data_warehouse.claim_header where data_source = 'mcrn'
+group by data_year, table_id_src 
+order by table_id_src, data_year  ;
 
 
 
