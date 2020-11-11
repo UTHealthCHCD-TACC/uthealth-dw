@@ -31,10 +31,10 @@ join optum_dod.procedure proc
   and proc.patid::text= d.member_id_src  
   and proc.fst_dt=d.from_date_of_service 
 where d.data_source='optd'
-  and proc.year between 2009 and 2012
+  and proc.year >= 2019
 ;
 
-
+select * from data_warehouse.claim_icd_proc cip where data_source = 'optd';
 
 select *
 from optum_dod.procedure
