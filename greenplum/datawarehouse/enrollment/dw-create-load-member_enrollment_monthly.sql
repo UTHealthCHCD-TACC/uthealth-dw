@@ -46,7 +46,7 @@ delete from data_warehouse.member_enrollment_monthly where data_source in ('optd
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd         
 	)	
@@ -75,7 +75,7 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 -- Optum ZIP --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd         
 	)
@@ -120,7 +120,7 @@ delete from data_warehouse.member_enrollment_monthly where data_source = 'truv' 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage, data_year         
 	)		
@@ -155,7 +155,7 @@ where m.year = 2019
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage , data_year      
 	)		
@@ -208,25 +208,27 @@ insert into reference_tables.ref_medicare_ptd_cntrct values
 select distinct substring(mas.ptd_cntrct_id_01,1,1) from medicare_texas.mbsf_abcd_summary mas 
 
 
-delete from data_warehouse.member_enrollment_monthly where data_source in ('mdcr','mcrn');
+delete from data_warehouse.member_enrollment_monthly where data_source = 'mcrt';
 
--- Medicare  --------------------------------------------------------------------------------------
+select * from data_warehouse.member_enrollment_monthly mem 
+
+-- Medicare  Texas--------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5 , zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage     
+	plan_type, bus_cd, rx_coverage, data_year     
 	)		
-select 'mdcr',b.year_int, b.month_year_id, a.uth_member_id,
+select 'mcrt',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
-   and a.data_source = 'mdcr'
+   and a.data_source = 'mcrt'
   left outer join reference_tables.ref_gender c
-    on c.data_source = 'mdcr'
+    on c.data_source = 'mcr'
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code   
@@ -282,20 +284,20 @@ from medicare_texas.mbsf_abcd_summary m
 -- Medicare National --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage          
+	plan_type, bus_cd, rx_coverage  ,data_year      
 	)	
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
    and a.data_source = 'mcrn'
   left outer join reference_tables.ref_gender c
-    on c.data_source = 'mdcr'
+    on c.data_source = 'mcr'
    and c.gender_cd_src = m.sex_ident_cd
   left outer join reference_tables.ref_medicare_state_codes e 
      on e.medicare_state_cd = m.state_code   
@@ -352,7 +354,9 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 
-select count(*), count(distinct uth_member_id ), data_source , year
+select count(*),
+--count(distinct uth_member_id ), 
+data_source , year
 from data_warehouse.member_enrollment_monthly
 group by data_source , year
 order by data_source , year 

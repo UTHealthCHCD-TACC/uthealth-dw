@@ -47,15 +47,14 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 
-delete from data_warehouse.member_enrollment_yearly where data_source ='truv'
 
-insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, dod, zip3, age_derived, dob_derived, death_date
+insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage )
 select distinct on( data_source, year, uth_member_id ) 
-       data_source, year, uth_member_id, gender_cd, state, dod, zip3, age_derived, dob_derived, death_date
+       data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
-where data_source = 'truv'
+where data_source in ('optz','mcrt')
 order by data_source, year, uth_member_id, month_year_id 
 ;
 
@@ -67,7 +66,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source = 'truv'
+where data_source in ('optz','mcrt')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -75,12 +74,6 @@ vacuum analyze dev.temp_member_enrollment_month;
 
 select * from dev.temp_member_enrollment_month;
 
-
-select count(*), count(distinct uth_member_id), year 
-from data_warehouse.member_enrollment_yearly 
-where data_source = 'truv'
-group by year 
-order by year;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
@@ -188,7 +181,7 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 drop table dev.temp_member_enrollment_month;
 
 --validate
-select * from data_warehouse.member_enrollment_yearly where total_enrolled_months = 12 and data_source = 'truv';
+select * from data_warehouse.member_enrollment_yearly where total_enrolled_months = 12 and data_source = 'mcrt';
 
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
@@ -244,30 +237,30 @@ drop table dev.wc_zip3_yearly;
 
 drop table dev.wc_zip3_yearly_final;
 
----same logic for dod
-select count(*), min(month_year_id) as my, uth_member_id, dod, year 
- into dev.wc_dod_yearly
+---same logic for zip5
+select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
+ into dev.wc_zip5_yearly
 from data_warehouse.member_enrollment_monthly
-group by uth_member_id, dod, year 
+group by uth_member_id, zip5, year 
 
-create table dev.wc_dod_yearly_final 
+create table dev.wc_zip5_yearly_final 
 with (appendonly=true, orientation=column)
 as
 select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
-from dev.wc_dod_yearly
+from dev.wc_zip5_yearly
 distributed by(uth_member_id);
   
 
-update data_warehouse.member_enrollment_yearly a set dod = b.dod
-from dev.wc_dod_yearly_final b 
+update data_warehouse.member_enrollment_yearly a set zip5 = b.zip5
+from dev.wc_zip5_yearly_final b 
 where a.uth_member_id = b.uth_member_id
 and a.year = b.year 
  and b.my_grp = 1;
 
 
-drop table dev.wc_dod_yearly;
+drop table dev.wc_zip5_yearly;
 
-drop table dev.wc_dod_yearly_final;
+drop table dev.wc_zip5_yearly_final;
 
 
 ---same logic for plan type

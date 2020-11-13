@@ -34,6 +34,8 @@ distributed by (uth_member_id);
 
 
 
+vacuum analyze data_warehouse.pharmacy_claims;
+
 ---Medicare Texas 
 insert into data_warehouse.pharmacy_claims (
 		data_source, 

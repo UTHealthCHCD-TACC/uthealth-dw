@@ -172,6 +172,11 @@ where c.uth_rx_claim_id is null
   and a.patid is not null
  ;
 
+select count(*) from data_warehouse.dim_uth_rx_claim_id where data_source = 'optd';
+
+
+select count(distinct clmid) from optum_dod.rx;
+
 --optum zip 
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
