@@ -1,4 +1,4 @@
-
+alter table data_warehouse.claim_header add column to_date_of_service date;
 
 select distinct data_source from data_warehouse.claim_header 
 
@@ -128,8 +128,25 @@ order by table_id_src , year
 
 
 
+select count(*), claim_type, data_source 
+from data_warehouse.claim_header
+group by claim_type , data_source 
+order by data_source 
 
 
+update data_warehouse.claim_header set claim_type = 'P' 
+where data_source in ('mcrt','mcrn') and table_id_src in ('dme_claims_k','bcarrier_claims_k')
+;
+
+update data_warehouse.claim_header set claim_type = 'F' 
+where data_source in ('mcrt','mcrn') and table_id_src not in ('dme_claims_k','bcarrier_claims_k')
+;
+
+vacuum analyze data_warehouse.claim_header;
 
 
+select * from data_warehouse.claim_detail cd where data_source = 'truv' and procedure_cd = 'A0425'
 
+select * from data_warehouse.claim_detail cd where data_source = 'optz' and procedure_cd = 'A0422'
+
+select * from data_warehouse.claim_detail cd where data_source = 'mcrt' and procedure_cd = 'A0422'

@@ -60,7 +60,7 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,uth_rx_claim_id
 			,rx_claim_id_src
 			,uth_member_id
-			,member_id_src )			
+			,member_id_src )				
 select 'truv'
       ,a.year 
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
@@ -79,6 +79,25 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where a.enrolid is not null;
 
 
+select count(*), year 
+from data_warehouse.dim_uth_rx_claim_id 
+where data_source = 'truv'
+group by "year" 
+order by "year" 
+
+select count(*), year 
+from truven.mdcrd m 
+group by year 
+order by year 
+;
+
+
+select count(*), count(distinct uth_rx_claim_id ), data_year 
+from data_warehouse.pharmacy_claims pc 
+where data_source = 'truv'
+group by data_year order by data_year ;
+
+
 --medicare
 select count(*) from medicare_texas.pde_file;
 
@@ -86,7 +105,7 @@ select count(distinct pde_id) from medicare_texas.pde_file;
 
 
 
-
+update data_warehouse.dim_uth_rx_claim_id set data_source = 'mcrt' where data_source = 'mdcr';
 
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -95,7 +114,7 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src ) 					
-select 'mdcr'
+select 'mcrt'
        ,a.year::int
        ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
 	   ,a.pde_id
@@ -103,10 +122,10 @@ select 'mdcr'
 	   ,a.bene_id 
 from medicare_texas.pde_file a
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mdcr'
+    on b.data_source = 'mcrt'
    and b.member_id_src = a.bene_id
 left join data_warehouse.dim_uth_rx_claim_id c 
-  on c.data_source = 'mdcr'
+  on c.data_source = 'mcrt'
  and c.member_id_src = a.bene_id 
  and c.rx_claim_id_src = a.pde_id
 where c.uth_rx_claim_id is null 

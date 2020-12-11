@@ -21,7 +21,7 @@ vacuum analyze data_warehouse.dim_uth_admission_id;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'optz', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.conf_id, a.patid::text 
-from optum_dod.confinement a 
+from optum_zip.confinement a 
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text 
@@ -111,5 +111,24 @@ where a.caseid is not null
   and c.uth_admission_id is null 
 ;
 
+
+--medicare texas
+insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
+select 'mcrt' , a.year::int2, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.admit_id , a.pers_id 
+from medicare_texas.admit a
+  join data_warehouse.dim_uth_member_id b 
+    on data_source = 'mcrt'
+   and b.member_id_src = a.pers_id 
+  left join data_warehouse.dim_uth_admission_id c
+     on  b.data_source = c.data_source
+    and a.admit_id  = c.admission_id_src 
+    and a.pers_id = c.member_id_src 
+where c.uth_admission_id is null 
+;
+
+
+
+select * 
+from medicare_texas.admit_clm
 
 	
