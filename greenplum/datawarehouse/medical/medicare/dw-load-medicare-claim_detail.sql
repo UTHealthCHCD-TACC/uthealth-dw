@@ -29,6 +29,11 @@ from medicare_texas.inpatient_revenue_center_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+select distinct ptnt_dschrg_stus_cd 
+from medicare_texas.inpatient_base_claims_k a 
+
+select   a.line_coinsrnc_amt , a.line_service_deductible 
+from medicare_texas.bcarrier_line_k a
 
 ---outpatient
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
@@ -56,6 +61,70 @@ from medicare_texas.outpatient_revenue_center_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+-------************add discharge status and dates for all claims 12/17/2020 WC ************
+alter table data_warehouse.claim_detail add column discharge_status char(2);
+
+
+---outpatient has no discharge date
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd
+from medicare_texas.outpatient_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrt'
+;
+
+select a.
+from medicare_texas.outpatient_revenue_center_k a
+
+
+---inpatient discharge date is coded in main insert
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd 
+from medicare_texas.inpatient_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrt'
+;
+
+---for snf, hha, and hospice, add both discharge date and status
+
+--hha
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                         admit_date = b.clm_admsn_dt::date 
+from medicare_texas.hha_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrt'
+;
+
+--hospice
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                        -- admit_date =  b.clm_hospc_start_dt_id::date
+from medicare_texas.hospice_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrt'
+;
+
+--snf
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                         admit_date = b.clm_admsn_dt::date 
+from medicare_texas.snf_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrt'
+;
+
+vacuum analyze data_warehouse.claim_detail;
+
+---validate discharge changes
+select * from data_warehouse.claim_detail where data_source = 'mcrt' and discharge_date is not null;
+
+select * from data_warehouse.claim_detail cd where data_source = 'mcrt' and bill_type_inst is not null and discharge_status is null;
+
+----- ************ end discharge status updates ****************
 
 ---bcarrier setup
 create table dev.wc_bcarrier_claim_tx
@@ -78,6 +147,9 @@ select * from data_warehouse.dim_uth_claim_id where data_source = 'mcrt'
 distributed by (claim_id_src);
 
 
+delete from data_warehouse.claim_detail where data_source = 'mcrt' and table_id_src = 'bcarrier_claims_k';
+
+
 --bcarrier load 1m 5s
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
@@ -88,7 +160,7 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 select 'mcrt', c.data_year,c.uth_claim_id, a.line_num::numeric, c.uth_member_id, b.clm_from_dt::date, b.clm_thru_dt::date,
 	       d.month_year_id, a.org_npi_num, null, null, a.line_place_of_srvc_cd, true, true, 
 	       null, null, a.hcpcs_cd, a.nch_clm_type_cd,  substring(a.hcpcs_1st_mdfr_cd,1,1),  substring(a.hcpcs_2nd_mdfr_cd,1,1), null,
-	       a.carr_line_cl_chrg_amt::numeric, null, a.line_bene_pmt_amt::numeric , a.line_service_deductible::numeric, null, a.line_coinsrnc_amt::numeric, null, 
+	       a.carr_line_cl_chrg_amt::numeric, null, a.line_bene_pmt_amt::numeric , a.line_bene_ptb_ddctbl_amt::numeric, null, a.line_coinsrnc_amt::numeric, null, 
 	       null,null,null, a.line_srvc_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'bcarrier_claims_k',	c.data_year  	      	      
 from dev.wc_bcarrier_line_tx a --from medicare_texas.bcarrier_line_k a 
@@ -102,6 +174,11 @@ from dev.wc_bcarrier_line_tx a --from medicare_texas.bcarrier_line_k a
 	    on d.month_int = extract(month from b.clm_from_dt::date) 
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
+
+
+
+
+
 
 --cleanup from bcarrier
 drop table dev.wc_bcarrier_claim_tx;

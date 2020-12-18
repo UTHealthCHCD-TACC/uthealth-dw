@@ -169,6 +169,15 @@ grant all privileges on all sequences in schema dev to analyst;
 alter default privileges in schema dev grant all privileges to group analyst;
 
 
+--conditions (all access)
+grant all on schema conditions to analyst;
+
+grant all on all tables in schema conditions to analyst;
+
+grant all privileges on all sequences in schema conditions to analyst;
+
+alter default privileges in schema conditions grant all on tables to analyst;
+
 
 --raw data tables (select only)
 grant usage on schema truven, medicare, medicare_texas, optum_dod, optum_dod to group analyst;

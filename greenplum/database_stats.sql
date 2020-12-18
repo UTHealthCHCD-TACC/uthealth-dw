@@ -11,6 +11,9 @@ from pg_stat_ssl;
 
 SELECT version();
 
+--get activity timestamps on a db object
+select * from pg_stat_operations where objname = 'claim_header';
+
 --Total DB Size
 select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
  FROM pg_tables;

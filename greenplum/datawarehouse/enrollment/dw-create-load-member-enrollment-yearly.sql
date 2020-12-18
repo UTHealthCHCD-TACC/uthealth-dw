@@ -52,7 +52,7 @@ insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_memb
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
-      ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage
+      ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
 where data_source in ('optz','mcrt')
 order by data_source, year, uth_member_id, month_year_id 

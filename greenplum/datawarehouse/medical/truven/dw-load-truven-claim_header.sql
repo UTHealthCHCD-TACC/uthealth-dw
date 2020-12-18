@@ -60,6 +60,7 @@ from truven.mdcro a
  and a.year between 2015 and 2019
 ;
 
+SELECT facprof FROM truven.mdcro;
 
 -------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		

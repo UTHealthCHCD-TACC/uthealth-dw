@@ -1,8 +1,5 @@
 create schema conditions;
 
-select * from dev.m3_05 m 
-
-
 ---list of conditions
 create table conditions.condition_desc ( condition_cd text, condition_desc text, type_cd text, type_desc text, carry_forward char(1));
 

@@ -1,46 +1,51 @@
+select distinct a.interpret 
+from shared.covid_positive_20201015 a 
+
 
 --build this table in SPHCDESQL and export
 select distinct replace(Code,'.','') cd, * 
---into stage.dbo.wc_preg_covid 
+into stage.dbo.wc_preg_covid 
 from REF.dbo.[Value_Sets_Codes_2020] where [Value Set Name] like '%Pregnancy Diagnosis%'
 
 
-select * from stage.dbo.wc_preg_covid wpc where cd = '77386006'
+select * from stage.dbo.wc_preg_covid 
 
-
----import codes from above
-create table g823066.wc_preg_codes (cd text);
-
----start coding on coviddb---
 
 
 ---pregnant women
 select distinct ptid  
-into g823066.wc_preg_covid_ptid
-from opt_20201112.diag 
-where DIAGNOSIS_CD in ( select cd from g823066.wc_preg_codes)
+into STAGE.dbo.wc_cov_pregnant_ptids
+from COVID.dbo.cov_20201015_diag  
+where DIAGNOSIS_CD in ( select cd from stage.dbo.wc_preg_covid )
  and cast(diag_date as date) >= '2020-01-01'
 ;
 
 
 ---covid positive
-drop table g823066.wc_preg_covid_positives;
+drop table STAGE.dbo.wc_cov_all_covid_positives;
 
+--select distinct PTID, min(RESULT_DATE) as covid_first_date
 
-select * 
-into g823066.wc_preg_covid_positives
-from (
-select distinct ptid, diag_date as covid_date 
-from opt_20201112.diag  cd 
-where diagnosis_cd in ('B9729', 'J1289', 'J208', 'J22', 'J40', 'J80', 'J988')
-  and cast(diag_date as date) >= '02-20-2020'
-union 
-select distinct ptid, diag_date as covid_date 
-from opt_20201112.diag  cd 
-where DIAGNOSIS_CD in ('U071', 'U072', 'U073')
-  and cast(diag_date as date) >= '02-01-2020' 
-) inr 
+select distinct ptid, result_date
+into stage.dbo.wc_temp
+--into STAGE.dbo.wc_cov_all_covid_positives
+from COVID.dbo.temp_lab_20201015_new 
+where Interpret = 'Pos'
+
+group by ptid 
 ;
+
+select * --count(*) , count(distinct ptid) 
+from STAGE.dbo.wc_cov_all_covid_positives
+
+select count(*) 
+from (
+select count(result_date) as rd,ptid from stage.dbo.wc_temp
+group by ptid
+having count(result_date) > 1
+)x;
+
+select count(distinct ptid) from stage.dbo.wc_temp;
 
 
 ---counts of preg women
@@ -55,11 +60,11 @@ select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
             when 2020 - cast(BIRTH_YR as int) > 74 then 7
             end as age_group
             , * 
-from opt_20201112.pt 
+from COVID.dbo.cov_20201015_pt a 
 where GENDER = 'Female'
-and LENgth(birth_yr) = 4
-and ptid in ( select ptid from g823066.wc_preg_covid_positives)
---and ptid in ( select ptid from g823066.wc_preg_covid_ptid )
+and LEN(birth_yr) = 4
+and ptid in ( select ptid from STAGE.dbo.wc_cov_all_covid_positives)
+--and ptid in ( select ptid from STAGE.dbo.wc_cov_pregnant_ptids)
 ) inr 
 group by age_group order by age_group 
 
