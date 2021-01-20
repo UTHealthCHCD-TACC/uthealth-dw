@@ -380,7 +380,7 @@ from dev.wc_dell_med_study_table a
 where a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
 ;
 
-select count(*) from dev.wc_dell_med_study_table_extract
+select * from dev.wc_dell_med_study_table_extract
 
 ----------**************************************************************************************************************
 ----overall counts and analytics----------------------------------------------------------------------------------------------
@@ -507,3 +507,10 @@ where cond_count >0;
 
 select count(*), avg(a.age_derived ) as ad, stddev(age_derived )  
 from dev.wc_dellmed_overall a 
+
+
+select b.member_id_src  , a.*
+into dev.wc_dell_med_crg_extract
+from dev.wc_dell_med_study_table_extract a 
+   join data_warehouse.dim_uth_member_id b  
+      on a.uth_member_id = b.uth_member_id 
