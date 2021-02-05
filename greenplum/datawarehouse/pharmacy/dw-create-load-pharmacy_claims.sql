@@ -312,6 +312,26 @@ distributed by (member_id_src)
 ;
 
 
+create table dev.truv_mdcrd
+with(appendonly=true, orientation=column)
+as select * 
+from truven.mdcrd 
+distributed by (enrolid)
+;
+
+
+create table dev.truv_ccaed
+with(appendonly=true, orientation=column)
+as select * 
+from truven.ccaed 
+distributed by (enrolid)
+;
+
+vacuum analyze dev.truv_ccaed;
+
+
+delete from data_warehouse.pharmacy_claims where data_source = 'truv';
+
 
 --truven medicare adv
 insert into data_warehouse.pharmacy_claims (
@@ -324,15 +344,18 @@ select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id,
        lpad(ndcnum::text,11,'0'), a.daysupp, a.refill, a.svcdate, c.month_year_id, a.genind, a.generid::text, null, 
        a.qty, a.ntwkprov, a.pharmid, null, a.pay, a.netpay, 
        a.deduct, a.copay, a.coins, a.cob, a.enrolid || ndcnum::text || svcdate::text, a.enrolid::text, a.year , a.thercls 
-from truven.mdcrd a 
-  join data_warehouse.dim_uth_rx_claim_id b
-     on b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
-    and b.member_id_src = a.enrolid::text
+from dev.truv_mdcrd a 
+--from truven.mdcrd a 
+  join dev.dim_uth_rx_truv b 
+--join data_warehouse.dim_uth_rx_claim_id b
+     on b.member_id_src = a.enrolid::text
+    and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c 
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
- --where a.year = 2019
 ;
+
+drop table dev.truv_mdcrd;
  
 
 --truven commercial
@@ -346,7 +369,8 @@ select 'truv', extract(year from a.svcdate), b.uth_rx_claim_id, b.uth_member_id,
        lpad(ndcnum::text,11,'0'), a.daysupp, a.refill, a.svcdate, c.month_year_id, a.genind, a.generid::text, null, 
        a.qty, a.ntwkprov, a.pharmid, null, a.pay, a.netpay, 
        a.deduct, a.copay, a.coins, a.cob, a.enrolid || ndcnum::text || svcdate::text, a.enrolid::text, a.year 
-from truven.ccaed a 
+from dev.truv_ccaed a 
+--from truven.ccaed a 
   --join data_warehouse.dim_uth_rx_claim_id b
   join dev.dim_uth_rx_truv b 
      on b.member_id_src = a.enrolid::text
@@ -354,7 +378,6 @@ from truven.ccaed a
   join reference_tables.ref_month_year c 
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
-where a.year = 2019
 ;
  
 ---cleanup

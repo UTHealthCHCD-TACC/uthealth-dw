@@ -51,8 +51,12 @@ and c.uth_admission_id is null
 ;
 
 
+delete from data_warehouse.dim_uth_admission_id where data_source = 'truv';
+
+
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
+select distinct on (caseid, enrolid, year) 
+ 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.ccaef a 
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'truv'
@@ -61,10 +65,16 @@ from truven.ccaef a
      on  b.data_source = c.data_source
     and a.caseid::text = c.admission_id_src 
     and a.enrolid::text = c.member_id_src 
+    and a.year = c."year" 
 where a.caseid is not null 
   and a.enrolid is not null 
   and c.uth_admission_id is null 
 ;
+
+select * from truven.ccaef where caseid = 616137 order by svcdate 
+
+select * from data_warehouse.dim_uth_admission_id duai where data_source = 'truv' and admission_id_src = '616137';
+
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  

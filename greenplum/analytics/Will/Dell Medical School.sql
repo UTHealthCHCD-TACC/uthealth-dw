@@ -19,9 +19,35 @@ in ('F3110','F3111','F3112','F3113','F312','F3130','F3131','F3132','F314','F315'
     'F330','F331','F332','F333','F3340','F3341','F3342','F338','F339')
 ;
 
+
+select patid, 
+       case when diag in ('F3110','F3111','F3112','F3113','F312','F3130','F3131','F3132','F314','F315','F3160','F3161','F3162',
+                             'F3163','F3164','F3170','F3171','F3172','F3173','F3174','F3175','F3176','F3177','F3178','F3181') then 'bipolar'
+            when diag in ('F330','F331','F332','F333','F3340','F3341','F3342','F338','F339') then 'depression'
+       end as cnd
+  into dev.wc_dell_cohort_diags2
+from optum_dod.diagnostic d
+where year = 2018
+and diag 
+in ('F3110','F3111','F3112','F3113','F312','F3130','F3131','F3132','F314','F315','F3160','F3161','F3162',
+    'F3163','F3164','F3170','F3171','F3172','F3173','F3174','F3175','F3176','F3177','F3178','F3181',
+    'F330','F331','F332','F333','F3340','F3341','F3342','F338','F339')
+;
+
+
+
+
+
 select count(*), count(distinct uth_member_id), cnd 
 from dev.wc_dell_cohort_diags 
 group by cnd ;
+
+
+
+select count(*), count(distinct patid), cnd 
+from dev.wc_dell_cohort_diags2
+group by cnd ;
+
 
 
 ---
@@ -41,6 +67,17 @@ where data_source = 'optd'
   and a.year = 2018
   and uth_member_id in ( select uth_member_id from dev.wc_dell_cohort_diags)
 ;
+
+
+select count(*) 
+from data_warehouse.member_enrollment_yearly mey 
+where data_source = 'optd' 
+and total_enrolled_months = 12
+and "year" = 2018
+and age_derived between 21 and 64 
+;
+
+select
 
 
 select * from data_warehouse.member_enrollment_monthly where data_source = 'optd';

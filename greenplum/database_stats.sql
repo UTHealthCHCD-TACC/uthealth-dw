@@ -39,14 +39,18 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   --and n.nspname in ('dev')
-   and n.nspname like 'optum_dod'
-   --and u.usename = 'wcough'
+   and n.nspname in ('dev')
+   --and n.nspname = 'data_warehouse'
+   --and relname like 'wc_claim%'
+   and u.usename = 'wcough'
    ORDER BY 3, 6 desc;
+  
+  select * 
+  from gp_distribution_policy;
  
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('data_warehouse.claim_detail');
+SELECT get_ao_distribution('dev.am_member_enrollment_yearly');
 
 select uth_member_id, count(*)
 from dw_qa.dim_uth_claim_id
@@ -82,7 +86,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('medicare_texas')
+where pgn.nspname in ('dev')
 ORDER BY pgn.nspname, pgc.relname;
 
 --Roles and Members
@@ -139,9 +143,22 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('medicare_texas')
+and nspname in ('data_warehouse')
 order by 1, 2, 3;
 
-analyze dw_qa.claim_detail;
+analyze data_warehouse.member_enrollment_yearly;
+
+
+---see last vacuum and last analyze status of tables
+select schemaname, relname, 
+       last_vacuum, last_analyze,
+       last_autovacuum, last_autoanalyze,
+       n_live_tup, n_dead_tup, 
+       vacuum_count, autovacuum_count, 
+       analyze_count, autoanalyze_count
+from pg_stat_user_tables
+where schemaname = 'data_warehouse'
+order by relname;
+
 
 

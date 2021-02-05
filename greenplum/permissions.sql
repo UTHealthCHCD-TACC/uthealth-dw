@@ -168,7 +168,7 @@ grant all privileges on all sequences in schema dev to analyst;
 
 alter default privileges in schema dev grant all privileges to group analyst;
 
---dev (all access)
+--dw_qa (all access)
 grant all on schema dw_qa to analyst;
 
 grant all on all tables in schema dw_qa to analyst;

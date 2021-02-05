@@ -10,9 +10,31 @@ create table data_warehouse.dim_uth_member_id (
 ) distributed by (uth_member_id);
 
 ---
+select * from medicare_national.mbsf_abcd_summary mas where bene_id = 'ggggggjyygjgnBu'
+
+select * from optum_dod.mbr_co_enroll where patid = 33008549751
+
+select *--count(*), data_source 
+from data_warehouse.dim_uth_member_id 
+where data_source = 'mcrn' and uth_member_id not in (select uth_member_id from data_warehouse.member_enrollment_yearly)
+
+group by data_source 
+;
+
+select count(*), data_source 
+from data_warehouse.dim_uth_member_id 
+group by data_source;
 
 
+select count(distinct uth_member_id), data_source 
+from data_warehouse.member_enrollment_yearly 
+group by data_source 
 
+
+select count(distinct uth_member_id), data_source 
+from data_warehouse.member_enrollment_monthly 
+group by data_source 
+;
 
 alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 100000000; 
                                                                            
@@ -141,7 +163,7 @@ select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
-	from medicare_texas.mbsf_abcd_summary
+	from medicare_national.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
       on b.data_source = 'mcrn'
      and b.member_id_src = bene_id::text
