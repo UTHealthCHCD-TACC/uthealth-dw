@@ -71,13 +71,10 @@ where a.caseid is not null
   and c.uth_admission_id is null 
 ;
 
-select * from truven.ccaef where caseid = 616137 order by svcdate 
-
-select * from data_warehouse.dim_uth_admission_id duai where data_source = 'truv' and admission_id_src = '616137';
-
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
+select distinct on (caseid, enrolid, year) 
+ 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.ccaei a 
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'truv'
@@ -92,7 +89,8 @@ where a.caseid is not null
 ;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
+select distinct on (caseid, enrolid, year) 
+ 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.mdcrf a 
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'truv'
@@ -107,7 +105,8 @@ where a.caseid is not null
 ;
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
-select 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text  
+select distinct on (caseid, enrolid, year) 
+ 'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
 from truven.mdcri a 
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'truv'
@@ -137,8 +136,27 @@ where c.uth_admission_id is null
 ;
 
 
+select * from medicare_texas.admit;
 
-select * 
-from medicare_texas.admit_clm
+select * from medicare_texas.admit_clm;
 
-	
+
+update data_warehouse.claim_header a set admission_id_src = admit_id 
+from medicare_texas.admit_clm b 
+ where a.member_id_src = b.pers_id 
+   and a.claim_id_src = b.clm_id 
+   and a.data_source = 'mcrt'
+   and a."year" = b."year"::int2
+;
+
+---va 
+vacuum analyze data_warehouse.dim_uth_admission_id;
+
+---verify
+select count(*), data_source , "year" 
+from data_warehouse.dim_uth_admission_id duai 
+group by data_source , "year" 
+order by data_source , "year" 
+;	
+
+

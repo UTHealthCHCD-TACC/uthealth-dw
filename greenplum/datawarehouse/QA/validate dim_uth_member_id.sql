@@ -1,3 +1,26 @@
+-------------------------------------
+-----table vacuum analyze status-----
+
+
+---see last vacuum and last analyze status of tables
+select schemaname, relname, 
+       last_vacuum, last_analyze,
+       last_autovacuum, last_autoanalyze,
+       n_live_tup, n_dead_tup, 
+       vacuum_count, autovacuum_count, 
+       analyze_count, autoanalyze_count
+from pg_stat_user_tables
+where schemaname in ('data_warehouse','conditions','dw_qa','reference_tables','medicare_national','medicare_texas','optum_dod','optum_zip','truven')
+order by relname;
+
+
+
+
+
+
+
+------------------------------------------------------------------------
+----uth_id validation---------------------
 select count(*), count(distinct uth_member_id), data_source
 from data_warehouse.dim_uth_member_id dumi 
 group by  data_source
@@ -68,4 +91,11 @@ select count(*), year
 from medicare_texas.admit_clm 
 group by "year" 
 order by year 
+;
+
+
+select * 
+from optum_dod.mbr_enroll_r 
+where patid = 33003327108
+;
 
