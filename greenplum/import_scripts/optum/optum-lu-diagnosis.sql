@@ -7,7 +7,7 @@ DIAG_FST4_DESC varchar(100),GDR_SPEC_CD varchar(100),MDC_CD_DESC varchar(100),MD
 WITH (appendonly=true, orientation=column)
 distributed randomly;
 
-drop external table ext_lu_diagnosis;
+drop external table ext_temp;
 CREATE EXTERNAL TABLE ext_lu_diagnosis (
 DIAG_CD varchar(100),DIAG_DESC varchar(100),DIAG_FST3_CD varchar(100),DIAG_FST3_DESC varchar(100),DIAG_FST4_CD varchar(100),
 DIAG_FST4_DESC varchar(100),GDR_SPEC_CD varchar(100),MDC_CD_DESC varchar(100),MDC_CODE varchar(100),ICD_VER_CD varchar(100)

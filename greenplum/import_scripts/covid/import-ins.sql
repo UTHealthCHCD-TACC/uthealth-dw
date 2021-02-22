@@ -1,6 +1,6 @@
 --Medical
-drop table covid_20200525.ins;
-create table covid_20200525.ins (
+drop table opt_20210107.ins;
+create table opt_20210107.ins (
 PTID varchar, ENCID varchar, INSURANCE_DATE date,INSURANCE_TIME time, INS_TYPE varchar,SOURCEID varchar
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
@@ -13,7 +13,7 @@ CREATE EXTERNAL TABLE ext_covid_ins (
 PTID varchar, ENCID varchar, INSURANCE_DATE date,INSURANCE_TIME time, INS_TYPE varchar,SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/covid/*ins.*'
+'gpfdist://greenplum01:8081/covid/20210107/*ins.*'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -24,11 +24,11 @@ from ext_covid_ins
 limit 1000;
 */
 -- Insert: 14s, Updated Rows	68,071,486
-insert into covid_20200525.ins
+insert into opt_20210107.ins
 select * from ext_covid_ins;
 
 --Scratch
-select year, count(*), min(admit_date), max(admit_date)
-from covid_20200525.ins
+select count(*)
+from opt_20210107.ins
 group by 1
 order by 1;

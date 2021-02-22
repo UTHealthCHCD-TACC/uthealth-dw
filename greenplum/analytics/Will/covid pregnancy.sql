@@ -14,7 +14,7 @@ drop table stage.dbo.wc_preg_covid_ptid;
 
 select distinct ptid  
 into stage.dbo.wc_preg_covid_ptid
-from COVID.dbo.cov_20200820_diag cd 
+from COVID.dbo.cov_20210107_diag cd 
 where DIAGNOSIS_CD in ( select cd from stage.dbo.wc_preg_covid)
  and cast(diag_date as date) >= '2020-01-01'
 ;
@@ -28,12 +28,12 @@ select *
 into stage.dbo.wc_preg_covid_positives
 from (
 select distinct ptid, diag_date as covid_date 
-from COVID.dbo.cov_20200820_diag cd 
+from COVID.dbo.cov_20210107_diag cd 
 where diagnosis_cd in ('B9729', 'J1289', 'J208', 'J22', 'J40', 'J80', 'J988')
   and cast(diag_date as date) >= '02-20-2020'
 union 
 select distinct ptid, diag_date as covid_date 
-from COVID.dbo.cov_20200820_diag cd 
+from COVID.dbo.cov_20210107_diag cd 
 where DIAGNOSIS_CD in ('U071', 'U072', 'U073')
   and cast(diag_date as date) >= '02-01-2020' 
 ) inr 
@@ -52,7 +52,7 @@ select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
             when 2020 - cast(BIRTH_YR as int) > 74 then 7
             end as age_group
             , * 
-from COVID.dbo.cov_20200820_pt 
+from COVID.dbo.cov_20210107_pt 
 where GENDER = 'Female'
 and LEN(birth_yr) = 4
 and ptid in ( select ptid from stage.dbo.wc_preg_covid_positives)
@@ -72,7 +72,7 @@ select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
             when 2020 - cast(BIRTH_YR as int) > 74 then 7
             end as age_group
             , * 
-from COVID.dbo.cov_20200820_pt 
+from COVID.dbo.cov_20210107_pt 
 where GENDER = 'Female'
 and LEN(birth_yr) = 4
 --and ptid in ( select ptid from stage.dbo.wc_preg_covid_positives)
@@ -84,8 +84,8 @@ group by race order by race
 
 ---visit type
 select cv.VISIT_TYPE, count(distinct cv.ptid) as women, count(distinct cv.ptid+cv.VISIT_START_DATE ) as admissions
-from COVID.dbo.cov_20200820_vis cv
-  join covid.dbo.cov_20200820_pt cp 
+from COVID.dbo.cov_20210107_vis cv
+  join covid.dbo.cov_20210107_pt cp 
    on cp.ptid  = cv.PTID 
    and cp.GENDER = 'Female'
    and len(BIRTH_YR ) = 4
@@ -102,8 +102,8 @@ and cv.DISCHARGE_DISPOSITION not in ('INVALID VALUE','NOT RECORDED')
 
 ---visit type and discharge
 select cv.VISIT_TYPE, cv.DISCHARGE_DISPOSITION , count(distinct cv.ptid) as women, count(distinct cv.ptid+cv.VISIT_START_DATE ) as admissions
-from COVID.dbo.cov_20200820_vis cv
-  join covid.dbo.cov_20200820_pt cp 
+from COVID.dbo.cov_20210107_vis cv
+  join covid.dbo.cov_20210107_pt cp 
    on cp.ptid  = cv.PTID 
    and cp.GENDER = 'Female'
    and len(BIRTH_YR ) = 4
@@ -130,8 +130,8 @@ select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
          cv.VISIT_TYPE, cv.DISCHARGE_DISPOSITION, 
          count(distinct cv.ptid) as women, 
          count(distinct cv.ptid+cv.VISIT_START_DATE ) as admissions
-from COVID.dbo.cov_20200820_vis cv
-  join covid.dbo.cov_20200820_pt cp 
+from COVID.dbo.cov_20210107_vis cv
+  join covid.dbo.cov_20210107_pt cp 
    on cp.ptid  = cv.PTID 
    and cp.GENDER = 'Female'
    and len(BIRTH_YR ) = 4

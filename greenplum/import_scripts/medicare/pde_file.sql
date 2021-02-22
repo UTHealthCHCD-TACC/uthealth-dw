@@ -13,7 +13,7 @@ RX_ORGN_CD varchar, RPTD_GAP_DSCNT_NUM varchar, BRND_GNRC_CD varchar, PHRMCY_SRV
 SUBMSN_CLR_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*pde_file.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://192.168.58.179:8081/medicare_national/2017/*pde_file.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -25,7 +25,7 @@ create table medicare_texas.pde_file
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare_texas.pde_file (year,
+insert into medicare_national.pde_file (year,
 PDE_ID, BENE_ID, DOB_DT, GNDR_CD, SRVC_DT, PD_DT, SRVC_PRVDR_ID_QLFYR_CD, 
 SRVC_PRVDR_ID, PRSCRBR_ID_QLFYR_CD, PRSCRBR_ID, RX_SRVC_RFRNC_NUM, PROD_SRVC_ID, 
 PLAN_CNTRCT_REC_ID, PLAN_PBP_REC_NUM, CMPND_CD, DAW_PROD_SLCTN_CD, QTY_DSPNSD_NUM, 
@@ -52,6 +52,6 @@ distributed randomly;
 
 -- Scratch
 select year, count(*)
-from medicare_texas.pde_file
+from medicare_national.pde_file
 group by 1
 order by 1;

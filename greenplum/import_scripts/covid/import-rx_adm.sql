@@ -1,6 +1,6 @@
 --Medical
-drop table covid_20200525.rx_adm;
-create table covid_20200525.rx_adm (
+drop table opt_20210107.rx_adm;
+create table opt_20210107.rx_adm (
 PTID varchar,ENCID varchar,ORDERID varchar,DRUG_NAME varchar,NDC varchar,NDC_SOURCE varchar,
 ORDER_DATE date,ORDER_TIME time,ADMIN_DATE date,ADMIN_TIME time,PROVID varchar,ROUTE varchar,
 QUANTITY_OF_DOSE varchar,STRENGTH varchar,STRENGTH_UNIT varchar,DOSAGE_FORM varchar,DOSE_FREQUENCY varchar,
@@ -19,22 +19,22 @@ QUANTITY_OF_DOSE text,STRENGTH text,STRENGTH_UNIT text,DOSAGE_FORM text,DOSE_FRE
 GENERIC_DESC text,DRUG_CLASS text,DISCONTINUE_REASON text,SOURCEID text
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/covid/*rx_adm.txt'
+'gpfdist://greenplum01:8081/covid/20210107/*rx_adm.txt.gz'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '');
 
 -- Test
 /*
-select count(*)
+select *
 from ext_covid_rx_adm
 limit 1000;
 */
 -- rx_admert: 138s, Updated Rows	97,729,152
-insert into covid_20200525.rx_adm
+insert into opt_20210107.rx_adm
 select * from ext_covid_rx_adm;
 
 --Scratch
 select count(*)
-from covid_20200525.rx_adm
+from opt_20210107.rx_adm
 group by 1
 order by 1;
