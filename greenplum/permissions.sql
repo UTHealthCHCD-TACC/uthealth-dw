@@ -135,10 +135,24 @@ grant select on all tables in schema tableau to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group uthealth_analyst; 
 
 --dev (all access)
-grant all on schema dev to uthealth_analyst;
-grant all on all tables in schema dev to uthealth_analyst;
-grant all privileges on all sequences in schema dev to uthealth_analyst;
-alter default privileges in schema dev grant all on tables to uthealth_analyst;
+
+grant all on schema dev to analyst;
+grant all on all tables in schema dev to analyst;
+grant all privileges on all sequences in schema dev to analyst;
+alter default privileges in schema dev grant all privileges to group analyst;
+
+--dw_qa (all access)
+grant all on schema dw_qa to analyst;
+grant all on all tables in schema dw_qa to analyst;
+grant all privileges on all sequences in schema dw_qa to analyst;
+alter default privileges in schema dw_qa grant all privileges to  analyst;
+
+
+--conditions (all access)
+grant all on schema conditions to analyst;
+grant all on all tables in schema conditions to analyst;
+grant all privileges on all sequences in schema conditions to analyst;
+alter default privileges in schema conditions grant all on tables to analyst;
 
 --raw data tables (select only)
 grant usage on schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_dod to group uthealth_analyst;
@@ -154,7 +168,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uth
 grant all on schema conditions to group uthealth_analyst;
 grant select on all tables in schema conditions to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA conditions grant select on tables to group uthealth_analyst; 
--------------------------------------------------------------------------------------------
+
 
 /*
  * Create User

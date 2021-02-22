@@ -163,6 +163,7 @@ SELECT  b.nspname||'.'||a.relname as TableName
    when 'f' THEN 'Row Orientation'        
    when 't' THEN 'Column Orientation'
 END as TableStorageType
+, c.columnstore
 ,pg_size_pretty( pg_total_relation_size(nspname||'.'||relname)) as size_gb
 ,CASE COALESCE(c.compresstype,'')
   WHEN '' THEN 'No Compression'        
@@ -172,8 +173,12 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('dw_qa','optum_dod')
+and b.nspname in ('data_warehouse')
 AND a.oid=c.relid
+
+select *, oid from pg_namespace
+
+
 
 
 select * from pg_catalog.pg_appendonly;

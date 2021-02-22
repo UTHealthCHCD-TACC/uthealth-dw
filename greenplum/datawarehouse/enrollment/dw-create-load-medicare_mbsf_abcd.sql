@@ -5,7 +5,7 @@ drop table data_warehouse.medicare_mbsf_abcd_enrollment;
 create table data_warehouse.medicare_mbsf_abcd_enrollment 
 with(appendonly=true,orientation=column,compresstype=zlib)
 as 
-select  b.uth_member_id, 'mdcr' as data_source, "year"::int as "year",
+select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
          enrl_src, sample_group,
          enhanced_five_percent_flag,
          crnt_bic_cd,
@@ -45,7 +45,7 @@ select  b.uth_member_id, 'mdcr' as data_source, "year"::int as "year",
 from medicare_texas.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
      on b.member_id_src = a.bene_id 
-    and b.data_source = 'mdcr'
+    and b.data_source = 'mcrt'
 distributed by(uth_member_id );
 
 --medicare national 

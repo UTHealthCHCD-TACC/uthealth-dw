@@ -22,6 +22,9 @@ from pg_stat_ssl;
 
 SELECT version();
 
+--get activity timestamps on a db object
+select * from pg_stat_operations where objname = 'claim_header';
+
 --Total DB Size
 select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
  FROM pg_tables;
@@ -47,10 +50,14 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   --and n.nspname in ('dev')
-   and n.nspname like 'optum_dod'
-   --and u.usename = 'wcough'
+   and n.nspname in ('dev')
+   --and n.nspname = 'data_warehouse'
+   --and relname like 'wc_claim%'
+   and u.usename = 'wcough'
    ORDER BY 3, 6 desc;
+  
+  select * 
+  from gp_distribution_policy;
  
 
 --Greenplum Distribution of a table
@@ -169,6 +176,19 @@ AND pc.relstorage IN ('h', 'a', 'c')
 and nspname in ('data_warehouse')
 order by 1, 2, 3;
 
-analyze dw_qa.claim_detail;
+analyze data_warehouse.member_enrollment_yearly;
+
+
+---see last vacuum and last analyze status of tables
+select schemaname, relname, 
+       last_vacuum, last_analyze,
+       last_autovacuum, last_autoanalyze,
+       n_live_tup, n_dead_tup, 
+       vacuum_count, autovacuum_count, 
+       analyze_count, autoanalyze_count
+from pg_stat_user_tables
+where schemaname = 'data_warehouse'
+order by relname;
+
 
 

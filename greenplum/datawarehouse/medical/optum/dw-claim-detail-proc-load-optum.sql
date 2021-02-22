@@ -18,48 +18,35 @@ create table dw_qa.claim_icd_proc (
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (uth_member_id);
 
+
+delete from data_warehouse.claim_icd_proc where data_source = 'optz';
+
+
 --Optum load: 
 insert into data_warehouse.claim_icd_proc(data_source, year, uth_claim_id, uth_member_id, claim_sequence_number, date, proc_cd, proc_position, icd_type)
 select distinct d.data_source, d.year, d.uth_claim_id, d.uth_member_id, d.claim_sequence_number, d.from_date_of_service, proc.proc, proc.proc_position, proc.icd_flag
 from data_warehouse.claim_detail d
-join data_warehouse.dim_uth_claim_id uth on d.uth_member_id = uth.uth_member_id and d.uth_claim_id = uth.uth_claim_id 
-join optum_dod.procedure proc on proc.clmid=uth.claim_id_src and proc.patid::text=uth.member_id_src and proc.fst_dt=d.from_date_of_service 
-where d.data_source='optd';
-
-select *
-from optum_dod.procedure
-limit 2;
-
-select data_source, count(*)
-from dw_qa.claim_detail
-group by 1;
+join optum_zip.procedure proc 
+   on proc.clmid= d.claim_id_src 
+  and proc.patid::text= d.member_id_src  
+  and proc.fst_dt=d.from_date_of_service 
+where d.data_source='optz'
+  and proc.year >= 2017
+;
 
 
-UPDATE dw_qa.claim_detail d
-SET claim_id_src = h.claim_id_src
-FROM dw_qa.dim_uth_claim_id h
-WHERE d.uth_member_id = h.uth_member_id and d.uth_claim_id = h.uth_claim_id;
-
-select *
-from dw_qa.claim_detail
-where data_source = 'optd'
-limit 10;
-
-select *
-from dw_qa.claim_detail cd 
-where member_id_src =33010130528::text;
-select trunc(90934.0)::text
-
--- Diagnostics
+delete from data_warehouse.claim_icd_proc where proc_cd is null;
 
 analyze data_warehouse.claim_icd_proc;
 
 --Verify
-select data_source, count(*), count(distinct d.uth_claim_id)
+select data_source, year, count(*)
 from data_warehouse.claim_icd_proc d
-group by 1
-order by 1;
+group by 1,2
+order by 1,2;
 
+
+---scratch
 select data_source, count(*)
 from dw_qa.claim_icd_proc
 group by 1;

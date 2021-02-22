@@ -158,11 +158,22 @@ from data_warehouse.claim_detail a
      on b.uth_member_id = a.uth_member_id 
     and a.year = b.year 
 where a.bill_type_inst = '1' 
- and a.bill_type_class = '1'
+ and a.bill_type_class = '1';
+
+
+--readmit, get admission ids
+select distinct admission_id_src, a.uth_member_id , min(a.from_date_of_service) as admt_dt
+into dev.wc_bench_truv_readmit
+from data_warehouse.claim_header a 
+  join dev.wc_bench_truv_inpatient b 
+    on a.uth_member_id = b.uth_member_id 
+   and a.uth_claim_id = b.uth_claim_id 
+group by a.admission_id_src , a.uth_member_id 
+ ;
  
  
 ---inpatient admissions for spreadsheet 
-select count(a.uth_claim_id ), sum(total_allowed_amount ) as alw, c.year, c.bus_cd  
+select count(a.uth_claim_id ), count(distinct admission_id_src), sum(total_allowed_amount ) as alw, c.year, c.bus_cd  
 from data_warehouse.claim_header a 
    join dev.wc_bench_truv_inpatient c 
      on c.uth_member_id = a.uth_member_id 
@@ -197,31 +208,25 @@ group by a.year,  b.bus_cd
 order by a.year,  b.bus_cd 
 ;
 
---30 day readmissions
-select count(a.uth_claim_id ), a.year, bus_cd 
-from data_warehouse.claim_header a 
-  join dev.wc_bench_truv_inpatient  b 
-     on a.uth_member_id = b.uth_member_id 
-    and a.uth_claim_id = b.uth_claim_id 
-where exists ( select 1 from data_warehouse.claim_header x 
-                            join dev.wc_bench_truv_inpatient y 
-                               on x.uth_member_id = y.uth_member_id
-                              and x.uth_claim_id = y.uth_claim_id 
-                        where x.uth_member_id = b.uth_member_id 
-                          and x.uth_claim_id <> b.uth_claim_id
-                          and x.from_date_of_service > a.from_date_of_service
-						  and x.from_date_of_service < a.from_date_of_service + interval'30 days'  )
-group by a.year,  bus_cd
-order by a.year,  bus_cd
+
+--30 day readmits
+select count(distinct a.admission_id_src), b.year, b.bus_cd 
+from dev.wc_bench_truv_readmit a
+   join dev.wc_bench_trv_members b  
+      on b.uth_member_id = a.uth_member_id 
+     and b.year = extract(year from a.admt_dt) 
+where exists ( select 1 from dev.wc_bench_truv_readmit x 
+                         where x.uth_member_id = b.uth_member_id 
+                           and x.admission_id_src <> a.admission_id_src 
+                           and x.admt_dt between a.admt_dt and a.admt_dt + interval'30days')
+group by b.year, b.bus_cd 
+order by b.year, b.bus_cd 
 ;
-
-
-
 
 ------------------------ HCC -------------------- PMPY 
 --- *****************************************************************************************
 --inpatient
-select count(a.uth_claim_id ), sum(total_allowed_amount ) as alw, a.year, c.bus_cd  
+select count(distinct admission_id_src), sum(total_allowed_amount ) as alw, a.year, c.bus_cd  
 from data_warehouse.claim_header a 
    join dev.wc_bench_truv_inpatient c 
      on c.uth_member_id = a.uth_member_id 
@@ -250,36 +255,36 @@ order by a.year,  b.bus_cd
 
 
 --30 day readmissions
-select count(a.uth_claim_id ), a.year, bus_cd 
-from data_warehouse.claim_header a 
-  join dev.wc_bench_truv_inpatient  b 
-     on a.uth_member_id = b.uth_member_id 
-    and a.uth_claim_id = b.uth_claim_id 
+select count(distinct a.admission_id_src), b.year, b.bus_cd 
+from dev.wc_bench_truv_readmit a
+   join dev.wc_bench_trv_members b  
+      on b.uth_member_id = a.uth_member_id 
+     and b.year = extract(year from a.admt_dt) 
 where a.uth_member_id in ( select uth_member_id from dev.wc_bench_trv_pmpy )
- and exists ( select 1 from data_warehouse.claim_header x 
-                            join dev.wc_bench_truv_inpatient y 
-                               on x.uth_member_id = y.uth_member_id
-                              and x.uth_claim_id = y.uth_claim_id 
-                        where x.uth_member_id = b.uth_member_id 
-                          and x.uth_claim_id <> b.uth_claim_id
-                          and x.from_date_of_service > a.from_date_of_service
-						  and x.from_date_of_service < a.from_date_of_service + interval'30 days'  )
-group by a.year,  bus_cd
-order by a.year,  bus_cd
+  and exists ( select 1 from dev.wc_bench_truv_readmit x 
+                         where x.uth_member_id = b.uth_member_id 
+                           and x.admission_id_src <> a.admission_id_src 
+                           and x.admt_dt between a.admt_dt and a.admt_dt + interval'30days')
+group by b.year, b.bus_cd 
+order by b.year, b.bus_cd 
 ;
+
 
 
 
 ------------------------------------------------***************************************************
 ----------------------------active / retired by age group Utilizations
+
+----!! note the gender cd for grabbing male vs female !! ** 
 ---------------------------------------------------**********************************************
 
  ----inpatient by age group and active vs retiree                                         
-select count(a.uth_claim_id ), sum(total_allowed_amount ) as alw, c.year, c.bus_cd , c.age_group 
+select count(distinct admission_id_src), sum(total_allowed_amount ) as alw, c.year, c.bus_cd , c.age_group 
 from data_warehouse.claim_header a 
    join dev.wc_bench_truv_inpatient c 
      on c.uth_member_id = a.uth_member_id 
     and c.uth_claim_id = a.uth_claim_id   
+   where c.gender_cd = 'F'
 group by c.year, c.bus_cd , c.age_group 
 order by c.year, c.bus_cd , c.age_group 
 ;
@@ -310,22 +315,21 @@ order by a.year,  b.bus_cd , b.age_group
 ;
 
 
---30 day readmissions
-select count(a.uth_claim_id ), b.year, bus_cd , b.age_group
-from data_warehouse.claim_header a 
-  join dev.wc_bench_truv_inpatient  b 
-     on a.uth_member_id = b.uth_member_id 
-    and a.uth_claim_id = b.uth_claim_id 
+--30 day readmits
+select count(distinct a.admission_id_src), b.year, b.bus_cd, age_group 
+from dev.wc_bench_truv_readmit a
+   join dev.wc_bench_trv_members b  
+      on b.uth_member_id = a.uth_member_id 
+     and b.year = extract(year from a.admt_dt) 
 where b.gender_cd = 'F'
-and a.uth_member_id in ( select uth_member_id from dev.wc_bench_trv_pmpy )
- and exists ( select 1 from data_warehouse.claim_header x 
-                            join dev.wc_bench_truv_inpatient y 
-                               on x.uth_member_id = y.uth_member_id
-                              and x.uth_claim_id = y.uth_claim_id 
-                        where x.uth_member_id = b.uth_member_id 
-                          and x.uth_claim_id <> b.uth_claim_id
-                          and x.from_date_of_service > a.from_date_of_service
-						  and x.from_date_of_service < a.from_date_of_service + interval'30 days'  )
-group by b.year,  bus_cd, b.age_group
-order by b.year,  bus_cd, b.age_group
+and exists ( select 1 from dev.wc_bench_truv_readmit x 
+                         where x.uth_member_id = b.uth_member_id 
+                           and x.admission_id_src <> a.admission_id_src 
+                           and x.admt_dt between a.admt_dt and a.admt_dt + interval'30days')
+group by b.year, b.bus_cd , age_group 
+order by b.year, b.bus_cd , age_group 
 ;
+
+
+
+
