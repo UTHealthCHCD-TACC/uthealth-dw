@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.clm_header;
 create table medicaid.clm_header (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
 HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_ZIP_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
@@ -17,7 +17,7 @@ distributed by (ICN);
 
 drop external table ext_clm_header;
 CREATE EXTERNAL TABLE ext_clm_header (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
 HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_ZIP_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
@@ -44,17 +44,17 @@ insert into medicaid.clm_header
 select * from ext_clm_header;
 
 -- 318 secs
-update medicaid.clm_header set year=date_part('year', FST_DT) where year=0;
+update medicaid.clm_header set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.clm_header;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.clm_header;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.clm_header;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.clm_header
 group by 1, 2
 order by 1, 2;

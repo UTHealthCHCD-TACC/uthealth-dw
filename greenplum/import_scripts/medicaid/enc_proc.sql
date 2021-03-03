@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.enc_proc;
 create table medicaid.enc_proc (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 MCO_ICN varchar,TX_CD varchar,SUB_MCO_PLN varchar,PRIM_PROC_QAL varchar,PRIM_PROC_CD varchar,
 PROC_ICD_QAL_1 varchar,PROC_ICD_CD_1 varchar,PROC_ICD_QAL_2 varchar,PROC_ICD_CD_2 varchar,PROC_ICD_QAL_3 varchar,PROC_ICD_CD_3 varchar,
 PROC_ICD_QAL_4 varchar,PROC_ICD_CD_4 varchar,PROC_ICD_QAL_5 varchar,PROC_ICD_CD_5 varchar,PROC_ICD_QAL_6 varchar,PROC_ICD_CD_6 varchar,
@@ -18,7 +18,7 @@ distributed by (MCO_ICN);
 
 drop external table ext_enc_proc;
 CREATE EXTERNAL TABLE ext_enc_proc (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 MCO_ICN varchar,TX_CD varchar,SUB_MCO_PLN varchar,PRIM_PROC_QAL varchar,PRIM_PROC_CD varchar,
 PROC_ICD_QAL_1 varchar,PROC_ICD_CD_1 varchar,PROC_ICD_QAL_2 varchar,PROC_ICD_CD_2 varchar,PROC_ICD_QAL_3 varchar,PROC_ICD_CD_3 varchar,
 PROC_ICD_QAL_4 varchar,PROC_ICD_CD_4 varchar,PROC_ICD_QAL_5 varchar,PROC_ICD_CD_5 varchar,PROC_ICD_QAL_6 varchar,PROC_ICD_CD_6 varchar,
@@ -46,17 +46,17 @@ insert into medicaid.enc_proc
 select * from ext_enc_proc;
 
 -- 318 secs
-update medicaid.enc_proc set year=date_part('year', FST_DT) where year=0;
+update medicaid.enc_proc set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.enc_proc;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.enc_proc;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enc_proc;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.enc_proc
 group by 1, 2
 order by 1, 2;

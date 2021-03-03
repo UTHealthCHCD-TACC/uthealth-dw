@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.chip_uth;
 create table medicaid.chip_uth (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 CLIENT_NBR varchar, DATE_OF_BIRTH varchar, ETHNICITY varchar, MAILING_ZIP varchar, ELIG_MONTH varchar, PLAN_CD varchar,
 COUNTY_CD varchar, GENDER_CD varchar, AGE numeric, PLAN_ENR_START_DT varchar, PLAN_ENR_END_DT varchar, MCO_ID varchar, PURE_RATE varchar
 ) 
@@ -10,7 +10,7 @@ distributed by (CLIENT_NBR);
 
 drop external table ext_chip_uth;
 CREATE EXTERNAL TABLE ext_chip_uth (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 CLIENT_NBR varchar, DATE_OF_BIRTH varchar, ETHNICITY varchar, MAILING_ZIP varchar, ELIG_MONTH varchar, PLAN_CD varchar,
 COUNTY_CD varchar, GENDER_CD varchar, AGE numeric, PLAN_ENR_START_DT varchar, PLAN_ENR_END_DT varchar, MCO_ID varchar, PURE_RATE varchar
 ) 
@@ -30,17 +30,17 @@ insert into medicaid.chip_uth
 select * from ext_chip_uth;
 
 -- 318 secs
-update medicaid.chip_uth set year=date_part('year', FST_DT) where year=0;
+update medicaid.chip_uth set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.chip_uth;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.chip_uth;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.chip_uth;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.chip_uth
 group by 1, 2
 order by 1, 2;

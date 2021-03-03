@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.enc_det;
 create table medicaid.enc_det (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 MCO_ICN varchar,TX_CD varchar,SUB_MCO_PLN varchar,LN_NBR varchar,ENC_STAT_CD varchar,FDOS_DT varchar,TDOS_CSL varchar,
 PROC_CD varchar,SUB_CHRG_AMT varchar,DT_PD_AMT varchar,DT_LN_UNT varchar,PD_UNT_SVC varchar,
 DX_CD_1 varchar,DX_CD_2 varchar,DX_CD_3 varchar,DX_CD_4 varchar,
@@ -15,7 +15,7 @@ distributed by (MCO_ICN);
 
 drop external table ext_enc_det;
 CREATE EXTERNAL TABLE ext_enc_det (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 MCO_ICN varchar,TX_CD varchar,SUB_MCO_PLN varchar,LN_NBR varchar,ENC_STAT_CD varchar,FDOS_DT varchar,TDOS_CSL varchar,
 PROC_CD varchar,SUB_CHRG_AMT varchar,DT_PD_AMT varchar,DT_LN_UNT varchar,PD_UNT_SVC varchar,
 DX_CD_1 varchar,DX_CD_2 varchar,DX_CD_3 varchar,DX_CD_4 varchar,
@@ -40,17 +40,17 @@ insert into medicaid.enc_det
 select * from ext_enc_det;
 
 -- 318 secs
-update medicaid.enc_det set year=date_part('year', FST_DT) where year=0;
+update medicaid.enc_det set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.enc_det;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.enc_det;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enc_det;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.enc_det
 group by 1, 2
 order by 1, 2;

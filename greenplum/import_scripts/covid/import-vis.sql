@@ -1,6 +1,6 @@
 --Medical
-drop table opt_20210107.vis;
-create table opt_20210107.vis (
+drop table opt_20210128.vis;
+create table opt_20210128.vis (
 PTID varchar,VISITID varchar,VISIT_TYPE varchar,VISIT_START_DATE date,VISIT_START_TIME time,VISIT_END_DATE date,VISIT_END_TIME time,
 DISCHARGE_DISPOSITION varchar,ADMISSION_SOURCE varchar,DRG varchar,SOURCEID varchar
 ) 
@@ -15,7 +15,7 @@ PTID varchar,VISITID varchar,VISIT_TYPE varchar,VISIT_START_DATE date,VISIT_STAR
 DISCHARGE_DISPOSITION varchar,ADMISSION_SOURCE varchar,DRG varchar,SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210107/*vis.txt.gz'
+'gpfdist://greenplum01:8081/covid/20210128/*vis*.txt.gz'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -26,11 +26,11 @@ from ext_covid_vis
 limit 1000;
 */
 -- visert: 7s, Updated Rows	2902137
-insert into opt_20210107.vis
+insert into opt_20210128.vis
 select * from ext_covid_vis;
 
 --Scratch
 select count(*)
-from opt_20210107.vis
+from opt_20210128.vis
 group by 1
 order by 1;

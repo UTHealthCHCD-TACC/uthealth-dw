@@ -79,19 +79,16 @@ GRANT select ON ALL TABLES IN SCHEMA gp_toolkit TO uthealthadmin;
  * UTHealth uthealth_analyst Role
  */
 
-CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
-
-CREATE ROLE chautruong NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
-
-CREATE ROLE amoosa1 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'ch@ng3m3';
+--CREATE ROLE smadhuri NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'password';
 
 
+CREATE ROLE ctruong NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
 
 grant uthealth_analyst to amoosa1;
 
 grant uthealth_analyst to smadhuri;
 
-grant uthealth_analyst to chautruong;
+grant uthealth_analyst to ctruong;
 
 grant uthealth_analyst to yliu26;
 

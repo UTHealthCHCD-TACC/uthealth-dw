@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.clm_detail;
 create table medicaid.clm_detail (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 ICN varchar, CLM_DTL_NBR varchar, DTL_STAT_CD  varchar, FROM_DOS date, TO_DOS date,
 PROC_CD varchar, SUB_PROC_CD varchar, DTL_BILL_AMT numeric, DTL_ALWD_AMT numeric, DTL_PD_AMT numeric, DTL_BL_QUANT_AMT numeric,
 DTL_ALWD_QUANT_AMT numeric, DTL_MAN_QUANT_AMT numeric, DTL_DX_CD varchar, 
@@ -13,7 +13,7 @@ distributed by (ICN);
 
 drop external table ext_clm_detail;
 CREATE EXTERNAL TABLE ext_clm_detail (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 ICN varchar, CLM_DTL_NBR varchar, DTL_STAT_CD  varchar, FROM_DOS date, TO_DOS date,
 PROC_CD varchar, SUB_PROC_CD varchar, DTL_BILL_AMT numeric, DTL_ALWD_AMT numeric, DTL_PD_AMT numeric, DTL_BL_QUANT_AMT numeric,
 DTL_ALWD_QUANT_AMT numeric, DTL_MAN_QUANT_AMT numeric, DTL_DX_CD varchar, 
@@ -36,17 +36,17 @@ insert into medicaid.clm_detail
 select * from ext_clm_detail;
 
 -- 318 secs
-update medicaid.clm_detail set year=date_part('year', FST_DT) where year=0;
+update medicaid.clm_detail set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.clm_detail;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.clm_detail;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.clm_detail;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.clm_detail
 group by 1, 2
 order by 1, 2;

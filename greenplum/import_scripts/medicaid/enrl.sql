@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.enrl;
 create table medicaid.enrl (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 client_nbr varchar,dob varchar,race varchar,zip varchar,fam_size varchar,fam_income varchar,education varchar,
 case_nbr varchar,sig varchar,smib_from_dt varchar,smib_to_dt varchar,smib varchar,base_plan varchar,
 elig_date varchar,contract_id varchar,county_id varchar,tx_hold varchar,mc_flag varchar,mc_sc varchar,me_cat varchar,me_code varchar,me_tp varchar,me_sd varchar,
@@ -13,7 +13,7 @@ distributed by (client_nbr);
 
 drop external table ext_enrl;
 CREATE EXTERNAL TABLE ext_enrl (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 client_nbr varchar,dob varchar,race varchar,zip varchar,fam_size varchar,fam_income varchar,education varchar,
 case_nbr varchar,sig varchar,smib_from_dt varchar,smib_to_dt varchar,smib varchar,base_plan varchar,
 elig_date varchar,contract_id varchar,county_id varchar,tx_hold varchar,mc_flag varchar,mc_sc varchar,me_cat varchar,me_code varchar,me_tp varchar,me_sd varchar,
@@ -36,17 +36,17 @@ insert into medicaid.enrl
 select * from ext_enrl;
 
 -- 318 secs
-update medicaid.enrl set year=date_part('year', FST_DT) where year=0;
+update medicaid.enrl set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.enrl;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.enrl;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enrl;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.enrl
 group by 1, 2
 order by 1, 2;

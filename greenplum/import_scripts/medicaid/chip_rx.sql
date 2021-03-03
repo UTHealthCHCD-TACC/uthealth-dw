@@ -1,7 +1,7 @@
 --Medical
 drop table medicaid.chip_rx;
 create table medicaid.chip_rx (
-year smallint, file varchar, 
+year_fy smallint, file varchar, 
 PCN varchar, phmcy_nbr varchar, rx_nbr varchar, seq_nbr varchar, rx_dt date, auth_refill varchar, prescriber_nbr varchar, rx_fill_dt date,
 ndc varchar, claim_status varchar, rx_quantity numeric, rx_days_supply numeric, client_location varchar, refill_nbr numeric,
 amount_paid numeric, payment_dt date, unlimited_flag varchar, client_county varchar, phmcy_region varchar,
@@ -13,7 +13,7 @@ distributed by (pcn);
 
 drop external table ext_chip_rx;
 CREATE EXTERNAL TABLE ext_chip_rx (
-year smallint, filename varchar,
+year_fy smallint, filename varchar,
 PCN varchar, phmcy_nbr varchar, rx_nbr varchar, seq_nbr varchar, rx_dt date, auth_refill varchar, prescriber_nbr varchar, rx_fill_dt date,
 ndc varchar, claim_status varchar, rx_quantity numeric, rx_days_supply numeric, client_location varchar, refill_nbr numeric,
 amount_paid numeric, payment_dt date, unlimited_flag varchar, client_county varchar, phmcy_region varchar,
@@ -35,17 +35,17 @@ insert into medicaid.chip_rx
 select * from ext_chip_rx;
 
 -- 318 secs
-update medicaid.chip_rx set year=date_part('year', FST_DT) where year=0;
+update medicaid.chip_rx set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
 analyze medicaid.chip_rx;
  
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from medicaid.chip_rx;
+select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.chip_rx;
 
 
-select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
 from medicaid.chip_rx
 group by 1, 2
 order by 1, 2;

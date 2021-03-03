@@ -26,14 +26,15 @@ SELECT version();
 select * from pg_stat_operations where objname = 'claim_header';
 
 --Total DB Size
-select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
+select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT,
+sum(reltuples) as num_tuples
  FROM pg_tables;
-
+ 
 --Total Schema Size
  SELECT schemaname, 
- SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT 
+ pg_size_pretty(SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT) 
  FROM pg_tables 
- --WHERE schemaname in ('dw_qa', 'data_warehouse', 'dev', 'truven')
+ WHERE schemaname in ('truven')
  group by 1
 order by 2 desc;
 
@@ -50,15 +51,14 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('dev')
+   and n.nspname in ('truven')
    --and n.nspname = 'data_warehouse'
    --and relname like 'wc_claim%'
-   and u.usename = 'wcough'
+   --and u.usename = 'wcough'
    ORDER BY 3, 6 desc;
   
   select * 
   from gp_distribution_policy;
- 
 
 --Greenplum Distribution of a table
 SELECT get_ao_distribution('data_warehouse.claim_diag');
