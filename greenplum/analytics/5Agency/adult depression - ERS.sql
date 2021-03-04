@@ -69,7 +69,7 @@ union
 ---get denominators for spreadsheet--------------------------------------------------------------------------
 
 ---active vs cobra vs ret
-select a.FSCYR, stat, count(distinct a.id) as denom, count(c.id) as numer 
+select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(c.id) as numer 
 from TRSERS.dbo.ERS_AGG_YR a 
   left join WRK.dbo.wc_ers_depression_exclusions b
      on a.id = b.id 
@@ -88,7 +88,8 @@ order by a.FSCYR , stat
 
 
 ---ee vs dep / active vs retiree
-select a.FSCYR, stat, typ, count(distinct a.id) as denom, count(c.id) as numer
+select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ = 'DEP' then 'D' else 'X' end ), ' ','' ) as nv, 
+       count(distinct a.id) as denom, count(c.id) as numer
 from TRSERS.dbo.ERS_AGG_YR a 
   left join WRK.dbo.wc_ers_depression_exclusions b
      on a.id = b.id 
@@ -100,15 +101,14 @@ where b.id is null
   and a.FSCYR between 2016 and 2019 
   and a.age >= 18
   and a.enrlmnth = 12 
-  and stat in ('A','R')
+  --and stat in ('A','R')
 group by a.FSCYR , typ, stat 
 order by a.FSCYR, stat, typ desc--, stat 
 ;
 
 
-select cast(FSCYR as string) from TRSERS.dbo.ERS_AGG_YR a 
 
----age group active vs retiree vs cobra / male vs female 
+---age group active vs retiree vs cobra 
 select replace( str(a.FSCYR) + stat + 
        case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
@@ -144,6 +144,58 @@ order by  a.fscyr,  stat,    case when age between 0 and 19 then '1'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end
  ;
+
+
+
+---age group active vs retiree vs cobra / male vs female 
+select replace( str(a.FSCYR) + gen + stat + 
+       case when age between 0 and 19 then '1'
+            when age between 20 and 34 then '2' 
+       		when age between 35 and 44 then '3'
+       		when age between 45 and 54 then '4'
+       		when age between 55 and 64 then '5'
+       		when age between 65 and 74 then '6'
+       		when age >= 75 then '7' end, ' ','' ) as age_group,
+       count(distinct a.id) as denom, count(c.id) as numer
+from TRSERS.dbo.ERS_AGG_YR a 
+  left join WRK.dbo.wc_ers_depression_exclusions b
+     on a.id = b.id 
+     and a.FSCYR = b.fscyr 
+  left outer join WRK.dbo.wc_ers_depression_clms c 
+      on a.id = c.id 
+     and a.FSCYR = c.fscyr
+where b.id is null 
+  and a.FSCYR between 2016 and 2019 
+  and a.AGE >= 18
+  and enrlmnth = 12 
+group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
+            when age between 20 and 34 then '2' 
+       		when age between 35 and 44 then '3'
+       		when age between 45 and 54 then '4'
+       		when age between 55 and 64 then '5'
+       		when age between 65 and 74 then '6'
+       		when age >= 75 then '7' end
+order by  a.fscyr, a.gen, stat,    case when age between 0 and 19 then '1'
+            when age between 20 and 34 then '2' 
+       		when age between 35 and 44 then '3'
+       		when age between 45 and 54 then '4'
+       		when age between 55 and 64 then '5'
+       		when age between 65 and 74 then '6'
+       		when age >= 75 then '7' end
+ ;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 -----count of depressed (numerator) --------------------------------

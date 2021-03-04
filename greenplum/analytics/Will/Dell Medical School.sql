@@ -368,20 +368,22 @@ select * from dev.wc_dell_med_study_table
 drop table dev.wc_dell_med_exclusions;
 
 select distinct a.uth_member_id ,'diag' as exclusion_rsn
-into dev.wc_dell_med_exclusions
+into dev.wc_dell_med_exclusions_test
+--into dev.wc_dell_med_exclusions
 from data_warehouse.claim_diag a 
 where data_source = 'optd' 
    and year = 2018 
    and ( substring(a.diag_cd,1,3) between 'G10' and 'G13'
    or substring(a.diag_cd,1,3) between 'G20' and 'G22'
    or substring(a.diag_cd,1,3) between 'G35' and 'G37'
-   or a.diag_cd in ('G254', 'G255','G312', 'G318', 'G319','G931','G394','R470')
+   or substring(a.diag_cd,1,4) in ('G254', 'G255','G312', 'G318', 'G319','G931','G394','R470')
    or substring(a.diag_cd,1,3) in ('G32','G40', 'G41', 'R56')
    )
 ;
 
 --place of service exclusions
-insert into  dev.wc_dell_med_exclusions
+insert into  dev.wc_dell_med_exclusions_test
+---insert into  dev.wc_dell_med_exclusions
 select distinct uth_member_id, 'pos' as exclusion_rsn
 from optum_zip.confinement c 
   join data_warehouse.dim_uth_member_id b 
@@ -392,7 +394,9 @@ where c.year = 2018
      or pos in ('34','54') 
      );
 
-
+select count(distinct uth_member_id) from dev.wc_dell_med_exclusions; _test;
+    
+    
 select  b.uth_member_id , min(a.race ) as rc
 into dev.wc_dm_race_temp
 from optum_dod.mbr_enroll_r a 
@@ -427,31 +431,101 @@ select count(*),
             when age_derived between 41 and 50 then 3 
             when age_derived between 51 and 64 then 4 
             end as age_group
+            
+select count(distinct uth_member_id )
 from data_warehouse.member_enrollment_yearly a
 where data_source = 'optd'
-  and age_derived between 21 and 64 
-  and total_enrolled_months = 12 
+and age_derived between 21 and 64 
+ and total_enrolled_months = 12 
   and a.year = 2018
-  and a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
+  ;
+ 
+ 
+ select * from data_warehouse.dim_uth_member_id where member_id_src = '33003282155'
+ 
+ select * from data_warehouse.member_enrollment_yearly where uth_member_id = 109780019 and year = 2007
+ 
+ select count(uth_member_id) 
+ from data_warehouse.member_enrollment_monthly a 
+ where data_source = 'optd' 
+   and age_derived between 21 and 64 
+   and "year" = 2018
+   and month_year_id = 201812 
+   and consecutive_enrolled_months >= 12
+;
+
+select count(patid) 
+from ( 
+select count(*) as rw, patid  
+from optum_dod.mbr_enroll_r a 
+   join reference_tables.ref_month_year b 
+     on b.start_of_month between a.eligeff and a.eligend 
+    and b.year_int = 2018
+ where a.yrdob between 1954 and 1997
+ group by patid 
+    ) inr 
+    where rw >= 12
+;
+
+
+select * from data_warehouse.member_enrollment_yearly 
+where uth_member_id in ( 
+select uth_member_id 
+from data_warehouse.dim_uth_member_id 
+where data_source = 'optd'   
+and member_id_src::bigint not in ( select patid from optum_dod.mbr_enroll_r mer )
+) 
+
+select * from data_warehouse.member_enrollment_yearly a 
+   where uth_member_id = 101922079
+ 
+  --and a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
+  
+  select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 102813129;
+  
+  select count(distinct patid) from optum_dod.mbr_co_enroll mce where eligeff between '2018-01-02' and '2018-01-20';
+ 
+  select * from data_warehouse.dim_uth_member_id where data_source = 'optd' and member_id_src = '33003315584';
+ 
+  select * from optum_dod.mbr_co_enroll where patid = 33003315584
+  
+  
+  select * from dev.wc_dell_med_exclusions where uth_member_id = 102813129
+  
+  
 group by case when age_derived between 21 and 30 then 1
             when age_derived between 31 and 40 then 2 
             when age_derived between 41 and 50 then 3 
             when age_derived between 51 and 64 then 4 
             end
 
+ 
             
+drop table dev.wc_dellmed_compare;
             
-select count(*), count(distinct a.uth_member_id), b.rc 
+select b.member_id_src::bigint, a.age_derived , a.bus_cd , a.gender_cd , a.zip5 
+into dev.wc_dellmed_compare
 from data_warehouse.member_enrollment_yearly a
-  join dev.wc_dm_race_temp b 
-    on a.uth_member_id = b.uth_member_id 
-where data_source = 'optd'
+  join data_warehouse.dim_uth_member_id b  
+     on b.uth_member_id = a.uth_member_id 
+ -- join dev.wc_dm_race_temp b 
+    --on a.uth_member_id = b.uth_member_id 
+where a.data_source = 'optd'
   and age_derived between 21 and 64 
   and total_enrolled_months = 12 
   and a.year = 2018
   and a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
-group by rc;
+--group by rc;
 
+  
+  
+select distinct b.member_id_src::bigint
+into dev.wc_dellmed_excl_compare
+  from dev.wc_dell_med_exclusions a
+join data_warehouse.dim_uth_member_id b  
+     on b.uth_member_id = a.uth_member_id 
+ ;    
+     
 --overall table
 drop table dev.wc_dellmed_overall
 

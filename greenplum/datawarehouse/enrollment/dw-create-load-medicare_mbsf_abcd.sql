@@ -14,7 +14,7 @@ select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
          state_cnty_fips_cd_07,	state_cnty_fips_cd_08,	state_cnty_fips_cd_09,	state_cnty_fips_cd_10,	state_cnty_fips_cd_11,	state_cnty_fips_cd_12,
          age_at_end_ref_yr::int as age_at_end_ref_yr,	bene_birth_dt::date as bene_birth_dt,	valid_death_dt_sw,	bene_death_dt::date as bene_death_dt,
          sex_ident_cd,	bene_race_cd,	rti_race_cd	covstart,
-         entlmt_rsn_orig,	entlmt_rsn_curr	esrd_ind,	
+         entlmt_rsn_orig,	entlmt_rsn_curr,	esrd_ind,	
          mdcr_status_code_01,	mdcr_status_code_02,	mdcr_status_code_03,	mdcr_status_code_04,	mdcr_status_code_05,	mdcr_status_code_06,
          mdcr_status_code_07,	mdcr_status_code_08,	mdcr_status_code_09,	mdcr_status_code_10,	mdcr_status_code_11,	mdcr_status_code_12,
          bene_pta_trmntn_cd,	bene_ptb_trmntn_cd,
@@ -59,7 +59,7 @@ select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
          state_cnty_fips_cd_07,	state_cnty_fips_cd_08,	state_cnty_fips_cd_09,	state_cnty_fips_cd_10,	state_cnty_fips_cd_11,	state_cnty_fips_cd_12,
          age_at_end_ref_yr::int as age_at_end_ref_yr,	bene_birth_dt::date as bene_birth_dt,	valid_death_dt_sw,	bene_death_dt::date as bene_death_dt,
          sex_ident_cd,	bene_race_cd,	rti_race_cd	covstart,
-         entlmt_rsn_orig,	entlmt_rsn_curr	esrd_ind,	
+         entlmt_rsn_orig,	entlmt_rsn_curr,	esrd_ind,	
          mdcr_status_code_01,	mdcr_status_code_02,	mdcr_status_code_03,	mdcr_status_code_04,	mdcr_status_code_05,	mdcr_status_code_06,
          mdcr_status_code_07,	mdcr_status_code_08,	mdcr_status_code_09,	mdcr_status_code_10,	mdcr_status_code_11,	mdcr_status_code_12,
          bene_pta_trmntn_cd,	bene_ptb_trmntn_cd,
@@ -93,7 +93,7 @@ from medicare_texas.mbsf_abcd_summary  a
     and b.data_source = 'mcrn'
     
     
-alter table data_warehouse.medicare_mbsf_abcd_enrollment alter column data_source type char(4);
+
 
 ---validate
 vacuum analyze data_warehouse.medicare_mbsf_abcd_enrollment;
