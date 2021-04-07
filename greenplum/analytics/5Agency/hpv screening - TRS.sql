@@ -1,19 +1,15 @@
 ---hpv
-drop table if exists WRK.dbo.wc_ers_hpv_clms;
+drop table if exists WRK.dbo.wc_trs_hpv_clms;
 
-select distinct ID, FSCYR, FirstDateofService 
-into WRK.dbo.wc_ers_hpv_clms
+select distinct combo_id, FSCYR, srv_start_dt
+into WRK.dbo.wc_trs_hpv_clms
 from 
 (
-	select id, MED_FSCYR as fscyr, a.FirstDateofService 
-	from trsers.dbo.ers_uhcmedclm a 
-	where a.MED_FSCYR between 2016 and 2017 
-	  and a.HCPCSCPTCode in ('90649','90650','90651')
-union 
-	select id, FSCYR , a.FirstDateofService
-	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2019 
- and a.HCPCSCPTCode in ('90649','90650','90651')
+	select a.combo_id, a.MED_FSCYR as fscyr, a.srv_start_dt 
+	from trsers.dbo.TRS_CLM_FIN_NEW a
+	where a.MED_FSCYR between 2016 and 2019
+	  and a.prcdr_cd in ('90649','90650','90651')
+	  
 ) inr 
 ;
 
@@ -23,34 +19,28 @@ union
 
 ---get counts for spreadsheet--------------------------------------------------------------------------
 ---confirmed 1 record per mem per yr
-select count(*), count(distinct id), fscyr 
-from TRSERS.dbo.ERS_AGG_YR
+select count(*), count(distinct combo_id), fscyr 
+from TRSERS.dbo.TRS_AGG_YR_FIN 
 group by fscyr
 order by  fscyr;
 
-select id 
-into wrk.dbo.wc_ers_hpv_vacc
+select combo_id 
+into wrk.dbo.wc_trs_hpv_vacc
 from (
-select count(FirstDateofService) as cnt, id  
-from WRK.dbo.wc_ers_hpv_clms
-group by id
+select count(srv_start_dt) as cnt, combo_id  
+from WRK.dbo.wc_trs_hpv_clms
+group by combo_id
 ) inr 
 where cnt > 1
 ;
 
 
-select * 
-from TRSERS.dbo.ERS_AGG_YR
-where id = '0000039600002'
-order by fscyr 
-;
-
 
 ---active vs cobra vs ret
-select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(c.id) as numer 
-from TRSERS.dbo.ERS_AGG_YR a 
-  left outer join WRK.dbo.wc_ers_hpv_vacc c 
-      on a.id = c.id 
+select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.combo_id) as denom, count(c.combo_id) as numer 
+from TRSERS.dbo.TRS_AGG_YR_FIN a
+  left outer join WRK.dbo.wc_trs_hpv_vacc c 
+      on a.combo_id = c.combo_id 
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12
@@ -61,19 +51,19 @@ order by a.FSCYR , stat
 
 ---confirmed 1 record per mem per yr
 
-
+select * from TRSERS.dbo.TRS_AGG_YR_FIN
 
 ---ee vs dep / active vs retiree
-select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ = 'DEP' then 'D' else 'X' end ), ' ','' ) as nv, 
-       count(distinct a.id) as denom, count(c.id) as numer
-from TRSERS.dbo.ERS_AGG_YR a 
-  left outer join WRK.dbo.wc_ers_hpv_vacc c 
-      on a.id = c.id 
+select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 'D' then 'D' else 'X' end  ), ' ','' ) as nv, 
+       count(distinct a.combo_id) as denom, count(c.combo_id) as numer
+from TRSERS.dbo.TRS_AGG_YR_FIN a
+  left outer join WRK.dbo.wc_trs_hpv_vacc c 
+      on a.combo_id = c.combo_id 
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12 
-group by a.FSCYR , typ, stat 
-order by a.FSCYR, stat, typ desc--, stat 
+group by a.FSCYR , rel, stat
+order by a.FSCYR, stat, rel desc
 ;
 
 
@@ -87,10 +77,10 @@ select replace( str(a.FSCYR) + stat +
        		when age between 55 and 64 then '5'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
-       count(distinct a.id) as denom, count(c.id) as numer
-from TRSERS.dbo.ERS_AGG_YR a 
-  left outer join WRK.dbo.wc_ers_hpv_vacc c 
-      on a.id = c.id 
+       count(distinct a.combo_id) as denom, count(c.combo_id) as numer
+from TRSERS.dbo.TRS_AGG_YR_FIN a
+  left outer join WRK.dbo.wc_trs_hpv_vacc c 
+      on a.combo_id = c.combo_id 
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 
@@ -121,10 +111,10 @@ select replace( str(a.FSCYR) + gen + stat +
        		when age between 55 and 64 then '5'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
-       count(distinct a.id) as denom, count(c.id) as numer
-from TRSERS.dbo.ERS_AGG_YR a 
-  left outer join WRK.dbo.wc_ers_hpv_vacc c 
-      on a.id = c.id 
+       count(distinct a.combo_id) as denom, count(c.combo_id) as numer
+from TRSERS.dbo.TRS_AGG_YR_FIN a
+  left outer join WRK.dbo.wc_trs_hpv_vacc c 
+      on a.combo_id = c.combo_id 
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 

@@ -86,7 +86,7 @@ with condcte as
 update conditions.condition_desc a set ahfs_flag = '1' 
 from condcte b
 where a.condition_cd = b.condition_cd
- ;  
+;  
 
     
  --cpt_hcpcs
@@ -161,6 +161,9 @@ alter table conditions.temp_enrollment_yearly add column condition_map char(47) 
 select * from conditions.temp_enrollment_yearly
 
 
+---modular functions -- embedded logic to reduce redundancy 
+--1 return set of people who meet certain dx
+--2 secondary function considers additional criteria 
 
 
 
