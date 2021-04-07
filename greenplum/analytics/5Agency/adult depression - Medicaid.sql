@@ -250,6 +250,7 @@ from stage.dbo.wc_5a_depression_exclusions
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
                        from [stage].[dbo].[AGG_ENRL_MCD_YR] 
+                       where smib = 0
                        group by CLIENT_NBR, ENRL_FY ) 
 select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
@@ -298,6 +299,7 @@ order by a.ENRL_FY
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
                        from [stage].[dbo].[AGG_ENRL_MCD_YR] 
+                       where smib = 0
                        group by CLIENT_NBR, ENRL_FY ) 
 select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM  + str(a.AgeGrp) ), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
@@ -320,6 +322,7 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
                        from [stage].[dbo].[AGG_ENRL_MCD_YR] 
+                       where smib = 0
                        group by CLIENT_NBR, ENRL_FY ) 
 select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM + SEX + str(a.AgeGrp) ), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num

@@ -3,13 +3,23 @@ drop table stage.dbo.wc_HoT_depression_clms
 ----depression criteria	
 
 --verify cohort to later use in cte
+select count(client_nbr) as mems, ENRL_CY 
+from (
 select client_nbr, enrl_cy, 
        sum(ENRL_MONTHS) as em, 
        min(sex) as sex, 
-       min(age) as age      
+       min(age) as age, 
+       min (zip3) as zip3
 from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
-group by CLIENT_NBR, a.ENRL_CY 
+group by CLIENT_NBR, a.ENRL_CY ) inr 
+where inr.em >=12 
+  and age >= 18
+	--and zip3 between '750' and '799'
+group by ENRL_CY 
 ;
+
+
+
 
 
 ---inclusion from claims tables
@@ -261,10 +271,7 @@ from stage.dbo.wc_HoT_depression_exclusions
 ----get counts for spreadsheet
 ------------------------------------
 
-
-
-
-----overall by zip
+--total and total by gender
 with cte_mcd_enrl as (  select client_nbr, enrl_cy, 
 						       sum(ENRL_MONTHS) as em, 
 						       min(sex) as sex, 
@@ -272,13 +279,11 @@ with cte_mcd_enrl as (  select client_nbr, enrl_cy,
 						       min(zip3) as zip
 						from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
 						where zip3 between '750' and '799'
-						  and age between 18 and 64
+						  and age >= 18
 						group by CLIENT_NBR, a.ENRL_CY 
 					  )
-select ENRL_CY, zip,
-       --count(a.CLIENT_NBR) as uniq_den, 
-       --count(b.pcn) as num,
-       count(b.pcn)*1.00 / count(a.client_nbr) as prev 
+select ENRL_CY, --a.sex, 
+       ( count(b.pcn)*1.00 / count(a.client_nbr) )*100 as prev 
 from cte_mcd_enrl  a 
   left outer join stage.dbo.wc_HoT_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
@@ -287,7 +292,75 @@ from cte_mcd_enrl  a
      on c.pcn = a.CLIENT_NBR 
     and c.cal_year = a.ENRL_CY 
 where c.pcn is null 
-  and a.ENRL_CY = 2016
+  and a.ENRL_CY = 2017
+  and Em >=12
+group by a.ENRL_CY--, a.sex 
+;
+
+--total by age group 
+with cte_mcd_enrl as (  select client_nbr, enrl_cy, 
+						       sum(ENRL_MONTHS) as em, 
+						       min(sex) as sex, 
+						       min(age) as age, 
+						       min(zip3) as zip
+						from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
+						where zip3 between '750' and '799'
+						  and age >= 18
+						group by CLIENT_NBR, a.ENRL_CY 
+					  )
+select ENRL_CY, case  when cast(age as float) between 0  and 17.99 then 1 
+	         when cast(age as float) between 18 and 29.99 then 2
+	         when cast(age as float) between 30 and 39.99 then 3
+	         when cast(age as float) between 40 and 49.99 then 4
+	         when cast(age as float) between 50 and 59.99 then 5 
+	         when cast(age as float) between 60 and 64.99 then 6 
+	         else 7
+	   end as age_group,
+       ( count(b.pcn)*1.00 / count(a.client_nbr) )*100 as prev 
+from cte_mcd_enrl  a 
+  left outer join stage.dbo.wc_HoT_depression_cohort b 
+     on b.pcn = a.CLIENT_NBR 
+    and b.cal_year  = a.ENRL_CY 
+  left outer join stage.dbo.wc_HoT_depression_excl c 
+     on c.pcn = a.CLIENT_NBR 
+    and c.cal_year = a.ENRL_CY 
+where c.pcn is null 
+  and a.ENRL_CY = 2017
+  and Em >=12
+group by a.ENRL_CY ,case  when cast(age as float) between 0  and 17.99 then 1 
+	         when cast(age as float) between 18 and 29.99 then 2
+	         when cast(age as float) between 30 and 39.99 then 3
+	         when cast(age as float) between 40 and 49.99 then 4
+	         when cast(age as float) between 50 and 59.99 then 5 
+	         when cast(age as float) between 60 and 64.99 then 6 
+	         else 7
+	   end
+;
+
+
+
+----prev by zip
+with cte_mcd_enrl as (  select client_nbr, enrl_cy, 
+						       sum(ENRL_MONTHS) as em, 
+						       min(sex) as sex, 
+						       min(age) as age, 
+						       min(zip3) as zip
+						from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
+						where zip3 between '750' and '799'
+						  and age >= 18
+						group by CLIENT_NBR, a.ENRL_CY 
+					  )
+select ENRL_CY, zip,
+       ( count(b.pcn)*1.00 / count(a.client_nbr) )*100 as prev 
+from cte_mcd_enrl  a 
+  left outer join stage.dbo.wc_HoT_depression_cohort b 
+     on b.pcn = a.CLIENT_NBR 
+    and b.cal_year  = a.ENRL_CY 
+  left outer join stage.dbo.wc_HoT_depression_excl c 
+     on c.pcn = a.CLIENT_NBR 
+    and c.cal_year = a.ENRL_CY 
+where c.pcn is null 
+  and a.ENRL_CY = 2017
   and Em >=12
 group by a.ENRL_CY, zip 
 order by a.ENRL_CY, zip 
@@ -295,7 +368,7 @@ order by a.ENRL_CY, zip
 
 
 
-----overall by gender
+----prev by zip and gender
 with cte_mcd_enrl as (  select client_nbr, enrl_cy, 
 						       sum(ENRL_MONTHS) as em, 
 						       min(sex) as sex, 
@@ -303,13 +376,11 @@ with cte_mcd_enrl as (  select client_nbr, enrl_cy,
 						       min(zip3) as zip
 						from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
 						where zip3 between '750' and '799'
-						  and age between 18 and 64
+						  and age >= 18
 						group by CLIENT_NBR, a.ENRL_CY 
 					  )
-select ENRL_CY, sex + zip,
-       --count(a.CLIENT_NBR) as uniq_den, 
-       --count(b.pcn) as num,
-       count(b.pcn)*1.00 / count(a.client_nbr) as prev 
+select ENRL_CY, zip,
+       (count(b.pcn)*1.00 / count(a.client_nbr)  )*100 as prev 
 from cte_mcd_enrl  a 
   left outer join stage.dbo.wc_HoT_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
@@ -318,13 +389,45 @@ from cte_mcd_enrl  a
      on c.pcn = a.CLIENT_NBR 
     and c.cal_year = a.ENRL_CY 
 where c.pcn is null 
-  and a.ENRL_CY = 2016
+  and a.ENRL_CY = 2017
   and Em >=12
-  and sex in ('M','F')
-group by a.ENRL_CY, zip, sex  
-order by a.ENRL_CY, zip, sex 
+  and sex = 'M'
+ -- and sex = 'F'
+group by a.ENRL_CY, zip 
+order by a.ENRL_CY, zip 
 ;
 
 
-
-
+----prev by zip and age grp
+with cte_mcd_enrl as (  select client_nbr, enrl_cy, 
+						       sum(ENRL_MONTHS) as em, 
+						       min(sex) as sex, 
+						       min(age) as age, 
+						       min(zip3) as zip
+						from cnd.dbo.AGG_ENRL_Medicaid_CY1219 a
+						where zip3 between '750' and '799'
+						  and age >= 18
+						group by CLIENT_NBR, a.ENRL_CY 
+					  )
+select ENRL_CY, zip,
+       (count(b.pcn)*1.00 / count(a.client_nbr) )*100 as prev 
+from cte_mcd_enrl  a 
+  left outer join stage.dbo.wc_HoT_depression_cohort b 
+     on b.pcn = a.CLIENT_NBR 
+    and b.cal_year  = a.ENRL_CY 
+  left outer join stage.dbo.wc_HoT_depression_excl c 
+     on c.pcn = a.CLIENT_NBR 
+    and c.cal_year = a.ENRL_CY 
+where c.pcn is null 
+  and a.ENRL_CY = 2017
+  and Em >=12
+  --and age between 0 and 17
+-- and age between 18 and 29
+ --and age between 30 and 39
+ -- and age between 40 and 49
+-- and age between 50 and 59
+-- and age between 60 and 64
+	 and age >= 65
+group by a.ENRL_CY, zip 
+order by a.ENRL_CY, zip 
+;

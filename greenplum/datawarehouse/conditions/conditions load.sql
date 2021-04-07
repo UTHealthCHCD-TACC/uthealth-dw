@@ -1,7 +1,11 @@
 ---logic for condition 
 
 
-select * from  conditions.condition_desc b 
+select * 
+from conditions.condition_desc 
+order by condition_cd  
+;
+
 
 drop table if exists conditions.diagnosis_work_table;
 
@@ -64,8 +68,15 @@ from data_warehouse.member_enrollment_yearly enrl
 
 
 
+select count(*), count(distinct uth_member_id), year 
+from conditions.diagnosis_work_table 
+order by uth_member_id , year 
 
-select distinct planty from conditions.member_conditions mc where data_source = 'mcrt' and condition_cd = 'COPD';
+
+select * 
+from conditions.member_conditions where condition_cd = 'CA-L'
+order by uth_member_id , year 
+;
 
 
 select count(*), year, plan_type 

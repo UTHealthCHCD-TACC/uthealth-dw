@@ -45,7 +45,7 @@ vacuum analyze data_warehouse.member_enrollment_yearly;
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
-
+delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz');
 
 
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
@@ -54,7 +54,7 @@ select distinct on( data_source, year, uth_member_id )
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage
 from data_warehouse.member_enrollment_monthly
-where data_source in ('optz','mcrt')
+where data_source in ('optz','optd')
 order by data_source, year, uth_member_id, month_year_id 
 ;
 
@@ -66,7 +66,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source in ('optz','mcrt')
+where data_source in ('optz','optd')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -181,7 +181,7 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 drop table dev.temp_member_enrollment_month;
 
 --validate
-select * from data_warehouse.member_enrollment_yearly where total_enrolled_months = 12 and data_source = 'mcrt';
+select * from data_warehouse.member_enrollment_yearly where total_enrolled_months = 12 and data_source = 'optz';
 
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
@@ -242,6 +242,7 @@ select count(*), min(month_year_id) as my, uth_member_id, zip5, year
  into dev.wc_zip5_yearly
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, zip5, year 
+;
 
 create table dev.wc_zip5_yearly_final 
 with (appendonly=true, orientation=column)
@@ -268,6 +269,7 @@ select count(*), min(month_year_id) as my, uth_member_id, plan_type, year
  into dev.wc_plan_type_yearly
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, plan_type, year 
+;
 
 create table dev.wc_plan_type_yearly_final
 with (appendonly=true, orientation=column)
@@ -294,6 +296,7 @@ select count(*), min(month_year_id) as my, uth_member_id, employee_status, year
  into dev.wc_employee_status_yearly
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, employee_status, year 
+;
 
 create table dev.wc_employee_status_yearly_final
 with (appendonly=true, orientation=column)
@@ -314,8 +317,6 @@ drop table dev.wc_employee_status_yearly;
 
 drop table dev.wc_employee_status_yearly_final;
 
-
----TO DO: when bus cd changes in yearly create a new record for that member
 
 
 ----cleanup

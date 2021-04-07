@@ -114,7 +114,7 @@ vacuum analyze data_warehouse.dim_uth_claim_id
 --Optum dod 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_dod.medical a
+from optum_dod_refresh.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text 
@@ -130,7 +130,7 @@ group by 1, 2, 3, 4;
 --Optum zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_zip.medical a
+from optum_zip_refresh.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text 
@@ -378,6 +378,54 @@ from medicare_national.snf_base_claims_k a
 where c.uth_claim_id is null 
 group by 1, 2, 3, 4;
 
+
+------------medicaid
+--claims
+with cte_mdcd_clm as ( 
+select distinct a.icn, b.pcn
+from medicaid.clm_header a 
+   join medicaid.clm_proc b  
+    on a.icn = b.icn
+) 
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
+select 'mdcd', c.icn, c.pcn, b.uth_member_id, extract(year from a.hdr_frm_dos::date) as yr
+from medicaid.clm_header a
+  join cte_mdcd_clm c 
+    on c.icn = a.icn 
+  join data_warehouse.dim_uth_member_id b  
+    on b.member_id_src = c.pcn  
+  left outer join data_warehouse.dim_uth_claim_id d 
+    on d.member_id_src = c.pcn 
+   and d.claim_id_src = c.icn
+where d.uth_member_id is null 
+; 
+
+
+---medicaid
+--encounter
+with cte_mdcd_enc as ( 
+select distinct a.derv_enc, b.mem_id 
+from medicaid.enc_header a 
+   join medicaid.enc_proc b  
+     on a.derv_enc = b.derv_enc 
+)
+--insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
+select 'mdcd', a.derv_enc, b.mem_id--, c.uth_member_id, extract(year from a.frm_dos::date) as yr
+from medicaid.enc_header a 
+   join cte_mdcd_enc b 
+     on b.derv_enc = a.derv_enc   
+   join data_warehouse.dim_uth_member_id c 
+     on c.member_id_src = b.mem_id 
+     
+     
+   left outer join data_warehouse.dim_uth_claim_id d 
+     on d.member_id_src = b.mem_id
+    and d.claim_id_src = b.derv_enc 
+where d.uth_claim_id is null 
+;
+
+
+select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'mdcd';
 
 
 

@@ -10,31 +10,6 @@ create table data_warehouse.dim_uth_member_id (
 ) distributed by (uth_member_id);
 
 ---
-select * from medicare_national.mbsf_abcd_summary mas where bene_id = 'ggggggjyygjgnBu'
-
-select * from optum_dod.mbr_co_enroll where patid = 33008549751
-
-select *--count(*), data_source 
-from data_warehouse.dim_uth_member_id 
-where data_source = 'mcrn' and uth_member_id not in (select uth_member_id from data_warehouse.member_enrollment_yearly)
-
-group by data_source 
-;
-
-select count(*), data_source 
-from data_warehouse.dim_uth_member_id 
-group by data_source;
-
-
-select count(distinct uth_member_id), data_source 
-from data_warehouse.member_enrollment_yearly 
-group by data_source 
-
-
-select count(distinct uth_member_id), data_source 
-from data_warehouse.member_enrollment_monthly 
-group by data_source 
-;
 
 alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 100000000; 
                                                                            
@@ -42,18 +17,21 @@ alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq cache 200;
 
 vacuum analyze data_warehouse.dim_uth_member_id;
 
+-----**********************************************************************************************
+------ load dim_uth_member_id------------------------------------------------
 
------- load dim_uth_member_id
 
-vacuum analyze optum_dod.mbr_enroll;
 
-select count(distinct patid) from optum_dod.mbr_enroll
+---optd
+vacuum analyze optum_dod_refresh.mbr_enroll_r;
 
---Optum DoD 
+select count(distinct patid) from optum_dod.mbr_enroll_r
+
+--Optum DoD load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.mbr_enroll
+	from optum_dod.mbr_enroll_r 
 	 left outer join data_warehouse.dim_uth_member_id b 
 	              on b.data_source = 'optd'
 	             and b.member_id_src = patid::text
@@ -63,16 +41,19 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+select count(*), count(distinct uth_member_id ), count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'optd';
 
-vacuum analyze optum_dod.mbr_enroll;
 
-select count(distinct patid) from optum_dod.mbr_enroll
+---optz
+vacuum analyze optum_zip_refresh.mbr_enroll;
 
----Optum Zip 
+select count(distinct patid) from optum_zip_refresh.mbr_enroll
+
+---Optum Zip load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_dod.mbr_enroll
+	from optum_zip.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
              and b.member_id_src = patid::text
@@ -83,7 +64,11 @@ from cte_distinct_member
 ;
 
 
-select * from data_warehouse.dim_uth_member_id where member_id_src is null;
+select count(*), count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'optz';
+
+
+-----
+
 
 vacuum analyze truven.ccaet;
 
@@ -235,7 +220,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct bene_id as v_member_id
-    from medicare_texas.pde_file
+    from medicare_national.pde_file
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mcrn'
      and member_id_src = bene_id::text 
@@ -294,7 +279,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct patid as v_member_id
-    from optum_dod.rx
+    from optum_zip.rx
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'optz'
      and member_id_src = patid::text 
@@ -305,7 +290,7 @@ from cte_distinct_member
 ;
 
 
-----Validate
+----Finalize---------------------------------------------------------------------
 vacuum analyze data_warehouse.dim_uth_member_id;
 
 select count(*), data_source 
