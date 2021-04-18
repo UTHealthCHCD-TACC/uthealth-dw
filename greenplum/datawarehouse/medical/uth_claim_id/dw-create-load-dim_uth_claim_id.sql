@@ -114,7 +114,7 @@ vacuum analyze data_warehouse.dim_uth_claim_id
 --Optum dod 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_dod_refresh.medical a
+from optum_dod.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text 
@@ -130,7 +130,7 @@ group by 1, 2, 3, 4;
 --Optum zip 20m
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_zip_refresh.medical a
+from optum_zip.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text 

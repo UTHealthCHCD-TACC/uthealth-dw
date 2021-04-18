@@ -9,7 +9,7 @@ select a.enrolid, extract(year from a.svcdate) as yr,
 into dev.wc_mdand_vacc_claims
 from truven.ccaes a 
 where a.proc1 in ('90649','90650','90651','90733','90734','90714','90715')
-  and extract(year from a.svcdate) between 2014 and 2018
+  and extract(year from a.svcdate) <= 2018
 ;
 
 ---get vacc for outpatient
@@ -20,7 +20,7 @@ select a.enrolid, extract(year from a.svcdate) as yr,
 			    when PROC1 in ('90714','90715')  then 'TDAP' end as vacc_type
 from truven.ccaeo a
 where a.proc1 in ('90649','90650','90651','90733','90734','90714','90715')
- and extract(year from a.svcdate) between 2014 and 2018
+ and extract(year from a.svcdate) <= 2018
 ;
 
 
@@ -49,24 +49,27 @@ where a.data_source = 'truv'
 ;
 
 ---zip3
+
+drop table dev.wc_mdand_extract_gender ;
+
 select a.year, zip3, 
 		count(a.member_id_src), count(b.enrolid) as hpv_count, count(c.enrolid) as men_count, count(d.enrolid) as tdap_count,
        count(b.enrolid)::float / count(a.member_id_src) as hpv_prev,
        count(c.enrolid)::float / count(a.member_id_src) as men_prev,
        count(d.enrolid)::float / count(a.member_id_src) as tdap_prev
-       into dev.wc_mdand_extract_zip
+       into dev.wc_mdand_extract_truv_zip
 from dev.wc_mdand_cohort a 
   left outer join dev.wc_mdand_vacc b 
      on a.member_id_src = b.enrolid::text 
-    and a.year = b.yr 
+    and a.year >= b.yr 
     and b.vacc_type = 'HPV'
   left outer join dev.wc_mdand_vacc c
      on a.member_id_src = c.enrolid::text 
-    and a.year = c.yr 
+    and a.year >= c.yr 
     and c.vacc_type = 'MEN'  
   left outer join dev.wc_mdand_vacc d
      on a.member_id_src = d.enrolid::text 
-    and a.year = d.yr 
+    and a.year >= d.yr 
     and d.vacc_type = 'TDAP'     
 group by year ,  zip3
 order by year , zip3
@@ -79,23 +82,43 @@ select a.year, zip3, gender_cd,
        count(b.enrolid)::float / count(a.member_id_src) as hpv_prev,
        count(c.enrolid)::float / count(a.member_id_src) as men_prev,
        count(d.enrolid)::float / count(a.member_id_src) as tdap_prev
-       into dev.wc_mdand_extract_gender
+       into dev.wc_mdand_extract_truv_gender
 from dev.wc_mdand_cohort a 
   left outer join dev.wc_mdand_vacc b 
      on a.member_id_src = b.enrolid::text 
-    and a.year = b.yr 
+    and a.year >= b.yr 
     and b.vacc_type = 'HPV'
   left outer join dev.wc_mdand_vacc c
      on a.member_id_src = c.enrolid::text 
-    and a.year = c.yr 
+    and a.year >= c.yr 
     and c.vacc_type = 'MEN'  
   left outer join dev.wc_mdand_vacc d
      on a.member_id_src = d.enrolid::text 
-    and a.year = d.yr 
+    and a.year >= d.yr 
     and d.vacc_type = 'TDAP'     
 group by year , gender_cd, zip3
 order by year , zip3, gender_cd
 ;
 
-select * from data_warehouse.member_enrollment_yearly where data_source = 'truv';
-
+--overall
+select a.year, gender_cd, 
+		count(a.member_id_src), count(b.enrolid) as hpv_count, count(c.enrolid) as men_count, count(d.enrolid) as tdap_count,
+       count(b.enrolid)::float / count(a.member_id_src) as hpv_prev,
+       count(c.enrolid)::float / count(a.member_id_src) as men_prev,
+       count(d.enrolid)::float / count(a.member_id_src) as tdap_prev
+from dev.wc_mdand_cohort a 
+  left outer join dev.wc_mdand_vacc b 
+     on a.member_id_src = b.enrolid::text 
+    and a.year >= b.yr 
+    and b.vacc_type = 'HPV'
+  left outer join dev.wc_mdand_vacc c
+     on a.member_id_src = c.enrolid::text 
+    and a.year >= c.yr 
+    and c.vacc_type = 'MEN'  
+  left outer join dev.wc_mdand_vacc d
+     on a.member_id_src = d.enrolid::text 
+    and a.year >= d.yr 
+    and d.vacc_type = 'TDAP'     
+group by year , gender_cd
+order by year,  gender_cd
+;

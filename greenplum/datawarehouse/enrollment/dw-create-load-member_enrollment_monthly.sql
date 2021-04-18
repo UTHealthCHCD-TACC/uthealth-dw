@@ -21,7 +21,7 @@ create table data_warehouse.member_enrollment_monthly (
 	age_derived int,
 	dob_derived date, 
 	death_date date,
-	plan_type char(4),
+	plan_type text,
 	bus_cd char(4),
 	employee_status text, 
 	claim_created_flag bool default false,
@@ -34,8 +34,6 @@ WITH (appendonly=true, orientation=column)
 distributed by(uth_member_id);
 
 
-alter table data_warehouse.member_enrollment_monthly add column race_cd char(2);
-
 
 alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache 200;
 
@@ -45,7 +43,7 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
     ---------------- data loads --------------------
     
-delete from data_warehouse.member_enrollment_monthly where data_source in ('optd');
+delete from data_warehouse.member_enrollment_monthly where data_source in ('mcrn','mcrt');
 
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
@@ -53,7 +51,7 @@ insert into data_warehouse.member_enrollment_monthly (
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, race_cd        
-	)	
+	)		
 select 'optd', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, state, null, null, 
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, (select max(death_ym) from optum_dod.mbrwdeath dod where dod.patid = m.patid ) as death_dt,  
@@ -76,7 +74,6 @@ from optum_dod.mbr_enroll_r m
 ;
 ---------------------------------------------------------------------------------------------------
 
-select distinct race from optum_dod.mbr_enroll_r;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
@@ -298,7 +295,7 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage  ,data_year      
+	plan_type, bus_cd, rx_coverage  ,data_year , race_cd    
 	)	
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
@@ -369,25 +366,51 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage  ,data_year      
-	)	
-	
-	
-select 'mdcd', substring(elig_date,1,4)::int2 as year, b.uth_member_id, 
-       a.sex, z.state, zip, substring(zip,1,3) as zip3, 
-       a.age, a.dob, null, 
-       a.base_plan 
+	plan_type, bus_cd, rx_coverage  ,data_year, race_cd   
+	)			
+select 'mdcd', substring(elig_date,1,4)::int2 as year, elig_date::int as my, b.uth_member_id, 
+       a.sex, z.state, a.zip, substring(a.zip,1,3) as zip3, 
+       floor(a.age::float), a.dob::date, null, 
+       c.mco_program_nm, a.me_code, a.smib::int2, year_fy , r.race_cd
 from medicaid.enrl  a 
   join data_warehouse.dim_uth_member_id b  
      on b.data_source = 'mdcd'
     and b.member_id_src = a.client_nbr 
-  join reference_tables.ref_zip_code z 
+  left outer join reference_tables.ref_zip_code z 
      on a.zip = z.zip 
+  left outer join reference_tables.medicaid_lu_contract c 
+     on c.plan_cd = a.contract_id 
+  left outer join reference_tables.ref_race r 
+     on r.race_cd_src = a.race 
+    and r.data_source = 'mdcd'
 ;
 
-select distinct race from medicaid.enrl;
+---medicaid chip
+insert into data_warehouse.member_enrollment_monthly (
+	data_source, year, month_year_id, uth_member_id,
+	gender_cd, state, zip5, zip3,
+	age_derived, dob_derived, death_date,
+	plan_type, bus_cd, rx_coverage  ,fiscal_year, race_cd   
+	)	
+select 'mdcd', substring(elig_month,1,4)::int2 as year, elig_month::int as my, b.uth_member_id, 
+       a.gender_cd , z.state,  substring(a.mailing_zip,1,5) , substring(a.mailing_zip,1,3) as zip3, 
+       floor(a.age::float), to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob, null, 
+       c.mco_program_nm, null, null, year_fy , r.race_cd
+from medicaid.chip_uth  a 
+  join data_warehouse.dim_uth_member_id b  
+     on b.data_source = 'mdcd'
+    and b.member_id_src = a.client_nbr 
+  left outer join reference_tables.ref_zip_code z 
+     on  substring(a.mailing_zip,1,5) = z.zip 
+  left outer join reference_tables.medicaid_lu_contract c 
+     on c.plan_cd = a.plan_cd 
+  left outer join reference_tables.ref_race r 
+     on r.race_cd_src = a.ethnicity 
+    and r.data_source = 'mdcd'
+;
 
-select distinct a.contract_id, a.from medicaid.enrl a;
+
+
 
 ---------------------------/End---------------------------------------
 

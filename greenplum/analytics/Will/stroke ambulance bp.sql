@@ -64,10 +64,21 @@ from medicare_national.inpatient_base_claims_k a
   join dev.wc_stroke_enrolled_mems b  
      on a.bene_id = b.member_id_src 
 where a.prncpal_dgns_cd in ( select dx from dev.wc_stroke_diags)
+  and a."year"::int2 >= 2015
    ;
    
+insert into  dev.wc_stroke_events 
+  select distinct a.bene_id, a.clm_from_dt::date 
+  from medicare_national.outpatient_base_claims_k a
+  join dev.wc_stroke_enrolled_mems b  
+     on a.bene_id = b.member_id_src 
+where a.prncpal_dgns_cd in ( select dx from dev.wc_stroke_diags)
+  and a."year"::int2 >= 2015
+   ;
   
-  select *--count(*), count(distinct bene_id) 
+  
+  select distinct bene_id, clm_from_dt 
+  into dev.wc_stroke_events_extract--count(*), count(distinct bene_id) 
   from dev.wc_stroke_events
   order by bene_id, clm_from_dt;
   

@@ -92,7 +92,7 @@ where  ( d.PRIM_DX_CD in (select diag_cd from STAGE.dbo.wc_5a_obese_dx)
 select distinct MCO_PROGRAM_NM from MEDICAID.dbo.LU_Contract
 
 
-
+select distinct MCO_PROGRAM_NM from [stage].[dbo].[AGG_ENRL_MCD_YR] 
 
 
 
