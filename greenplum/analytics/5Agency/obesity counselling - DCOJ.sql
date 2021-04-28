@@ -105,10 +105,93 @@ where a.CPT_CODE in ('43770','43644','43645','43842','43843','43845','43846','43
 ;
 
 
+--***********************************************************************************************
+-----------diag for numerator
+--***********************************************************************************************
+
+--free world claims diag 
+insert into WRK.dbo.wc_tdcj_weight_counsel_temp
+select state_id, fscyr  
+from [wrk].[dbo].[FW_Claim_temp] a
+where REPLACE(dx,'.','') in ('Z713','Z7189','V653')
+  and a.FSCYR between 2016 and 2019
+;
+
+
+--ttumc diag
+insert into WRK.dbo.wc_tdcj_weight_counsel_temp
+select state_id, fscyr , a.
+from [tdcj_new].[dbo].[TTUMC_CLM_SID] a
+where REPLACE(dx,'.','') in ('Z713','Z7189','V653')
+  and a.FSCYR between 2016 and 2019
+
+----perl diag - check diag_description for wildcard
+insert into WRK.dbo.wc_tdcj_weight_counsel_temp
+select a.sid_no , fscyr 
+from [tdcj_new].[dbo].[perl_diag_sid] a
+where REPLACE(dx,'.','') in ('Z713','Z7189','V653')
+  and a.FSCYR between 2016 and 2019
+  ;
+
+ 
+ select distinct dx, DIAG_DESCRIPTION from [tdcj_new].[dbo].[perl_diag_sid] where DIAG_DESCRIPTION like '%OBESE%'
+ 
+
+--epic inst diag
+insert into WRK.dbo.wc_tdcj_weight_counsel_temp
+select state_id, FSCYR 
+from [tdcj_new].[dbo].[INST_EPIC_SID] a 
+where REPLACE(val,'.','')in ('Z713','Z7189','V653')
+  and STATE_ID is not null 
+  and a.FSCYR between 2016 and 2019
+  ;
+ 
+--epic prof doesn't have diag
 
 
 
+--***********************************************************************
+------icd proc and drg ---------------------------------------------------
+--***********************************************************************
 
+--free world doesn't have icd proc or drg, "proc code" is cpt/hpcps
+select * 
+from [wrk].[dbo].[FW_Claim_temp]
+where [PROC CODE] in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
+                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
+
+---epic inst all null
+select * 
+from [tdcj_new].[dbo].[INST_EPIC_SID] a
+where APR_DRG in ('MS619','MS620','MS621','TAPR619','TAPR620','TAPR621')
+;
+
+--epic prof doesn't have icd proc or drg
+select * 
+from [tdcj_new].[dbo].[PROF_EPIC_SID] a 
+;
+
+
+--all null procs in ttumc
+select distinct Proc_Cd_002
+from [tdcj_new].[dbo].[TTUMC_CLM_SID] a 
+
+where ( a.Proc_Cd_001 in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
+                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
+       or a.Proc_Cd_002 in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
+                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
+       or a.Drg_Cd in ('MS619','MS620','MS621','TAPR619','TAPR620','TAPR621')
+      )
+
+
+---perl doesn't have icd proc or drg
+select * 
+from TDCJ_NEW.dbo.perl_diag_sid pds --perl_encounter_sid
+
+---validate
+select count(*), count(distinct sid_no), FSCYR 
+from WRK.dbo.wc_tdcj_CE 
+group by fscyr;
 
 -----counts for spreadsheet
 ---******************************************

@@ -16,42 +16,41 @@ from REF.dbo.[Value_Sets_Codes_2020] where [Value Set Name] like '%Pregnancy Dia
 select * from stage.dbo.wc_preg_covid 
 
 
-drop table STAGE.dbo.wc_cov_pregnant_ptids
+select * from  dev.wc_covid_preg_codeset;
 
-select distinct ptid  
-into stage.dbo.wc_preg_covid_ptid
-from COVID.dbo.cov_20210128_diag cd 
-where DIAGNOSIS_CD in ( select cd from stage.dbo.wc_preg_covid)
+
+drop table g823066.dbo.wc_preg_pregnant_mems;
 
 ---pregnant women
 select  ptid  , min(diag_date) as preg_dt
-into STAGE.dbo.wc_cov_pregnant_ptids
-from COVID.dbo.cov_20210128_diag  
-where DIAGNOSIS_CD in ( select cd from stage.dbo.wc_preg_covid )
+into g823066.wc_preg_pregnant_mems
+from opt_20210401.diag d 
+where DIAGNOSIS_CD in ( select cd from g823066.wc_preg_codes )
  and cast(diag_date as date) >= '2020-01-01'
  group by ptid
 ;
 
 
 ---covid positive
-drop table STAGE.dbo.wc_cov_all_covid_positives;
+drop table g823066.wc_preg_covid_positive_mems;
 
 --select distinct PTID, min(RESULT_DATE) as covid_first_date
 
 
 select * 
-into stage.dbo.wc_preg_covid_positives
+into g823066.wc_preg_covid_positive_mems
 from (
 select distinct ptid, diag_date as covid_date 
-from COVID.dbo.cov_20210128_diag cd 
+from opt_20210401.diag cd 
 where diagnosis_cd in ('B9729', 'J1289', 'J208', 'J22', 'J40', 'J80', 'J988')
   and cast(diag_date as date) >= '02-20-2020'
 union 
 select distinct ptid, diag_date as covid_date 
-from COVID.dbo.cov_20210128_diag cd 
+from opt_20210401.diag cd 
 where DIAGNOSIS_CD in ('U071', 'U072', 'U073')
   and cast(diag_date as date) >= '02-01-2020' 
 ) inr 
+
 
 select ptid, min(result_date) as covid_first_date 
 into STAGE.dbo.wc_cov_all_covid_positives

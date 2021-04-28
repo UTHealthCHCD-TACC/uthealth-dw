@@ -355,6 +355,8 @@ from dev.truv_mdcrd a
     and c.year_int = extract(year from a.svcdate)
 ;
 
+select * from truven.mdcrd m 
+
 drop table dev.truv_mdcrd;
  
 

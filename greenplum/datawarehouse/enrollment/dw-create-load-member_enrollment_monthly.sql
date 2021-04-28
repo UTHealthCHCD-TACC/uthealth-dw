@@ -50,12 +50,12 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, race_cd        
+	plan_type, bus_cd, race_cd, rx_coverage         
 	)		
 select 'optd', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, state, null, null, 
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, (select max(death_ym) from optum_dod.mbrwdeath dod where dod.patid = m.patid ) as death_dt,  
-       d.plan_type, bus, r.race_cd 
+       d.plan_type, bus, r.race_cd , 1 as rx
 from optum_dod.mbr_enroll_r m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
@@ -83,13 +83,13 @@ insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd         
+	plan_type, bus_cd, rx_coverage      
 	)
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, null, 
-       d.plan_type, bus
+       d.plan_type, bus, 1 as rx
 from optum_zip.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
@@ -361,17 +361,20 @@ from medicare_national.mbsf_abcd_summary m
 
 
 
+delete from data_warehouse.member_enrollment_monthly where data_source = 'mdcd';
+
+
 ---medicaid 
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage  ,data_year, race_cd   
-	)			
+	plan_type, bus_cd, rx_coverage, fiscal_year, race_cd   
+	)		
 select 'mdcd', substring(elig_date,1,4)::int2 as year, elig_date::int as my, b.uth_member_id, 
        a.sex, z.state, a.zip, substring(a.zip,1,3) as zip3, 
-       floor(a.age::float), a.dob::date, null, 
-       c.mco_program_nm, a.me_code, a.smib::int2, year_fy , r.race_cd
+       floor(a.age::float), a.dob::date, null as dth, 
+       null as plan_type, 'MCD' as bus, 1 as rx, year_fy , r.race_cd
 from medicaid.enrl  a 
   join data_warehouse.dim_uth_member_id b  
      on b.data_source = 'mdcd'
@@ -394,8 +397,8 @@ insert into data_warehouse.member_enrollment_monthly (
 	)	
 select 'mdcd', substring(elig_month,1,4)::int2 as year, elig_month::int as my, b.uth_member_id, 
        a.gender_cd , z.state,  substring(a.mailing_zip,1,5) , substring(a.mailing_zip,1,3) as zip3, 
-       floor(a.age::float), to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob, null, 
-       c.mco_program_nm, null, null, year_fy , r.race_cd
+       floor(a.age::float), to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob, null as dth, 
+       null as plan_type, 'MCD' as bus, 1 as rx, year_fy , r.race_cd
 from medicaid.chip_uth  a 
   join data_warehouse.dim_uth_member_id b  
      on b.data_source = 'mdcd'
