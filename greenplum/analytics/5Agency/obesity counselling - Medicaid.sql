@@ -1,9 +1,9 @@
 
 ----find denominator: obese population using dx codes
 
-create table STAGE.dbo.wc_5a_obese_dx (diag_cd varchar(20));
+create table dev.wc_5a_obese_dx (diag_cd varchar(20));
 
-insert into STAGE.dbo.wc_5a_obese_dx values 
+insert into dev.wc_5a_obese_dx values 
 ('E660'),('E661'),('E662'),('E668'),('E669'),('27800'),('27801'),('V853'),
 ('V8530'),('V8531'),('V8532'),('V8533'),('V8534'),('V8535'),('V8536'),('V8537'),('V8538'),
 ('V8539'),('V854'),('Z6830'),
@@ -11,88 +11,122 @@ insert into STAGE.dbo.wc_5a_obese_dx values
 ('Z6838'),('Z6839'),('Z6841'),('Z6842'),('Z6843'),('Z6844'),('Z6845');
 
 
-drop table if exists stage.dbo.wc_5a_obese_cohort;
-
-select distinct fscyr from stage.dbo.wc_5a_obese_cohort;
-
----diag from claims run once for each year 2016-2019
-insert into stage.dbo.wc_5a_obese_cohort
-select icn, fscyr 
---into stage.dbo.wc_5a_obese_cohort
-from (
-select d.icn, '2019' as fscyr
-from [MEDICAID].[dbo].[CLM_DX_19] d
-  --join [MEDICAID].[dbo].[CLM_PROC_16] p
- --    on d.ICN = p.ICN 
-where  ( d.PRIM_DX_CD in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.ADM_DX_CD in (select diag_cd from STAGE.dbo.wc_5a_obese_dx)  
-       or d.DX_CD_1 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_2 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_3 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_4 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_5 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_6 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_7 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_8 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_9 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_10 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_11 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_12 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_13 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_14 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_15 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_16 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_17 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_18 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_19 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_20 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_21 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_22 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_23 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_24 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_25 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       )     
-) inr; 
+drop table if exists dev.wc_5a_obese_temp;
 
 
----diag from encoutner run once for each year 2016-2019
-insert into stage.dbo.wc_5a_obese_cohort
-select d.DERV_ENC, '2016' as fscyr  --, 2017, 2016
-from [MEDICAID].[dbo].[ENC_DX_16] d
-where  ( d.PRIM_DX_CD in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.ADM_DX_CD in (select diag_cd from STAGE.dbo.wc_5a_obese_dx)  
-       or d.DX_CD_1 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_2 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_3 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_4 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_5 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_6 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_7 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_8 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_9 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_10 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_11 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_12 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_13 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_14 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_15 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_16 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_17 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_18 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_19 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_20 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_21 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_22 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_23 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       or d.DX_CD_24 in (select diag_cd from STAGE.dbo.wc_5a_obese_dx) 
-       )     
-; 
+
+---diag from claims
+select p.pcn, d.year_fy 
+into dev.wc_5a_obese_temp 
+from medicaid.clm_dx d 
+   join medicaid.clm_proc p 
+      on d.icn = p.icn 
+   join dev.wc_5a_obese_dx a 
+      on a.diag_cd = d.prim_dx_cd 
+ 	or a.diag_cd = d.adm_dx_cd 
+ 	or a.diag_cd = d.dx_cd_1 
+    or a.diag_cd = d.dx_cd_2 
+    or a.diag_cd = d.dx_cd_3 
+    or a.diag_cd = d.dx_cd_4 
+    or a.diag_cd = d.dx_cd_5 
+    or a.diag_cd = d.dx_cd_6  
+    or a.diag_cd = d.dx_cd_7 
+    or a.diag_cd = d.dx_cd_8
+    or a.diag_cd = d.dx_cd_9 
+    or a.diag_cd = d.dx_cd_10
+    or a.diag_cd = d.dx_cd_11
+    or a.diag_cd = d.dx_cd_12 
+    or a.diag_cd = d.dx_cd_13 
+    or a.diag_cd = d.dx_cd_14 
+    or a.diag_cd = d.dx_cd_15 
+    or a.diag_cd = d.dx_cd_16 
+    or a.diag_cd = d.dx_cd_17 
+    or a.diag_cd = d.dx_cd_18 
+    or a.diag_cd = d.dx_cd_19 
+    or a.diag_cd = d.dx_cd_20
+    or a.diag_cd = d.dx_cd_21
+    or a.diag_cd = d.dx_cd_22
+    or a.diag_cd = d.dx_cd_23
+    or a.diag_cd = d.dx_cd_24
+    or a.diag_cd = d.dx_cd_25
+where d.year_fy between 2016 and 2019 
+;
 
 
-select distinct MCO_PROGRAM_NM from MEDICAID.dbo.LU_Contract
+---diag from enc
+insert into dev.wc_5a_obese_cohort
+select p.mem_id, d.year_fy 
+from medicaid.enc_dx d 
+   join medicaid.enc_proc p 
+      on d.derv_enc = p.derv_enc 
+   join dev.wc_5a_obese_dx a 
+      on a.diag_cd = d.prim_dx_cd 
+ 	or a.diag_cd = d.adm_dx_cd 
+ 	or a.diag_cd = d.dx_cd_1 
+    or a.diag_cd = d.dx_cd_2 
+    or a.diag_cd = d.dx_cd_3 
+    or a.diag_cd = d.dx_cd_4 
+    or a.diag_cd = d.dx_cd_5 
+    or a.diag_cd = d.dx_cd_6  
+    or a.diag_cd = d.dx_cd_7 
+    or a.diag_cd = d.dx_cd_8
+    or a.diag_cd = d.dx_cd_9 
+    or a.diag_cd = d.dx_cd_10
+    or a.diag_cd = d.dx_cd_11
+    or a.diag_cd = d.dx_cd_12 
+    or a.diag_cd = d.dx_cd_13 
+    or a.diag_cd = d.dx_cd_14 
+    or a.diag_cd = d.dx_cd_15 
+    or a.diag_cd = d.dx_cd_16 
+    or a.diag_cd = d.dx_cd_17 
+    or a.diag_cd = d.dx_cd_18 
+    or a.diag_cd = d.dx_cd_19 
+    or a.diag_cd = d.dx_cd_20
+    or a.diag_cd = d.dx_cd_21
+    or a.diag_cd = d.dx_cd_22
+    or a.diag_cd = d.dx_cd_23
+    or a.diag_cd = d.dx_cd_24
+where d.year_fy between 2016 and 2019 
+;
 
 
-select distinct MCO_PROGRAM_NM from [stage].[dbo].[AGG_ENRL_MCD_YR] 
+--consolidation
+select distinct pcn, year_fy 
+into dev.wc_5a_obese_members
+from dev.wc_5a_obese_cohort 
+;
 
+
+select count(*), year_fy 
+from dev.wc_5a_obese_temp
+group by year_fy 
+order by year_fy 
+;
+
+
+---------------------------
+
+with cte_dec as (
+ select distinct client_nbr, year_fy 
+  from medicaid.enrl 
+  where elig_date in ( '201608','201708','201808','201908')
+) 
+, cte_enrl as (  
+   select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
+   from medicaid.agg_enrl_mcd_fscyr 
+   group by client_nbr, enrl_fy 
+) 
+select replace( (a.enrl_fy::text ||  mco_program_nm), ' ','' )  as nv,
+       count(distinct a.client_nbr) as denom , count(c.pcn) as obese_numerator
+from cte_enrl a 
+   join cte_dec b 
+     on a.client_nbr = b.client_nbr 
+    and a.enrl_fy = b.year_fy
+   left outer join dev.wc_5a_obese_members c 
+      on c.pcn = a.client_nbr 
+     and c.year_fy = a.enrl_fy 
+group by enrl_fy, mco_program_nm
+order by enrl_fy, mco_program_nm
+;
 
 
