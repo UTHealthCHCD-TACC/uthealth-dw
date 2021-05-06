@@ -31,7 +31,7 @@ PROC_ICD_QAL_22 varchar,PROC_ICD_CD_22 varchar,PROC_ICD_QAL_23 varchar,PROC_ICD_
 MEM_ID varchar,GEN varchar,AGE varchar,DOB varchar,ZIP varchar,DRG varchar,BILL varchar,DERV_ENC varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/ENC_PROC_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENC_PROC_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -45,10 +45,6 @@ limit 10;
 insert into medicaid.enc_proc
 select * from ext_enc_proc;
 
--- 318 secs
-update medicaid.enc_proc set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
-
-
 -- Analyze
 analyze medicaid.enc_proc;
  
@@ -56,7 +52,7 @@ analyze medicaid.enc_proc;
 select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enc_proc;
 
 
-select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, file, count(*)
 from medicaid.enc_proc
 group by 1, 2
 order by 1, 2;

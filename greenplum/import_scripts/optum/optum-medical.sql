@@ -1,6 +1,6 @@
 --Medical
-drop table optum_zip.medical;
-create table optum_zip.medical (
+drop table optum_dod.medical;
+create table optum_dod.medical (
 year smallint, file varchar,
 PATID bigint,PAT_PLANID bigint,ADMIT_CHAN char(16),ADMIT_TYPE char(1),BILL_PROV numeric,CHARGE numeric,
 CLMID char(19),CLMSEQ char(5),COB char(5),COINS numeric,CONF_ID char(21),COPAY numeric,DEDUCT numeric,
@@ -25,35 +25,37 @@ UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6),
 ALT_UNITS text, BILL_TYPE text, NDC_UOM text, NDC_QTY text, OP_VISIT_ID text, PROCMOD2 text, PROCMOD3 text, PROCMOD4 text, TOS_EXT text
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/optum_zip/*/zip5_m2*.txt.gz#transform=add_parentname_filename_comma_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_DOD_APril2021/\*/dod_m2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
-/*
 select *
 from ext_medical
 limit 1000;
-*/
+
+
 -- Insert
-insert into optum_zip.medical
+insert into optum_dod.medical
 select * from ext_medical;
 
---delete from optum_zip.medical where year=0;
+--delete from optum_dod.medical where year=0;
 
 select count(*)
-from optum_zip.medical
+from optum_dod.medical
 where year=0;
-
-update optum_zip.medical set year=date_part('year', FST_DT) where year=0;
-
 
 -- Analyze
 analyze optum.medical;
 
-select count(*), min(year), max(year), count(distinct year) from optum_zip.medical;
+select count(*), min(year), max(year), count(distinct year) from optum_dod.medical;
 
 select year, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
-from optum_zip.medical
+from optum_dod.medical
 group by 1, 2
 order by 1, 2;
+
+--Refresh
+delete
+from optum_dod.medical 
+where year > 2017 or file like '%2017q4%';

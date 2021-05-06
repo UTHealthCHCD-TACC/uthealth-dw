@@ -27,7 +27,7 @@ NPI varchar,sig varchar,cat varchar,med_cov varchar,tp varchar,sd varchar,bp var
 prescriber_npi varchar,TCN varchar,PREV_TCN varchar,qty_prescribed numeric,unit_of_meas varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/MCO_RX_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/MCO_RX_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

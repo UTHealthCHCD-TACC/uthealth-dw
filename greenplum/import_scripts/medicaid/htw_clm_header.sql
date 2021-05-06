@@ -27,7 +27,7 @@ PROC_DT_22 varchar,PROC_DT_23 varchar,PROC_DT_24 varchar,
 BILL_PROV_EXMPT_IND varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/CLM_HEADER_*.csv'
+'gpfdist://greenplum01:8081/uthealth/medicaid/HealthyTexasWomen/CLM_HEADER_*.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

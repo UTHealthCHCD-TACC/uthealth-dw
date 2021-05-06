@@ -48,7 +48,7 @@ delete from data_warehouse.member_enrollment_monthly where data_source in ('mcrn
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, race_cd, rx_coverage         
 	)		
@@ -81,7 +81,7 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 -- Optum ZIP --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, rx_coverage      
 	)
@@ -102,7 +102,7 @@ from optum_zip.mbr_enroll m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
-  left outer join reference_tables.ref_zip_crosswalk e 
+  left outer join reference_tables.ref_dod_crosswalk e 
    on e.zip = substring(zipcode_5,1,5)
 ; 
 ---------------------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ delete from data_warehouse.member_enrollment_monthly where data_source = 'truv' 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage, data_year         
 	)		
@@ -161,7 +161,7 @@ where m.year = 2019
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, employee_status, rx_coverage , data_year      
 	)		
@@ -221,7 +221,7 @@ select * from data_warehouse.member_enrollment_monthly mem
 -- Medicare  Texas--------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5 , zip3,
+	gender_cd, state, dod , zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, rx_coverage, data_year , race_cd     
 	)		
@@ -293,7 +293,7 @@ from medicare_texas.mbsf_abcd_summary m
 -- Medicare National --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
+	gender_cd, state, dod, zip3,
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, rx_coverage  ,data_year , race_cd    
 	)	

@@ -17,7 +17,7 @@ LBL_Address varchar,LBL_City varchar,LBL_State varchar,LBL_Zip varchar,Mail_Coun
 Specialty varchar,Sanction_Ind varchar,License_Nbr varchar,Tax_Nbr varchar,Enroll_Dt varchar,Subspecialty varchar,NPI varchar,Primary_Taxonomy varchar,Table_Update varchar,SFY varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/*_Prov_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/*_Prov_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

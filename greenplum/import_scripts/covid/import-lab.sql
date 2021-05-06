@@ -1,15 +1,15 @@
-create schema opt_20210128;
+create schema opt_20210401;
 
 set client_encoding to 'UTF8';
 
 /*
  * Requires cleaning
- * tr -cd '\11\12\15\40-\176' < cov_20210128_lab.txt > cov_20210128_lab-fixed.txt
+ * tr -cd '\11\12\15\40-\176' < cov_20210401_lab.txt > cov_20210401_lab-fixed.txt
  * sed -i 's:\\:\\\\:g' cov_20201210_lab-fixed.txt
  */
 --Medical
-drop table opt_20210128.lab;
-create table opt_20210128.lab (
+drop table opt_20210401.lab;
+create table opt_20210401.lab (
 PTID varchar,ENCID varchar,TEST_CODE varchar,TEST_NAME varchar,TEST_TYPE varchar,
 ORDER_DATE date,ORDER_TIME time,COLLECTED_DATE date,COLLECTED_TIME time,RESULT_DATE date,RESULT_TIME time,
 TEST_RESULT varchar,RELATIVE_INDICATOR varchar,RESULT_UNIT varchar,NORMAL_RANGE varchar,EVALUATED_FOR_RANGE varchar,VALUE_WITHIN_RANGE varchar,SOURCEID varchar
@@ -26,7 +26,7 @@ ORDER_DATE date,ORDER_TIME time,COLLECTED_DATE date,COLLECTED_TIME time,RESULT_D
 TEST_RESULT varchar,RELATIVE_INDICATOR varchar,RESULT_UNIT varchar,NORMAL_RANGE varchar,EVALUATED_FOR_RANGE varchar,VALUE_WITHIN_RANGE varchar,SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210128/*lab-fixed2.txt'
+'gpfdist://greenplum01:8081/covid/20210401/*lab-fixed.txt'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -37,14 +37,14 @@ from ext_covid_lab
 limit 1000;
 */
 -- labert: 291s, Updated Rows	483,210,548
-insert into opt_20210128.lab
+insert into opt_20210401.lab
 select * from ext_covid_lab;
 
 
 --Scratch
 select l.test_name, count(*)
-from opt_20210128.lab l
-join opt_20210128.pt on l.ptid=pt.ptid
+from opt_20210401.lab l
+join opt_20210401.pt on l.ptid=pt.ptid
 where pt.birth_yr != 'Unknown' and pt.birth_yr >= '2000'
 group by 1
 order by 2 desc;
@@ -53,10 +53,10 @@ create table g823235.young_lab_tests
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 select pt.birth_yr, pt.gender, pt.race, pt.ethnicity, pt.region, l.*
-from opt_20210128.lab l
-join opt_20210128.pt on l.ptid=pt.ptid
+from opt_20210401.lab l
+join opt_20210401.pt on l.ptid=pt.ptid
 where pt.birth_yr != 'Unknown' and pt.birth_yr >= '2000'
 distributed by (ptid);
 
 select distinct birth_yr
-from opt_20210128.pt;
+from opt_20210401.pt;

@@ -1,6 +1,7 @@
 --Activity
 select *
-from pg_stat_activity;
+from pg_stat_activity
+where state='active';
 
 select *
 from pg_settings

@@ -48,7 +48,7 @@ select count(distinct bene_id), 'mcrn' from medicare_national.mbsf_abcd_summary
 union 
 select count(distinct patid), 'optd' from optum_dod.mbr_enroll_r 
 union
-select count(distinct patid), 'optz' from optum_zip.mbr_enroll
+select count(distinct patid), 'optz' from optum_dod.mbr_enroll
 union
 select count(distinct enrolid), 'truv' from truven.ccaet
 union 
