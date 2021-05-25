@@ -1,47 +1,26 @@
-/*
- * Remove old records
- */
-select count(*) from data_warehouse.claim_header where data_source in ('optd','optz');
-
-delete from data_warehouse.claim_header where data_source in ('optd','optz');
-
-
-vacuum analyze data_warehouse.claim_header;
-
-
-vacuum analyze data_warehouse.claim_detail;
-/
- * *
- * We assume the matching records exist in dim_uth_claim_id
- */
---Optum load: 
--- Full years = 8132 seconds = 2h15m
-
- select * from data_warehouse.claim_header where data_source = 'optd';
-
----create work tables distributed on the join value
+--------------------------------------------------------------------------------------------------
+--- ** OPTD **
+--------------------------------------------------------------------------------------------------
 
 ---working table
-drop table if exists dev.wc_claim_header_optum;
+drop table if exists dev.wc_claim_header_optd;
 
-create table dev.wc_claim_header_optum
+create table dev.wc_claim_header_optd
 with(appendonly=true,orientation=column)
 as select * from data_warehouse.claim_header limit 0
 distributed by (member_id_src);
 
 
----uth claims for optd only
+---dim uth claims for optd 
+drop table if exists dev.wc_optd_uth_claim;
 create table dev.wc_optd_uth_claim
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
 
----drop if exist
+--optd medical
 drop table if exists dev.wc_optd_medical;
-
-
---optd med only
 create table dev.wc_optd_medical 
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from optum_dod.medical
@@ -60,7 +39,7 @@ distributed by (member_id_src);
 
 --optd
 --insert into data_warehouse.claim_header(
-insert into dev.wc_claim_header_optum(
+insert into dev.wc_claim_header_optd(
 		data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, year,
 		year_adj, claim_type,
 	    from_date_of_service,
@@ -97,10 +76,31 @@ from dev.wc_optd_medical m
 
 
 
----drop if exist
-drop table if exists dev.wc_optd_medical;
+    --va
+vacuum analyze dev.wc_claim_header_optd;
 
-drop table if exists dev.wc_optd_uth_claim;
+--remove existing records from claim header
+delete from data_warehouse.claim_header where data_source = 'optd';
+
+
+---load new records into claim header
+insert into data_warehouse.claim_header 
+select * from dev.wc_claim_header_optd;
+
+
+
+
+--------------------------------------------------------------------------------------------------
+--- ** OPTZ **
+--------------------------------------------------------------------------------------------------
+
+---working table
+drop table if exists dev.wc_claim_header_optz;
+
+create table dev.wc_claim_header_optz
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.claim_header limit 0
+distributed by (member_id_src);
 
 
 ---drop if exist
@@ -110,13 +110,15 @@ with(appendonly=true,orientation=column)
 as select * from optum_zip.medical
 distributed by (patid);
 
-
+---dim uth claim
+drop table dev.wc_optz_uth_claim;
 create table dev.wc_optz_uth_claim
 with(appendonly=true,orientation=column)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
 distributed by (member_id_src);
 
 
+--optz admissions
 create table dev.wc_uth_admission_id_optz 
 with(appendonly=true,orientation=column)
 as select * from data_warehouse.dim_uth_admission_id where data_source = 'optz'
@@ -124,7 +126,7 @@ distributed by (member_id_src);
 
 
 ---optz claim header
-insert into dev.wc_claim_header_optum(
+insert into dev.wc_claim_header_optz(
 --insert into data_warehouse.claim_header(
 		data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, year,
 		year_adj, claim_type,
@@ -162,15 +164,15 @@ from dev.wc_optz_medical m
 
     
     --va
-vacuum analyze dev.wc_claim_header_optum;
+vacuum analyze dev.wc_claim_header_optz;
 
 --remove existing records from claim header
-delete from data_warehouse.claim_header where data_source in ('optd','optz');
+delete from data_warehouse.claim_header where data_source = 'optz';
 
 
 ---load new records into claim header
 insert into data_warehouse.claim_header 
-select * from dev.wc_claim_header_optum;
+select * from dev.wc_claim_header_optz;
 
 --va
 vacuum analyze data_warehouse.claim_header;
@@ -182,14 +184,25 @@ from data_warehouse.claim_header
 group by data_source; 
 
 
------ *CLEANUP
-drop table dev.wc_claim_header_optum;
+--validate
+select count(*), count(distinct uth_claim_id), data_source, year 
+from data_warehouse.claim_header 
+group by data_source, year 
+order by data_source , year ; 
+
+
+----- optd *CLEANUP
+drop table dev.wc_claim_header_optd;
 
 drop table dev.wc_optd_uth_claim;
 
 drop table dev.wc_optd_medical;
 
 drop table dev.wc_uth_admission_id_optd ;
+
+
+---optz cleanup
+drop table dev.wc_claim_header_optz;
 
 drop table dev.wc_optz_uth_claim;
 

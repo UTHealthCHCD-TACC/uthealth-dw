@@ -147,6 +147,7 @@ vacuum analyze data_warehouse.dim_uth_claim_id;
 select count(*), data_source 
 from data_warehouse.dim_uth_claim_id
 group by data_source;
+
 ---------------------------------------------------------------------------------------------------
 ---- Medicare :
 ---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,

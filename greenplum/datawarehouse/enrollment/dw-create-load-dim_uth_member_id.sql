@@ -23,7 +23,7 @@ vacuum analyze data_warehouse.dim_uth_member_id;
 
 
 ---optd
-vacuum analyze optum_dod_refresh.mbr_enroll_r;
+vacuum analyze optum_dod.mbr_enroll_r;
 
 select count(distinct patid) from optum_dod.mbr_enroll_r
 
@@ -45,7 +45,7 @@ select count(*), count(distinct uth_member_id ), count(distinct member_id_src) f
 
 
 ---optz
-vacuum analyze optum_zip_refresh.mbr_enroll;
+vacuum analyze optum_zip.mbr_enroll;
 
 select count(distinct patid) from optum_zip_refresh.mbr_enroll
 

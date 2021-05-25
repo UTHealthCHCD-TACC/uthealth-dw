@@ -233,6 +233,13 @@ order by year;
 
 
 
-analyze data_warehouse.claim_detail;
+vacuum analyze data_warehouse.claim_detail;
 
+--final check
+select count(*), data_source, year 
+from data_warehouse.claim_detail 
+group by data_source , year 
+order by data_source , year ;
 
+--final cleanup
+drop table dev.wc_optz_medical;  drop table dev.wc_claim_detail_optz; drop table dev.wc_optz_uth_claim;

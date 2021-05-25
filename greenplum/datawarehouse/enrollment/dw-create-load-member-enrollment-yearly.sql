@@ -45,21 +45,20 @@ vacuum analyze data_warehouse.member_enrollment_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
+---remove old
+delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz');
 
-delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz','mcrn','mcrt','mdcd');
-
-
+--insert new recs from monthly 
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd
-from data_warehouse.member_enrollment_monthly
-where data_source in ('optd','optz','mcrn','mcrt','mdcd')
---order by data_source, year, uth_member_id, month_year_id 
+from data_warehouse.member_enrollment_monthly a 
+where data_source in ('optd','optz')
 ;
 
-select * from data_warehouse.member_enrollment_monthly where data_source = 'mdcd';
+
 
 
 drop table dev.temp_member_enrollment_month;
@@ -70,7 +69,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source in ('optd','optz','mcrn','mcrt','mdcd')
+where data_source in ('optd','optz')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
