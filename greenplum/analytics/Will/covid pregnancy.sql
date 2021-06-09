@@ -19,7 +19,7 @@ select * from stage.dbo.wc_preg_covid
 select * from  dev.wc_covid_preg_codeset;
 
 
-drop table g823066.dbo.wc_preg_pregnant_mems;
+drop table g823066.wc_preg_pregnant_mems;
 
 ---pregnant women
 select  ptid  , min(diag_date) as preg_dt
@@ -31,11 +31,8 @@ where DIAGNOSIS_CD in ( select cd from g823066.wc_preg_codes )
 ;
 
 
-
-
-
 ---covid positive
-drop table g823066.wc_preg_covid_positive_mems;
+drop table g823066.wc_preg_covid_pos_mems;
 
 
 select ptid, min(result_date) as covid_first_date 
@@ -59,71 +56,13 @@ group by ptid
 ;
 
 
-
-
----counts of preg+covid positive women
-select count(*), count(distinct ptid), age_group 
-from ( 
-select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
-            when 2020 - cast(BIRTH_YR as int) between 20 and 34 then 2
-            when 2020 - cast(BIRTH_YR as int) between 35 and 44 then 3
-            when 2020 - cast(BIRTH_YR as int) between 45 and 54 then 4
-            when 2020 - cast(BIRTH_YR as int) between 55 and 64 then 5
-            when 2020 - cast(BIRTH_YR as int) between 65 and 74 then 6
-            when 2020 - cast(BIRTH_YR as int) > 74 then 7
-            end as age_group
-            ,a.ptid  
-from opt_20210401.pt a 
-   join g823066.wc_preg_pregnant_mems b 
-      on a.ptid = b.ptid 
-   join  g823066.wc_preg_covid_pos_mems c 
-      on a.ptid = c.ptid 
-where GENDER = 'Female'
-and LENGTH(birth_yr) = 4
-and 2020 - cast(a.BIRTH_YR as int) between 15 and 54
-) inr 
-group by age_group order by age_group 
-
-
-select count(distinct ptid), race
-from ( 
-select case when 2020 - cast(BIRTH_YR as int) between 0 and 19 then 1
-            when 2020 - cast(BIRTH_YR as int) between 20 and 34 then 2
-            when 2020 - cast(BIRTH_YR as int) between 35 and 44 then 3
-            when 2020 - cast(BIRTH_YR as int) between 45 and 54 then 4
-            when 2020 - cast(BIRTH_YR as int) between 55 and 64 then 5
-            when 2020 - cast(BIRTH_YR as int) between 65 and 74 then 6
-            when 2020 - cast(BIRTH_YR as int) > 74 then 7
-            end as age_group
-            , a.ptid , a.race 
-from opt_20210401.pt a 
-   join g823066.wc_preg_pregnant_mems b 
-      on a.ptid = b.ptid 
-   join  g823066.wc_preg_covid_pos_mems c 
-      on a.ptid = c.ptid 
-where GENDER = 'Female'
-and LENGTH(birth_yr) = 4
-and 2020 - cast(a.BIRTH_YR as int) between 15 and 54
-) inr 
-group by race order by race
-
-
-
-select ptid, visit_type, visit_start_date, visit_end_date, discharge_disposition 
-from opt_20210401.vis v 
-;
-
-
-
-
-
 ----create extract table with visit info
 drop table if exists g823066.wc_covid_pregnancy_study_extract
 
-select a.ptid, v.visit_type, cast(v.VISIT_START_DATE as date) as visit_start , v.ptid::text || v.VISIT_START_DATE::text as vis_id, 
-       a.RACE, a.BIRTH_YR , 2020 - cast(a.BIRTH_YR as int) as age, 
-       preg_dt, c.covid_first_date, d.covid_neg_date
-       into g823066.wc_covid_pregnancy_study_extract
+select a.ptid, a.race, a.ethnicity, a.birth_yr, 2020 - cast(a.BIRTH_YR as int) as age, a.date_of_death, preg_dt, 
+       v.visit_type, cast(v.VISIT_START_DATE as date) as visit_start , v.ptid::text || v.VISIT_START_DATE::text as vis_id, 
+       c.covid_first_date, d.covid_neg_date
+      into g823066.wc_covid_pregnancy_study_extract
 from opt_20210401.pt a 
    join g823066.wc_preg_pregnant_mems b 
       on a.ptid = b.ptid 
@@ -141,6 +80,16 @@ where  a.GENDER = 'Female'
  order by a.ptid, cast(v.VISIT_START_DATE as date)
 ;
 
+
+select count(*), count(distinct ptid) from g823066.wc_preg_pregnant_mems
+
+select count(*), count(distinct a.ptid) 
+from opt_20210401.pt a 
+   join g823066.wc_preg_pregnant_mems b 
+      on a.ptid = b.ptid 
+where  a.GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(a.BIRTH_YR as int) between 15 and 54
 
 ----*********************************************************************
 ---NEW 4/28/21 Comorbid conditions
@@ -429,7 +378,14 @@ where length(birth_yr) = 4
 ;
 
 
-select birth_yr , length(birth_yr) from opt_20210401.pt where birth_yr like '1932%'
+select a.* 
+into g823066.wc_preg_comorbid_extract
+from g823066.wc_preg_comorbid a
+  join opt_20210401.pt b
+      on a.ptid = b.ptid 
+where  b.GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
 
 ------------
 ---- /end comorbid /
@@ -441,56 +397,75 @@ select birth_yr , length(birth_yr) from opt_20210401.pt where birth_yr like '193
 
 ----****
 ---deliveries 
-drop table if exists stage.dbo.wc_covid_deliveries_temp;
+drop table if exists g823066.wc_covid_deliveries_temp;
 
-drop table if exists stage.dbo.wc_covid_deliveries;
+drop table if exists g823066.wc_covid_deliveries;
 
 --deliveries diag
-select  PTID, cast(DIAG_DATE as date) as delivery_date
+select  PTID, cast(DIAG_DATE as date) as delivery_date, 
+        case when a.diagnosis_cd in ('10D00Z0','10D00Z1','10D00Z2','Z3801','Z3864','Z3866','Z3869') then 'C' 
+        else 'D' end as deliv_type 
 into g823066.wc_covid_deliveries_temp
 from opt_20210401.diag a
-where a.DIAGNOSIS_CD in ('Z3800','Z3801','Z381','Z382','Z3830','Z3831','Z384','Z385','Z3861','Z3862',
-'Z3863','Z3864','Z3865','Z3866','Z3868','Z3869','Z387','Z388','Z370','Z379','Z371')
+where a.DIAGNOSIS_CD in ('10D00Z0','10D00Z1','10D00Z2','Z3801','Z3864','Z3866','Z3869','Z370','Z379','Z371','O321XX0',
+'O322XX0','O323XX0','O329XX0','O364XX0','O6010X0','O6012X0','O6013X0','O6014X0','O641XX0','O642XX0','O643XX0','10D07Z3',
+'10D07Z4','10D07Z5','10D07Z6','10D07Z7','10D07Z8','10E0XZZ','Z3800','Z381','Z382','Z3830','Z3831','Z384','Z385','Z3861',
+'Z3862','Z3863','Z3865','Z3868','Z387','Z388')
 and cast(diag_date as date) >= '2020-01-01'
 ;
 
 
-
 ---deliveries icd proc
 insert into g823066.wc_covid_deliveries_temp
-select ptid, cast(PROC_DATE as date)
+select ptid, cast(PROC_DATE as date), 
+        case when a.proc_code in ('10D00Z0','10D00Z1','10D00Z2','Z3801','Z3864','Z3866','Z3869') then 'C' 
+        else 'D' end as deliv_type 
 from opt_20210401.proc a 
-where a.PROC_CODE in ( '10D00Z0','10D00Z1','10D00Z2','10D07Z3','10D07Z4','10D07Z5',
-'10D07Z6','10D07Z7','10D07Z8','10E0XZZ''O321XX0','O322XX0','O323XX0','O329XX0','O364XX0',
-'O6010X0','O6012X0','O6013X0','O6014X0','O641XX0','O642XX0','O643XX0','O641XX0')
+where a.PROC_CODE in ('10D00Z0','10D00Z1','10D00Z2','Z3801','Z3864','Z3866','Z3869','Z370','Z379','Z371','O321XX0',
+'O322XX0','O323XX0','O329XX0','O364XX0','O6010X0','O6012X0','O6013X0','O6014X0','O641XX0','O642XX0','O643XX0','10D07Z3',
+'10D07Z4','10D07Z5','10D07Z6','10D07Z7','10D07Z8','10E0XZZ','Z3800','Z381','Z382','Z3830','Z3831','Z384','Z385','Z3861',
+'Z3862','Z3863','Z3865','Z3868','Z387','Z388')
 and cast(PROC_DATE as date) >= '2020-01-01'
 ;
 
 
 --delivieries drgs
 insert into g823066.wc_covid_deliveries_temp
-select ptid,  cast(a.VISIT_START_DATE as date)
+select ptid,  cast(a.VISIT_START_DATE as date), 
+        case when a.drg in ('370','371','765','766','783','784','786','787','785','788') then 'C' 
+        else 'D' end as deliv_type 
 from opt_20210401.vis a
 where a.DRG in ('370','371','372','373','374','375',
-'765','766','767','768','774','775')
+'765','766','767','768','774','775''796','797','798',
+'805','806','807','783','784','786','787','785','788')
   and cast(a.VISIT_START_DATE as date) >= '2020-01-01'
  ;
  
 
 ---deliveries cpt/hcpc
 insert into g823066.wc_covid_deliveries_temp
-select ptid, cast(PROC_DATE as date)
+select ptid, cast(PROC_DATE as date), 
+        case when a.PROC_CODE in ('59510','59514','59515','59610','59612','59614','59618','59620','59622') then 'C' 
+        else 'D' end as deliv_type 
 from opt_20210401.proc a 
-where a.PROC_CODE in ('59400','59409','59410','59510','59514','59515','59610',
-'59612','59614','59618','59620','59622')
+where a.PROC_CODE in ('59400','59409','59410',
+'59510','59514','59515','59610','59612','59614','59618','59620','59622')
 and  cast(PROC_DATE as date) >= '2020-01-01'
 ;
 
 --consolidate deliveries
-select min(delivery_date) as deliv_date, ptid 
+select a.ptid, min(a.deliv_type) as deliv_type, a.delivery_date 
 into g823066.wc_covid_deliveries
+from g823066.wc_covid_deliveries_temp a 
+  join 
+(
+select ptid, min(delivery_date) as delivery_date--count(*), count(distinct ptid) 
 from g823066.wc_covid_deliveries_temp
 group by ptid
+) inr
+ on inr.ptid = a.ptid 
+ and inr.delivery_date = a.delivery_date
+group by a.ptid, a.delivery_date 
 ;
 
 
@@ -546,17 +521,22 @@ from g823066.wc_covid_outcomes_temp
 group by ptid, outcome; 
 
 
-
+drop table g823066.wc_covid_pregnancy_outcomes_extract;
 
 
 ----outcomes file
-select a.*, b.deliv_date, 
+select a.*, b.delivery_date, b.deliv_type,
        c.outcome_date as AMI_date, 
        d.outcome_date as TT_date,
        e.outcome_date as VENT_date,
        f.outcome_date as PCD_date
-       into g823066.wc_covid_pregnancy_outcomes_extract
+      into g823066.wc_covid_pregnancy_outcomes_extract
 from g823066.wc_preg_pregnant_mems a 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
   left outer join g823066.wc_covid_deliveries b 
     on a.ptid = b.ptid 
   left outer join g823066.wc_covid_outcomes c 
@@ -578,3 +558,104 @@ from g823066.wc_preg_pregnant_mems a
    from g823066.wc_covid_pregnancy_outcomes_extract
    
    
+---- new 5/26  full claims pull for 1/1/2020 and forward 
+   
+   ---carearea 
+ select a.* 
+ into g823066.wc_covid_preg_carearea_extract
+ from opt_20210401.carearea a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.carearea_date >= '2020-01-01'
+   ;
+   
+  ---- diag 
+  select a.* 
+ into g823066.wc_covid_preg_diag_extract
+ from opt_20210401.diag a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.diag_date >= '2020-01-01'
+;
+
+
+  --- enc 
+    select a.* 
+ into g823066.wc_covid_preg_enc_extract
+ from opt_20210401.enc a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.interaction_date >= '2020-01-01'
+;
+  
+  --- lab 
+    select a.* 
+ into g823066.wc_covid_preg_lab_extract
+ from opt_20210401.lab a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.collected_date >= '2020-01-01'
+;
+  
+  --- obs 
+    select a.* 
+ into g823066.wc_covid_preg_obs_extract
+ from opt_20210401.obs a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.obs_date >= '2020-01-01'
+;
+
+  ---- rx presc 
+   select a.* 
+ into g823066.wc_covid_preg_rx_presc_extract
+ from opt_20210401.rx_presc a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.rxdate >= '2020-01-01'
+; 
+  
+  --- vis 
+    select a.* 
+ into g823066.wc_covid_preg_vis_extract
+ from opt_20210401.vis a 
+ join  g823066.wc_preg_pregnant_mems b 
+     on a.ptid = b.ptid 
+  join opt_20210401.pt p
+      on a.ptid = p.ptid 
+   and GENDER = 'Female'
+   and length(BIRTH_YR ) = 4
+   and 2020 - cast(BIRTH_YR as int) between 15 and 54
+where a.visit_start_date >= '2020-01-01'
+;
+  

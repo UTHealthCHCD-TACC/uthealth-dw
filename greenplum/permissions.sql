@@ -152,13 +152,13 @@ grant all privileges on all sequences in schema conditions to analyst;
 alter default privileges in schema conditions grant all on tables to analyst;
 
 --raw data tables (select only)
-grant usage on schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_dod to group uthealth_analyst;
-grant select on all tables in schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_dod to group uthealth_analyst;
+grant usage on schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_zip to group uthealth_analyst;
+grant select on all tables in schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_zip to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant select on tables to group uthealth_analyst; 
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_national grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_texas grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicaid grant select on tables to group uthealth_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uthealth_analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uthealth_analyst;
 
 --conditions (select only)

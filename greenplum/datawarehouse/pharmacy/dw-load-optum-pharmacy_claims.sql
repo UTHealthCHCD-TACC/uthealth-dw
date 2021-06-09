@@ -73,7 +73,11 @@ from dev.wc_optz_rx a
  ;
 
 
-select count(*), year 
+vacuum analyze dev.wc_optz_rx_load;
+
+
+select 
+count(*), year 
 from dev.wc_optz_rx_load group by year order by year;
 
 select count(*), year from optum_zip.rx group by year order by year;
@@ -163,7 +167,7 @@ from dev.wc_optd_rx a
 ----********************************
 --- validate and load to production
 ----********************************
-
+vacuum analyze dev.wc_optd_rx_load;
 
 select count(*), year 
 from dev.wc_optd_rx_load group by year order by year;

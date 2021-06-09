@@ -1,8 +1,16 @@
 
+
+--1 create an empty copy of claim detail, add or remove columns 
+--2 modify this sql to join on your dim_uth_provider_id 
+--3 run this load in dev 
+
+
+
 --Optum dod load
 drop table dev.wc_claim_detail_optd;
 
 select * from dev.wc_claim_detail_optd
+
 
 create table dev.wc_claim_detail_optd
 with(appendonly=true,orientation=column)
@@ -87,6 +95,7 @@ from dev.wc_optd_medical m
 	  on m.conf_id=conf.conf_id
 	left outer join reference_tables.ref_optum_bill_type_from_tos bt 
 	  on m.tos_cd=bt.tos
+	
 ;
 
 
