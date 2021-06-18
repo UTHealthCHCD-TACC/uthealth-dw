@@ -1,5 +1,5 @@
 --***********************************************************************************************
------------diag to find denominator (obese population)
+-----------tobacco users
 --***********************************************************************************************
 drop table if exists WRK.dbo.wc_TRS_tobacco_cohort_temp;
 
@@ -27,6 +27,8 @@ from (
 		where a.MED_FSCYR between 2014 and 2019 	       
 ) inrx;
 
+
+select * From TRSERS.dbo.TRS_CLM_FIN_NEW tcfn where pri_icd9_dx_cd like 'Z72%'
 
 
 

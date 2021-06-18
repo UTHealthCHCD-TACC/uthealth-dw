@@ -94,6 +94,8 @@ grant uthealth_analyst to yliu26;
 
 grant uthealth_analyst to lghosh1;
 
+grant uthealth_analyst to jfu2;
+
 
 -- uthealth_analyst role definition
 drop owned by uthealth_analyst cascade;
@@ -105,6 +107,11 @@ create role uthealth_analyst;
 grant connect on database uthealth to uthealth_analyst;
 
 --Schemas
+
+---conditions
+grant usage on schema conditions to group uthealth_analyst; 
+grant select on all tables in schema conditions to group uthealth_analyst; 
+
 --reference_tables (select only)
 grant usage on schema reference_tables to group uthealth_analyst;
 grant select on all tables in schema reference_tables to group uthealth_analyst;

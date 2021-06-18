@@ -93,6 +93,14 @@ from cte_distinct_member
 ;
 
 
+select * from truven.ccaet where year = 2020;
+
+select * from data_warehouse.dim_uth_member_id dumi where member_id_src = '14484301'
+
+
+select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 534820526
+
+
 vacuum analyze truven.mdcrt;
 
 select count(distinct enrolid) from truven.mdcrt;
