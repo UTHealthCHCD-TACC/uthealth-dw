@@ -22,7 +22,7 @@ where b.code between '78580' and '78598';
 
 --Create claims table
 --What zip and date and counts
-create table tableau.optz_ventilators_by_zip_and_year
+create table tableau.optz_ventilators_by_dod_and_year
 as
 select d.year, m.dod, count(*)
 from data_warehouse.claim_detail d

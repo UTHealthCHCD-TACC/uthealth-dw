@@ -23,9 +23,9 @@ grant all on schema truven to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant all on tables to group uthealthadmin; 
 GRANT all ON ALL TABLES IN SCHEMA truven TO uthealthadmin;
 
-grant all on schema optum_dod to group uthealthadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant all on tables to group uthealthadmin; 
-GRANT all ON ALL TABLES IN SCHEMA optum_dod TO uthealthadmin;
+grant all on schema optum_dod_refresh to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod_refresh grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA optum_dod_refresh TO uthealthadmin;
 
 grant all on schema optum_dod to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant all on tables to group uthealthadmin; 
@@ -84,7 +84,7 @@ GRANT select ON ALL TABLES IN SCHEMA gp_toolkit TO uthealthadmin;
 
 CREATE ROLE ctruong NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
 
-grant uthealth_analyst to amoosa1;
+grant uthealthadmin to turban;
 
 grant uthealth_analyst to smadhuri;
 
@@ -152,13 +152,13 @@ grant all privileges on all sequences in schema conditions to analyst;
 alter default privileges in schema conditions grant all on tables to analyst;
 
 --raw data tables (select only)
-grant usage on schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_dod to group uthealth_analyst;
-grant select on all tables in schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_dod to group uthealth_analyst;
+grant usage on schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_zip to group uthealth_analyst;
+grant select on all tables in schema truven, medicare_national, medicare_texas, medicaid, optum_dod, optum_zip to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant select on tables to group uthealth_analyst; 
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_national grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare_texas grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicaid grant select on tables to group uthealth_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uthealth_analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant select on tables to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uthealth_analyst;
 
 --conditions (select only)
@@ -176,9 +176,9 @@ drop role uthtest;
 
 CREATE ROLE uthtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'd3f@ult$';
 
-grant uthealthadmin to lghosh1;
-grant uthealthdev to lghosh1;
-grant uthealth_analyst to lghosh1;
+grant uthealthadmin to jharri66;
+grant uthealthdev to jharri66;
+grant uthealth_analyst to jharri66;
 
 grant connect on database uthealth to dwtest;
 
@@ -211,6 +211,10 @@ where grantee='uthealth_analyst';
 and table_schema='dw_qa';
 
 select *
+FROM information_schema.role_table_grants
+where table_schema='medicaid';
+
+select *
 FROM   information_schema.table_privileges 
 WHERE  grantee = 'uthealthdev';
 
@@ -232,6 +236,8 @@ SELECT
         WHERE m.member = r.oid) as memberof
 FROM pg_catalog.pg_roles r
 ORDER BY 1;
+
+
 
 
 

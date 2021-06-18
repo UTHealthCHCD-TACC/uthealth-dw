@@ -40,44 +40,6 @@ union
 
 
 
------get numerator - weight counselling 
-select distinct ID, fscyr
-into WRK.dbo.wc_ers_obese_counselling
-from (
----2016 and 2017 UHC only, use MED_FSCYR
-	select id, MED_FSCYR as fscyr 
-	from trsers.dbo.ers_uhcmedclm a 
-	where a.MED_FSCYR between 2016 and 2017 
-	  and ( a.HCPCSCPTCode in ('43770','43644','43645','43842','43843','43845','43846','43847','43659','S2082','S2085',
-                        '43645','43771','43772','43774','43775','43848','43886','43887','43888')
-	       or a.DiagnosisCode1 in ('Z713','Z7189','V653')
-	       or a.DiagnosisCode2 in ('Z713','Z7189','V653')
-	       or a.DiagnosisCode3 in ('Z713','Z7189','V653')    
-	       or a.DRG in ('619','620','621')
-	       or  a.ICD9ProcedureCode in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
-                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
-	       )	      	       
-union  
----2018 and 2019 only use BCBS and FSCRY
-	select id, FSCYR
-	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2019
-	  and ( a.HCPCSCPTCode in ('43770','43644','43645','43842','43843','43845','43846','43847','43659','S2082','S2085',
-                        '43645','43771','43772','43774','43775','43848','43886','43887','43888')                        
-	       or REPLACE(a.DiagnosisCode1,'.','') in ('Z713','Z7189','V653')
-	       or REPLACE(a.DiagnosisCode2,'.','') in ('Z713','Z7189','V653')
-	       or REPLACE(a.DiagnosisCode3,'.','') in ('Z713','Z7189','V653')
-	       or REPLACE(a.DiagnosisCode4,'.','') in ('Z713','Z7189','V653')
-	       or REPLACE(a.DiagnosisCode5,'.','') in ('Z713','Z7189','V653')
-	       or a.DRG in ('619','620','621')
-	       or a.ICDProcedureCode1 in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
-                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
-           or a.ICDProcedureCode2 in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
-                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
-           or a.ICDProcedureCode3 in ('4389','443','4431','4438','4439','4468','4495','4496','4497','4499','445','4551','4521',
-                          '0DV60CZ','0DV60DZ','0DV63CZ','0DV63DZ','0DV64CZ','0DV64DZ','0DV67DZ','0DV68DZ')
-	       )		       
-) inrx;
 
 
 ---get counts for spreadsheet--------------------------------------------------------------------------
@@ -85,6 +47,16 @@ union
 select count(*), count(distinct id), FSCYR 
 from TRSERS.dbo.ERS_AGG_YR 
 group by FSCYR order by FSCYR;
+
+
+select * from TRSERS.dbo.ERS_AGG_YR ;
+
+select distinct id, FSCYR
+into wrk.dbo.wc_ers_dec_enrl
+from TRSERS.dbo.ERS_AGG_YRMON
+where yrmnth in ('201608','201708','201808','201908')
+;
+
 
 select count(*), count(distinct id), FSCYR 
 from WRK.dbo.wc_ers_obese_cohort
@@ -101,17 +73,14 @@ with dec_cohort as (
 	from TRSERS.dbo.ERS_AGG_YRMON 
 	where yrmnth in ('201608','201708','201808','201908')
     )
-select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(c.id) as numer 
+select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(b.id) as numer 
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-  join WRK.dbo.wc_ers_obese_cohort b
+  left outer join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
-  left outer join WRK.dbo.wc_ers_obese_counselling c 
-      on a.id = c.id 
-     and a.FSCYR = c.fscyr
 where a.FSCYR between 2016 and 2019 
 group by a.FSCYR , stat 
 order by a.FSCYR , stat 
@@ -126,17 +95,14 @@ with dec_cohort as (
 	where yrmnth in ('201608','201708','201808','201908')		
     )
 select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ = 'DEP' then 'D' else 'X' end ), ' ','' ) as nv, 
-       count(distinct a.id) as denom, count(c.id) as numer
+       count(distinct a.id) as denom, count(b.id) as numer
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-  join WRK.dbo.wc_ers_obese_cohort b
+  left outer join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
-  left outer join WRK.dbo.wc_ers_obese_counselling c 
-      on a.id = c.id 
-     and a.FSCYR = c.fscyr
 where a.FSCYR between 2016 and 2019 
 group by a.FSCYR , typ, stat 
 order by a.FSCYR, stat, typ desc--, stat 
@@ -158,17 +124,14 @@ select replace( str(a.FSCYR) + stat +
        		when age between 55 and 64 then '5'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
-       count(distinct a.id) as denom, count(c.id) as numer
+       count(distinct a.id) as denom, count(b.id) as numer
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-  join WRK.dbo.wc_ers_obese_cohort b
+  left outer join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
-  left outer join WRK.dbo.wc_ers_obese_counselling c 
-      on a.id = c.id 
-     and a.FSCYR = c.fscyr
 where a.FSCYR between 2016 and 2019 
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
@@ -202,17 +165,14 @@ select replace( str(a.FSCYR) + gen + stat +
        		when age between 55 and 64 then '5'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
-       count(distinct a.id) as denom, count(c.id) as numer
+       count(distinct a.id) as denom, count(b.id) as numer
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-  join WRK.dbo.wc_ers_obese_cohort b
+  left outer join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
-  left outer join WRK.dbo.wc_ers_obese_counselling c 
-      on a.id = c.id 
-     and a.FSCYR = c.fscyr
 where  a.FSCYR between 2016 and 2019 
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 

@@ -1,6 +1,6 @@
 --Medical
-drop table opt_20210128.prov;
-create table opt_20210128.prov (
+drop table opt_20210401.prov;
+create table opt_20210401.prov (
 PROVID varchar, SPECIALTY varchar, PRIM_SPEC_IND varchar, SOURCEID varchar
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
@@ -13,7 +13,7 @@ CREATE EXTERNAL TABLE ext_covid_prov (
 PROVID varchar, SPECIALTY varchar, PRIM_SPEC_IND varchar, SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210128/*prov*.txt.gz'
+'gpfdist://greenplum01:8081/covid/20210401/*prov*.txt.gz'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -24,11 +24,11 @@ from ext_covid_prov
 limit 1000;
 */
 -- provert: 88s, Updated Rows	187303978
-insert into opt_20210128.prov
+insert into opt_20210401.prov
 select * from ext_covid_prov;
 
 --Scratch
 select count(*)
-from opt_20210128.prov
+from opt_20210401.prov
 group by 1
 order by 1;

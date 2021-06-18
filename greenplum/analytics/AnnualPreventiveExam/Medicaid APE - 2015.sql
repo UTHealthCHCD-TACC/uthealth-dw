@@ -175,7 +175,7 @@ select * from  stage.dbo.wc_mdcd_ape_diag
 
   select d.ICN 
 into  stage.dbo.wc_mdcd_ape_dx_2015
-  from medicaid.dbo.CLM_DX_15 d 
+  from medicaid.dbo.htw_clm_dx_15 d 
     join MEDICAID.dbo.CLM_HEADER_15 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2015-01-01' and '2015-12-31'
@@ -193,7 +193,7 @@ into  stage.dbo.wc_mdcd_ape_dx_2015
 
 insert into stage.dbo.wc_mdcd_ape_dx_2015             
   select d.ICN 
-  from medicaid.dbo.CLM_DX_16 d
+  from medicaid.dbo.htw_clm_dx_16 d
     join MEDICAID.dbo.CLM_HEADER_16 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2015-01-01' and '2015-12-31'

@@ -15,7 +15,7 @@ PATID bigint, ASO char(1), BUS char(5), CDHP char(1), ELIGEFF date, ELIGEND date
 HEALTH_EXCH char(1), PRODUCT char(5), STATE char(2), YRDOB smallint, EXTRACT_YM int , VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/optum_zipzip5_mbr.txt'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_ZIP_April2021/zip5_mbr.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

@@ -23,7 +23,7 @@ vacuum analyze data_warehouse.dim_uth_member_id;
 
 
 ---optd
-vacuum analyze optum_dod_refresh.mbr_enroll_r;
+vacuum analyze optum_dod.mbr_enroll_r;
 
 select count(distinct patid) from optum_dod.mbr_enroll_r
 
@@ -45,7 +45,7 @@ select count(*), count(distinct uth_member_id ), count(distinct member_id_src) f
 
 
 ---optz
-vacuum analyze optum_zip_refresh.mbr_enroll;
+vacuum analyze optum_zip.mbr_enroll;
 
 select count(distinct patid) from optum_zip_refresh.mbr_enroll
 
@@ -113,10 +113,64 @@ from cte_distinct_member
 
 
 
+----------------
+
+select count(*) --a.*, b.*
+from data_warehouse.dim_uth_member_id a 
+   join data_warehouse.dim_uth_member_id b
+     on a.member_id_src = b.member_id_src 
+    and b.data_source = 'mcrn'
+where a.data_source = 'mcrt' 
+--order by a.uth_member_id 
+;
+
+
+select * from medicare_national.mbsf_abcd_summary where bene_id = 'gggggggfuafnuuB'
+
+
+select * from medicare_texas.mbsf_abcd_summary where bene_id = 'gggggggfuafnuuB'
+
 update  medicare_texas.mbsf_abcd_summary 
 set bene_enrollmt_ref_yr = trunc(bene_enrollmt_ref_yr::numeric,0)::text
 where bene_enrollmt_ref_yr = '2016.0'
 
+
+select * from medicare_texas.mbsf_abcd_summary-- where enhanced_five_percent_flag = 'Y';
+
+
+select a.bene_id, b.bene_id 
+from medicare_national.mbsf_abcd_summary a 
+  join medicare_texas.mbsf_abcd_summary b  
+     on a.bene_id = b.bene_id      
+    and a.year = b.year 
+where b.enhanced_five_percent_flag is null;
+
+
+select * from medicare_texas.mbsf_abcd_summary where bene_id = 'ggggggjAfgBwBAA';
+
+select count(distinct a.bene_id) 
+from medicare_national.mbsf_abcd_summary a 
+   left outer join medicare_texas.mbsf_abcd_summary b 
+     on a.bene_id = b.bene_id 
+where b.bene_id is null 
+;
+
+
+select count(distinct bene_id) 
+from medicare_texas.mbsf_abcd_summary ;
+--where bene_id in (select bene_id from medicare_national.mbsf_abcd_summary )
+
+
+select count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source in ('mcrn','mcrt');
+
+
+select a.* 
+from data_warehouse.dim_uth_member_id a 
+   join medicare_texas.mbsf_abcd_summary b  
+      on a.member_id_src = b.bene_id 
+     and b.enhanced_five_percent_flag = 'Y'
+order by member_id_src 
+;
 
 --- Medicare Texas
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -150,7 +204,7 @@ with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
 	from medicare_national.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
-      on b.data_source = 'mcrn'
+      on b.data_source in ('mcrn','mcrt')
      and b.member_id_src = bene_id::text
     where b.member_id_src is null 
 )

@@ -1,7 +1,6 @@
 --Medical
 drop table medicaid.clm_proc;
-create table medicaid.clm_proc (
-year_fy smallint, file varchar, 
+create table medicaid.clm_proc ( 
 ICN varchar,PROC_ICD_QAL_1 varchar,PROC_ICD_CD_1 varchar,PROC_ICD_QAL_2 varchar,PROC_ICD_CD_2 varchar,PROC_ICD_QAL_3 varchar,PROC_ICD_CD_3 varchar,
 PROC_ICD_QAL_4 varchar,PROC_ICD_CD_4 varchar,PROC_ICD_QAL_5 varchar,PROC_ICD_CD_5 varchar,PROC_ICD_QAL_6 varchar,PROC_ICD_CD_6 varchar,
 PROC_ICD_QAL_7 varchar,PROC_ICD_CD_7 varchar,PROC_ICD_QAL_8 varchar,PROC_ICD_CD_8 varchar,PROC_ICD_QAL_9 varchar,PROC_ICD_CD_9 varchar,
@@ -19,7 +18,6 @@ distributed by (ICN);
 
 drop external table ext_clm_proc;
 CREATE EXTERNAL TABLE ext_clm_proc (
-year_fy smallint, filename varchar,
 ICN varchar,PROC_ICD_QAL_1 varchar,PROC_ICD_CD_1 varchar,PROC_ICD_QAL_2 varchar,PROC_ICD_CD_2 varchar,PROC_ICD_QAL_3 varchar,PROC_ICD_CD_3 varchar,
 PROC_ICD_QAL_4 varchar,PROC_ICD_CD_4 varchar,PROC_ICD_QAL_5 varchar,PROC_ICD_CD_5 varchar,PROC_ICD_QAL_6 varchar,PROC_ICD_CD_6 varchar,
 PROC_ICD_QAL_7 varchar,PROC_ICD_CD_7 varchar,PROC_ICD_QAL_8 varchar,PROC_ICD_CD_8 varchar,PROC_ICD_QAL_9 varchar,PROC_ICD_CD_9 varchar,
@@ -32,7 +30,7 @@ PROC_ICD_QAL_25 varchar,PROC_ICD_CD_25 varchar,
 PCN varchar,SEX varchar,AGE varchar,DOB varchar,DRG varchar,BILL varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/CLM_PROC_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/HealthyTexasWomen/CLM_PROC_*.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

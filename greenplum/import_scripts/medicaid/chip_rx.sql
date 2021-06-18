@@ -20,7 +20,7 @@ amount_paid numeric, payment_dt date, unlimited_flag varchar, client_county varc
 DISP_EXP_AMT numeric, drug_cost numeric, gcn_seq_nbr varchar, gross_amt_due numeric, hmo_plan_id varchar, client_dob date, client_sex varchar,
 NPI varchar, prescriber_npi varchar, TCN varchar, PREV_TCN varchar, qty_prescribed numeric, unit_of_meas varchar) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/CHIP_RX_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/CHIP_RX_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

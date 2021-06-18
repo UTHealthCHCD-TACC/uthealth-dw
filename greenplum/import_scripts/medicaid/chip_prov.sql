@@ -17,7 +17,7 @@ EffectiveDate varchar,FName varchar,LName varchar,LicsNo varchar,NPI varchar,
 PrimaryTaxonomy varchar,ProviderType varchar,SPCCode varchar,State varchar,TaxID varchar,ZIP varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/*_CHIP_PROV_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/*_CHIP_PROV_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

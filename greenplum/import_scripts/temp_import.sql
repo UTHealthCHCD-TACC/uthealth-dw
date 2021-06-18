@@ -4,7 +4,7 @@ CREATE EXTERNAL TABLE ext_temp (
 admit_id varchar, pers_id varchar, clm_id varchar, bill varchar, adm_dt date, dschrg_dt date, from_dt date, to_dt date
 ) 
 LOCATION ( 
-'gpfdist://c252-136:8081/MEDICARE_ADMIT_CLM_202101280835.csv'
+'gpfdist://c252-136:8081/MEDICARE_ADMIT_CLM_202104010835.csv'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

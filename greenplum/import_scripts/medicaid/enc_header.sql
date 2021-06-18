@@ -29,7 +29,7 @@ PROC_DT_15 varchar,PROC_DT_16 varchar,PROC_DT_17 varchar,PROC_DT_18 varchar,PROC
 PROC_DT_22 varchar,PROC_DT_23 varchar,PROC_DT_24 varchar,MCO_SDA_NAME varchar,HDR_CAR_TYP_CD varchar,FIN_AGR_CD varchar,DERV_ENC varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/ENC_HEADER_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENC_HEADER_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -43,8 +43,6 @@ limit 10;
 insert into medicaid.enc_header
 select * from ext_enc_header;
 
--- 318 secs
-update medicaid.enc_header set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
 
 
 -- Analyze
@@ -54,7 +52,7 @@ analyze medicaid.enc_header;
 select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enc_header;
 
 
-select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
+select year_fy, file, count(*)
 from medicaid.enc_header
 group by 1, 2
 order by 1, 2;

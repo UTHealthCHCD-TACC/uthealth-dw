@@ -21,32 +21,8 @@ sex varchar,age varchar,provider_id varchar,mc_from_date varchar,mc_to_date varc
 perm_excl varchar,count_excl varchar,pure_rate numeric,admin_rate numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/ENRL_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENRL_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
--- Test
-/*
-select *
-from ext_enrl
-limit 10;
-*/
--- Insert
-insert into medicaid.enrl
-select * from ext_enrl;
 
--- 318 secs
-update medicaid.enrl set year_fy=date_part('year_fy', FST_DT) where year_fy=0;
-
-
--- Analyze
-analyze medicaid.enrl;
- 
--- Verify
-select count(*), min(year_fy), max(year_fy), count(distinct year_fy) from medicaid.enrl;
-
-
-select year_fy, date_part('quarter', FST_DT) as quarter, count(*), min(FST_DT), max(FST_DT)
-from medicaid.enrl
-group by 1, 2
-order by 1, 2;

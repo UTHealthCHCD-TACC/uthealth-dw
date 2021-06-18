@@ -27,7 +27,7 @@ DX_POA_15 varchar,DX_POA_16 varchar,DX_POA_17 varchar,DX_POA_18 varchar,DX_POA_1
 DX_POA_22 varchar,DX_POA_23 varchar,DX_POA_24 varchar, DX_POA_25 varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/CLM_DX_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/clm_dx_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

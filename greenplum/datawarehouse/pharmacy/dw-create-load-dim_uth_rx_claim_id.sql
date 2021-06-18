@@ -210,7 +210,7 @@ select 'optz'
       ,a.clmid
       ,b.uth_member_id
       ,a.patid 
-from optum_dod.rx a
+from optum_zip.rx a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optz'
    and b.member_id_src = a.patid::text

@@ -66,7 +66,7 @@ group by year;
 
 with upd as (
 select max(prov_par) as prov_par , clmid, patid, year 
-from optum_zip.medical m 
+from optum_dod.medical m 
 where m.year > 2016
  group by clmid, patid, year 
 ) 
@@ -131,7 +131,7 @@ order by a.data_source , a.year , b.bus_cd, b.ag_flag, net_ind
 --optz miles
 select  b."year" , b.bus_cd, b.ag_flag, net_ind,
        sum(a.units) as units, sum(a.alt_units::int2) as alt_units, count(distinct b.uth_claim_id) as clms 
-from optum_zip.medical a
+from optum_dod.medical a
      join  dev.wc_ambulance_claims  b 
       on b.member_id_src = a.patid::text 
      and b.claim_id_src = a.clmid 
@@ -230,14 +230,14 @@ group by a.data_source , a.year , b.bus_cd, b.ag_flag, net_ind
 order by year, net_ind asc, ag_flag desc 
 
 
-select * from optum_zip.medical m 
+select * from optum_dod.medical m 
 
 ---optum OOP
 select  b."year" , b.bus_cd, b.ag_flag, net_ind,
         sum(a.alt_units::int2) as alt_units, count(distinct b.uth_claim_id) as clms,
         sum(a.copay) as copay, sum(a.deduct) as deduct, sum(a.coins ) as coins, 
         sum (copay + deduct + coins) as OOP
-from optum_zip.medical a
+from optum_dod.medical a
      join  dev.wc_ambulance_claims  b 
       on b.member_id_src = a.patid::text 
      and b.claim_id_src = a.clmid 
@@ -277,7 +277,7 @@ alter table dev.wc_ambulance_claims add column cdhp_flag bool;
 with cdhp_upd as 
 (
 select c.uth_member_id , c."year" , max(b.cdhp) as cdhp 
-from optum_zip.mbr_enroll b 
+from optum_dod.mbr_enroll b 
    join dev.wc_ambulance_claims c 
      on b.patid::text = c.member_id_src 
     and c.year between extract(year from b.eligeff) and extract(year from b.eligend) 
@@ -300,7 +300,7 @@ select  b."year" , b.bus_cd, b.ag_flag, net_ind,  case when cdhp_flag is true th
         sum(a.std_cost ) as alw,
         sum (copay + deduct + coins) as OOP,
         sum(copay) as copay, sum(deduct) as ded, sum(coins) as coins
-from optum_zip.medical a
+from optum_dod.medical a
      join  dev.wc_ambulance_claims  b 
       on b.member_id_src = a.patid::text 
      and b.claim_id_src = a.clmid 

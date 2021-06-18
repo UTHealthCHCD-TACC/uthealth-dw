@@ -385,7 +385,7 @@ where data_source = 'optd'
 insert into  dev.wc_dell_med_exclusions_test
 ---insert into  dev.wc_dell_med_exclusions
 select distinct uth_member_id, 'pos' as exclusion_rsn
-from optum_zip.confinement c 
+from optum_dod.confinement c 
   join data_warehouse.dim_uth_member_id b 
     on b.member_id_src = c.patid::text 
 where c.year = 2018 

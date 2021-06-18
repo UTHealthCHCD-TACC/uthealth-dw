@@ -25,7 +25,7 @@ SUB_REND_PROV_NPI varchar,SUB_REND_PRV_TAX_CD varchar,SUB_REND_PROV_NBR varchar,
 DT_CRE_TY_CD varchar,DT_LN_UNT_MS varchar,DT_FNC_CD varchar,DERV_ENC varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/*/ENC_DET_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENC_DET_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

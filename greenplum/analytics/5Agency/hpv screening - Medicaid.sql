@@ -1,162 +1,125 @@
-drop table stage.dbo.wc_5a_hpv_clms;
+drop table dev.wc_5a_mdcd_hpv_clms;
 
-----depression criteria	
 
----from claims
-select pcn, cast(fst_dt as date) as fst_dt 
-into stage.dbo.wc_5a_hpv_clms
+---hpv vaccs from claims
+select count(distinct icn) as clm, pcn, year_fy
+into dev.wc_5a_mdcd_hpv_clms
 from (
-	select p.pcn , d.FROM_DOS as fst_dt
-	from [MEDICAID].[dbo].[CLM_DETAIL_16] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_16] p
+	select p.pcn , p.icn, p.year_fy
+	from medicaid.clm_detail d
+	   	  join medicaid.clm_proc p
 		     on d.ICN = p.ICN 
 	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.pcn , d.FROM_DOS
-	from [MEDICAID].[dbo].[CLM_DETAIL_17] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_17] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.pcn , d.FROM_DOS
-	from [MEDICAID].[dbo].[CLM_DETAIL_18] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_18] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.pcn, d.FROM_DOS
-	from [MEDICAID].[dbo].[CLM_DETAIL_19] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_19] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('90649','90650','90651')
-) inr;	
+) x
+group by pcn, year_fy;
 	
----from encounter
-insert into stage.dbo.wc_5a_hpv_clms
-select distinct mem_id,  cast(fst_dt as date) as fst_dt 
+
+---hpv vaccs from encounter
+insert into dev.wc_5a_mdcd_hpv_clms
+select count(distinct derv_enc) as clm, mem_id, year_fy
 from (
-	select p.MEM_ID , d.FDOS_DT as fst_dt 
-	from [MEDICAID].[dbo].[ENC_DET_16] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_16] p
+	select p.MEM_ID , p.derv_enc , p.year_fy  
+	from medicaid.ENC_DET d
+	   	  join medicaid.ENC_PROC p
 		     on d.DERV_ENC = p.DERV_ENC 
 	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.MEM_ID, d.FDOS_DT
-	from [MEDICAID].[dbo].[ENC_DET_17] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_17] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.MEM_ID, d.FDOS_DT
-	from [MEDICAID].[dbo].[ENC_DET_18] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_18] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('90649','90650','90651')
-union 
-	select p.MEM_ID, d.FDOS_DT
-	from [MEDICAID].[dbo].[ENC_DET_19] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_19] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('90649','90650','90651')	
-) inr_enc;
+) x 
+group by mem_id, year_fy;
 
 
+---consolidate hpv vaccs
+
+select sum(clm) as hpv_vacc_cnt, pcn, min(year_fy) as first_year 
+into dev.wc_5a_mdcd_hpv_vacc
+from dev.wc_5a_mdcd_hpv_clms 
+group by pcn;
 
 
-----------------------------------------------------get one member per year for counting purposes
+select *--count(*), count(distinct pcn)
+from dev.wc_5a_mdcd_hpv_vacc;
 
---cohort
-drop table if exists stage.dbo.wc_5a_hpv_cohort
-select distinct pcn, fscyr 
-into stage.dbo.wc_5a_hpv_cohort
-from stage.dbo.wc_5a_hpv_clms;
-
-
-select pcn 
-into stage.dbo.wc_5a_hpv_vacc
-from (
-select pcn, count(fst_dt) as cnt 
-from stage.dbo.wc_5a_hpv_clms
-group by pcn 
-) inr 
-where cnt > 1
-;
-			
 
 ----************************************************************************************************
 ----get counts for spreadsheet
 ------------------------------------
 
-
-
-
 ----overall by medicaid type
-with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
-                              min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM), ' ','' )  as nv,
+with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
+                                 sum (enrl_months) as em 
+						   from medicaid.agg_enrl_mcd_fscyr 
+						   where smib = '0'
+						     and age = 13
+   							group by client_nbr, enrl_fy  ) 
+select replace( (a.ENRL_FY::text || MCO_PROGRAM_NM), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl  a 
-  left outer join stage.dbo.wc_5a_hpv_vacc b 
+  left outer join dev.wc_5a_mdcd_hpv_vacc b 
      on b.pcn = a.CLIENT_NBR 
+    and b.hpv_vacc_cnt > 1 
+    and b.first_year <= a.enrl_fy
 where  a.ENRL_FY between 2016 and 2019
-  and age = 13
-  and Em >=12
+  and em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM
 order by a.ENRL_FY, a.MCO_PROGRAM_NM ;
 
 
 
 ---overall dual eligible
-with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
-                              min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       where SMIB = 1
-                       group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + 'DUAL ELIGIBLE'), ' ','' )  as nv,
+with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
+                                 sum (enrl_months) as em 
+						   from medicaid.agg_enrl_mcd_fscyr 
+						   where smib = '1'
+						     and age = 13
+   							group by client_nbr, enrl_fy  ) 
+select replace( (a.ENRL_FY::text || 'DUAL ELIGIBLE'), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_hpv_vacc b 
+  left outer join dev.wc_5a_mdcd_hpv_vacc b 
      on b.pcn = a.CLIENT_NBR 
+    and b.hpv_vacc_cnt > 1 
+    and b.first_year <= a.enrl_fy
 where  a.ENRL_FY between 2016 and 2019
-  and age = 13 
   and em >=12
-  and a.SMIB = 1
 group by a.ENRL_FY
 order by a.ENRL_FY
 ;
 
 
 ---by age group and medicaid type
-with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
-                              min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM  + str(a.AgeGrp) ), ' ','' )  as nv,
+with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
+                                 sum (enrl_months) as em 
+						   from medicaid.agg_enrl_mcd_fscyr 
+						   where smib = '0'
+						     and age = 13
+   							group by client_nbr, enrl_fy  ) 
+select replace( (a.ENRL_FY::text || MCO_PROGRAM_NM  || a.AgeGrp::text ), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_hpv_vacc b 
+  left outer join dev.wc_5a_mdcd_hpv_vacc b 
      on b.pcn = a.CLIENT_NBR 
+    and b.hpv_vacc_cnt > 1 
+    and b.first_year <= a.enrl_fy
 where  a.ENRL_FY between 2016 and 2019
-  and age = 13
   and em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM, a.AgeGrp 
 order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 
 
 ---by age group, gender, and medicaid type
-with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
-                              min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM + SEX + str(a.AgeGrp) ), ' ','' )  as nv,
+with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
+                                 sum (enrl_months) as em 
+						   from medicaid.agg_enrl_mcd_fscyr 
+						   where smib = '0'
+						     and age = 13
+   group by client_nbr, enrl_fy  ) 
+select replace( (a.ENRL_FY::text || MCO_PROGRAM_NM  || SEX || a.AgeGrp::text ), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_hpv_vacc b 
+  left outer join dev.wc_5a_mdcd_hpv_vacc b 
      on b.pcn = a.CLIENT_NBR 
+    and b.hpv_vacc_cnt > 1 
+    and b.first_year <= a.enrl_fy
 where  a.ENRL_FY between 2016 and 2019
-  and age = 13
   and em >=12
   and sex in ('M','F')
 group by a.ENRL_FY , sex, a.MCO_PROGRAM_NM, a.AgeGrp  
@@ -164,7 +127,10 @@ order by a.ENRL_FY, sex, a.MCO_PROGRAM_NM, a.AgeGrp
 ;
 
 
-
+select count(*) , enrl_fy 
+from medicaid.agg_enrl_mcd_fscyr 
+where age = 13 
+group by enrl_fy 
 
 
 
