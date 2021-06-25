@@ -25,7 +25,7 @@ vacuum analyze data_warehouse.dim_uth_member_id;
 ---optd
 vacuum analyze optum_dod.mbr_enroll_r;
 
-select count(distinct patid) from optum_dod.mbr_enroll_r
+delete from data_warehouse.dim_uth_member_id where data_source = 'optz'
 
 --Optum DoD load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -42,6 +42,19 @@ from cte_distinct_member
 ;
 
 select count(*), count(distinct uth_member_id ), count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'optd';
+
+---cleanup
+delete from data_warehouse.dim_uth_member_id mem 
+    using( 
+select a.uth_member_id
+from data_warehouse.dim_uth_member_id a 
+   left outer join optum_dod.mbr_enroll_r b 
+     on a.member_id_src = b.patid::text 
+where a.data_source = 'optd' 
+  and b.patid is null 
+ )  del 
+where mem.uth_member_id = del.uth_member_id 
+;
 
 
 ---optz
@@ -63,6 +76,18 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+---cleanup optz
+delete from data_warehouse.dim_uth_member_id mem 
+    using( 
+select a.uth_member_id
+from data_warehouse.dim_uth_member_id a 
+   left outer join optum_zip.mbr_enroll b 
+     on a.member_id_src = b.patid::text 
+where a.data_source = 'optz' 
+  and b.patid is null 
+ )  del 
+where mem.uth_member_id = del.uth_member_id 
+;
 
 select count(*), count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'optz';
 

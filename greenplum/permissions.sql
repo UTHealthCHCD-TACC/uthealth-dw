@@ -23,13 +23,13 @@ grant all on schema truven to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA truven grant all on tables to group uthealthadmin; 
 GRANT all ON ALL TABLES IN SCHEMA truven TO uthealthadmin;
 
-grant all on schema optum_dod_refresh to group uthealthadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod_refresh grant all on tables to group uthealthadmin; 
-GRANT all ON ALL TABLES IN SCHEMA optum_dod_refresh TO uthealthadmin;
-
 grant all on schema optum_dod to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant all on tables to group uthealthadmin; 
 GRANT all ON ALL TABLES IN SCHEMA optum_dod TO uthealthadmin;
+
+grant all on schema optum_zip to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_zip grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA optum_zip TO uthealthadmin;
 
 grant all on schema reference_tables to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA reference_tables grant all on tables to group uthealthadmin; 
@@ -59,9 +59,16 @@ grant all on schema dev to group uthealthadmin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA dev grant all on tables to group uthealthadmin; 
 GRANT all ON ALL TABLES IN SCHEMA dev TO uthealthadmin;
 
-grant all on schema dw_qa to group uthealthadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dw_qa grant all on tables to group uthealthadmin; 
-GRANT all ON ALL TABLES IN SCHEMA dw_qa TO uthealthadmin;
+grant all on schema dw_staging to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA dw_staging grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA dw_staging TO uthealthadmin;
+
+
+
+grant all on schema qa_reporting to group uthealthadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA qa_reporting grant all on tables to group uthealthadmin; 
+GRANT all ON ALL TABLES IN SCHEMA qa_reporting TO uthealthadmin;
+
 
 grant usage on schema pg_aoseg to group uthealthadmin;
 GRANT select ON ALL TABLES IN SCHEMA pg_aoseg TO uthealthadmin;

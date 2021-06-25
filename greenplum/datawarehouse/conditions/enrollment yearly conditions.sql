@@ -233,6 +233,14 @@ from carry_cte b
  ;
 
 
+select year, count(*) 
+from conditions.member_enrollment_yearly 
+where copd = '1' and data_source = 'truv' and bus_cd = 'COM' 
+group by year 
+order by year; 
+
+
+
 --cystic fibrosis and resperitory  CRES 1
 with carry_cte as (select min(year) as yr, uth_member_id, data_source 
                 from conditions.person_prof 

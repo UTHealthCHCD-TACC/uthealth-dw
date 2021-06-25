@@ -16,7 +16,7 @@ create table data_warehouse.member_enrollment_monthly (
 	consecutive_enrolled_months int2,
 	gender_cd char(1),
 	state varchar,
-	dod char(5),
+	zip5 char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 
@@ -27,7 +27,7 @@ create table data_warehouse.member_enrollment_monthly (
 	claim_created_flag bool default false,
 	row_identifier bigserial,
 	rx_coverage int2,
-	data_year int2,
+	fiscal_year int2,
 	race_cd char(2)
 )
 WITH (appendonly=true, orientation=column)
@@ -77,6 +77,8 @@ where x.uth_member_id is null
 ;
 ---------------------------------------------------------------------------------------------------
 
+select distinct mer.bus 
+from optum_dod.mbr_enroll_r mer 
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
@@ -88,6 +90,9 @@ insert into data_warehouse.member_enrollment_monthly (
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, rx_coverage      
 	)
+	
+	
+	
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
@@ -105,7 +110,7 @@ from optum_zip.mbr_enroll m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
-  left outer join reference_tables.ref_dod_crosswalk e 
+  left outer join reference_tables.ref_zip_crosswalk e 
    on e.zip = substring(zipcode_5,1,5)
   left outer join data_warehouse.member_enrollment_monthly x 
      on x.uth_member_id = a.uth_member_id 

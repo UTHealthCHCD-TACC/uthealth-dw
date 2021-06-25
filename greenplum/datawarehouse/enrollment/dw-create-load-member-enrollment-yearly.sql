@@ -31,7 +31,8 @@ create table data_warehouse.member_enrollment_yearly (
 	enrolled_nov int2 default 0,
 	enrolled_dec int2 default 0,
 	fiscal_year int2,
-	claim_created_flag bool default false
+	claim_created_flag bool default false,
+	member_id_src text 
 )
 with (appendonly=true, orientation=column)
 distributed by(uth_member_id);
@@ -196,6 +197,8 @@ select * from data_warehouse.member_enrollment_monthly mem where data_source = '
 -- all logic finds the most common occurence in a given year and assigns that value
 -----------------------------------------------------------------------------------------------------------------------
 
+alter table data_warehouse.member_enrollment_yearly add column member_id_src text;
+
 ---states 
 select count(*), min(month_year_id) as my, uth_member_id, state, year 
  into dev.wc_state_yearly
@@ -244,6 +247,14 @@ and a.year = b.year
  and b.my_grp = 1;
 
 
+select * from optum_zip.mbr_enroll me where patid = 560499200000074;
+
+
+select * from data_warehouse.dim_uth_member_id dumi where member_id_src = '560499200000074';
+
+
+select * from data_warehouse.member_enrollment_monthly mem where uth_member_id = 206751880;
+
 drop table dev.wc_zip3_yearly;
 
 drop table dev.wc_zip3_yearly_final;
@@ -254,6 +265,12 @@ select count(*), min(month_year_id) as my, uth_member_id, zip5, year
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, zip5, year 
 ;
+
+
+--30306     4 months
+--41115     4 months
+--20001     4 months 
+
 
 create table dev.wc_zip5_yearly_final 
 with (appendonly=true, orientation=column)
