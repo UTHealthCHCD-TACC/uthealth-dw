@@ -1,4 +1,29 @@
----list of conditions and carry-forward flag
+----   wc 6/10/2021 hbtm
+
+
+---*** codeset table is provided by jeff based on criteria from dr krause, imported and modify code values to be compatible with postgres logic statements
+---codes used to identify conditions, dx, proc, rev code etc
+drop table conditions.codeset 
+
+create table conditions.codeset ( log_seq int2, condition_cd text, cd_type text,  cd_value_raw text, cd_value text );
+
+update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x','%')
+
+select * from conditions.codeset c where cd_value like '%\%\%%'
+
+update conditions.codeset set cd_value = '6820%' where cd_value_raw = '6820xx'
+
+select * from conditions.codeset cd 
+
+select * from conditions.condition_desc cd 
+
+
+---*** condition desc table indicates if a condition if carry forward and also what types of codes are part of the criteria set. 
+--- if there is logic behind simply finding one occurence of the code in the measurement year then the additional logic flag will be true
+--- check condition logic spraedsheet in shared drive for in-depth logic on these
+
+
+---create table 
 drop table conditions.condition_desc;
 
 create table conditions.condition_desc ( condition_cd text, condition_desc text, type_cd text, type_desc text, carry_forward char(1),
@@ -100,70 +125,10 @@ from condcte b
 where a.condition_cd = b.condition_cd
  ;  
 
+
+-- end 
 select * from conditions.condition_desc cd ;
 
----codes used to identify conditions, dx, proc, rev code etc
-drop table conditions.codeset 
-
-create table conditions.codeset ( log_seq int2, condition_cd text, cd_type text,  cd_value_raw text, cd_value text );
-
-update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x','%')
-
-select * from conditions.codeset c where cd_value like '%\%\%%'
-
-update conditions.codeset set cd_value = '6820%' where cd_value_raw = '6820xx'
-
-select * from conditions.codeset cd 
-
-select * from conditions.condition_desc cd 
-
-
----table to store which members had which conditions in each year
-drop table conditions.member_conditions ;
-
-create table conditions.member_conditions 
-(data_source char(4), year int2, uth_member_id bigint, condition_cd text )
-with (appendonly=true, orientation = column)
-distributed by (uth_member_id);
-
-
-analyze conditions.member_conditions 
-
-
-
-
-select * from conditions.condition_desc cd 
-
-
-------map
-drop table conditions.condition_map;
-
-create table conditions.condition_map ( position_num serial, condition_cd text );
-
-with cte_map as (select condition_cd from conditions.condition_desc order by condition_cd)
-insert into conditions.condition_map 
-select  nextval('conditions.condition_map_position_num_seq') , condition_cd
-from cte_map
-order by condition_cd 
-;
-
-
-select position_num, condition_cd 
-from conditions.condition_map
-order by position_num 
-
-
-
-create table conditions.temp_enrollment_yearly as ( select * from data_warehouse.member_enrollment_yearly where year between 2015 and 2016);
-
-alter table conditions.temp_enrollment_yearly add column condition_map char(47) default repeat('0',47);
-
-select * from conditions.temp_enrollment_yearly
-
-
----modular functions -- embedded logic to reduce redundancy 
---1 return set of people who meet certain dx
---2 secondary function considers additional criteria 
 
 
 

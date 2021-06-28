@@ -16,7 +16,7 @@ create table data_warehouse.member_enrollment_monthly (
 	consecutive_enrolled_months int2,
 	gender_cd char(1),
 	state varchar,
-	dod char(5),
+	zip5 char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 
@@ -27,7 +27,7 @@ create table data_warehouse.member_enrollment_monthly (
 	claim_created_flag bool default false,
 	row_identifier bigserial,
 	rx_coverage int2,
-	data_year int2,
+	fiscal_year int2,
 	race_cd char(2)
 )
 WITH (appendonly=true, orientation=column)
@@ -77,6 +77,8 @@ where x.uth_member_id is null
 ;
 ---------------------------------------------------------------------------------------------------
 
+select distinct mer.bus 
+from optum_dod.mbr_enroll_r mer 
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
@@ -88,6 +90,9 @@ insert into data_warehouse.member_enrollment_monthly (
 	age_derived, dob_derived, death_date,
 	plan_type, bus_cd, rx_coverage      
 	)
+	
+	
+	
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
@@ -105,7 +110,7 @@ from optum_zip.mbr_enroll m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
-  left outer join reference_tables.ref_dod_crosswalk e 
+  left outer join reference_tables.ref_zip_crosswalk e 
    on e.zip = substring(zipcode_5,1,5)
   left outer join data_warehouse.member_enrollment_monthly x 
      on x.uth_member_id = a.uth_member_id 
@@ -125,20 +130,22 @@ from data_warehouse.dim_uth_member_id where data_source = 'truv'
 distributed by(member_id_src);
 
 
+
+
 vacuum analyze dev.truven_uth_mem;
 
-delete from data_warehouse.member_enrollment_monthly where data_source = 'truv' and year = 2019;
+
 
 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage, data_year         
+	plan_type, bus_cd, employee_status, rx_coverage, fiscal_year         
 	)		
 select 
-	   'truv', b.year_int, b.month_year_id, a.uth_member_id,
+	   'truv', b.year_int, b.month_year_id, a.uth_member_id, 
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
        d.plan_type, 'COM', eestatu, m.rx, m.year 
@@ -157,7 +164,10 @@ from truven.ccaet m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where m.year = 2019
+  left outer join data_warehouse.member_enrollment_monthly x 
+     on x.uth_member_id = a.uth_member_id 
+    and x.month_year_id = b.month_year_id 
+where x.uth_member_id is null    
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -168,9 +178,9 @@ where m.year = 2019
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage , data_year      
+	plan_type, bus_cd, employee_status, rx_coverage , fiscal_year      
 	)		
 select 
        'truv', b.year_int,b.month_year_id, a.uth_member_id,
@@ -192,13 +202,31 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-where m.year = 2019
+  left outer join data_warehouse.member_enrollment_monthly x 
+     on x.uth_member_id = a.uth_member_id 
+    and x.month_year_id = b.month_year_id 
+where x.uth_member_id is null   
 ;
 ---------------------------------------------------------------------------------------------------
 
 
 drop table dev.truven_uth_mem;
 
+vacuum analyze data_warehouse.member_enrollment_monthly;
+
+
+select count(*), year 
+from data_warehouse.member_enrollment_monthly 
+where data_source = 'truv' 
+group by year 
+order by year; 
+
+
+select count(*), year 
+from truven.ccaet 
+group by year 
+order by year 
+;
 
 ----- End Truven ******
 
@@ -429,7 +457,7 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 select count(*),
---count(distinct uth_member_id ), 
+count(distinct uth_member_id ), 
 data_source , year
 from data_warehouse.member_enrollment_monthly
 group by data_source , year
