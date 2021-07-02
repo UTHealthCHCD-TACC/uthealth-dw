@@ -44,23 +44,36 @@ vacuum analyze data_warehouse.member_enrollment_monthly;
     ---------------- data loads --------------------
     
 
+select count(*) from data_warehouse.dim_uth_member_id dumi where data_source = 'optd' 
+
+select count(distinct patid) from optum_dod.mbr_enroll_r mer 
+
+
+
+delete from data_warehouse.member_enrollment_monthly where data_source = 'optd';
+
+
 -- Optum DOD --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, race_cd, rx_coverage         
+	plan_type, bus_cd, rx_coverage, fiscal_year, race_cd       
 	)		
 select 'optd', b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, m.state, null, null, 
-       b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, (select max(death_ym) from optum_dod.mbrwdeath dod where dod.patid = m.patid ) as death_dt,  
-       d.plan_type, bus, r.race_cd , 1 as rx
+       b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, 
+       case when death_ym is null then null else death_ym end as death_dt,  
+       d.plan_type, bus, 1 as rx, b.year_int, r.race_cd 
 from optum_dod.mbr_enroll_r m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optd'
+  left outer join optum_dod.mbrwdeath dth 
+    on dth.patid = m.patid 
   join reference_tables.ref_month_year b
-    on b.start_of_month between date_trunc('month', m.eligeff) and m.eligend
+ ---6/28/21 added logic to exclude enrollment records after death. note that this will cause some members to totally be excluded. i.e patid = 33020533586
+    on b.start_of_month between date_trunc('month', m.eligeff) and case when dth.death_ym is not null then dth.death_ym else m.eligend end
   left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd 
@@ -70,34 +83,23 @@ from optum_dod.mbr_enroll_r m
   left outer join reference_tables.ref_race r 
     on r.race_cd_src = m.race 
    and r.data_source = 'optd'
-  left outer join data_warehouse.member_enrollment_monthly x 
-     on x.uth_member_id = a.uth_member_id 
-    and x.month_year_id = b.month_year_id 
-where x.uth_member_id is null 
 ;
 ---------------------------------------------------------------------------------------------------
 
-select distinct mer.bus 
-from optum_dod.mbr_enroll_r mer 
-
-vacuum analyze data_warehouse.member_enrollment_monthly;
 
 
 -- Optum ZIP --------------------------------------------------------------------------------------
 insert into data_warehouse.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage      
-	)
-	
-	
-	
+	plan_type, bus_cd, rx_coverage, fiscal_year     
+	)	
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, null, 
-       d.plan_type, bus, 1 as rx
+       d.plan_type, bus, 1 as rx, b.year_int 
 from optum_zip.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
@@ -111,13 +113,16 @@ from optum_zip.mbr_enroll m
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
   left outer join reference_tables.ref_zip_crosswalk e 
-   on e.zip = substring(zipcode_5,1,5)
-  left outer join data_warehouse.member_enrollment_monthly x 
-     on x.uth_member_id = a.uth_member_id 
-    and x.month_year_id = b.month_year_id 
-where x.uth_member_id is null    
+   on e.zip = substring(zipcode_5,1,5)   
 ; 
 ---------------------------------------------------------------------------------------------------
+
+
+vacuum analyze data_warehouse.member_enrollment_monthly;
+
+select count(distinct uth_member_id), data_source 
+from data_warehouse.member_enrollment_monthly 
+group by data_source ;
 
 
 

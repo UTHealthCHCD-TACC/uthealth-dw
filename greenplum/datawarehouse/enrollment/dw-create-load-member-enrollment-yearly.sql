@@ -53,7 +53,7 @@ select distinct on( data_source, year, uth_member_id )
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd
 from data_warehouse.member_enrollment_monthly a 
---where data_source in ('optd','optz')
+where data_source in ('optd','optz')
 ;
 
 
@@ -67,7 +67,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
---where data_source in ('optd','optz')
+where data_source in ('optd','optz')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -180,10 +180,10 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 
 
 --validate 
-select count(*), count(distinct uth_member_id ), year , data_source 
+select count(*), count(distinct uth_member_id ), data_source 
 from  data_warehouse.member_enrollment_yearly
-group by year, data_source 
-order by data_source , year ;
+group by data_source 
+order by data_source-- , year ;
 
 
 -- Drop temp table
@@ -197,7 +197,6 @@ select * from data_warehouse.member_enrollment_monthly mem where data_source = '
 -- all logic finds the most common occurence in a given year and assigns that value
 -----------------------------------------------------------------------------------------------------------------------
 
-alter table data_warehouse.member_enrollment_yearly add column member_id_src text;
 
 ---states 
 select count(*), min(month_year_id) as my, uth_member_id, state, year 
@@ -247,17 +246,12 @@ and a.year = b.year
  and b.my_grp = 1;
 
 
-select * from optum_zip.mbr_enroll me where patid = 560499200000074;
 
-
-select * from data_warehouse.dim_uth_member_id dumi where member_id_src = '560499200000074';
-
-
-select * from data_warehouse.member_enrollment_monthly mem where uth_member_id = 206751880;
 
 drop table dev.wc_zip3_yearly;
 
 drop table dev.wc_zip3_yearly_final;
+
 
 --- zip5
 select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
@@ -265,11 +259,6 @@ select count(*), min(month_year_id) as my, uth_member_id, zip5, year
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, zip5, year 
 ;
-
-
---30306     4 months
---41115     4 months
---20001     4 months 
 
 
 create table dev.wc_zip5_yearly_final 
