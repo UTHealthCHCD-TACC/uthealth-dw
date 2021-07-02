@@ -9,7 +9,7 @@ select distinct 'truv' as data_source, cast(p.provid as numeric(10,0))::text
 	left join dev.am_dim_uth_provider_id d on d.provider_id_src = cast(p.provid as numeric(10,0))::text and d.data_source = 'truv'
 	where d.uth_provider_id is null
 		and p.provid is not null
-		and p.provid > 0;
+		and p.provid > 0; 
 	
 --ccaes -- get provider id
 insert into dev.am_dim_uth_provider_id (data_source, provider_id_src)    	
@@ -125,8 +125,9 @@ insert into dev.am_claim_detail_provider(data_source , data_year , uth_member_id
  												and d.member_id_src = s.member_id_src 
  												and d.data_year = s.data_year 
 	where d.data_source = 'truv'												
-	
-	
+
+------------------------------------------------------------------------------------------------------------		
+select count(*) from dev.am_claim_detail_provider where data_source = 'truv'	
 	
  
 		 
