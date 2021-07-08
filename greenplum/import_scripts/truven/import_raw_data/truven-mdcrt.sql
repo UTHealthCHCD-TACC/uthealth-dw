@@ -122,12 +122,13 @@ CREATE EXTERNAL TABLE ext_mdcrt_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/mdcrt*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRT*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select distinct year
+select year, min(dtstart), max(dtstart)
 from ext_mdcrt_v2
+group by 1;
 limit 1000;
 
 insert into truven.mdcrt (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
@@ -148,7 +149,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcrt where year=2019)
 distributed randomly;
 
-delete from truven.mdcrt where year=2019;
+delete from truven.mdcrt where year=2019 or year=2020;
 
 drop table truven.mdcrt;
 alter table truven.mdcrt_new rename to mdcrt;

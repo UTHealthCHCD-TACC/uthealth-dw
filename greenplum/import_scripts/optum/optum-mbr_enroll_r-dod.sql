@@ -29,8 +29,6 @@ limit 1000;
 insert into optum_dod.mbr_enroll_r
 select * from ext_mbr_enroll_r;
 
-truncate optum_dod.mbr_enroll;
-
 -- Analyze
 analyze optum_dod.mbr_enroll;
 

@@ -122,7 +122,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaet*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAET*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -149,7 +149,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaet where year=2019)
 distributed randomly;
 
-delete from truven.ccaet where year=2019;
+delete from truven.ccaet where year>=2019;
 
 --drop table truven.ccaet;
 --alter table truven.ccaet_new rename to ccaet;

@@ -22,8 +22,8 @@ SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,
 */
 
 
-drop table truven.ltd;
-CREATE TABLE truven.ltd (
+drop table truven.hpm_ltd;
+CREATE TABLE truven.hpm_ltd (
 	year int2,
 	seqnum numeric NULL,
 	adv_case bpchar(30) null,
@@ -46,6 +46,34 @@ CREATE TABLE truven.ltd (
 )
 DISTRIBUTED RANDOMLY;
 
+drop external table ext_ltd_v1;
+CREATE EXTERNAL TABLE ext_ltd_v1 (
+	seqnum numeric ,
+	adv_case bpchar(30) ,
+	casestat bpchar(1) ,
+	base_pay numeric ,
+	dtabs1 date ,
+	dtlast date ,
+	daysabs numeric ,
+	offset_pay numeric ,
+	dtrtw date , 
+	enrolid numeric ,
+	rtw_flag bpchar(1) ,
+	caseid numeric ,
+	casedx bpchar(10) ,
+	paytot numeric ,
+	version int2 
+) 
+LOCATION ( 
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V1/LTD*.CSV'
+)
+FORMAT 'CSV' ( HEADER DELIMITER ',' );
+
+insert into truven.hpm_ltd (SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION)
+select SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION
+from ext_ltd_v1;
+
+
 drop external table ext_ltd_v2;
 CREATE EXTERNAL TABLE ext_ltd_v2 (
 	seqnum numeric ,
@@ -66,7 +94,7 @@ CREATE EXTERNAL TABLE ext_ltd_v2 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2014*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V2/LTD*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -75,12 +103,12 @@ select *
 from ext_ltd_v2
 limit 1000;
 
-truncate table truven.ltd;
+truncate table truven.hpm_ltd;
 
 */
 
-insert into truven.ltd (year, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION)
-select 2014, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION
+insert into truven.hpm_ltd (SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION)
+select SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,PAYTOT,VERSION
 from ext_ltd_v2;
 
 drop external table ext_ltd_v3;
@@ -104,7 +132,7 @@ CREATE EXTERNAL TABLE ext_ltd_v3 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V3/LTD*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -114,22 +142,24 @@ from ext_ltd_v3
 limit 1000;
 */
 
-insert into truven.ltd (year, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION)
-select 2015, SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION
+insert into truven.hpm_ltd (SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION)
+select SEQNUM,ADV_CASE,CASESTAT,BASE_PAY,DTABS1,DTLAST,DAYSABS,OFFSET_PAY,DTRTW,EFAMID,ENROLID,RTW_FLAG,CASEID,CASEDX,DXVER,PAYTOT,VERSION
 from ext_ltd_v3;
 
 -- Verify
 
-select count(*) from truven.ltd;
+select min(dtlast), max(dtlast), count(*) from truven.hpm_ltd;
 
 
 
 -- Fix storage options
-create table truven.ltd_new 
+create table truven.hpm_ltd_new 
 WITH (appendonly=true, orientation=column)
-as (select * from truven.ltd)
+as (select * from truven.hpm_ltd)
 distributed randomly;
 
-drop table truven.ltd;
-alter table truven.ltd_new rename to ltd;
+drop table truven.hpm_ltd;
+alter table truven.hpm_ltd_new rename to ltd;
+
+update truven.hpm_ltd set year=extract(year from DTLAST);
 

@@ -18,9 +18,9 @@ NOTE: 2015 file is missing DXVER.  Inconsistent with other 2015 files.
 
 */
 
-drop table truven.abs;
-CREATE TABLE truven.abs (
-	year int2 null,
+drop table truven.hpm_abs;
+CREATE TABLE truven.hpm_abs (
+	--year int2 null,
 	hours numeric null,
 	abstyp int2 null,
 	absfrom date null,
@@ -30,7 +30,6 @@ CREATE TABLE truven.abs (
 	paid_ind bpchar(1) null,
 	seqnum numeric NULL,
 	version int2 NULL
-	
 )
 DISTRIBUTED RANDOMLY;
 
@@ -46,18 +45,18 @@ CREATE EXTERNAL TABLE ext_abs_v1 (
 	version int2
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2011*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/2011/ABS*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
---select *
---from ext_abs_v1
---limit 1000;
+select *
+from ext_abs_v1
+limit 1000;
 
---truncate table truven.abs;
+--truncate table truven.hpm_abs;
 
-insert into truven.abs (year, HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version)
-select 2011, HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version
+insert into truven.hpm_abs (HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version)
+select HOURS,ABSTYP,ABSFROM,ABSTO,ENROLID,PAID_IND,seqnum,version
 from ext_abs_v1;
 
 drop external table ext_abs_v2;
@@ -73,7 +72,7 @@ CREATE EXTERNAL TABLE ext_abs_v2 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2015*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/ABS*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -81,24 +80,27 @@ FORMAT 'CSV' ( HEADER DELIMITER ',' );
 --from ext_abs_v2
 --limit 1000;
 
-insert into truven.abs (year, HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version )
-select 2015, HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version 
+insert into truven.hpm_abs (HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version )
+select HOURS,ABSTYP,ABSFROM,ABSTO,EFAMID,ENROLID,PAID_IND,seqnum,version 
 from ext_abs_v2;
 
 -- Verify
 
-select count(*) from truven.abs;
+select count(*) from truven.hpm_abs;
 
 -- Fix storage options
-create table truven.abs_new 
+create table truven.hpm_abs_new 
 WITH (appendonly=true, orientation=column)
-as (select * from truven.abs)
+as (select * from truven.hpm_abs)
 distributed randomly;
 
-drop table truven.abs;
-alter table truven.abs_new rename to abs;
+drop table truven.hpm_abs;
+alter table truven.hpm_abs_new rename to abs;
 
+select distinct extract(year from ABSFROM)
+from truven.hpm_abs;
 
+update truven.hpm_abs set year=extract(year from ABSFROM);
 
 
 

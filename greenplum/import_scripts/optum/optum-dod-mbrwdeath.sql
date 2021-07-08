@@ -34,4 +34,7 @@ analyze optum_dod.mbrwdeath;
 --Verify
 select count(*) from optum_dod.mbrwdeath;
 
+--Refresh
+truncate table optum_dod.mbrwdeath;
+
 

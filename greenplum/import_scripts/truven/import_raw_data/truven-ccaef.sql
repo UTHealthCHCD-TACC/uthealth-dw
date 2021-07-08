@@ -367,7 +367,7 @@ CREATE EXTERNAL TABLE ext_ccaef_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaef*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAEF*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -489,7 +489,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaef where year=2019)
 distributed randomly;
 
-delete from truven.ccaef where year=2019;
+delete from truven.ccaef where year>=2019;
 
 drop table truven.ccaef;
 alter table truven.ccaef_new rename to ccaef;

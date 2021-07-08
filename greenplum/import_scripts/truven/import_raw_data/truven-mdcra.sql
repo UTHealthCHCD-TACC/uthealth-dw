@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE ext_mdcra_v2 (
 	mswgtkey numeric 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/mdcra*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRA*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -184,7 +184,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcra where year=2019)
 distributed randomly;
 
-delete from truven.mdcra where year=2019;
+delete from truven.mdcra where year>=2019;
 
 drop table truven.mdcra;
 alter table truven.mdcra_new rename to mdcra;

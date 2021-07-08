@@ -1,7 +1,11 @@
 --Activity
 select *
 from pg_stat_activity
-where state='active';
+where state='active'
+and usename='walling';
+
+select pg_terminate_backend(221905);
+
 
 select *
 from pg_settings
@@ -12,9 +16,6 @@ select ceil((200 + 3 + 15 + 5) / 16)
 SELECT * 
 FROM pg_extension;
 
-create extension metrics_collector;
-
-select pg_terminate_backend(239886);
 
 select dbo.pg_kill_connection(119596)
 
@@ -32,13 +33,15 @@ sum(reltuples) as num_tuples
  FROM pg_tables;
  
 --Total Schema Size
- SELECT schemaname, 
+ SELECT schemaname,
  pg_size_pretty(SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT) 
  FROM pg_tables 
  WHERE schemaname in ('truven')
  group by 1
 order by 2 desc;
 
+select count(*)
+from truven.ccaea;
 --Size by Table
 select
    n.nspname,
@@ -52,7 +55,7 @@ select
    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
    join pg_catalog.pg_user u on relowner=u.usesysid 
    WHERE relpages >= 0
-   and n.nspname in ('truven')
+   --and n.nspname in ('truven')
    --and n.nspname = 'data_warehouse'
    --and relname like 'wc_claim%'
    --and u.usename = 'wcough'
@@ -62,7 +65,12 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('data_warehouse.claim_diag');
+SELECT get_ao_distribution('reference_tables.ndc_tier_map_imp');
+
+create table reference_tables.ndc_tier_map_imp2 (like reference_tables.ndc_tier_map_imp)
+WITH (appendonly=true, orientation=column, compresstype=none)
+distributed randomly;
+
 
 select uth_member_id, count(*)
 from dw_qa.dim_uth_claim_id
@@ -103,6 +111,7 @@ where pgn.nspname in ('data_warehouse') and pgc.relname != 'dim_uth_member_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression
+create view qa_reporting.compression_status as
 SELECT  b.nspname||'.'||a.relname as TableName
 ,CASE c.columnstore
    when 'f' THEN 'Row Orientation'        
@@ -117,7 +126,7 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('data_warehouse')
+and b.nspname in ('optum_zip', 'optum_dod', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
 AND a.oid=c.relid;
 
 --Roles and Members

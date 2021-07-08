@@ -36,3 +36,4 @@ analyze optum_dod.mbr_co_enroll_r;
 select min(eligeff), max(eligeff), count(*) from optum_dod.mbr_co_enroll_r;
 
 --Refresh
+truncate optum_dod.mbr_co_enroll_r;
