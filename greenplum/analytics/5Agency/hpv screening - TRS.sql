@@ -1,19 +1,28 @@
 ---hpv
 drop table if exists WRK.dbo.wc_trs_hpv_clms;
 
-select distinct combo_id, FSCYR, srv_start_dt
+select count(distinct src_clm_id) as clms, combo_id, FSCYR
 into WRK.dbo.wc_trs_hpv_clms
 from 
 (
-	select a.combo_id, a.MED_FSCYR as fscyr, a.srv_start_dt 
+	select a.combo_id, a.MED_FSCYR as fscyr, a.src_clm_id 
 	from trsers.dbo.TRS_CLM_FIN_NEW a
-	where a.MED_FSCYR between 2016 and 2019
+	where a.MED_FSCYR between 2015 and 2019
 	  and a.prcdr_cd in ('90649','90650','90651')
 	  
 ) inr 
+group by combo_id, FSCYR
 ;
 
 
+
+--consolidate
+drop table wrk.dbo.wc_trs_hpv_vacc;
+
+select min(fscyr) as hpv_start, sum(clms) as cnt, combo_id 
+into wrk.dbo.wc_trs_hpv_vacc
+from WRK.dbo.wc_trs_hpv_clms
+group by combo_id;
 
 
 
@@ -24,23 +33,14 @@ from TRSERS.dbo.TRS_AGG_YR_FIN
 group by fscyr
 order by  fscyr;
 
-select combo_id 
-into wrk.dbo.wc_trs_hpv_vacc
-from (
-select count(srv_start_dt) as cnt, combo_id  
-from WRK.dbo.wc_trs_hpv_clms
-group by combo_id
-) inr 
-where cnt > 1
-;
-
-
 
 ---active vs cobra vs ret
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.combo_id) as denom, count(c.combo_id) as numer 
 from TRSERS.dbo.TRS_AGG_YR_FIN a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
+     and c.cnt > 1 
+     and c.hpv_start <= a.FSCYR 
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12
@@ -49,9 +49,6 @@ order by a.FSCYR , stat
 ;
 
 
----confirmed 1 record per mem per yr
-
-select * from TRSERS.dbo.TRS_AGG_YR_FIN
 
 ---ee vs dep / active vs retiree
 select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 'D' then 'D' else 'X' end  ), ' ','' ) as nv, 
@@ -59,6 +56,8 @@ select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 
 from TRSERS.dbo.TRS_AGG_YR_FIN a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
+     and c.cnt > 1 
+     and c.hpv_start <= a.FSCYR       
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12 
@@ -81,6 +80,8 @@ select replace( str(a.FSCYR) + stat +
 from TRSERS.dbo.TRS_AGG_YR_FIN a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
+     and c.cnt > 1 
+     and c.hpv_start <= a.FSCYR       
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 
@@ -115,6 +116,8 @@ select replace( str(a.FSCYR) + gen + stat +
 from TRSERS.dbo.TRS_AGG_YR_FIN a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
+     and c.cnt > 1 
+     and c.hpv_start <= a.FSCYR       
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 

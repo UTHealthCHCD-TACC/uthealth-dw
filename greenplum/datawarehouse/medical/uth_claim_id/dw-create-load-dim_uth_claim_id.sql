@@ -147,6 +147,7 @@ vacuum analyze data_warehouse.dim_uth_claim_id;
 select count(*), data_source 
 from data_warehouse.dim_uth_claim_id
 group by data_source;
+
 ---------------------------------------------------------------------------------------------------
 ---- Medicare :
 ---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,
@@ -379,55 +380,44 @@ where c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
+delete from data_warehouse.dim_uth_claim_id where data_source = 'mdcd';
+
+
 ------------medicaid
 --claims
-with cte_mdcd_clm as ( 
-select distinct a.icn, b.pcn
-from medicaid.clm_header a 
-   join medicaid.clm_proc b  
-    on a.icn = b.icn
-) 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
-select 'mdcd', c.icn, c.pcn, b.uth_member_id, extract(year from a.hdr_frm_dos::date) as yr
-from medicaid.clm_header a
-  join cte_mdcd_clm c 
-    on c.icn = a.icn 
+select 'mdcd', a.icn, a.pcn, b.uth_member_id, a.year_fy 
+from medicaid.clm_proc a
   join data_warehouse.dim_uth_member_id b  
-    on b.member_id_src = c.pcn  
-  left outer join data_warehouse.dim_uth_claim_id d 
-    on d.member_id_src = c.pcn 
-   and d.claim_id_src = c.icn
-where d.uth_member_id is null 
+    on b.member_id_src = a.pcn  
+  left outer join data_warehouse.dim_uth_claim_id c
+    on c.member_id_src = a.pcn 
+   and c.claim_id_src = a.icn
+where c.uth_member_id is null 
 ; 
 
 
 ---medicaid
 --encounter
-with cte_mdcd_enc as ( 
-select distinct a.derv_enc, b.mem_id 
-from medicaid.enc_header a 
-   join medicaid.enc_proc b  
-     on a.derv_enc = b.derv_enc 
-)
---insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
-select 'mdcd', a.derv_enc, b.mem_id--, c.uth_member_id, extract(year from a.frm_dos::date) as yr
-from medicaid.enc_header a 
-   join cte_mdcd_enc b 
-     on b.derv_enc = a.derv_enc   
-   join data_warehouse.dim_uth_member_id c 
-     on c.member_id_src = b.mem_id 
-     
-     
-   left outer join data_warehouse.dim_uth_claim_id d 
-     on d.member_id_src = b.mem_id
-    and d.claim_id_src = b.derv_enc 
-where d.uth_claim_id is null 
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
+select 'mdcd', a.derv_enc, a.mem_id, b.uth_member_id, a.year_fy 
+from medicaid.enc_proc a   
+   join data_warehouse.dim_uth_member_id b 
+     on b.member_id_src = a.mem_id    
+   left outer join data_warehouse.dim_uth_claim_id c
+     on c.member_id_src = a.mem_id
+    and c.claim_id_src = a.derv_enc 
+where c.uth_claim_id is null 
 ;
 
 
 select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'mdcd';
 
 
+select count(*) from medicaid.clm_header;
+
+
+select count(*) from medicaid.enc_header;
 
 --------------------------------------------------------------------/End/-------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------

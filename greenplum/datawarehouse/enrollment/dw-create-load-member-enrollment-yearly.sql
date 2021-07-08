@@ -6,60 +6,57 @@ create table data_warehouse.member_enrollment_yearly (
 	year int2,
 	uth_member_id bigint,
 	total_enrolled_months int2,
-	enrolled_jan bool default false,
-	enrolled_feb bool default false,
-	enrolled_mar bool default false,
-	enrolled_apr bool default false,
-	enrolled_may bool default false,
-	enrolled_jun bool default false,
-	enrolled_jul bool default false,
-	enrolled_aug bool default false,
-	enrolled_sep bool default false,
-	enrolled_oct bool default false,
-	enrolled_nov bool default false,
-	enrolled_dec bool default false,
+	bus_cd char(4),
 	gender_cd char(1),
 	state varchar,
-	dod char(5),
+	zip5 char(5),
 	zip3 char(3),
 	age_derived int,
 	dob_derived date, 
+	race_cd char(2),
 	death_date date,
 	plan_type text,
-	bus_cd char(4),
 	employee_status text, 
-	claim_created_flag bool default false,
-	--row_identifier bigserial,  **deprecated 4/8/21**
 	rx_coverage int2, 
-	race_cd char(2),
-	fiscal_year int2
+	enrolled_jan int2 default 0, 
+	enrolled_feb int2 default 0,
+	enrolled_mar int2 default 0,
+	enrolled_apr int2 default 0,
+	enrolled_may int2 default 0,
+	enrolled_jun int2 default 0,
+	enrolled_jul int2 default 0,
+	enrolled_aug int2 default 0,
+	enrolled_sep int2 default 0,
+	enrolled_oct int2 default 0,
+	enrolled_nov int2 default 0,
+	enrolled_dec int2 default 0,
+	fiscal_year int2,
+	claim_created_flag bool default false,
+	member_id_src text 
 )
 with (appendonly=true, orientation=column)
 distributed by(uth_member_id);
 
-
-alter sequence data_warehouse.member_enrollment_yearly_row_identifier_seq cache 200
 
 ------------------------------------------------------------
 vacuum analyze data_warehouse.member_enrollment_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
+---remove old
+delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz');
 
-delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz','mcrn','mcrt','mdcd');
-
-
+--insert new recs from monthly 
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,plan_type, bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd )
 select distinct on( data_source, year, uth_member_id ) 
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd
-from data_warehouse.member_enrollment_monthly
-where data_source in ('optd','optz','mcrn','mcrt','mdcd')
---order by data_source, year, uth_member_id, month_year_id 
+from data_warehouse.member_enrollment_monthly a 
+where data_source in ('optd','optz')
 ;
 
-select * from data_warehouse.member_enrollment_monthly where data_source = 'mdcd';
+
 
 
 drop table dev.temp_member_enrollment_month;
@@ -70,7 +67,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source in ('optd','optz','mcrn','mcrt','mdcd')
+where data_source in ('optd','optz')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -79,7 +76,7 @@ vacuum analyze dev.temp_member_enrollment_month;
 
 --Add month flags
 update data_warehouse.member_enrollment_yearly y
-set enrolled_jan = true
+set enrolled_jan = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -87,7 +84,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_feb = true
+set enrolled_feb = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -96,7 +93,7 @@ where y.uth_member_id = m.uth_member_id
 
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_mar = true
+set enrolled_mar = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -104,7 +101,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_apr = true
+set enrolled_apr = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -112,7 +109,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_may = true
+set enrolled_may = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -120,7 +117,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_jun = true
+set enrolled_jun = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -128,7 +125,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_jul = true
+set enrolled_jul = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -136,7 +133,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_aug = true
+set enrolled_aug = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -144,7 +141,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_sep = true
+set enrolled_sep = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -152,7 +149,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_oct = true
+set enrolled_oct = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -160,7 +157,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_nov = true
+set enrolled_nov = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -168,7 +165,7 @@ where y.uth_member_id = m.uth_member_id
 ;
 
 update data_warehouse.member_enrollment_yearly y
-set enrolled_dec = true
+set enrolled_dec = 1
 from dev.temp_member_enrollment_month m 
 where y.uth_member_id = m.uth_member_id 
   and y.year = m.year 
@@ -181,18 +178,12 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 
 
 
---validate
-select * from data_warehouse.member_enrollment_yearly where total_enrolled_months >= 6 and data_source = 'mdcd';
-
-
-vacuum analyze data_warehouse.member_enrollment_yearly;
-
 
 --validate 
-select count(*), count(distinct uth_member_id ), year , data_source 
+select count(*), count(distinct uth_member_id ), data_source 
 from  data_warehouse.member_enrollment_yearly
-group by year, data_source 
-order by data_source , year ;
+group by data_source 
+order by data_source-- , year ;
 
 
 -- Drop temp table
@@ -205,6 +196,7 @@ select * from data_warehouse.member_enrollment_monthly mem where data_source = '
 -----************** logic for yearly rollup of various columns
 -- all logic finds the most common occurence in a given year and assigns that value
 -----------------------------------------------------------------------------------------------------------------------
+
 
 ---states 
 select count(*), min(month_year_id) as my, uth_member_id, state, year 
@@ -254,9 +246,12 @@ and a.year = b.year
  and b.my_grp = 1;
 
 
+
+
 drop table dev.wc_zip3_yearly;
 
 drop table dev.wc_zip3_yearly_final;
+
 
 --- zip5
 select count(*), min(month_year_id) as my, uth_member_id, zip5, year 
@@ -264,6 +259,7 @@ select count(*), min(month_year_id) as my, uth_member_id, zip5, year
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, zip5, year 
 ;
+
 
 create table dev.wc_zip5_yearly_final 
 with (appendonly=true, orientation=column)
@@ -337,6 +333,14 @@ and a.year = b.year
 drop table dev.wc_employee_status_yearly;
 
 drop table dev.wc_employee_status_yearly_final;
+
+
+
+
+---------------------- 6/14/2021 adding member_id_src 
+update  data_warehouse.member_enrollment_yearly a set member_id_src = b.member_id_src 
+from data_warehouse.dim_uth_member_id b  
+   where a.uth_member_id = b.uth_member_id ;
 
 
 

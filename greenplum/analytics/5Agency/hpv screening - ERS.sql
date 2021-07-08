@@ -1,65 +1,54 @@
 ---hpv
 drop table if exists WRK.dbo.wc_ers_hpv_clms;
 
-select distinct ID, FSCYR, FirstDateofService 
+select count( distinct ClaimNumber) as clms, ID, FSCYR
 into WRK.dbo.wc_ers_hpv_clms
 from 
 (
-	select id, MED_FSCYR as fscyr, a.FirstDateofService 
+	select id, MED_FSCYR as fscyr, a.ClaimNumber 
 	from trsers.dbo.ers_uhcmedclm a 
 	where a.MED_FSCYR between 2016 and 2017 
 	  and a.HCPCSCPTCode in ('90649','90650','90651')
 union 
-	select id, FSCYR , a.FirstDateofService
+	select id, FSCYR , a.ClaimNumber 
 	from TRSERS.dbo.ERS_BCBSMedCLM a
 	where a.FSCYR between 2018 and 2019 
  and a.HCPCSCPTCode in ('90649','90650','90651')
 ) inr 
+group by id, fscyr 
 ;
 
 
+--consolidate
+drop table wrk.dbo.wc_ers_hpv_vacc;
+
+select min(fscyr) as hpv_start, sum(clms) as cnt, id 
+into wrk.dbo.wc_ers_hpv_vacc
+from wrk.dbo.wc_ers_hpv_clms
+group by id;
 
 
-
----get counts for spreadsheet--------------------------------------------------------------------------
 ---confirmed 1 record per mem per yr
 select count(*), count(distinct id), fscyr 
 from TRSERS.dbo.ERS_AGG_YR
 group by fscyr
 order by  fscyr;
 
-select id 
-into wrk.dbo.wc_ers_hpv_vacc
-from (
-select count(FirstDateofService) as cnt, id  
-from WRK.dbo.wc_ers_hpv_clms
-group by id
-) inr 
-where cnt > 1
-;
 
-
-select * 
-from TRSERS.dbo.ERS_AGG_YR
-where id = '0000039600002'
-order by fscyr 
-;
-
-
+---------------------------------------------------------------------------------------------------------
 ---active vs cobra vs ret
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(c.id) as numer 
 from TRSERS.dbo.ERS_AGG_YR a 
   left outer join WRK.dbo.wc_ers_hpv_vacc c 
       on a.id = c.id 
+     and c.hpv_start <= a.FSCYR
+     and cnt > 1
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12
 group by a.FSCYR , stat 
 order by a.FSCYR , stat 
 ;
-
-
----confirmed 1 record per mem per yr
 
 
 
@@ -69,6 +58,8 @@ select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ
 from TRSERS.dbo.ERS_AGG_YR a 
   left outer join WRK.dbo.wc_ers_hpv_vacc c 
       on a.id = c.id 
+     and c.hpv_start <= a.FSCYR
+     and cnt > 1      
 where a.FSCYR between 2016 and 2019 
   and a.age = 13
   and a.enrlmnth = 12 
@@ -91,6 +82,8 @@ select replace( str(a.FSCYR) + stat +
 from TRSERS.dbo.ERS_AGG_YR a 
   left outer join WRK.dbo.wc_ers_hpv_vacc c 
       on a.id = c.id 
+      and c.hpv_start <= a.FSCYR
+     and cnt > 1     
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 
@@ -125,6 +118,8 @@ select replace( str(a.FSCYR) + gen + stat +
 from TRSERS.dbo.ERS_AGG_YR a 
   left outer join WRK.dbo.wc_ers_hpv_vacc c 
       on a.id = c.id 
+     and c.hpv_start <= a.FSCYR
+     and cnt > 1      
 where  a.FSCYR between 2016 and 2019 
   and a.AGE = 13
   and enrlmnth = 12 

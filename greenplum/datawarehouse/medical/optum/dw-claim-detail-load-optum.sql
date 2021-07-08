@@ -1,8 +1,16 @@
 
+
+--1 create an empty copy of claim detail, add or remove columns 
+--2 modify this sql to join on your dim_uth_provider_id 
+--3 run this load in dev 
+
+
+
 --Optum dod load
 drop table dev.wc_claim_detail_optd;
 
 select * from dev.wc_claim_detail_optd
+
 
 create table dev.wc_claim_detail_optd
 with(appendonly=true,orientation=column)
@@ -87,6 +95,7 @@ from dev.wc_optd_medical m
 	  on m.conf_id=conf.conf_id
 	left outer join reference_tables.ref_optum_bill_type_from_tos bt 
 	  on m.tos_cd=bt.tos
+	
 ;
 
 
@@ -233,6 +242,13 @@ order by year;
 
 
 
-analyze data_warehouse.claim_detail;
+vacuum analyze data_warehouse.claim_detail;
 
+--final check
+select count(*), data_source, year 
+from data_warehouse.claim_detail 
+group by data_source , year 
+order by data_source , year ;
 
+--final cleanup
+drop table dev.wc_optz_medical;  drop table dev.wc_claim_detail_optz; drop table dev.wc_optz_uth_claim;

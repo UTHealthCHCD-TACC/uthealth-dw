@@ -12,10 +12,10 @@ and data_type in ('text','character varying')
 ) c
 ;
 
-vacuum analyze medicaid.enc_dx;
+vacuum analyze medicaid.enc_proc;
 
 
-update medicaid.enc_det set rend_prov_id = trim(rend_prov_id);
+update medicaid.enc_header set mco_sda_name = trim(mco_sda_name);
 
 
 
@@ -29,7 +29,7 @@ begin
 from ( 
 select table_schema, table_name, column_name 
 from information_schema.columns a 
-where a.table_schema = 'medicaid' and table_name = 'enc_dx'
+where a.table_schema = 'medicaid' and table_name = 'enc_proc'
 and data_type in ('text','character varying')
 ) c
 loop 
