@@ -313,17 +313,17 @@ from medicare_texas.mbsf_abcd_summary m
                            else null end      
   join reference_tables.ref_medicare_ptd_cntrct ptd 
     on ptd.ptd_first_char = case when b.month_int = 1 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_02,1,1)
+                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_03,1,1)
+                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_04,1,1)
+                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_05,1,1)
+                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_06,1,1)
+                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_07,1,1)
+                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_08,1,1)
+                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_09,1,1)
+                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_10,1,1)
+                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_11,1,1)
+                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_12,1,1)
                            else null end
 ;
 	
@@ -385,17 +385,17 @@ from medicare_national.mbsf_abcd_summary m
                            else null end      
   join reference_tables.ref_medicare_ptd_cntrct ptd 
     on ptd.ptd_first_char = case when b.month_int = 1 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_01,1,1)
+                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_02,1,1)
+                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_03,1,1)
+                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_04,1,1)
+                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_05,1,1)
+                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_06,1,1)
+                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_07,1,1)
+                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_08,1,1)
+                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_09,1,1)
+                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_10,1,1)
+                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_11,1,1)
+                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_12,1,1)
                            else null end
 ;
 
