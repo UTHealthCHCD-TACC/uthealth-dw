@@ -1,17 +1,70 @@
+select count(), count(distinct member_id_src)
+from dev.temp_script_id;
+
+select distinct refill_count from dev.temp_script_id tsi
+where refill_count=0;
+
+update dev.temp_script_id set uth_script_id = null;
+
+alter table dev.temp_script_id drop column uth_script_id;
+
+alter table dev.temp_script_id add column uth_script_id int8;
+drop sequence dev.temp_script_id_uth_script_id_seq;
+create sequence dev.temp_script_id_uth_script_id_seq;
+
+update dev.temp_script_id set uth_script_id=nextval('dev.temp_script_id_uth_script_id_seq')
+where uth_script_id is null and refill_count = 0;
+
+update dev.temp_script_id b set uth_script_id=a.uth_script_id
+from dev.temp_script_id a
+
+select b.uth_rx_claim_id, count(*)	
+select a.*
+from dev.temp_script_id b
+join dev.temp_script_id a
+on a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and a.refill_count=0 and b.refill_count>0
+and a.fill_date = (select max(c.fill_date) from  dev.temp_script_id c
+					where c.uth_member_id = a.uth_member_id
+					                         and c.ndc = a.ndc 
+					                         and c.refill_count = 0 
+					                         and c.fill_date < b.fill_date ) 
+where b.uth_rx_claim_id = 7871096076;					                         
+group by 1
+having count(*) > 1;
+
+					                         
+select uth_member_id, member_id_src, uth_script_id, script_id, ndc, refill_count, fill_date
+from dev.temp_script_id
+order by uth_script_id, ndc, fill_date, refill_count
 
 /*
  * David Code
  */
+select distinct script_id from data_warehouse.pharmacy_claims pc ;
 
 drop table dev.temp_script_id;
 create table dev.temp_script_id(like data_warehouse.pharmacy_claims)
 with(appendonly=true, orientation=column, compresstype=zlib);
 
+select uth_member_id, count(distinct member_id_src), count(*)
+from data_warehouse.pharmacy_claims pc 
+group by 1
+order by 3 desc;
+
+select uth_member_id, count(distinct member_id_src), count(*)
+from data_warehouse.dim_uth_rx_claim_id
+group by 1
+order by 3 desc;
+
+select uth_member_id, count(*)
+from data_warehouse.dim_uth_rx_claim_id
+group by 1
+order by 2 desc;
 
 insert into dev.temp_script_id
 select *
 from data_warehouse.pharmacy_claims
-where uth_member_id=100000000;
+where uth_member_id=211359520;
 
 
 select count(*) from dev.temp_script_id;

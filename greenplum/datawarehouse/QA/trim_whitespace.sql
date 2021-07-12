@@ -16,7 +16,7 @@ create function rm_trail_spaces() returns void as
            where 
              table_schema in ('optum_zip', 'optum_dod', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
              and (data_type='text' or data_type='character varying' )
-             and is_updatable=
+             and is_updatable='YES'
          ) c
     loop
     execute selectrow.script;
@@ -27,4 +27,3 @@ create function rm_trail_spaces() returns void as
   
   SELECT rm_trail_spaces();
   
-select * from INFORMATION_SCHEMA.COLUMNS where table_name='htw_dxs';
