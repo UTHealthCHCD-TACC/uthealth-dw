@@ -58,8 +58,8 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_claim_id, null as clai
        a.pos, d.admit_date, d.disch_date, a.proc_cd, 
        null, substring(a.procmod, 1,1), substring(a.procmod, 2,1), a.rvnu_cd,
        (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount, a.copay,
-       a.deduct, a.coins, null as cob, e.inst_code, 
-       e.class_code, null as bt_freq, a.units, a.drg, 
+       a.deduct, a.coins, null as cob, substring(a.bill_type,1,1),
+       substring(a.bill_type,2,1), substring(a.bill_type,3,1), a.units, a.drg, 
        a.clmid, a.patid::text, 'medical', a.clmseq, 
        a.cob as cob_type, a."year", c.standard_price_year, d.dstatus
 from dev.wc_optd_medical a   --optum_dod.medical a
@@ -71,9 +71,6 @@ from dev.wc_optd_medical a   --optum_dod.medical a
 	  and c.standard_price_year = a.std_cost_yr::int
 	left outer join optum_dod.confinement d
 	  on a.conf_id = d.conf_id
-	left outer join reference_tables.ref_optum_bill_type_from_tos e
-	  on a.tos_cd = e.tos
-	
 ;
 ---------------------
 
@@ -124,7 +121,7 @@ as select * from data_warehouse.claim_detail limit 0
 distributed by (member_id_src);
 
 ---optz medical distributed on member 
-drop table dev.wc_optz_medical;
+drop table if exists dev.wc_optz_medical;
 
 create table dev.wc_optz_medical
 with(appendonly=true,orientation=column)
