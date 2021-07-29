@@ -242,6 +242,7 @@ create table data_warehouse.pharmacy_claims (
 		data_source char(4),
 		year int2, 
 		-- NEW
+		data_year int2,
 		year_adj int2,
 		-- END NEW
 		uth_rx_claim_id int8,
@@ -277,6 +278,8 @@ with (appendonly=true, orientation = column)
 distributed by (uth_member_id);
 
 
+vacuum analyze data_warehouse.pharmacy_claims;
+
 ---optum zip
 insert into data_warehouse.pharmacy_claims (
 		data_source, year, 
@@ -290,12 +293,17 @@ insert into data_warehouse.pharmacy_claims (
 		-- NEW
 		total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj,
 		-- END NEW
-		deductible, copay, coins, cob, rx_claim_id_src, member_id_src
+		deductible, copay, coins, cob, rx_claim_id_src, member_id_src,
+		-- NEW
+		data_year
+		-- END NEW
 		)			
-select 'optz', extract(year from a.fill_dt), b.uth_rx_claim_id, b.uth_member_id, patid::text || lpad(ndc, 11,'0') || a.fill_dt,
+select 'optz', extract(year from a.fill_dt), a.std_cost_yr, b.uth_rx_claim_id, b.uth_member_id, patid::text || lpad(ndc, 11,'0') || a.fill_dt,
        lpad(ndc, 11,'0'), a.days_sup, a.rfl_nbr::numeric, a.fill_dt, c.month_year_id, a.gnrc_ind, a.gnrc_nm, a.brnd_nm,
-       a.quantity, a.prescriber_prov, a.pharm, a.charge, a.std_cost, null, 
-       a.deduct, a.copay, null, null, a.clmid, a.patid::text
+       a.quantity, a.prescriber_prov, a.pharm, 
+       a.charge, a.std_cost, null, 
+       (a.charge * cf.cost_factor), (a.std_cost * cf.cost_factor), null,
+       a.deduct, a.copay, null, null, a.clmid, a.patid::text, a.year
 from optum_zip.rx a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'optz' 
@@ -305,9 +313,14 @@ from optum_zip.rx a
     on c.month_int = extract(month from a.fill_dt)
     and c.year_int = extract(year from a.fill_dt)
 	-- NEW
-	join reference_tables.ref_optum_cost_factor cf on cf.service_type = 'PHARMA' and cf.standard_price_year = a.std_cost_yr::int
+	join reference_tables.ref_optum_cost_factor cf on cf.service_type = 'PHARM' and cf.standard_price_year = a.std_cost_yr::int
 	-- END NEW    
  ;
+
+select count(*)
+from data_warehouse.pharmacy_claims pc 
+where data_source = 'optz';
+
 
 
 --optum dod
@@ -323,12 +336,17 @@ insert into data_warehouse.pharmacy_claims (
 		-- NEW
 		total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj,
 		-- END NEW
-		deductible, copay, coins, cob, rx_claim_id_src, member_id_src
+		deductible, copay, coins, cob, rx_claim_id_src, member_id_src,
+		-- NEW
+		data_year
+		-- END NEW
 		)			
-select 'optd', extract(year from a.fill_dt), b.uth_rx_claim_id, b.uth_member_id, patid::text || lpad(ndc, 11,'0') || a.fill_dt,
+select 'optd', extract(year from a.fill_dt), a.std_cost_yr, b.uth_rx_claim_id, b.uth_member_id, patid::text || lpad(ndc, 11,'0') || a.fill_dt,
        lpad(ndc, 11,'0'), a.days_sup, a.rfl_nbr::numeric, a.fill_dt, c.month_year_id, a.gnrc_ind, a.gnrc_nm, a.brnd_nm,
-       a.quantity, a.prescriber_prov, a.pharm, a.charge, a.std_cost, null, 
-       a.deduct, a.copay, null, null, a.clmid, a.patid::text 
+       a.quantity, a.prescriber_prov, a.pharm, 
+       a.charge, a.std_cost, null, 
+       (a.charge * cf.cost_factor), (a.std_cost * cf.cost_factor), null,
+       a.deduct, a.copay, null, null, a.clmid, a.patid::text, a.year
 from optum_dod.rx a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'optd' 
@@ -338,8 +356,8 @@ from optum_dod.rx a
     on c.month_int = extract(month from a.fill_dt)
     and c.year_int = extract(year from a.fill_dt)
 	-- NEW
-	join reference_tables.ref_optum_cost_factor cf on cf.service_type = 'PHARMA' and cf.standard_price_year = a.std_cost_yr::int
-	-- END NEW        
+	join reference_tables.ref_optum_cost_factor cf on cf.service_type = 'PHARM' and cf.standard_price_year = a.std_cost_yr::int
+	-- END NEW    
  ;
 
 -- Insert
