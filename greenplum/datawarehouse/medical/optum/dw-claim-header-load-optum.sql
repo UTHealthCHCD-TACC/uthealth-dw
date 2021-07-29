@@ -1,170 +1,242 @@
-/*
- * Remove old records
- */
-select count(*) from data_warehouse.claim_header where data_source in ('optd','optz');
+--------------------------------------------------------------------------------------------------
+--- ** OPTD **
+--------------------------------------------------------------------------------------------------
 
-delete from data_warehouse.claim_header where data_source in ('optd','optz');
+---working table
+drop table if exists dev.wc_claim_header_optd;
+
+create table dev.wc_claim_header_optd
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.claim_header limit 0
+distributed by (member_id_src);
 
 
-vacuum analyze data_warehouse.claim_header;
+---dim uth claims for optd 
+drop table if exists dev.wc_optd_uth_claim;
+create table dev.wc_optd_uth_claim
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
+distributed by (member_id_src);
 
-select data_source, count(*) as total from data_warehouse.claim_deatil where data_source in ('optd','optz')
-group by data_source;
+
+--optd medical
+drop table if exists dev.wc_optd_medical;
+create table dev.wc_optd_medical 
+with(appendonly=true,orientation=column,compresstype=zlib)
+as select * from optum_dod.medical
+distributed by (patid);
 
 
-vacuum analyze data_warehouse.claim_detail;
-/
- * *
- * We assume the matching records exist in dim_uth_claim_id
- */
---Optum load: 
--- Full years = 8132 seconds = 2h15m
+
+--admit id for optd only
+drop table dev.wc_uth_admission_id_optd; 
+
+create table dev.wc_uth_admission_id_optd 
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.dim_uth_admission_id where data_source = 'optd'
+distributed by (member_id_src);
+
 
 --optd
-insert into data_warehouse.claim_header(
-		data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, year,
-		year_adj, claim_type,
+--insert into data_warehouse.claim_header(
+insert into dev.wc_claim_header_optd(
+		data_source, 
+		year,
+		uth_claim_id, 
+		uth_member_id,
 	    from_date_of_service,
-		total_charge_amount, total_allowed_amount, total_paid_amount
-		, total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj, data_year
+	    claim_type,
+	    uth_admission_id,
+		total_charge_amount, 
+		total_allowed_amount, 
+		total_paid_amount,
+		claim_id_src,
+		member_id_src,
+		table_id_src,
+		bill_type,
+		fiscal_year, 
+		cost_factor_year, 
+		to_date_of_service
 		)
-	select 'optd', uthc.uth_member_id, m.patid, uthc.uth_claim_id, m.clmid, extract(year from (min(m.fst_dt))),
-	m.std_cost_yr::int,
-	cf.claim_type_code,
-	min(m.fst_dt) as from_date_of_service,
-	sum(m.charge) as total_charge_amount, 
-	sum(m.std_cost) as total_allowed_amount, 
+		
+		
+	select distinct on(b.uth_claim_id)
+	'optd', 
+	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
+	b.uth_claim_id,
+	b.uth_member_id, 
+	min(a.fst_dt) over(partition by b.uth_claim_id) as from_date_of_service,
+	c.claim_type_code,
+	d.uth_admission_id,
+	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
+	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
-	sum((m.charge * cf.cost_factor)) as total_charge_amount, 
-	sum((m.std_cost * cf.cost_factor)) as total_allowed_amount_adj, 
-	null as total_paid_amount_adj,
-	m.year
-from optum_dod.medical m
-	join data_warehouse.dim_uth_claim_id uthc 
-		on uthc.data_source = 'optd' 
-		and m.patid::text = uthc.member_id_src 
-		and m.clmid = uthc.claim_id_src
-	join reference_tables.ref_optum_cost_factor cf on cf.service_type = left(m.tos_cd, (position('.' in m.tos_cd)-1)) and cf.standard_price_year = m.std_cost_yr::int
-group by 1, 2, 3, 4, 5, m.std_cost_yr, cf.claim_type_code, m.year
-;
-
-select data_year, count(*)
-from data_warehouse.claim_header
-where data_source = 'optz'
-group by data_year
-order by data_year;
-
-insert into data_warehouse.claim_header(
-		data_source, uth_member_id, member_id_src, uth_claim_id, claim_id_src, year,
-		year_adj, claim_type,
-	    from_date_of_service,
-		total_charge_amount, total_allowed_amount, total_paid_amount
-		, total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj, data_year
-		)
-	select 'optz', uthc.uth_member_id, m.patid, uthc.uth_claim_id, m.clmid, extract(year from (min(m.fst_dt))),
-	m.std_cost_yr::int,
-	cf.claim_type_code,
-	min(m.fst_dt) as from_date_of_service,
-	sum(m.charge) as total_charge_amount, 
-	sum(m.std_cost) as total_allowed_amount, 
-	null as total_paid_amount,
-	sum((m.charge * cf.cost_factor)) as total_charge_amount, 
-	sum((m.std_cost * cf.cost_factor)) as total_allowed_amount_adj, 
-	null as total_paid_amount_adj,
-	m.year
-from optum_zip.medical m
-	join data_warehouse.dim_uth_claim_id uthc 
-		on uthc.data_source = 'optz' 
-		and m.patid::text = uthc.member_id_src 
-		and m.clmid = uthc.claim_id_src
-	join reference_tables.ref_optum_cost_factor cf on cf.service_type = left(m.tos_cd, (position('.' in m.tos_cd)-1)) and cf.standard_price_year = m.std_cost_yr::int
-group by 1, 2, 3, 4, 5, m.std_cost_yr, cf.claim_type_code, m.year
+	a.clmid,
+	a.patid::text, 
+	'medical' as table_src,	
+	a.bill_type,
+	a.year as fiscal, 
+	a.std_cost_yr::int as cost_year,
+	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
+from dev.wc_optd_medical a  --*optum_dod.medical a
+    join dev.wc_optd_uth_claim b --data_warehouse.dim_uth_claim_id b 
+		on a.patid::text = b.member_id_src 
+		and a.clmid = b.claim_id_src
+	join reference_tables.ref_optum_cost_factor c
+		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
+		and c.standard_price_year = a.std_cost_yr::int
+    left outer join dev.wc_uth_admission_id_optd d  --data_warehouse.dim_uth_admission_id d 
+       on d.member_id_src = a.patid::text 
+      and d.admission_id_src = a.conf_id 
+      and d."year" = a."year" 
 ;
 
 
-vacuum analyze data_warehouse.claim_header
+
+    --va
+vacuum analyze dev.wc_claim_header_optd;
+
+--remove existing records from claim header
+delete from data_warehouse.claim_header where data_source = 'optd';
 
 
-select data_source, year, count(*), count(distinct uth_claim_id) 
+---load new records into claim header
+insert into data_warehouse.claim_header 
+select * from dev.wc_claim_header_optd;
+
+
+
+
+--------------------------------------------------------------------------------------------------
+--- ** OPTZ **
+--------------------------------------------------------------------------------------------------
+
+---working table
+drop table if exists dev.wc_claim_header_optz;
+
+create table dev.wc_claim_header_optz
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.claim_header limit 0
+distributed by (member_id_src);
+
+
+---drop if exist
+drop table if exists dev.wc_optz_medical;
+create table dev.wc_optz_medical 
+with(appendonly=true,orientation=column)
+as select * from optum_zip.medical
+distributed by (patid);
+
+---dim uth claim
+drop table dev.wc_optz_uth_claim;
+create table dev.wc_optz_uth_claim
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
+distributed by (member_id_src);
+
+
+--optz admissions
+create table dev.wc_uth_admission_id_optz 
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.dim_uth_admission_id where data_source = 'optz'
+distributed by (member_id_src);
+
+
+---optz claim header
+insert into dev.wc_claim_header_optz(
+		data_source, 
+		year,
+		uth_claim_id, 
+		uth_member_id,
+	    from_date_of_service,
+	    claim_type,
+	    uth_admission_id,
+		total_charge_amount, 
+		total_allowed_amount, 
+		total_paid_amount,
+		claim_id_src,
+		member_id_src,
+		table_id_src,
+		bill_type,
+		fiscal_year, 
+		cost_factor_year, 
+		to_date_of_service
+		)
+	select distinct on(b.uth_claim_id)
+	'optd', 
+	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
+	b.uth_claim_id,
+	b.uth_member_id, 
+	min(a.fst_dt) over(partition by b.uth_claim_id) as from_date_of_service,
+	c.claim_type_code,
+	d.uth_admission_id,
+	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
+	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
+	null as total_paid_amount,
+	a.clmid,
+	a.patid::text, 
+	'medical' as table_src,	
+	a.bill_type,
+	a.year as fiscal, 
+	a.std_cost_yr::int as cost_year,
+	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
+from dev.wc_optz_medical a    --*from optum_zip.medical a
+    join dev.wc_optz_uth_claim b   --*data_warehouse.dim_uth_claim_id b
+		on a.patid::text = b.member_id_src 
+		and a.clmid = b.claim_id_src
+	join reference_tables.ref_optum_cost_factor c 
+	    on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
+	   and c.standard_price_year = a.std_cost_yr::int
+    left outer join dev.wc_uth_admission_id_optz d    --*data_warehouse.dim_uth_admission_id d
+       on d.member_id_src = a.patid::text 
+      and d.admission_id_src = a.conf_id 
+      and d."year" = a."year" 
+     ;
+
+    
+    --va
+vacuum analyze dev.wc_claim_header_optz;
+
+--remove existing records from claim header
+delete from data_warehouse.claim_header where data_source = 'optz';
+
+
+---load new records into claim header
+insert into data_warehouse.claim_header 
+select * from dev.wc_claim_header_optz;
+
+--va
+vacuum analyze data_warehouse.claim_header;
+
+
+--validate
+select count(*), count(distinct uth_claim_id), data_source
 from data_warehouse.claim_header 
-group by data_source , year 
-order by data_source, year 
-
-/*
- * Scratch Space
- */
-select data_source, claim_id_src, member_id_src, uth_member_id, count(*)  
-from data_warehouse.dim_uth_claim_id
-group by 1,2,3,4
-having count(*) > 1;
-
-select *
-from data_warehouse.dim_uth_claim_id
-where claim_id_src ='755.0'
-order by member_id_src;
-
-SET work_mem = '4024MB';
-SET statement_mem = '4024MB';
-select distinct claim_type from data_warehouse.claim_header ch ;
-
-select year, count(*)
-from optum_zip_refresh.medical m2
-group by 1;
-
-select *
-from optum_zip_refresh.medical m
-join data_warehouse.dim_uth_claim_id uthc on uthc.data_source='optz' and m.patid::text=uthc.member_id_src and m.clmid=uthc.claim_id_src
-limit 10;
-
-explain analyze
-select data_source, min(from_date_of_service), max(from_date_of_service), count(*), count(distinct member_id_src || claim_id_src )
-from data_warehouse.claim_header
-group by 1;
-
-select data_source, count(*)
-from  data_warehouse.claim_header
-group by 1;
+group by data_source; 
 
 
+--validate
+select count(*), count(distinct uth_claim_id), data_source, year 
+from data_warehouse.claim_header 
+group by data_source, year 
+order by data_source , year ; 
 
 
+----- optd *CLEANUP
+drop table dev.wc_claim_header_optd;
+
+drop table dev.wc_optd_uth_claim;
+
+drop table dev.wc_optd_medical;
+
+drop table dev.wc_uth_admission_id_optd ;
 
 
-select * 
-from data_warehouse.claim_header_v1
-where data_source='trvc'
-and uth_claim_id=15100057738;
+---optz *CLEANUP
+drop table dev.wc_claim_header_optz;
 
-select * 
-from data_warehouse.claim_header_v1 h
-join data_warehouse.claim_detail_v1 d on h.uth_claim_id=d.uth_claim_id
-where h.uth_claim_id=15100057738;
+drop table dev.wc_optz_uth_claim;
 
+drop table dev.wc_optz_medical;
 
-select count(*)
-from dev.claim_header_optum_fix
-
-select uth_claim_id, count(*)
-from quarantine.uth_claim_ids
-group by 1
-having count(*) > 1
-
-
-select *
-from quarantine.uth_claim_ids q
-join data_warehouse.dim_uth_claim_id u on q.uth_claim_id=u.uth_claim_id
-where q.uth_claim_id=7883221893;
-
-create table dw_qa.claim_detail (like data_warehouse.claim_detail)
-WITH (
-	appendonly=true, orientation=column
-);
-
-insert into dw_qa.claim_detail
-select *
-from data_warehouse.claim_detail 
-where data_source not like 'opt%';
-
-
-
-
+drop table dev.wc_uth_admission_id_optz ;

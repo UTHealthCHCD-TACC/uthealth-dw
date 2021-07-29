@@ -228,7 +228,7 @@ CREATE EXTERNAL TABLE ext_ccaed_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaed*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAED*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -341,7 +341,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaed where year=2019)
 distributed randomly;
 
-delete from truven.ccaed where year=2019;
+delete from truven.ccaed where year>=2019;
 
 drop table truven.ccaed;
 alter table truven.ccaed_new rename to ccaed;

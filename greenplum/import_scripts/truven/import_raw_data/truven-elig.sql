@@ -45,7 +45,7 @@ CREATE EXTERNAL TABLE ext_elig_v1 (
 	version int2
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2011*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/2012/ELIG*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -56,8 +56,8 @@ limit 1000;
 */
 
 
-insert into truven.elig (year, abs,std,wc,ltd,ENROLID,absfreq,absgrp,SEX,DOBYR,seqnum,version )
-select 2011, abs,std,wc,ltd,ENROLID,absfreq,absgrp,SEX,DOBYR,seqnum,version 
+insert into truven.hpm_elig (year, abs,std,wc,ltd,ENROLID,absfreq,absgrp,SEX,DOBYR,seqnum,version )
+select 2012, abs,std,wc,ltd,ENROLID,absfreq,absgrp,SEX,DOBYR,seqnum,version 
 from ext_elig_v1;
 
 drop external table ext_elig_v2;
@@ -76,7 +76,7 @@ CREATE EXTERNAL TABLE ext_elig_v2 (
 	version int2
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2015*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/2018/ELIG*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -86,8 +86,8 @@ from ext_elig_v2
 limit 1000;
 */
 
-insert into truven.elig (year, abs,std,wc,ltd,ENROLID,efamid,absfreq,absgrp,SEX,DOBYR,seqnum,version )
-select 2015, abs,std,wc,ltd,ENROLID,efamid,absfreq,absgrp,SEX,DOBYR,seqnum,version 
+insert into truven.hpm_elig (year, abs,std,wc,ltd,ENROLID,efamid,absfreq,absgrp,SEX,DOBYR,seqnum,version )
+select 2018, abs,std,wc,ltd,ENROLID,efamid,absfreq,absgrp,SEX,DOBYR,seqnum,version 
 from ext_elig_v2;
 
 -- Verify
@@ -100,7 +100,7 @@ WITH (appendonly=true, orientation=column)
 as (select * from truven.elig)
 distributed randomly;
 
-drop table truven.elig;
+truncate table truven.hpm_elig;
 alter table truven.elig_new rename to elig;
 
 

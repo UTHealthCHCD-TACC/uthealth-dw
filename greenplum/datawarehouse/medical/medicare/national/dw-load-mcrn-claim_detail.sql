@@ -137,6 +137,11 @@ from medicare_texas.hha_revenue_center_k a
 ;
 
 
+select * 
+from data_warehouse.claim_detail cd 
+where data_source = 'mcrn' 
+and table_id_src = 'inpatient_revenue_center_k';
+
 
 --hospice
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
@@ -194,4 +199,63 @@ from medicare_texas.snf_revenue_center_k a
 
 vacuum analyze data_warehouse.claim_detail;
 
+-------************add discharge status and dates for all claims 1/14/2021 WC ************
 
+
+---outpatient has no discharge date
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd
+from medicare_national.outpatient_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrn'
+;
+
+
+---inpatient discharge date is coded in main insert
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd 
+from medicare_national.inpatient_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrn'
+;
+
+---for snf, hha, and hospice, add both discharge date and status
+
+--hha
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                         admit_date = b.clm_admsn_dt::date 
+from medicare_national.hha_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrn'
+;
+
+--hospice
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                         admit_date =  b.clm_hospc_start_dt_id::date
+from medicare_national.hospice_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrn'
+;
+
+--snf
+update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
+                                         discharge_date = b.nch_bene_dschrg_dt::date, 
+                                         admit_date = b.clm_admsn_dt::date 
+from medicare_national.snf_base_claims_k b 
+where b.bene_id = a.member_id_src 
+and b.clm_id = a.claim_id_src 
+and a.data_source = 'mcrn'
+;
+
+vacuum analyze data_warehouse.claim_detail;
+
+---validate discharge changes
+select * from data_warehouse.claim_detail where data_source = 'mcrn' and discharge_date is not null;
+
+select * from data_warehouse.claim_detail cd where data_source = 'mcrn' and bill_type_inst is not null and discharge_status is null;
+
+----- ************ end discharge status updates ****************

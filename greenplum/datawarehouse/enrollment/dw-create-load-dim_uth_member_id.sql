@@ -11,27 +11,27 @@ create table data_warehouse.dim_uth_member_id (
 
 ---
 
-
-
-
 alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 100000000; 
                                                                            
 alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq cache 200;
 
 vacuum analyze data_warehouse.dim_uth_member_id;
 
+-----**********************************************************************************************
+------ load dim_uth_member_id------------------------------------------------
 
------- load dim_uth_member_id
 
-vacuum analyze optum_dod.mbr_enroll;
 
-select count(distinct patid) from optum_dod.mbr_enroll
+---optd
+vacuum analyze optum_dod.mbr_enroll_r;
 
---Optum DoD 
+delete from data_warehouse.dim_uth_member_id where data_source = 'optz'
+
+--Optum DoD load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.mbr_enroll
+	from optum_dod.mbr_enroll_r 
 	 left outer join data_warehouse.dim_uth_member_id b 
 	              on b.data_source = 'optd'
 	             and b.member_id_src = patid::text
@@ -41,16 +41,32 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+select count(*), count(distinct uth_member_id ), count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'optd';
 
-vacuum analyze optum_dod.mbr_enroll;
+---cleanup
+delete from data_warehouse.dim_uth_member_id mem 
+    using( 
+select a.uth_member_id
+from data_warehouse.dim_uth_member_id a 
+   left outer join optum_dod.mbr_enroll_r b 
+     on a.member_id_src = b.patid::text 
+where a.data_source = 'optd' 
+  and b.patid is null 
+ )  del 
+where mem.uth_member_id = del.uth_member_id 
+;
 
-select count(distinct patid) from optum_dod.mbr_enroll
 
----Optum Zip 
+---optz
+vacuum analyze optum_zip.mbr_enroll;
+
+select count(distinct patid) from optum_zip_refresh.mbr_enroll
+
+---Optum Zip load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_dod.mbr_enroll
+	from optum_zip.mbr_enroll
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
              and b.member_id_src = patid::text
@@ -60,8 +76,24 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+---cleanup optz
+delete from data_warehouse.dim_uth_member_id mem 
+    using( 
+select a.uth_member_id
+from data_warehouse.dim_uth_member_id a 
+   left outer join optum_zip.mbr_enroll b 
+     on a.member_id_src = b.patid::text 
+where a.data_source = 'optz' 
+  and b.patid is null 
+ )  del 
+where mem.uth_member_id = del.uth_member_id 
+;
 
-select * from data_warehouse.dim_uth_member_id where member_id_src is null;
+select count(*), count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'optz';
+
+
+-----
+
 
 vacuum analyze truven.ccaet;
 
@@ -86,6 +118,14 @@ from cte_distinct_member
 ;
 
 
+select * from truven.ccaet where year = 2020;
+
+select * from data_warehouse.dim_uth_member_id dumi where member_id_src = '14484301'
+
+
+select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 534820526
+
+
 vacuum analyze truven.mdcrt;
 
 select count(distinct enrolid) from truven.mdcrt;
@@ -106,18 +146,72 @@ from cte_distinct_member
 
 
 
+----------------
+
+select count(*) --a.*, b.*
+from data_warehouse.dim_uth_member_id a 
+   join data_warehouse.dim_uth_member_id b
+     on a.member_id_src = b.member_id_src 
+    and b.data_source = 'mcrn'
+where a.data_source = 'mcrt' 
+--order by a.uth_member_id 
+;
+
+
+select * from medicare_national.mbsf_abcd_summary where bene_id = 'gggggggfuafnuuB'
+
+
+select * from medicare_texas.mbsf_abcd_summary where bene_id = 'gggggggfuafnuuB'
+
 update  medicare_texas.mbsf_abcd_summary 
 set bene_enrollmt_ref_yr = trunc(bene_enrollmt_ref_yr::numeric,0)::text
 where bene_enrollmt_ref_yr = '2016.0'
 
 
---- Medicare
+select * from medicare_texas.mbsf_abcd_summary-- where enhanced_five_percent_flag = 'Y';
+
+
+select a.bene_id, b.bene_id 
+from medicare_national.mbsf_abcd_summary a 
+  join medicare_texas.mbsf_abcd_summary b  
+     on a.bene_id = b.bene_id      
+    and a.year = b.year 
+where b.enhanced_five_percent_flag is null;
+
+
+select * from medicare_texas.mbsf_abcd_summary where bene_id = 'ggggggjAfgBwBAA';
+
+select count(distinct a.bene_id) 
+from medicare_national.mbsf_abcd_summary a 
+   left outer join medicare_texas.mbsf_abcd_summary b 
+     on a.bene_id = b.bene_id 
+where b.bene_id is null 
+;
+
+
+select count(distinct bene_id) 
+from medicare_texas.mbsf_abcd_summary ;
+--where bene_id in (select bene_id from medicare_national.mbsf_abcd_summary )
+
+
+select count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source in ('mcrn','mcrt');
+
+
+select a.* 
+from data_warehouse.dim_uth_member_id a 
+   join medicare_texas.mbsf_abcd_summary b  
+      on a.member_id_src = b.bene_id 
+     and b.enhanced_five_percent_flag = 'Y'
+order by member_id_src 
+;
+
+--- Medicare Texas
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct bene_id as v_member_id, 'mdcr' as v_raw_data
+	select distinct bene_id as v_member_id, 'mcrt' as v_raw_data
 	from medicare_texas.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
-      on b.data_source = 'mdcr'
+      on b.data_source = 'mcrt'
      and b.member_id_src = bene_id::text
     where b.member_id_src is null 
 )
@@ -125,11 +219,13 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+update data_warehouse.dim_uth_member_id set data_source = 'mcrt' where data_source = 'mdcr';
+
 select count(*), count(distinct bene_id), mas.bene_enrollmt_ref_yr  
 from medicare_texas.mbsf_abcd_summary mas 
 group by mas.bene_enrollmt_ref_yr
 
-select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mdcr';
+select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mcrt';
 
 select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 
@@ -139,9 +235,9 @@ select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
-	from medicare_texas.mbsf_abcd_summary
+	from medicare_national.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
-      on b.data_source = 'mcrn'
+      on b.data_source in ('mcrn','mcrt')
      and b.member_id_src = bene_id::text
     where b.member_id_src is null 
 )
@@ -153,8 +249,44 @@ select count(*) from data_warehouse.dim_uth_member_id where data_source = 'mcrn'
 
 select count(distinct bene_id) from medicare_texas.mbsf_abcd_summary mas ;
 
----******************************** Pharmacy tables---------*****************************
 
+----------- Medicaid --------- 
+
+---medicaid enrl
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
+with cte_distinct_member as ( 
+   select distinct client_nbr as v_member_id, 'mdcd' as v_raw_data 
+   from medicaid.enrl  
+    left outer join data_warehouse.dim_uth_member_id 
+      on data_source = 'mdcd' 
+     and member_id_src = client_nbr 
+    where member_id_src is null 
+) 
+select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+from cte_distinct_member
+;
+
+
+--medicaid chip
+insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
+with cte_distinct_member as ( 
+   select distinct client_nbr as v_member_id, 'mdcd' as v_raw_data 
+   from medicaid.chip_uth
+    left outer join data_warehouse.dim_uth_member_id 
+      on data_source = 'mdcd' 
+     and member_id_src = client_nbr 
+    where member_id_src is null 
+) 
+select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+from cte_distinct_member
+;
+
+
+
+
+
+---******************************** Pharmacy tables---------*****************************
+---******************************** Pharmacy tables---------*****************************
 
 --medicare rx
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -175,7 +307,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct bene_id as v_member_id
-    from medicare_texas.pde_file
+    from medicare_national.pde_file
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mcrn'
      and member_id_src = bene_id::text 
@@ -234,7 +366,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct patid as v_member_id
-    from optum_dod.rx
+    from optum_zip.rx
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'optz'
      and member_id_src = patid::text 
@@ -245,7 +377,7 @@ from cte_distinct_member
 ;
 
 
-----Validate
+----Finalize---------------------------------------------------------------------
 vacuum analyze data_warehouse.dim_uth_member_id;
 
 select count(*), data_source 

@@ -352,7 +352,7 @@ CREATE EXTERNAL TABLE ext_ccaei_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaei*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAEI*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -375,7 +375,7 @@ AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHP
 from ext_ccaei_v3;
 
 
--- vDMS
+-- vDMS - Deprecated ???
 
 drop external table ext_ccaei_vDMS;
 CREATE EXTERNAL TABLE ext_ccaei_vDMS (
@@ -473,7 +473,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaei where year=2019)
 distributed randomly;
 
-delete from truven.ccaei where year=2019;
+delete from truven.ccaei where year>=2019;
 
 drop table truven.ccaei;
 alter table truven.ccaei_new rename to ccaei;

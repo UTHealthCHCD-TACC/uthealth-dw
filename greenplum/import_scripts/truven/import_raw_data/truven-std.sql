@@ -21,8 +21,8 @@ SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLA
 */
 
 
-drop table truven.std;
-CREATE TABLE truven.std (
+drop table truven.hpm_std;
+CREATE TABLE truven.hpm_std (
 	YEAR int2,
 	seqnum numeric NULL,
 	adv_case bpchar(30) null,
@@ -62,7 +62,7 @@ CREATE EXTERNAL TABLE ext_std_v1 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V1/STD*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -71,11 +71,11 @@ select *
 from ext_std_v1
 limit 100000;
 
-truncate table truven.std;
+truncate table truven.hpm_std;
 */
 
-insert into truven.std (year, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION)
-select 2011, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION
+insert into truven.hpm_std (SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION)
+select SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION
 from ext_std_v1;
 
 drop external table ext_std_v2;
@@ -97,7 +97,7 @@ CREATE EXTERNAL TABLE ext_std_v2 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*2014*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V2/STD*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -107,8 +107,8 @@ from ext_std_v2
 limit 100000;
 */
 
-insert into truven.std (year, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION )
-select 2014, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION 
+insert into truven.hpm_std (SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION )
+select SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,PAYTOT,VERSION 
 from ext_std_v2;
 
 drop external table ext_std_v3;
@@ -131,7 +131,7 @@ CREATE EXTERNAL TABLE ext_std_v3 (
 	version int2 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://greenplum01:8081/uthealth/truven/HPM/CSV/V3/STD*.CSV'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -141,22 +141,24 @@ from ext_std_v3
 limit 100000;
 */
 
-insert into truven.std (year, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,DXVER,PAYTOT,VERSION)
-select 2015, SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,DXVER,PAYTOT,VERSION
+insert into truven.hpm_std (SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,DXVER,PAYTOT,VERSION)
+select SEQNUM,ADV_CASE,DTABS1,DTRTW,CASESTAT,DTBEG,DTLAST,EFAMID,ENROLID,CASEID,RTW_FLAG,DAYSABS,CASEDX,DXVER,PAYTOT,VERSION
 from ext_std_v3;
 
 -- Verify
 
-select count(*) from truven.std;
+select count(*) from truven.hpm_std;
 
 -- Fix storage options
-create table truven.std_new 
+create table truven.hpm_std_new 
 WITH (appendonly=true, orientation=column)
-as (select * from truven.std)
+as (select * from truven.hpm_std)
 distributed randomly;
 
-drop table truven.std;
-alter table truven.std_new rename to std;
+update truven.hpm_std set year=extract(year from DTBEG);
+
+drop table truven.hpm_std;
+alter table truven.hpm_std_new rename to std;
 
 
 

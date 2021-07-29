@@ -60,15 +60,16 @@ from truven.mdcro a
  and a.year between 2015 and 2019
 ;
 
+SELECT facprof FROM truven.mdcro;
 
 -------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------		
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)
+total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year)
 select distinct on (uth_claim_id) 
 'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, null, trunc(a.caseid,0)::text,
 null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
-a.msclmid, a.enrolid, 'ccaes'
+a.msclmid, a.enrolid, 'ccaes', a."year" 
 from truven.ccaes a
   join dev.truven_dim_uth_claim_id b
 --  join data_warehouse.dim_uth_claim_id b  
@@ -81,11 +82,11 @@ from truven.ccaes a
 -------------------------------- truven medicare advantage inpatient------------------------------
 ---------------------------------------------------------------------------------------------------	
 insert into data_warehouse.claim_header (data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, admission_id_src,
-						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src)  								        						              
+						        total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, data_year)  								        						              
 select distinct on (uth_claim_id) 
 	   'truv', extract(year from a.svcdate), b.uth_claim_id, b.uth_member_id, a.svcdate, a.facprof, null, trunc(a.caseid,0)::text,
         null, sum(a.pay) over(partition by b.uth_claim_id), sum(a.netpay) over(partition by b.uth_claim_id), 
-        a.msclmid, a.enrolid, 'mdcrs'
+        a.msclmid, a.enrolid, 'mdcrs', a.year
 from truven.mdcrs a
   join dev.truven_dim_uth_claim_id b
 --  join data_warehouse.dim_uth_claim_id b  

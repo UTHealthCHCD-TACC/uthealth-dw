@@ -112,7 +112,7 @@ insert into stage.dbo.wc_mdcd_tobacco_clm_2018
 select distinct ICN
 from ( 
   select d.ICN 
-  from medicaid.dbo.CLM_DX_18 d 
+  from medicaid.dbo.htw_clm_dx_18 d 
     join MEDICAID.dbo.CLM_HEADER_18 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2018-01-01' and '2018-12-31'
@@ -128,7 +128,7 @@ from (
         )
 union 
   select d.ICN 
-  from medicaid.dbo.CLM_DX_19 d
+  from medicaid.dbo.htw_clm_dx_19 d
     join MEDICAID.dbo.CLM_HEADER_19 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2018-01-01' and '2018-12-31'
@@ -271,7 +271,7 @@ insert into stage.dbo.wc_mdcd_tobacco_cess_clm_2018
 select distinct ICN
 from ( 
   select d.ICN 
-  from medicaid.dbo.CLM_DX_18 d 
+  from medicaid.dbo.htw_clm_dx_18 d 
     join MEDICAID.dbo.CLM_HEADER_18 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2018-01-01' and '2018-12-31'
@@ -287,7 +287,7 @@ from (
         )
 union 
   select d.ICN 
-  from medicaid.dbo.CLM_DX_19 d
+  from medicaid.dbo.htw_clm_dx_19 d
     join MEDICAID.dbo.CLM_HEADER_19 h 
       on h.ICN = d.ICN 
      and h.HDR_FRM_DOS between '2018-01-01' and '2018-12-31'

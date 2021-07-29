@@ -5,200 +5,200 @@
 
 /*
  * Confinement
-select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_zip_backup.confinement group by 1, 2 order by 1, 2;
-select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_zip.confinement group by 1, 2 order by 1, 2;
+select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_dod_backup.confinement group by 1, 2 order by 1, 2;
+select year, extract(quarter from admit_date), min(admit_date), max(admit_date), count(*)  from optum_dod.confinement group by 1, 2 order by 1, 2;
  */
 
-create table optum_zip.confinement_backup (like optum_zip.confinement)
+create table optum_dod.confinement_backup (like optum_dod.confinement)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.confinement_backup
+insert into optum_dod.confinement_backup
 select *
-from optum_zip.confinement;
+from optum_dod.confinement;
 
-delete from optum_zip.confinement where admit_date >= (select min(admit_date) from optum_zip.confinement);
+delete from optum_dod.confinement where admit_date >= (select min(admit_date) from optum_dod.confinement);
 
-insert into optum_zip.confinement
+insert into optum_dod.confinement
 select *
-from optum_zip.confinement;
+from optum_dod.confinement;
 
 /*
  * Diagnostic
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip_backup.diagnostic group by 1, 2 order by 1, 2;
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.diagnostic group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod_backup.diagnostic group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.diagnostic group by 1, 2 order by 1, 2;
  */
 
-create table optum_zip.diagnostic_backup (like optum_zip.diagnostic)
+create table optum_dod.diagnostic_backup (like optum_dod.diagnostic)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.diagnostic_backup
+insert into optum_dod.diagnostic_backup
 select *
-from optum_zip.diagnostic;
+from optum_dod.diagnostic;
 
-delete from optum_zip.diagnostic where fst_dt >= (select min(fst_dt) from optum_zip.diagnostic);
+delete from optum_dod.diagnostic where fst_dt >= (select min(fst_dt) from optum_dod.diagnostic);
 
-insert into optum_zip.diagnostic
+insert into optum_dod.diagnostic
 select *
-from optum_zip.diagnostic;
+from optum_dod.diagnostic;
 
 /*
 Lab Result
 
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.lab_result group by 1, 2 order by 1, 2;
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.lab_result group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.lab_result group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.lab_result group by 1, 2 order by 1, 2;
 
 **/
 
-create table optum_zip.lab_result_backup (like optum_zip.lab_result)
+create table optum_dod.lab_result_backup (like optum_dod.lab_result)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.lab_result_backup
+insert into optum_dod.lab_result_backup
 select *
-from optum_zip.lab_result;
+from optum_dod.lab_result;
 
-delete from optum_zip.lab_result where fst_dt >= (select min(fst_dt) from optum_zip.lab_result);
+delete from optum_dod.lab_result where fst_dt >= (select min(fst_dt) from optum_dod.lab_result);
 
-insert into optum_zip.lab_result
+insert into optum_dod.lab_result
 select *
-from optum_zip.lab_result;
+from optum_dod.lab_result;
 
 /*
 Medical
 
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.medical group by 1, 2 order by 1, 2;
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.medical group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.medical group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.medical group by 1, 2 order by 1, 2;
 
 **/
 
-create table optum_zip.medical_backup (like optum_zip.medical)
+create table optum_dod.medical_backup (like optum_dod.medical)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.medical_backup
+insert into optum_dod.medical_backup
 select *
-from optum_zip.medical;
+from optum_dod.medical;
 
-delete from optum_zip.medical where fst_dt >= (select min(fst_dt) from optum_zip.medical);
+delete from optum_dod.medical where fst_dt >= (select min(fst_dt) from optum_dod.medical);
 
-insert into optum_zip.medical
-select * from optum_zip.medical;
+insert into optum_dod.medical
+select * from optum_dod.medical;
 
 /*
 mbr_co_enroll
 
-select count(*) from optum_zip.mbr_co_enroll;
-select count(*) from optum_zip.mbr_co_enroll;
+select count(*) from optum_dod.mbr_co_enroll;
+select count(*) from optum_dod.mbr_co_enroll;
 */
-create table optum_zip.mbr_co_enroll_backup (like optum_zip.mbr_co_enroll)
+create table optum_dod.mbr_co_enroll_backup (like optum_dod.mbr_co_enroll)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.mbr_co_enroll_backup
-select * from optum_zip.mbr_co_enroll;
+insert into optum_dod.mbr_co_enroll_backup
+select * from optum_dod.mbr_co_enroll;
 
-truncate optum_zip.mbr_co_enroll;
+truncate optum_dod.mbr_co_enroll;
 
-insert into optum_zip.mbr_co_enroll
-select * from optum_zip.mbr_co_enroll;
+insert into optum_dod.mbr_co_enroll
+select * from optum_dod.mbr_co_enroll;
 
 /*
 mbr_enroll
 
-select count(*) from optum_zip.mbr_enroll;
-select count(*) from optum_zip.mbr_enroll;
+select count(*) from optum_dod.mbr_enroll;
+select count(*) from optum_dod.mbr_enroll;
 */
-create table optum_zip.mbr_enroll_backup (like optum_zip.mbr_enroll)
+create table optum_dod.mbr_enroll_backup (like optum_dod.mbr_enroll)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.mbr_enroll_backup
-select * from optum_zip.mbr_enroll;
+insert into optum_dod.mbr_enroll_backup
+select * from optum_dod.mbr_enroll;
 
-truncate optum_zip.mbr_enroll;
+truncate optum_dod.mbr_enroll;
 
-insert into optum_zip.mbr_enroll
-select * from optum_zip.mbr_enroll;
+insert into optum_dod.mbr_enroll
+select * from optum_dod.mbr_enroll;
 
 /*
 Procedure
 
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.procedure group by 1, 2 order by 1, 2;
-select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_zip.procedure group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.procedure group by 1, 2 order by 1, 2;
+select year, extract(quarter from fst_dt), min(fst_dt), max(fst_dt), count(*)  from optum_dod.procedure group by 1, 2 order by 1, 2;
 
 **/
 
-create table optum_zip.procedure_backup (like optum_zip.procedure)
+create table optum_dod.procedure_backup (like optum_dod.procedure)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.procedure_backup
+insert into optum_dod.procedure_backup
 select *
-from optum_zip.procedure;
+from optum_dod.procedure;
 
-delete from optum_zip.procedure where fst_dt >= (select min(fst_dt) from optum_zip.procedure);
+delete from optum_dod.procedure where fst_dt >= (select min(fst_dt) from optum_dod.procedure);
 
-insert into optum_zip.procedure
+insert into optum_dod.procedure
 select *
-from optum_zip.procedure;
+from optum_dod.procedure;
 
 /*
 provider
 
-select count(*) from optum_zip.provider;
-select count(*) from optum_zip.provider;
+select count(*) from optum_dod.provider;
+select count(*) from optum_dod.provider;
 */
-create table optum_zip.provider_backup (like optum_zip.provider)
+create table optum_dod.provider_backup (like optum_dod.provider)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.provider_backup
-select * from optum_zip.provider;
+insert into optum_dod.provider_backup
+select * from optum_dod.provider;
 
-truncate optum_zip.provider;
+truncate optum_dod.provider;
 
-insert into optum_zip.provider
-select * from optum_zip.provider;
+insert into optum_dod.provider
+select * from optum_dod.provider;
 
 /*
 provider_bridge
 
-select count(*) from optum_zip.provider_bridge;
-select count(*) from optum_zip.provider_bridge;
+select count(*) from optum_dod.provider_bridge;
+select count(*) from optum_dod.provider_bridge;
 */
-create table optum_zip.provider_bridge_backup (like optum_zip.provider_bridge)
+create table optum_dod.provider_bridge_backup (like optum_dod.provider_bridge)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.provider_bridge_backup
-select * from optum_zip.provider_bridge;
+insert into optum_dod.provider_bridge_backup
+select * from optum_dod.provider_bridge;
 
-truncate optum_zip.provider_bridge;
+truncate optum_dod.provider_bridge;
 
-insert into optum_zip.provider_bridge
-select * from optum_zip.provider_bridge;
+insert into optum_dod.provider_bridge
+select * from optum_dod.provider_bridge;
 
 /*
 RX
-select year, extract(quarter from fill_dt), min(fill_dt), max(fill_dt), count(*)  from optum_zip_backup.rx group by 1, 2 order by 1, 2;
-select year, extract(quarter from fill_dt), min(fill_dt), max(fill_dt), count(*)  from optum_zip.rx group by 1, 2 order by 1, 2;
+select year, extract(quarter from fill_dt), min(fill_dt), max(fill_dt), count(*)  from optum_dod_backup.rx group by 1, 2 order by 1, 2;
+select year, extract(quarter from fill_dt), min(fill_dt), max(fill_dt), count(*)  from optum_dod.rx group by 1, 2 order by 1, 2;
  */
-create table optum_zip.rx_backup (like optum_zip.rx)
+create table optum_dod.rx_backup (like optum_dod.rx)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-insert into optum_zip.rx_backup
-select * from optum_zip.rx;
+insert into optum_dod.rx_backup
+select * from optum_dod.rx;
 
-delete from optum_zip.rx where fill_dt >= (select min(fill_dt) from optum_zip.rx);
+delete from optum_dod.rx where fill_dt >= (select min(fill_dt) from optum_dod.rx);
 
-insert into optum_zip.rx
-select * from optum_zip.rx;
+insert into optum_dod.rx
+select * from optum_dod.rx;
 
 /*
 Clean up everything
 Leave backups till manually vetted
 */
 
-vacuum full optum_zip.confinement;
-vacuum full optum_zip.diagnostic;
-vacuum full optum_zip.lab_result;
-vacuum full optum_zip.mbr_co_enroll;
-vacuum full optum_zip.mbr_enroll;
-vacuum full optum_zip.medical;
-vacuum full optum_zip.procedure;
-vacuum full optum_zip.provider;
-vacuum full optum_zip.provider_bridge;
-vacuum full optum_zip.rx;
+vacuum full optum_dod.confinement;
+vacuum full optum_dod.diagnostic;
+vacuum full optum_dod.lab_result;
+vacuum full optum_dod.mbr_co_enroll;
+vacuum full optum_dod.mbr_enroll;
+vacuum full optum_dod.medical;
+vacuum full optum_dod.procedure;
+vacuum full optum_dod.provider;
+vacuum full optum_dod.provider_bridge;
+vacuum full optum_dod.rx;

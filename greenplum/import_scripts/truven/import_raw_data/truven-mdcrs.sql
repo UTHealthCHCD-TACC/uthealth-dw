@@ -385,7 +385,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v3 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/mdcrs*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRS*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -407,7 +407,7 @@ EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_mdcrs_v3;
 
---V4
+--V4 - DEPRECATED???
 
 drop external table ext_mdcrs_v4;
 CREATE EXTERNAL TABLE ext_mdcrs_v4 (
@@ -488,7 +488,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v4 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/mdcrs*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRS*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -525,7 +525,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcrs where year=2019)
 distributed randomly;
 
-delete from truven.mdcrs where year=2019;
+delete from truven.mdcrs where year=2019 or year=2020;
 
 drop table truven.mdcrs;
 alter table truven.mdcrs_new rename to mdcrs;

@@ -20,6 +20,21 @@ $body$
     RETURNS NULL ON NULL INPUT
     SET search_path = pg_catalog;
 
+-- Allow ownership change
+CREATE OR REPLACE FUNCTION dbo.change_owner(table_name varchar, owner varchar)
+RETURNS boolean AS $body$
+DECLARE
+    result boolean;
+BEGIN
+    result := (ALTER TABLE table_name owner TO owner);
+    RETURN result;
+END;
+$body$
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    VOLATILE
+    RETURNS NULL ON NULL INPUT
+    SET search_path = pg_catalog;
 
 grant execute on function dbo.pg_kill_connection(pid integer) to uthealthadmin;
 

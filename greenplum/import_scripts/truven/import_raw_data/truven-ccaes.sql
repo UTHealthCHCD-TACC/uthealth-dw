@@ -407,7 +407,7 @@ CREATE EXTERNAL TABLE ext_ccaes_v3 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2018/ccaes*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAES*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -430,7 +430,7 @@ EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_ccaes_v3;
 
 
---V4
+--V4 - DEPRECATED???
 
 drop external table ext_ccaes_v4;
 CREATE EXTERNAL TABLE ext_ccaes_v4 (
@@ -708,7 +708,7 @@ CREATE EXTERNAL TABLE ext_ccaes_vDMS2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaes*.csv'
+'gpfdist://greenplum01:8081/uthealth/truven/*/CCAES*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -743,7 +743,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaes where year=2019)
 distributed randomly;
 
-delete from truven.ccaes where year=2019;
+delete from truven.ccaes where year>=2019;
 
 drop table truven.ccaes;
 alter table truven.ccaes_new rename to ccaes;

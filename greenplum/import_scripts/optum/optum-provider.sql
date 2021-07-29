@@ -1,6 +1,6 @@
 --Medical
-drop table optum_zip.provider;
-create table optum_zip.provider (
+drop table optum_dod.provider;
+create table optum_dod.provider (
 PROV_UNIQUE bigint, BED_SZ_RANGE text, CRED_TYPE text, GRP_PRACTICE int, HOSP_AFFIL int, PROV_STATE text, PROV_TYPE text, PROVCAT text, 
 TAXONOMY1 text, TAXONOMY2 text, EXTRACT_YM int, VERSION numeric
 )
@@ -13,7 +13,7 @@ PROV_UNIQUE bigint, BED_SZ_RANGE text, CRED_TYPE text, GRP_PRACTICE int, HOSP_AF
 TAXONOMY1 text, TAXONOMY2 text, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/optum_zip/zip5_provider.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_DOD_APril2021/dod_provider.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -23,11 +23,14 @@ from ext_provider
 limit 1000;
 
 -- Insert
-insert into optum_zip.provider
+insert into optum_dod.provider
 select * from ext_provider;
 
 -- Analyze
-analyze optum_zip.provider;
+analyze optum_dod.provider;
 
 --Verify
-select count(*) from optum_zip.provider;
+select count(*) from optum_dod.provider;
+
+--Refresh
+truncate table optum_dod.provider;

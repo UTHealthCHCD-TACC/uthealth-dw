@@ -2,7 +2,7 @@
 
 select distinct a.patid, b.uth_member_id
 into dev.wc_sabella_exchange_ids
-from optum_zip.mbr_enroll a 
+from optum_dod.mbr_enroll a 
   join data_warehouse.dim_uth_member_id b   
      on b.member_id_src = a.patid::text 
 where health_exch in ('2','3')
@@ -45,7 +45,7 @@ from dev.wc_sabella_cohorts a
      
 select * 
 into dev.wc_sabella_mbr_enroll
-from optum_zip.mbr_enroll me 
+from optum_dod.mbr_enroll me 
 where me.patid in ( select member_id_src from dev.wc_sabella_patids)
 and eligeff between '2015-01-01' and '2016-12-31';
 
@@ -55,40 +55,40 @@ select count(distinct patid) from dev.wc_sabella_mbr_enroll;
 
 select * 
 into dev.wc_sabella_confinement
-from optum_zip.confinement c 
+from optum_dod.confinement c 
 where c.patid in ( select member_id_src from dev.wc_sabella_patids)
 and c.admit_date between '2015-01-01' and '2016-12-31';
 
   
 select * 
 into dev.wc_sabella_diagnostic
-from optum_zip.diagnostic d 
+from optum_dod.diagnostic d 
 where d.patid in ( select member_id_src from dev.wc_sabella_patids)
 and d.fst_dt between '2015-01-01' and '2016-12-31';  
 
 
 select * 
 into dev.wc_sabella_medical
-from optum_zip.medical m 
+from optum_dod.medical m 
 where m.patid in ( select member_id_src from dev.wc_sabella_patids)
 and m.fst_dt between '2015-01-01' and '2016-12-31';  
 
 
 select * 
 into dev.wc_sabella_procedure
-from optum_zip."procedure" p 
+from optum_dod."procedure" p 
 where p.patid in ( select member_id_src from dev.wc_sabella_patids)
 and p.fst_dt between '2015-01-01' and '2016-12-31';  
 
 
 select * 
 into dev.wc_sabella_rx
-from optum_zip.rx r
+from optum_dod.rx r
 where r.patid in ( select member_id_src from dev.wc_sabella_patids)
 and r.fill_dt between '2015-01-01' and '2016-12-31';  
 
 select * 
 into dev.wc_sabella_lab
-from optum_zip.lab_result l
+from optum_dod.lab_result l
 where l.patid in ( select member_id_src from dev.wc_sabella_patids)
 and l.fst_dt between '2015-01-01' and '2016-12-31';  

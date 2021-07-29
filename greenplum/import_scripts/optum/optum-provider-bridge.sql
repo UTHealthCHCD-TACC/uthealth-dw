@@ -1,6 +1,6 @@
 --Medical
-drop table optum_zip.provider_bridge;
-create table optum_zip.provider_bridge (
+drop table optum_dod.provider_bridge;
+create table optum_dod.provider_bridge (
 PROV_UNIQUE bigint, DEA char(9), NPI char(10), PROV bigint, EXTRACT_YM int, VERSION numeric
 )
 WITH (appendonly=true, orientation=column, compresstype=zlib)
@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_provider_bridge (
 PROV_UNIQUE bigint, DEA char(9), NPI char(10), PROV bigint, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/optum_zip/zip5_provider_bridge.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_DOD_APril2021/dod_provider_bridge.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -21,11 +21,14 @@ from ext_provider_bridge
 limit 1000;
 
 -- Insert
-insert into optum_zip.provider_bridge
+insert into optum_dod.provider_bridge
 select * from ext_provider_bridge;
 
 -- Analyze
-analyze optum_zip.provider_bridge;
+analyze optum_dod.provider_bridge;
 
 --Verify
-select count(*) from optum_zip.provider_bridge;
+select count(*) from optum_dod.provider_bridge;
+
+--Refresh
+truncate table optum_dod.provider_bridge;

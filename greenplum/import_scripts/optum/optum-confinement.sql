@@ -31,7 +31,7 @@ PROV numeric, STD_COST numeric, STD_COST_YR smallint, TOS_CD char(13), EXTRACT_Y
 ICU_IND text, ICU_SURG_IND text, MAJ_SURG_IND text, MATERNITY_IND text, NEWBORN_IND text, TOS text
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/optum_zip/*/zip5_c2*.txt.gz#transform=add_parentname_filename_comma_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_ZIP_April2021/\*/zip5_c2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -42,15 +42,9 @@ from ext_confinement
 limit 1000;
 
 -- Insert
-insert into optum_zip.confinement (year, file,PATID, PAT_PLANID, ADMIT_DATE, CHARGE, COINS, CONF_ID, COPAY, DEDUCT,DIAG1, DIAG2, DIAG3, DIAG4, DIAG5, DISCH_DATE, DRG, DSTATUS, ICD_FLAG, IPSTATUS,LOS, POS, PROC1, PROC2, PROC3, PROC4, PROC5,PROV, STD_COST, STD_COST_YR, TOS_CD, EXTRACT_YM, VERSION,ICU_IND, ICU_SURG_IND, MAJ_SURG_IND, MATERNITY_IND, NEWBORN_IND, TOS)
+insert into optum_zip.confinement (year, file, PATID, PAT_PLANID, ADMIT_DATE, CHARGE, COINS, CONF_ID, COPAY, DEDUCT,DIAG1, DIAG2, DIAG3, DIAG4, DIAG5, DISCH_DATE, DRG, DSTATUS, ICD_FLAG, IPSTATUS,LOS, POS, PROC1, PROC2, PROC3, PROC4, PROC5,PROV, STD_COST, STD_COST_YR, TOS_CD, EXTRACT_YM, VERSION,ICU_IND, ICU_SURG_IND, MAJ_SURG_IND, MATERNITY_IND, NEWBORN_IND, TOS)
 select * from ext_confinement;
 
--- 3 secs
--- alter table optum_zip.confinement add column file text;
--- DEPRECATED: update optum_zip.confinement set year=date_part('year', ADMIT_DATE);
-
---Refresh
-DELETE FROM optum_zip.confinement WHERE YEAR > 2017;
 -- Analyze
 analyze optum_zip.confinement;
 
@@ -59,3 +53,8 @@ select year, count(*), min(admit_date), max(admit_date),
 from optum_zip.confinement
 group by 1
 order by 1;
+
+--Refresh
+delete
+from optum_zip.confinement 
+where year > 2017 or file like '%2017q4%';

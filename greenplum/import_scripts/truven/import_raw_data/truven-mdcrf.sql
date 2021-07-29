@@ -367,7 +367,7 @@ CREATE EXTERNAL TABLE ext_mdcrf_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/mdcrf*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRF*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -393,7 +393,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcrf where year=2019)
 distributed randomly;
 
-delete from truven.mdcrf where year=2019;
+delete from truven.mdcrf where year=2019 or year=2020;
 
 select count(*), min(year), max(year) from truven.mdcrf;
 

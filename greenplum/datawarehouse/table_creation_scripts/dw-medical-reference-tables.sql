@@ -39,3 +39,4 @@ order by 1
 select * from reference_tables.ref_bill_type_cd;
 
 
+create table reference_tables.ref_zip_code (zip text, lat text, long text, city text, state text, countyname text, ziptype text, location_desc text);

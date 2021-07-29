@@ -340,7 +340,7 @@ CREATE EXTERNAL TABLE ext_mdcri_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/mdcri*'
+'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRI*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -376,7 +376,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcri where year=2019)
 distributed randomly;
 
-delete from truven.mdcri where year=2019;
+delete from truven.mdcri where year=2019 or year=2020;
 
 drop table truven.mdcri;
 alter table truven.mdcri_new rename to mdcri;
