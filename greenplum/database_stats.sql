@@ -4,7 +4,12 @@ from pg_stat_activity
 where state='active'
 and usename='walling';
 
-select pg_terminate_backend(221905);
+select *
+from gp_toolkit.gp_skew_coefficients;
+
+where skcrelname like 'wc%';
+
+select pg_terminate_backend(291493);
 
 
 select *
@@ -65,7 +70,7 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('reference_tables.ndc_tier_map_imp');
+SELECT get_ao_distribution('dev.temp_script_id');
 
 create table reference_tables.ndc_tier_map_imp2 (like reference_tables.ndc_tier_map_imp)
 WITH (appendonly=true, orientation=column, compresstype=none)
@@ -107,7 +112,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('data_warehouse') and pgc.relname != 'dim_uth_member_id'
+where pgn.nspname in ('dev') and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression

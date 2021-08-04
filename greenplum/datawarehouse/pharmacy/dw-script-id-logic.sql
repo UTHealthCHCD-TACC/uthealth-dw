@@ -1,22 +1,86 @@
-select count(), count(distinct member_id_src)
-from dev.temp_script_id;
+--Main Code
 
-select distinct refill_count from dev.temp_script_id tsi
-where refill_count=0;
-
-update dev.temp_script_id set uth_script_id = null;
-
-alter table dev.temp_script_id drop column uth_script_id;
-
+--alter table dev.temp_script_id drop column uth_script_id;
 alter table dev.temp_script_id add column uth_script_id int8;
 drop sequence dev.temp_script_id_uth_script_id_seq;
 create sequence dev.temp_script_id_uth_script_id_seq;
+alter sequence dev.temp_script_id_uth_script_id_seq cache 500;
 
-update dev.temp_script_id set uth_script_id=nextval('dev.temp_script_id_uth_script_id_seq')
-where uth_script_id is null and refill_count = 0;
+drop table dev.uth_script_ids;
+create table dev.uth_script_ids
+as
+select nextval('dev.temp_script_id_uth_script_id_seq') as uth_script_id, a.*
+from (select distinct rx_claim_id_src, uth_member_id
+from dev.temp_script_id
+where refill_count=0
+) a
+distributed by (rx_claim_id_src);
+
+select count(*)
+from (
+select rx_claim_id_src, uth_member_id, count(*)
+from dev.uth_script_ids
+group by 1, 2
+having count(*)>1
+) a;
+
+update dev.temp_script_id a set uth_script_id=u.uth_script_id
+from dev.uth_script_ids u
+where a.refill_count=0 and a.rx_claim_id_src=u.rx_claim_id_src and a.uth_member_id=u.uth_member_id;
 
 update dev.temp_script_id b set uth_script_id=a.uth_script_id
 from dev.temp_script_id a
+where a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and a.refill_count=0 and b.refill_count>0
+and a.fill_date = (select max(c.fill_date) from  dev.temp_script_id c
+					where c.uth_member_id = a.uth_member_id
+					                         and c.ndc = a.ndc 
+					                         and c.refill_count = 0 
+					                         and c.fill_date < b.fill_date );
+					                        
+insert into dev.temp_script_id_matches
+select a.rx_claim_id_src, a.refill_count, b.rx_claim_id_src, b.refill_count, a.uth_script_id
+from  dev.temp_script_id b
+join dev.temp_script_id a
+on a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and a.refill_count=0 and b.refill_count>0
+and a.fill_date = (select max(c.fill_date) from  dev.temp_script_id c
+					where c.uth_member_id = a.uth_member_id
+					                         and c.ndc = a.ndc 
+					                         and c.refill_count = 0 
+					                         and c.fill_date < b.fill_date );
+
+create table dev.temp_script_id_dupes
+as
+select a_id, a_refill_count, b_id, b_refill_count, uth_script_id, count()
+from dev.temp_script_id_matches
+group by 1, 2, 3, 4, 5
+having count(*)>1;
+
+select count(*)
+from dev.temp_script_id_dupes;
+
+select count(*)
+from dev.temp_script_id_matches;
+
+select *
+from dev.temp_script_id tsi 
+where rx_claim_id_src in ('306471314044300530142012-06-20', '306471314044300530142012-07-20');
+
+select *
+from truven.ccaed
+where enrolid = 30647131404
+order by seqnum;
+
+--Scratch
+drop table dev.temp_script_id_matches; 					                         
+create table dev.temp_script_id_matches
+( a_id text,
+  a_refill_count int,
+  b_id text,
+  b_refill_count int,
+  uth_script_id int8
+)
+with(appendonly=true, orientation=column)
+distributed by (uth_script_id);
 
 select b.uth_rx_claim_id, count(*)	
 select a.*
@@ -33,9 +97,9 @@ group by 1
 having count(*) > 1;
 
 					                         
-select uth_member_id, member_id_src, uth_script_id, script_id, ndc, refill_count, fill_date
+select data_source, uth_member_id, member_id_src, uth_script_id, script_id, ndc, refill_count, fill_date
 from dev.temp_script_id
-order by uth_script_id, ndc, fill_date, refill_count
+order by data_source, uth_script_id, ndc, fill_date, refill_count;
 
 /*
  * David Code
@@ -64,8 +128,9 @@ order by 2 desc;
 insert into dev.temp_script_id
 select *
 from data_warehouse.pharmacy_claims
-where uth_member_id=211359520;
+where data_source='truv';
 
+select distinct data_source from dev.temp_script_id;
 
 select count(*) from dev.temp_script_id;
 
