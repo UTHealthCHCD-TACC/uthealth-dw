@@ -5,7 +5,7 @@
 ---******************************************************************************************************************
 
 --create copy of diagnosis table and distribute on patid as text field
-drop table dev.wc_optz_diag;
+drop table if exists dev.wc_optz_diag;
 
 create table dev.wc_optz_diag
 with(appendonly=true,orientation=column)
@@ -54,7 +54,7 @@ from dev.wc_optz_diag a
    join dev.wc_optz_uth_claim b 
       on b.member_id_src = a.member_id_src
      and b.claim_id_src = a.clmid 
- ;    
+;    
 
 ---insert optz
 
@@ -117,6 +117,7 @@ from dev.wc_optd_diag a
       on b.member_id_src = a.member_id_src
      and b.claim_id_src = a.clmid 
  ;    
+
 
 vacuum analyze dev.wc_claim_diag_optd;
 

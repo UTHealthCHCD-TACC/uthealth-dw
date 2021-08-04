@@ -60,7 +60,7 @@ where mem.uth_member_id = del.uth_member_id
 ---optz
 vacuum analyze optum_zip.mbr_enroll;
 
-select count(distinct patid) from optum_zip_refresh.mbr_enroll
+select count(distinct patid) from optum_zip.mbr_enroll
 
 ---Optum Zip load
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -144,7 +144,25 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
-
+---cleanup truven 
+delete from data_warehouse.dim_uth_member_id mem 
+    using(     
+  with cte_truv as (   
+       select distinct enrolid::text as mem_id 
+             from ( select enrolid from truven.ccaet 
+                      union 
+                    select enrolid from truven.mdcrt 
+                  ) inr 
+               ) 
+select a.uth_member_id
+from data_warehouse.dim_uth_member_id a 
+   left outer join cte_truv b 
+     on a.member_id_src = b.mem_id  
+where a.data_source = 'truv' 
+  and b.mem_id is null 
+ )  del 
+where mem.uth_member_id = del.uth_member_id 
+;
 
 ----------------
 

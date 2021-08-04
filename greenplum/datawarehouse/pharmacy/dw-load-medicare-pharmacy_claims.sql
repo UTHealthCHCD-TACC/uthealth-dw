@@ -5,38 +5,38 @@ insert into data_warehouse.pharmacy_claims (
 		year, 
 		uth_rx_claim_id, 
 		uth_member_id, 
-		script_id, 
-		ndc, 
-		days_supply,
-		refill_count,
 		fill_date, 
+		ndc, 
+		days_supply, 
+		script_id, 
+		refill_count, 
 		month_year_id, 
 		generic_ind, 
 		generic_name, 
-		brand_name,
+		brand_name, 
 		quantity, 
 		provider_npi, 
 		pharmacy_id, 
-		total_charge_amount,
-		total_allowed_amount, 
-		total_paid_amount,
-		deductible, copay, coins, cob,
+		total_charge_amount, total_allowed_amount, total_paid_amount, 
+		deductible, copay, coins, cob, 
+		fiscal_year, 
+		cost_factor_year,
+		therapeutic_class, 
+		ahfs_class, 
+		first_fill,
 		rx_claim_id_src, 
-		member_id_src,
-		data_year
-		)		
-		
-		
+		member_id_src, 
+		table_id_src
+		)								
 select 'mcrt',
-       a.year::int,
+       extract(year from srvc_dt::date),
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
-	   bene_id || prod_srvc_id || srvc_dt, --script_id
-	   extract(year from srvc_dt::date)
+	   srvc_dt::date,
 	   prod_srvc_id, --ndc
 	   trunc(a.days_suply_num::numeric,0)::int,
+	   null as script_id,
 	   fill_num::numeric,
-	   srvc_dt::date,
 	   c.month_year_id,
        brnd_gnrc_cd,
        gnn,
@@ -44,13 +44,16 @@ select 'mcrt',
        qty_dspnsd_num::numeric,
        srvc_prvdr_id,
        rx_srvc_rfrnc_num,  
-       tot_rx_cst_amt::numeric, 
-       null, --total_allowed_amount,
-       ptnt_pay_amt::numeric,
+       tot_rx_cst_amt::numeric as charge, null as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
        null, null, null, null, --	   deductible, copay, coins, cob,
+       a.year::int2,
+       null as cost_factor_year,
+       a.formulary_id as thera_class,
+       a.frmlry_rx_id as ahfs_class,
+       null as first_fill,
 	   pde_id, 
 	   bene_id,
-	   a.year::int2
+	   'pde_file' as table_id_src
 from medicare_texas.pde_file a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'mcrt' 
@@ -62,41 +65,45 @@ from medicare_texas.pde_file a
  ;
  
 
-
+---*********************************************************************************
 ---Medicare National
 insert into data_warehouse.pharmacy_claims (
 		data_source, 
 		year, 
 		uth_rx_claim_id, 
 		uth_member_id, 
-		script_id, 
-		ndc, 
-		days_supply,
-		refill_count,
 		fill_date, 
+		ndc, 
+		days_supply, 
+		script_id, 
+		refill_count, 
 		month_year_id, 
 		generic_ind, 
 		generic_name, 
-		brand_name,
+		brand_name, 
 		quantity, 
 		provider_npi, 
 		pharmacy_id, 
-		total_charge_amount,
-		total_allowed_amount, 
-		total_paid_amount,
-		deductible, copay, coins, cob,
+		total_charge_amount, total_allowed_amount, total_paid_amount, 
+		deductible, copay, coins, cob, 
+		fiscal_year, 
+		cost_factor_year,
+		therapeutic_class, 
+		ahfs_class, 
+		first_fill,
 		rx_claim_id_src, 
-		member_id_src
-		)		
+		member_id_src, 
+		table_id_src
+		)								
 select 'mcrn',
-       extract (year from srvc_dt::date),
+       extract(year from srvc_dt::date),
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
-	   bene_id || prod_srvc_id || srvc_dt, --script_id
+	   srvc_dt::date,
 	   prod_srvc_id, --ndc
 	   trunc(a.days_suply_num::numeric,0)::int,
+	   null as script_id,
 	   fill_num::numeric,
-	   srvc_dt::date,
 	   c.month_year_id,
        brnd_gnrc_cd,
        gnn,
@@ -104,12 +111,16 @@ select 'mcrn',
        qty_dspnsd_num::numeric,
        srvc_prvdr_id,
        rx_srvc_rfrnc_num,  
-       tot_rx_cst_amt::numeric, 
-       null, --total_allowed_amount,
-       ptnt_pay_amt::numeric,
+       tot_rx_cst_amt::numeric as charge, null as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
        null, null, null, null, --	   deductible, copay, coins, cob,
+       a.year::int2,
+       null as cost_factor_year,
+       a.formulary_id as thera_class,
+       a.frmlry_rx_id as ahfs_class,
+       null as first_fill,
 	   pde_id, 
-	   bene_id	   
+	   bene_id,
+	   'pde_file' as table_id_src
 from medicare_national.pde_file a 
   join data_warehouse.dim_uth_rx_claim_id b 
      on b.data_source = 'mcrn' 
@@ -121,20 +132,13 @@ from medicare_national.pde_file a
  ;
 
 
---prescript id
-with updmcrn as
-(
-	select b.rx_srvc_rfrnc_num , b.bene_id , b.pde_id , b."year", 
-	       row_number () over (partition by b.bene_id , b.pde_id , b.year order by srvc_dt ) as rn 
-	from medicare_national.pde_file b 
-)
-update data_warehouse.pharmacy_claims a set script_id_src = updmcrn.rx_srvc_rfrnc_num
-   from updmcrn
-   where a.member_id_src = updmcrn.bene_id
-     and a.rx_claim_id_src = updmcrn.pde_id
-     and a.data_year = updmcrn."year"::int2 
-     and updmcrn.rn = 1 
-;
+vacuum analyze data_warehouse.pharmacy_claims;
 
+---validate
+select count(*), data_source, year 
+from data_warehouse.pharmacy_claims pc 
+group by data_source , year 
+order by data_source , year 
+;
 
 
