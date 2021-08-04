@@ -26,6 +26,9 @@ with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from optum_dod.medical
 distributed by (patid);
 
+vacuum analyze dev.wc_optd_medical;
+
+vacuum analyze dev.wc_optd_uth_claim;
 
 
 --admit id for optd only
@@ -57,9 +60,7 @@ insert into dev.wc_claim_header_optd(
 		fiscal_year, 
 		cost_factor_year, 
 		to_date_of_service
-		)
-		
-		
+		)	
 	select distinct on(b.uth_claim_id)
 	'optd', 
 	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
@@ -125,14 +126,19 @@ drop table if exists dev.wc_optz_medical;
 create table dev.wc_optz_medical 
 with(appendonly=true,orientation=column)
 as select * from optum_zip.medical
-distributed by (patid);
+distributed by (clmid );
 
 ---dim uth claim
 drop table dev.wc_optz_uth_claim;
 create table dev.wc_optz_uth_claim
 with(appendonly=true,orientation=column)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
-distributed by (member_id_src);
+distributed by (claim_id_src);
+
+
+vacuum analyze dev.wc_optz_uth_claim;
+
+vacuum analyze dev.wc_optz_medical;
 
 
 --optz admissions
@@ -163,7 +169,7 @@ insert into dev.wc_claim_header_optz(
 		to_date_of_service
 		)
 	select distinct on(b.uth_claim_id)
-	'optd', 
+	'optz', 
 	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
 	b.uth_claim_id,
 	b.uth_member_id, 
@@ -192,13 +198,42 @@ from dev.wc_optz_medical a    --*from optum_zip.medical a
       and d.admission_id_src = a.conf_id 
       and d."year" = a."year" 
      ;
+    
+    
+    select * from dev.wc_claim_header_optz ch where data_source = 'optz' and bill_type is not null;
 
+   
+   select * from optum_zip.medical m where bill_type is not null;
     
     --va
 vacuum analyze dev.wc_claim_header_optz;
 
+select count(*), count(distinct uth_cla
+im_id), year from dev.wc_claim_header_optz group by year order by year;
+
+
+select count(*), count(distinct clmid), year from optum_zip.medical m group by year order by year;
+
+
+select count(*), count(distinct uth_claim_id), data_year from data_warehouse.dim_uth_claim_id duci where data_source = 'optz'
+group by data_year order by data_year 
+
+
+select a.*, b.*
+from data_warehouse.dim_uth_claim_id a 
+left outer join optum_zip.medical b 
+   on a.claim_id_src = b.clmid 
+  and a.member_id_src = b.patid::text 
+where b.patid is null 
+  and a.data_source = 'optz'
+;
+
+
 --remove existing records from claim header
 delete from data_warehouse.claim_header where data_source = 'optz';
+
+
+
 
 
 ---load new records into claim header
@@ -207,6 +242,9 @@ select * from dev.wc_claim_header_optz;
 
 --va
 vacuum analyze data_warehouse.claim_header;
+
+
+select * from data_warehouse.claim_header ch where data_source = 'optd' and bill_type is not null;
 
 
 --validate

@@ -135,15 +135,18 @@ grant usage on schema medicare to group uthealth_analyst;
 grant select on all tables in schema medicare to group uthealth_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA medicare grant select on tables to group uthealth_analyst; 
 
---dw_qa (select only) 
-grant usage on schema dw_qa to group uthealth_analyst;
-grant select on all tables in schema dw_qa to group uthealth_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA dw_qa grant select on tables to group uthealth_analyst; 
+--dw_staging (select only) 
+grant usage on schema dw_staging to group uthealth_analyst;
+grant select on all tables in schema dw_staging to group uthealth_analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA dw_staging grant select on tables to group uthealth_analyst; 
 
---tableau (select only)
-grant all on schema tableau to group uthealth_analyst;
-grant select on all tables in schema tableau to group uthealth_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA tableau grant select on tables to group uthealth_analyst; 
+--qa_reporting(select only)
+grant all on schema qa_reporting to group uthealth_analyst;
+grant all on all tables in schema qa_reporting to group uthealth_analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA qa_reporting grant all on tables to group uthealth_analyst; 
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant all on tables to group uthealthadmin; 
+
 
 --dev (all access)
 
@@ -178,7 +181,13 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA optum_dod grant select on tables to group uth
 --conditions (select only)
 grant all on schema conditions to group uthealth_analyst;
 grant select on all tables in schema conditions to group uthealth_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA conditions grant select on tables to group uthealth_analyst; 
+ALTER DEFAULT PRIVILEGES IN SCHEMA conditions grant select on tables to uthealth_analyst; 
+
+
+grant all on schema qa_reporting to uthealth_analyst;
+grant all on all tables in schema qa_reporting to uthealth_analyst;
+grant all privileges on all sequences in schema qa_reporting to uthealth_analyst;
+alter default privileges in schema qa_reporting grant all privileges uthealth_analyst;
 
 
 /*

@@ -3,23 +3,23 @@ drop table if exists dev.wc_mdand_vacc_claims;
 
 ---get vacc from inpatient services
 select a.enrolid, extract(year from a.svcdate) as yr,
-	   case when PROC1 in ('90649','90650','90651') then 'HPV'
-			    when PROC1 in ('90733','90734')  then 'MEN'
-			    when PROC1 in ('90714','90715')  then 'TDAP' end as vacc_type
+	       case when PROC1 in ('90649','90651') then 'HPV'
+			    when PROC1 in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
+			    when PROC1 in ('90714','90715') then 'TDAP' end as vacc_type
 into dev.wc_mdand_vacc_claims
 from truven.ccaes a 
-where a.proc1 in ('90649','90650','90651','90733','90734','90714','90715')
+where a.proc1 in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
   and extract(year from a.svcdate) <= 2018
 ;
 
 ---get vacc for outpatient
 insert into dev.wc_mdand_vacc_claims
 select a.enrolid, extract(year from a.svcdate) as yr,
-	   case when PROC1 in ('90649','90650','90651') then 'HPV'
-			    when PROC1 in ('90733','90734')  then 'MEN'
-			    when PROC1 in ('90714','90715')  then 'TDAP' end as vacc_type
+	       case when PROC1 in ('90649','90651') then 'HPV'
+			    when PROC1 in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
+			    when PROC1 in ('90714','90715') then 'TDAP' end as vacc_type
 from truven.ccaeo a
-where a.proc1 in ('90649','90650','90651','90733','90734','90714','90715')
+where a.proc1 in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
  and extract(year from a.svcdate) <= 2018
 ;
 
@@ -50,7 +50,7 @@ where a.data_source = 'truv'
 
 ---zip3
 
-drop table dev.wc_mdand_extract_gender ;
+drop table dev.wc_mdand_extract_truv_zip ;
 
 select a.year, zip3, 
 		count(a.member_id_src), count(b.enrolid) as hpv_count, count(c.enrolid) as men_count, count(d.enrolid) as tdap_count,
@@ -75,6 +75,9 @@ group by year ,  zip3
 order by year , zip3
 ;
 
+
+
+drop table dev.wc_mdand_extract_truv_gender ;
 
 --zip+gen
 select a.year, zip3, gender_cd, 

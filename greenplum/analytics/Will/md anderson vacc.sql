@@ -1,128 +1,99 @@
-select a.ZIPCODE_5, b.CountyName, a.ENRL_YEAR, a.patid 
-from OPT_ZIP_TX.dbo.AGG_ENRL_OPTZIPTX a
-   join [REF].dbo.ZipCode b  
-      on a.ZIPCODE_5 = b.zip 
-where patid = '560499200000243'
-order by patid, ENRL_YEAR 
-;
-
----confirm only 1 entry per zip
-select count(*), count(distinct zip) 
-from [REF].dbo.ZipCode w
-
-
-
-'90649','90650','90651' then 'HPV'
-'90734' then 'MEN'
-'90715' then 'TDAP'
-
-
-select a.ZIPCODE_5, b.CountyName, a.ENRL_YEAR, a.patid 
-from OPT_ZIP_TX.dbo.AGG_ENRL_OPTZIPTX a
-   join [REF].dbo.ZipCode b  
-      on a.ZIPCODE_5 = b.zip 
-where patid = '560499200000243'
-  and a.age between 13 and 17
-order by patid, ENRL_YEAR 
-;
-
-
 
 ----find all vaccinations 2014 to 2018
-drop table if exists stage.dbo.wc_mdand_vacc_claims
+drop table if exists stage.dbo.wc_mdand_vacc_claims;
 select * 
 into stage.dbo.wc_mdand_vacc_claims
 from (
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2007 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2008 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2009 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2007 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2010 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2011 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2012 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2013 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2014 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
-			    when PROC_CD in ('90714','90715')  then 'TDAP' end as vacc_type
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
+			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2015 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2016 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734') then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2017 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 union 
 	select patid, year(a.FST_DT) as yr,
-	       case when PROC_CD in ('90649','90650','90651') then 'HPV'
-			    when PROC_CD in ('90733','90734')  then 'MEN'
+	       case when PROC_CD in ('90649','90651') then 'HPV'
+			    when PROC_CD in ('90733','90734','90620','90621','90619','90734')  then 'MEN'
 			    when PROC_CD in ('90714','90715') then 'TDAP' end as vacc_type
 	from OPT_ZIP_TX.dbo.Zip_Medical_2018 a 
-	where a.PROC_CD in ('90649','90650','90651','90733','90734','90714','90715')
+	where a.PROC_CD in ('90649','90651','90733','90734','90620','90621','90619','90734','90714','90715')
 ) inr 
 ;
 
@@ -164,7 +135,7 @@ order by vacc_type, yr
 
 
 --breakdown by county
-drop table if exists into stage.dbo.wc_mdand_optz_extract;
+drop table if exists stage.dbo.wc_mdand_optz_extract;
 
 select enrl_year, CountyName, --left(a.zipcode_5,3) as zip3,
        count(a.patid) as n, 
@@ -191,7 +162,7 @@ order by enrl_year, CountyName --left(a.zipcode_5,3)
 ;
 
 --breakdown by county and gender
-drop table if exists stage.dbo.wc_mdand_optz_gender_extract;
+drop table if exists stage.dbo.wc_mdand_optz_extract_gender;
 
 select enrl_year, CountyName, --left(a.zipcode_5,3) as zip3, 
        gdr_cd,

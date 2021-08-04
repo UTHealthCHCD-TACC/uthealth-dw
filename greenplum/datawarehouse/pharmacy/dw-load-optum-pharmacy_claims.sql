@@ -1,13 +1,11 @@
 ----optum pharmacy claims load
 
-
-
 ---******************************************************************************************************************
 ------ Optum Zip - optz
 ---******************************************************************************************************************
 
---create copy of diagnosis table and distribute on patid as text field
-drop table dev.wc_optz_rx;
+--create copy of rx table and distribute on patid as text field
+drop table if exist dev.wc_optz_rx;
 
 create table dev.wc_optz_rx
 with(appendonly=true,orientation=column)
@@ -42,23 +40,59 @@ distributed by (uth_member_id);
 
 --optz
 insert into dev.wc_optz_rx_load (
-		data_source, year, uth_rx_claim_id, uth_member_id, fill_date, 
-		ndc, days_supply, script_id, refill_count, 
-		month_year_id, generic_ind, generic_name, brand_name, quantity, 
-		provider_npi, pharmacy_id, total_charge_amount, total_allowed_amount, total_paid_amount, 
+		data_source, 
+		year, 
+		uth_rx_claim_id, 
+		uth_member_id, 
+		fill_date, 
+		ndc, 
+		days_supply, 
+		script_id, 
+		refill_count, 
+		month_year_id, 
+		generic_ind, 
+		generic_name, 
+		brand_name, 
+		quantity, 
+		provider_npi, 
+		pharmacy_id, 
+		total_charge_amount, total_allowed_amount, total_paid_amount, 
 		deductible, copay, coins, cob, 
-		rx_claim_id_src, member_id_src, fiscal_year, 
-		total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj, year_adj, 
-		therapeutic_class, ahfs_class, first_fill, script_id_src
+		fiscal_year, 
+		cost_factor_year,
+		therapeutic_class, 
+		ahfs_class, 
+		first_fill,
+		rx_claim_id_src, 
+		member_id_src, 
+		table_id_src
 		)						
-select 'optz', extract(year from a.fill_dt) as cal_yr, b.uth_rx_claim_id, b.uth_member_id, a.fill_dt, 
-       lpad(ndc, 11,'0'), a.days_sup, null as script_id, a.rfl_nbr::numeric,  
-       c.month_year_id, a.gnrc_ind, a.gnrc_nm, a.brnd_nm, a.quantity, 
-       a.prescriber_prov, a.pharm, a.charge, a.std_cost, null as paid_amount, 
-       a.deduct, a.copay, null as coins, null as cob, 
-       a.clmid, a.patid::text, extract(year from a.fill_dt) as fsc_yr,
-       ( a.charge * d.cost_factor) as chrg_adj , ( a.std_cost * d.cost_factor) as alw_adj, null as paid_adj, a.std_cost_yr, 
-       null as thera_class, a.ahfsclss, a.fst_fill, null as script_id_src
+select 'optz', 
+       extract(year from a.fill_dt) as cal_yr, 
+       b.uth_rx_claim_id, 
+       b.uth_member_id, 
+       a.fill_dt, 
+       lpad(ndc, 11,'0'), 
+       a.days_sup, 
+       a.prescript_id, 
+       a.rfl_nbr::numeric,  
+       c.month_year_id, 
+       a.gnrc_ind, 
+       a.gnrc_nm, 
+       a.brnd_nm, 
+       a.quantity, 
+       a.prescriber_prov, 
+       a.pharm,
+       ( a.charge * d.cost_factor) as chg, ( a.std_cost * d.cost_factor) as alw, null as paid_amount, 
+       a.deduct, a.copay, null as coins, null as cob,  
+       extract(year from a.fill_dt) as fsc_yr,
+       a.std_cost_yr, 
+       null as thera_class, 
+       a.ahfsclss, 
+       a.fst_fill, 
+       a.clmid, 
+       a.patid::text,
+       'rx' as table_id_src
 from dev.wc_optz_rx a 
   join dev.wc_optz_uth_rx_claim b 
      on b.member_id_src = a.patid::text
@@ -76,9 +110,9 @@ from dev.wc_optz_rx a
 vacuum analyze dev.wc_optz_rx_load;
 
 
-select 
-count(*), year 
-from dev.wc_optz_rx_load group by year order by year;
+select count(*), year 
+from dev.wc_optz_rx_load 
+group by year order by year;
 
 select count(*), year from optum_zip.rx group by year order by year;
 
@@ -97,7 +131,7 @@ select * from dev.wc_optz_rx_load;
 ---******************************************************************************************************************
 
 --create copy of diagnosis table and distribute on patid as text field
-drop table dev.wc_optd_rx;
+drop table if exists dev.wc_optd_rx;
 
 create table dev.wc_optd_rx
 with(appendonly=true,orientation=column)
@@ -132,23 +166,59 @@ distributed by (uth_member_id);
 
 --optd
 insert into dev.wc_optd_rx_load (
-		data_source, year, uth_rx_claim_id, uth_member_id, fill_date, 
-		ndc, days_supply, script_id, refill_count, 
-		month_year_id, generic_ind, generic_name, brand_name, quantity, 
-		provider_npi, pharmacy_id, total_charge_amount, total_allowed_amount, total_paid_amount, 
+		data_source, 
+		year, 
+		uth_rx_claim_id, 
+		uth_member_id, 
+		fill_date, 
+		ndc, 
+		days_supply, 
+		script_id, 
+		refill_count, 
+		month_year_id, 
+		generic_ind, 
+		generic_name, 
+		brand_name, 
+		quantity, 
+		provider_npi, 
+		pharmacy_id, 
+		total_charge_amount, total_allowed_amount, total_paid_amount, 
 		deductible, copay, coins, cob, 
-		rx_claim_id_src, member_id_src, fiscal_year, 
-		total_charge_amount_adj, total_allowed_amount_adj, total_paid_amount_adj, year_adj, 
-		therapeutic_class, ahfs_class, first_fill, script_id_src
+		fiscal_year, 
+		cost_factor_year,
+		therapeutic_class, 
+		ahfs_class, 
+		first_fill,
+		rx_claim_id_src, 
+		member_id_src, 
+		table_id_src
 		)						
-select 'optd', extract(year from a.fill_dt) as cal_yr, b.uth_rx_claim_id, b.uth_member_id, a.fill_dt, 
-       lpad(ndc, 11,'0'), a.days_sup, null as script_id, a.rfl_nbr::numeric,  
-       c.month_year_id, a.gnrc_ind, a.gnrc_nm, a.brnd_nm, a.quantity, 
-       a.prescriber_prov, a.pharm, a.charge, a.std_cost, null as paid_amount, 
-       a.deduct, a.copay, null as coins, null as cob, 
-       a.clmid, a.patid::text, extract(year from a.fill_dt) as fsc_yr,
-       ( a.charge * d.cost_factor) as chrg_adj , ( a.std_cost * d.cost_factor) as alw_adj, null as paid_adj, a.std_cost_yr, 
-       null as thera_class, a.ahfsclss, a.fst_fill, null as script_id_src
+select 'optd', 
+       extract(year from a.fill_dt) as cal_yr, 
+       b.uth_rx_claim_id, 
+       b.uth_member_id, 
+       a.fill_dt, 
+       lpad(ndc, 11,'0'), 
+       a.days_sup, 
+       a.prescript_id, 
+       a.rfl_nbr::numeric,  
+       c.month_year_id, 
+       a.gnrc_ind, 
+       a.gnrc_nm, 
+       a.brnd_nm, 
+       a.quantity, 
+       a.prescriber_prov, 
+       a.pharm,
+       ( a.charge * d.cost_factor) as chg, ( a.std_cost * d.cost_factor) as alw, null as paid_amount, 
+       a.deduct, a.copay, null as coins, null as cob,  
+       extract(year from a.fill_dt) as fsc_yr,
+       a.std_cost_yr, 
+       null as thera_class, 
+       a.ahfsclss, 
+       a.fst_fill, 
+       a.clmid, 
+       a.patid::text,
+       'rx' as table_id_src
 from dev.wc_optd_rx a 
   join dev.wc_optd_uth_rx_claim b 
      on b.member_id_src = a.patid::text
@@ -197,3 +267,21 @@ group by data_source , year
 order by data_source , year 
 ;
 
+
+
+
+-----cleanup ************************
+
+---
+drop table if exists dev.wc_optz_rx_load;
+
+drop table if exists dev.wc_optz_rx;
+
+drop table if exists dev.wc_optz_uth_rx_claim;
+
+----
+drop table if exists dev.wc_optd_rx_load;
+
+drop table if exists dev.wc_optd_rx;
+
+drop table if exists dev.wc_optd_uth_rx_claim;

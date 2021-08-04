@@ -70,11 +70,16 @@ join medicaid.enc_proc_new p
 vacuum analyze data_warehouse.claim_header;
 
 
-select data_source, year, count(*), count(distinct uth_claim_id)
+select data_source, fiscal_year , count(*), count(distinct uth_claim_id)
 from data_warehouse.claim_header ch 
-group by data_source, year
-order by data_source, year
+where data_source = 'mdcd'
+group by data_source, fiscal_year 
+order by data_source, fiscal_year 
 ;
+
+
+select count(*), year_fy 
+from 
 
 ---for healthy texas women htw - up through 2017 they gave us a flag. for 2018 and forward they broke 
 --- htw out into seperate tables
