@@ -23,10 +23,9 @@ dose bpchar(50)  null,
 strength bpchar(30)  null,
 formulary_ind  bpchar(1) null,
 special_drug_ind bpchar(1) null
+
+
 */
-
--- script_id_src is missing
-
 ---******************************************************************************************************************
 ------ Optum Zip - optz
 ---******************************************************************************************************************
@@ -265,7 +264,7 @@ select 'optd',
        a.patid::text,
        'rx' as table_id_src,
 			 a.mail_ind,
-				lpad(a.daw,2,'0'),
+			 lpad(a.daw,2,'0'),
 			 null,
 			 a.strength,
 			 a.form_ind,

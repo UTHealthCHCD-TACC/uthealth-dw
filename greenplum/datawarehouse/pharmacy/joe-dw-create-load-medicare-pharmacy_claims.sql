@@ -8,7 +8,7 @@ formulary_ind  bpchar(1) null,
 special_drug_ind bpchar(1) null
 */
 
--- missing script_id_src
+
 
 ---Medicare Texas
 insert into data_warehouse.pharmacy_claims (
