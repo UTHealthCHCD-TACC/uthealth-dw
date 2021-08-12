@@ -1,13 +1,14 @@
 REVOKE connect FROM PUBLIC;
 
-CREATE ROLE hlanier NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
+CREATE ROLE lyndie NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
 grant covid_analyst to hlanier;
 
 /*
  * Project Specific Roles
  */
 create role g823429;
-grant g823429 to hlanier;
+grant g823429 to lyndie;
+revoke g823066 from lyndie;
 
 create schema g823429;
 grant all on schema g823429 to group g823429;

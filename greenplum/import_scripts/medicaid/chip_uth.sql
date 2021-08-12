@@ -15,7 +15,7 @@ CLIENT_NBR varchar, DATE_OF_BIRTH varchar, ETHNICITY varchar, MAILING_ZIP varcha
 COUNTY_CD varchar, GENDER_CD varchar, AGE numeric, PLAN_ENR_START_DT varchar, PLAN_ENR_END_DT varchar, MCO_ID varchar, PURE_RATE varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/CHIP_UTH_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/CHIP_UTH_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

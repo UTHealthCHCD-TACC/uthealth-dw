@@ -53,7 +53,7 @@ insert into dev.wc_claim_detail_optd (
 	bill_type_class, bill_type_freq, units,	drg_cd,
 	claim_id_src, member_id_src, table_id_src, claim_sequence_number_src, 
 	cob_type, fiscal_year, cost_factor_year, discharge_status
-)	
+)
 select 'optd', extract(year from a.fst_dt) as year, b.uth_claim_id, null as claim_seq, 
        b.uth_member_id, a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, 
        a.pos, d.admit_date, d.disch_date, a.proc_cd, 
@@ -74,9 +74,8 @@ from dev.wc_optd_medical a   --optum_dod.medical a
 	  on a.conf_id = d.conf_id
 ;
 ---------------------
-
 ---va
-vacuum analyze dev.wc_claim_detail_optd;
+vacuum analyze dev.wc_optd_medical;
 
 --verify
 select count(*) , year 

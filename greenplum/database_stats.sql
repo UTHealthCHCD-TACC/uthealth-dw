@@ -9,7 +9,7 @@ from gp_toolkit.gp_skew_coefficients;
 
 where skcrelname like 'wc%';
 
-select pg_terminate_backend(291493);
+select pg_terminate_backend(27852);
 
 
 select *
@@ -70,7 +70,8 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dev.temp_script_id');
+SELECT get_ao_distribution('dev.wc_claim_detail_optd')
+order by 1;
 
 create table reference_tables.ndc_tier_map_imp2 (like reference_tables.ndc_tier_map_imp)
 WITH (appendonly=true, orientation=column, compresstype=none)
@@ -91,7 +92,7 @@ order by 2 desc;
 --Server Settings
 SELECT *
 FROM   pg_settings
-WHERE  name like '%log%'; or name like'gp_%';
+WHERE  name like '%gp_vmem_protect_limit%'; or name like'gp_%';
 
 set gp_workfile_compress_algorithm to 'zlib';
 
@@ -188,7 +189,7 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('data_warehouse')
+and nspname in ('optum_dod', 'optum_zip')
 order by 1, 2, 3;
 
 analyze data_warehouse.member_enrollment_yearly;

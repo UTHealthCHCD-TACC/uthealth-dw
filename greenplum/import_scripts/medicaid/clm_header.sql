@@ -1,6 +1,7 @@
 --Medical
-drop table medicaid.htw_clm_header;
-create table medicaid.htw_clm_header ( 
+drop table medicaid.clm_header;
+create table medicaid.clm_header ( 
+year_fy smallint, filename varchar,
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
 HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_dod_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
@@ -14,8 +15,9 @@ BILL_PROV_EXMPT_IND varchar
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (ICN);
 
-drop external table ext_htw_clm_header;
-CREATE EXTERNAL TABLE ext_htw_clm_header (
+drop external table ext_clm_header;
+CREATE EXTERNAL TABLE ext_clm_header (
+year_fy smallint, filename varchar,
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
 HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_dod_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
@@ -27,19 +29,19 @@ PROC_DT_22 varchar,PROC_DT_23 varchar,PROC_DT_24 varchar,
 BILL_PROV_EXMPT_IND varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/CLM_HEADER_*.csv'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/CLM_HEADER_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 -- Test
 /*
 select *
-from ext_htw_clm_header
+from ext_clm_header
 limit 10;
 */
 -- Insert
-insert into medicaid.htw_clm_header
-select * from ext_htw_clm_header;
+insert into medicaid.clm_header
+select * from ext_clm_header;
 
 -- 318 secs
 update medicaid.htw_clm_header set year_fy=date_part('year_fy', FST_DT) where year_fy=0;

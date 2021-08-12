@@ -21,7 +21,7 @@ PROC_MOD_1 varchar, PROC_MOD_2 varchar, PROC_MOD_3 varchar, PROC_MOD_4 varchar, 
 POS varchar, TOS varchar, REV_CD varchar, REF_PROV_NPI varchar, PERF_PROV_NPI varchar, TXM_CD varchar, PERF_PROV_ID varchar, SUB_PERF_PROV_SFX varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/CLM_DETAIL_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/CLM_DETAIL_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

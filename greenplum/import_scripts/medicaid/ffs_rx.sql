@@ -14,6 +14,9 @@ prescriber_npi varchar,TCN varchar,PREV_TCN varchar,qty_prescribed varchar,unit_
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (PCN);
 
+alter table medicaid.ffs_rx add column DAW_FLAG varchar;
+alter table medicaid.ffs_rx add column PREF_PROD_FLAG varchar;
+
 drop external table ext_ffs_rx;
 CREATE EXTERNAL TABLE ext_ffs_rx (
 year_fy smallint, filename varchar,
@@ -25,9 +28,11 @@ client_county varchar,phmcy_region varchar,DISP_EXP_AMT numeric,drug_cost numeri
 gcn_seq_nbr varchar,gross_amt_due numeric,hmo_plan_id varchar,client_dob varchar,client_sex varchar,
 npi varchar,sig varchar,cat varchar,med_cov varchar,tp varchar,sd varchar,bp varchar,
 prescriber_npi varchar,TCN varchar,PREV_TCN varchar,qty_prescribed varchar,unit_of_meas varchar
+--2020
+, DAW_FLAG varchar, PREF_PROD_FLAG varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/FFS_RX_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/FFS_RX_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
