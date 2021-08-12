@@ -20,7 +20,7 @@ drop table if exists dev.wc_optd_medical;
 create table dev.wc_optd_medical
 with(appendonly=true,orientation=column)
 as select patid::text as mem_id_src, * from optum_dod.medical
-where year = 2020
+where year between 2007 and 2010
 distributed by (mem_id_src);
 
 
@@ -56,13 +56,14 @@ insert into dev.wc_claim_detail_optd (
 )
 select 'optd', extract(year from a.fst_dt) as year, b.uth_claim_id, null as claim_seq, 
        b.uth_member_id, a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, 
-       a.pos, d.admit_date, d.disch_date, a.proc_cd, 
+       a.pos, null, null, -- d.admit_date, d.disch_date, 
+       a.proc_cd, 
        null, substring(a.procmod, 1,1), substring(a.procmod, 2,1), a.rvnu_cd,
        (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount, a.copay,
        a.deduct, a.coins, null as cob, substring(a.bill_type,1,1),
        substring(a.bill_type,2,1), substring(a.bill_type,3,1), a.units, a.drg, 
        a.clmid, a.patid::text, 'medical', a.clmseq, 
-       a.cob as cob_type, a."year", c.standard_price_year, d.dstatus
+       a.cob as cob_type, a."year", c.standard_price_year, a.dstatus
 from dev.wc_optd_medical a   --optum_dod.medical a
 	join dev.wc_optd_uth_claim b  --data_warehouse.dim_uth_claim_id b 
 	   on b.member_id_src = a.mem_id_src 
@@ -70,9 +71,7 @@ from dev.wc_optd_medical a   --optum_dod.medical a
 	join reference_tables.ref_optum_cost_factor c
 	   on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
 	  and c.standard_price_year = a.std_cost_yr::int
-	left outer join optum_dod.confinement d
-	  on a.conf_id = d.conf_id
-;
+	  ;
 ---------------------
 ---va
 vacuum analyze dev.wc_optd_medical;
@@ -82,7 +81,9 @@ select count(*) , year
 from dev.wc_claim_detail_optd
 group by year 
 order by year 
+;
 
+select count(*), year from optum_dod.medical m group by year order by year;
 
 --delete from claim detail
 delete from data_warehouse.claim_detail where data_source = 'optd';
@@ -91,6 +92,8 @@ delete from data_warehouse.claim_detail where data_source = 'optd';
 insert into data_warehouse.claim_detail 
 select * from dev.wc_claim_detail_optd 
 ;
+
+vacuum analyze data_warehouse.claim_detail;
 
 --verify dw
 select count(*), year 
@@ -121,15 +124,7 @@ with(appendonly=true,orientation=column)
 as select * from data_warehouse.claim_detail limit 0
 distributed by (member_id_src);
 
----optz medical distributed on member 
-drop table if exists dev.wc_optz_medical;
 
-create table dev.wc_optz_medical
-with(appendonly=true,orientation=column)
-as select patid::text as mem_id_src, * from optum_zip.medical
-distributed by (clmid, mem_id_src);
-
-vacuum analyze dev.wc_optz_medical;
 
 ---uth claims for optd only
 drop table if exists dev.wc_optz_uth_claim;
@@ -147,6 +142,19 @@ vacuum analyze dev.wc_optz_medical;
 vacuum analyze dev.wc_optz_uth_claim;
 
 
+
+---optz medical distributed on member 
+drop table if exists dev.wc_optz_medical;
+
+create table dev.wc_optz_medical
+with(appendonly=true,orientation=column)
+as select patid::text as mem_id_src, * from optum_zip.medical
+where year = 2007
+distributed by (clmid, mem_id_src);
+
+vacuum analyze dev.wc_optz_medical;
+
+
 ---------------optz insert 
 insert into dev.wc_claim_detail_optz(
 	data_source, year, uth_claim_id, claim_sequence_number, 
@@ -161,13 +169,14 @@ insert into dev.wc_claim_detail_optz(
 )	
 select 'optz', extract(year from a.fst_dt) as year, b.uth_claim_id, null as claim_seq, 
       b.uth_member_id, a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, 
-       a.pos, d.admit_date, d.disch_date, a.proc_cd, 
+       a.pos, null, null, --d.admit_date, d.disch_date, 
+       a.proc_cd, 
        null, substring(a.procmod, 1,1), substring(a.procmod, 2,1), a.rvnu_cd,
        (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount, a.copay,
        a.deduct, a.coins, null as cob, substring(a.bill_type,1,1),
        substring(a.bill_type,2,1), substring(a.bill_type,3,1), a.units, a.drg, 
        a.clmid, a.patid::text, 'medical', a.clmseq, 
-       a.cob as cob_type, a."year", c.standard_price_year, d.dstatus
+       a.cob as cob_type, a."year", c.standard_price_year, a.dstatus
 from dev.wc_optz_medical a 
 	join dev.wc_optz_uth_claim b
 	   on b.claim_id_src = a.clmid
@@ -175,12 +184,12 @@ from dev.wc_optz_medical a
 	join reference_tables.ref_optum_cost_factor c
 		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
 	   and c.standard_price_year = a.std_cost_yr::int
-	left outer join optum_zip.confinement d
-		on d.conf_id = a.conf_id
 	left outer join reference_tables.ref_optum_bill_type_from_tos e
 		on e.tos = a.tos_cd
 ;
 
+
+vacuum analyze dev.wc_claim_detail_optz;
 
 
 --validate before load
@@ -204,6 +213,8 @@ insert into data_warehouse.claim_detail
 select * from dev.wc_claim_detail_optz
 ;
 
+
+vacuum analyze data_warehouse.claim_detail;
 
 --verify dw 
 select year, count(*)

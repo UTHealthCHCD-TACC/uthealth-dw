@@ -8,7 +8,7 @@ into WRK.dbo.wc_TRS_obese_cohort
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2019
+		where a.MED_FSCYR between 2016 and 2020
 	       and (   REPLACE(a.pri_icd9_dx_cd,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
 	       or REPLACE(a.icd9_dx_cd_2,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
 	       or REPLACE(a.icd9_dx_cd_3,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
@@ -33,7 +33,7 @@ from (
 ) inrx;
 
 
-
+drop table if exists WRK.dbo.wc_TRS_obese_counselling;
 
 -----get numerator - weight counselling 
 select distinct combo_ID, fscyr
@@ -41,7 +41,7 @@ into WRK.dbo.wc_TRS_obese_counselling
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2019 		
+		where a.MED_FSCYR between 2016 and 2020 		
 	       and 
 	       (   REPLACE(a.pri_icd9_dx_cd,'.','') in ('Z713','Z7189','V653')
 	       or REPLACE(a.icd9_dx_cd_2,'.','') in ('Z713','Z7189','V653')
@@ -73,7 +73,7 @@ from (
 ---get counts for spreadsheet--------------------------------------------------------------------------
 --validate 1 rec per mem per year 
 select count(*), count(distinct combo_id), FSCYR 
-from TRSERS.dbo.TRS_AGG_YR_FIN 
+from TRSERS.dbo.TRS_AGG_YR_OLD 
 group by FSCYR order by FSCYR;
 
 select count(*), count(distinct combo_id), FSCYR 
@@ -90,21 +90,28 @@ select * from TRSERS.dbo.TRS_AGG_YRMON_FIN
 ---active vs cobra vs ret
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')
     )
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.combo_id) as denom, count(c.combo_id) as numer 
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
+  --obesity
+    left outer  join WRK.dbo.wc_TRS_obese_cohort c
+     on a.combo_id = c.combo_id 
+     and a.FSCYR = c.fscyr 
+  --obesity and wt counsel
+    /*
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
-where a.FSCYR between 2016 and 2019 
+    */
+where a.FSCYR between 2016 and 2020
 group by a.FSCYR , stat 
 order by a.FSCYR , stat 
 ;
@@ -114,22 +121,29 @@ order by a.FSCYR , stat
 ---ee vs dep / active vs retiree
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')
+	from TRSERS.dbo.TRS_AGG_YRMON 
+	where yearmonth in ('201608','201708','201808','201908','202008')
     )
 select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 'D' then 'D' else 'X' end ), ' ','' ) as nv, 
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
+  --obesity
+    left outer  join WRK.dbo.wc_TRS_obese_cohort c
+     on a.combo_id = c.combo_id 
+     and a.FSCYR = c.fscyr 
+  --obesity and wt counsel
+    /*
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
-where a.FSCYR between 2016 and 2019 
+    */
+where a.FSCYR between 2016 and 2020 
 group by a.FSCYR , rel, stat 
 order by a.FSCYR, stat, rel desc
 ;
@@ -139,8 +153,8 @@ order by a.FSCYR, stat, rel desc
 ---age group active vs retiree vs cobra 
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')	
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')	
     )
 select replace( str(a.FSCYR) + stat + 
        case when age between 0 and 19 then '1'
@@ -151,17 +165,26 @@ select replace( str(a.FSCYR) + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
+  --obesity
+    left outer  join WRK.dbo.wc_TRS_obese_cohort c
+     on a.combo_id = c.combo_id 
+     and a.FSCYR = c.fscyr 
+  --obesity and wt counsel
+    /*
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
-where a.FSCYR between 2016 and 2019 
+    */
+where a.FSCYR between 2016 and 2020
+  and age between 0 and 125 
+  and stat <> '' 
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'
@@ -183,8 +206,8 @@ order by  a.fscyr,  stat,    case when age between 0 and 19 then '1'
 ---age group active vs retiree vs cobra / male vs female 
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')		
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')			
     )
 select replace( str(a.FSCYR) + gen + stat + 
        case when age between 0 and 19 then '1'
@@ -195,17 +218,26 @@ select replace( str(a.FSCYR) + gen + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
+  --obesity
+    left outer  join WRK.dbo.wc_TRS_obese_cohort c
+     on a.combo_id = c.combo_id 
+     and a.FSCYR = c.fscyr 
+  --obesity and wt counsel
+    /*
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
-where  a.FSCYR between 2016 and 2019 
+    */
+where  a.FSCYR between 2016 and 2020
+   and a.gen <> ''
+   and age between 0 and 125
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'

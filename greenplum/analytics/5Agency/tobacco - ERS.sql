@@ -37,7 +37,7 @@ union
 	    or a.DiagnosisCode3 = d.diag_cd 
 	    or a.DiagnosisCode4 = d.diag_cd 
 	    or a.DiagnosisCode5 = d.diag_cd 
-	where a.FSCYR between 2018 and 2019     	       
+	where a.FSCYR between 2018 and 2020     	       
 ) inrx;
 
 
@@ -57,13 +57,14 @@ union
 ---2018 and 2019 only use BCBS and FSCRY
 	select id, FSCYR
 	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2019
+	where a.FSCYR between 2018 and 2020
 	  and  a.HCPCSCPTCode in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458',
 '1034F','4004F','4001F','G9906','G9907','G9908','G9909')	     
 ) inrx;
 
 
 ---consolidate tobacco use
+drop table if exists WRK.dbo.wc_ers_tobacco_cohort
 select distinct id, fscyr 
 into WRK.dbo.wc_ers_tobacco_cohort
 from WRK.dbo.wc_ers_tobacco_cohort_temp
@@ -100,7 +101,7 @@ union
 	    or a.DiagnosisCode3 = 'Z716'
 	    or a.DiagnosisCode4 = 'Z716'
 	    or a.DiagnosisCode5 = 'Z716'
-	where a.FSCYR between 2018 and 2019     	       
+	where a.FSCYR between 2018 and 2020    	       
 ) inrx;
 
 
@@ -118,7 +119,7 @@ union
 ---2018 and 2019 only use BCBS and FSCRY
 	select id, FSCYR
 	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2019
+	where a.FSCYR between 2018 and 2020
 	  and  a.HCPCSCPTCode in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','4004F','4001F')	     
 ) inrx;
 
@@ -139,6 +140,7 @@ from TRSERS.dbo.ERS_CAREMARK_RX a where a.ProductServiceName like '%BUPROPION%';
 
 
 --consolidate counselling
+drop table if exists WRK.dbo.wc_ers_tobacco_counselling
 select distinct id, fscyr 
 into WRK.dbo.wc_ers_tobacco_counselling
 from WRK.dbo.wc_ers_tobacco_counselling_temp;
@@ -167,7 +169,7 @@ group by FSCYR order by FSCYR;
 with dec_cohort as ( 
 	select distinct id, FSCYR 
 	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908')
+	where yrmnth in ('201608','201708','201808','201908','202008')
 	  and age >= 15
     )
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(distinct c.id) as numer 
@@ -175,11 +177,11 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
- /* --tobacco use 
+  --tobacco use 
   left outer join WRK.dbo.wc_ers_tobacco_cohort c
      on c.id = a.id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR  
-  */
+  /*
   --tobacco counselling
    join WRK.dbo.wc_ers_tobacco_cohort b
      on b.id = a.id 
@@ -187,7 +189,8 @@ from TRSERS.dbo.ERS_AGG_YR a
    left outer join WRK.dbo.wc_ers_tobacco_counselling c 
       on c.id = a.id 
      and c.fscyr = a.FSCYR
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020 
 group by a.FSCYR , stat 
 order by a.FSCYR , stat 
 ;
@@ -198,7 +201,7 @@ order by a.FSCYR , stat
 with dec_cohort as ( 
 	select distinct id, FSCYR 
 	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908')	
+	where yrmnth in ('201608','201708','201808','201908','202008')	
 	  and age >= 15
     )
 select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ = 'DEP' then 'D' else 'X' end ), ' ','' ) as nv, 
@@ -207,19 +210,20 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-  /*--tobacco use 
+  --tobacco use 
   left outer join WRK.dbo.wc_ers_tobacco_cohort c
      on c.id = a.id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR  
-     */
- --tobacco counselling
+  /*
+  --tobacco counselling
    join WRK.dbo.wc_ers_tobacco_cohort b
      on b.id = a.id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR 
    left outer join WRK.dbo.wc_ers_tobacco_counselling c 
       on c.id = a.id 
      and c.fscyr = a.FSCYR
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020 
 group by a.FSCYR , typ, stat 
 order by a.FSCYR, stat, typ desc--, stat 
 ;
@@ -230,7 +234,7 @@ order by a.FSCYR, stat, typ desc--, stat
 with dec_cohort as ( 
 	select distinct id, FSCYR 
 	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908')		
+	where yrmnth in ('201608','201708','201808','201908','202008')		
 	  and age >= 15
     )
 select replace( str(a.FSCYR) + stat + 
@@ -246,19 +250,20 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
- /* --tobacco use 
+  --tobacco use 
   left outer join WRK.dbo.wc_ers_tobacco_cohort c
      on c.id = a.id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR  
-  */   
-    --tobacco counselling
+  /*
+  --tobacco counselling
    join WRK.dbo.wc_ers_tobacco_cohort b
      on b.id = a.id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR 
    left outer join WRK.dbo.wc_ers_tobacco_counselling c 
       on c.id = a.id 
      and c.fscyr = a.FSCYR
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020 
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'
@@ -281,7 +286,7 @@ order by  a.fscyr,  stat,    case when age between 0 and 19 then '1'
 with dec_cohort as ( 
 	select distinct id, FSCYR 
 	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908')	
+	where yrmnth in ('201608','201708','201808','201908','202008')	
 	  and age >= 15
     )
 select replace( str(a.FSCYR) + gen + stat + 
@@ -297,11 +302,11 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
-/*  --tobacco use 
+  --tobacco use 
   left outer join WRK.dbo.wc_ers_tobacco_cohort c
      on c.id = a.id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR  
- */
+  /*
   --tobacco counselling
    join WRK.dbo.wc_ers_tobacco_cohort b
      on b.id = a.id 
@@ -309,7 +314,8 @@ from TRSERS.dbo.ERS_AGG_YR a
    left outer join WRK.dbo.wc_ers_tobacco_counselling c 
       on c.id = a.id 
      and c.fscyr = a.FSCYR
-where  a.FSCYR between 2016 and 2019 
+     */
+where  a.FSCYR between 2016 and 2020 
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'

@@ -37,6 +37,10 @@ from medicaid.clm_header h
 ;
 
 
+select count(*) from medicaid.enc_header eh 
+
+select count(*) from medicaid.clm_header 
+
 
 
 -----------encounters
@@ -76,6 +80,35 @@ where data_source = 'mdcd'
 group by data_source, fiscal_year 
 order by data_source, fiscal_year 
 ;
+
+----- claim detail
+drop table if exists dev.wc_medicaid_detail ;
+create table dev.wc_medicaid_detail 
+with(appendonly=true,orientation=column)
+as select * from data_warehouse.claim_detail limit 0
+distributed by (member_id_src);
+;
+
+insert into dev.wc_medicaid_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
+                                     from_date_of_service, to_date_of_service, month_year_id, place_of_service,
+                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs, 
+                                     procedure_type, proc_mod_1, proc_mod_2, revenue_cd, 
+                                     charge_amount, allowed_amount, paid_amount, 
+                                     copay, deductible, coins, cob, 
+                                     bill_type_inst, bill_type_class, bill_type_freq, 
+                                     units, drg_cd, claim_id_src, member_id_src, table_id_src, claim_sequence_number_src, 
+                                     cob_type, fiscal_year, cost_factor_year, discharge_status 
+                                     )
+                                     
+           select 'mdcd', *
+           from medicaid.clm_detail a 
+              join data_warehouse.dim_uth_claim_id b 
+                 on a.icn = b.claim_id_src 
+                and 
+           
+           
+           
+ ;
 
 
 select count(*), year_fy 

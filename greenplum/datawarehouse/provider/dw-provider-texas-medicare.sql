@@ -18,7 +18,6 @@ JW 7/26/2021:
 -----------------------------------------------------------------------------------------------------------
 -------Make uth ids --add records to dim_uth_provider_id
 -----------------------------------------------------------------------------------------------------------
-
 with providers as 
 (
         select org_npi_num as provider_id_src
@@ -124,7 +123,6 @@ select distinct 'mcrt' as data_source, p.provider_id_src
 ----------------------------------------------------------
 -------------provider table------------------------------
 ----------------------------------------------------------
-
 with bcarrier_line 
     as (
         select prf_physn_npi as npi,
@@ -294,10 +292,11 @@ insert into data_warehouse.provider
       left join reference_tables.ref_medicare_state_codes st 
        on st.medicare_state_cd = s.state
      where d.data_source = 'mcrt'
-        and d2.uth_provider_id is null;
-   ;
+        and d2.uth_provider_id is null
+;
    
-vacuum analyze data_warehouse.provider ;
+   
+vacuum analyze data_warehouse.provider;
    
 
 
@@ -308,7 +307,6 @@ vacuum analyze data_warehouse.provider ;
 
  -----------inpatient_base_claims_k-----------------
  -----------whole claim one line so using 1 as line number--------
- 
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -348,8 +346,6 @@ order by c.uth_claim_id;
 
  -----------outpatient_base_claims_k-----------------
  -----------whole claim one line so using 1 as line number--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -383,15 +379,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi and at_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi and op_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num and bill_prov.data_source = 'mcrt'
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrt'
 and clmprov.uth_claim_id is null;
 
 
  -----------hospice_base_claims_k-------------------
  -----------whole claim one line so using 1 as line number--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -425,15 +419,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi and at_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi and op_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num and bill_prov.data_source = 'mcrt'
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrt'
 and clmprov.uth_claim_id is null;
 
 
  -----------snf_base_claims_k-----------------
  -----------whole claim one line so using 1 as line number--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -467,13 +459,12 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi and at_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi and op_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num and bill_prov.data_source = 'mcrt'
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrt'
 and clmprov.uth_claim_id is null;
 
  -----------hha_base_claims_k------------------------------------------
  -----------whole claim one line so using 1 as line number--------
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -507,15 +498,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi and at_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi and op_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num and bill_prov.data_source = 'mcrt'
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrt'
 and clmprov.uth_claim_id is null;
 
 
  -----------bcarrier_claims_k-----------------
  -----------whole claim one line so using 1 as line number--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -546,7 +535,7 @@ select 'mcrt' as data_source,
     on c.claim_id_src  = a.clm_id
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.carr_clm_blg_npi_num and bill_prov.data_source = 'mcrt'
 left outer join data_warehouse.dim_uth_provider_id refer_prov on refer_prov.provider_id_src = a.rfr_physn_npi and refer_prov.data_source = 'mcrt'
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrt'
 and clmprov.uth_claim_id is null;
 
@@ -554,8 +543,6 @@ and clmprov.uth_claim_id is null;
 -------------------------------------------------------------------------
 -----------bcarrier_line_k is only one with actual sequence numbers------
 -------------------------------------------------------------------------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -592,15 +579,15 @@ select 'mcrt' as data_source,
 vacuum analyze data_warehouse.claim_provider;
 
 
-
-/* 
-
 select data_source, count(*) from data_warehouse.provider  group by 1;
 
 select data_source, count(*) from data_warehouse.dim_uth_provider_id group by 1;
 
-select count(*) from data_warehouse.claim_providerwhere data_source = 'mcrt';
+select data_source, count(*) from data_warehouse.claim_detail ch group by 1;
 
+select data_source, count(*) from data_warehouse.dim_uth_claim_id duci  group by 1;
+
+/*
 select 
     count(*) as count,
     'bcarrier_claims_k' as src_table
