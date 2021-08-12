@@ -5,7 +5,7 @@ drop table if exists dev.wc_hf_diags;
 select bene_id, min(clm_from_dt::date) as hf_date 
 into dev.wc_hf_diags
 from medicare_texas.inpatient_base_claims_k 
-where year = '2018'
+where year = '2018'  --clm_from_dt::date between '2018-01-01' and '2018-12-31'
 and prncpal_dgns_cd in ('428','4281','4282','42821','42822','42823','4283','42831','42832','42833','4284','4284',
 	'42841','42842','42843','4289','39891','40291','40211','40201','40401','40403','40411','40413',
 	'40491','40493','I50','I5020','I5021','I5022','I5023','I503','I5031','I5032','I5033','I504',
@@ -14,13 +14,7 @@ and prncpal_dgns_cd in ('428','4281','4282','42821','42822','42823','4283','4283
 group by bene_id
 ;
 
-select *
-into dev.wc_hf_first_hf_event
-from dev.wc_hf_diags a where bene_id in ( select bene_id from dev.wc_hf_cohorts);
 
-
-select count(*), count(distinct bene_id) 
-from dev.wc_hf_first_hf_event;
 
 ---get 65+ cohort
 select a.* 
@@ -32,13 +26,19 @@ where a.year = '2018'
 and a.age_at_end_ref_yr::int2 >= 65
  ; 
 
+select *
+into dev.wc_hf_first_hf_event
+from dev.wc_hf_diags a where bene_id in ( select bene_id from dev.wc_hf_cohorts);
+
+
+select *--count(*), count(distinct bene_id) 
+from dev.wc_hf_first_hf_event
+where bene_id = 'ggggggfgfjAwAff';
+
 select count(*), count(distinct bene_id) 
 from dev.wc_hf_cohorts;
 
 
-select count(*), year from medicare_texas.pde_file pf 
-group by year
-order by year;
 
 ----build extract tables 
 

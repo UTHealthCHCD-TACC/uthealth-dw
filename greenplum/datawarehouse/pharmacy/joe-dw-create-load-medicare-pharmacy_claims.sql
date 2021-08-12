@@ -11,7 +11,7 @@ special_drug_ind bpchar(1) null
 
 
 ---Medicare Texas
-insert into data_warehouse.pharmacy_claims (
+insert into data_warehouse.pharmacy_claims_new (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -90,7 +90,7 @@ from medicare_texas.pde_file a
 
 ---*********************************************************************************
 ---Medicare National
-insert into data_warehouse.pharmacy_claims (
+insert into data_warehouse.pharmacy_claims_new (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -167,11 +167,11 @@ from medicare_national.pde_file a
  ;
 
 
-vacuum analyze data_warehouse.pharmacy_claims;
+vacuum analyze data_warehouse.pharmacy_claims_new;
 
 ---validate
 select count(*), data_source, year
-from data_warehouse.pharmacy_claims pc
+from data_warehouse.pharmacy_claims_new pc
 group by data_source , year
 order by data_source , year
 ;

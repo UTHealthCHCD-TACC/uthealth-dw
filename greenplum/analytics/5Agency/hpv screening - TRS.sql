@@ -7,7 +7,7 @@ from
 (
 	select a.combo_id, a.MED_FSCYR as fscyr, a.src_clm_id 
 	from trsers.dbo.TRS_CLM_FIN_NEW a
-	where a.MED_FSCYR between 2015 and 2019
+	where a.MED_FSCYR between 2015 and 2020
 	  and a.prcdr_cd in ('90649','90650','90651')
 	  
 ) inr 
@@ -29,19 +29,19 @@ group by combo_id;
 ---get counts for spreadsheet--------------------------------------------------------------------------
 ---confirmed 1 record per mem per yr
 select count(*), count(distinct combo_id), fscyr 
-from TRSERS.dbo.TRS_AGG_YR_FIN 
+from TRSERS.dbo.TRS_AGG_YR
 group by fscyr
 order by  fscyr;
 
 
 ---active vs cobra vs ret
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.combo_id) as denom, count(c.combo_id) as numer 
-from TRSERS.dbo.TRS_AGG_YR_FIN a
+from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
      and c.cnt > 1 
      and c.hpv_start <= a.FSCYR 
-where a.FSCYR between 2016 and 2019 
+where a.FSCYR between 2016 and 2020 
   and a.age = 13
   and a.enrlmnth = 12
 group by a.FSCYR , stat 
@@ -53,12 +53,12 @@ order by a.FSCYR , stat
 ---ee vs dep / active vs retiree
 select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 'D' then 'D' else 'X' end  ), ' ','' ) as nv, 
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a
+from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
      and c.cnt > 1 
      and c.hpv_start <= a.FSCYR       
-where a.FSCYR between 2016 and 2019 
+where a.FSCYR between 2016 and 2020
   and a.age = 13
   and a.enrlmnth = 12 
 group by a.FSCYR , rel, stat
@@ -77,12 +77,12 @@ select replace( str(a.FSCYR) + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a
+from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
      and c.cnt > 1 
      and c.hpv_start <= a.FSCYR       
-where  a.FSCYR between 2016 and 2019 
+where  a.FSCYR between 2016 and 2020 
   and a.AGE = 13
   and enrlmnth = 12 
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
@@ -113,14 +113,15 @@ select replace( str(a.FSCYR) + gen + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a
+from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_trs_hpv_vacc c 
       on a.combo_id = c.combo_id 
      and c.cnt > 1 
      and c.hpv_start <= a.FSCYR       
-where  a.FSCYR between 2016 and 2019 
+where  a.FSCYR between 2016 and 2020
   and a.AGE = 13
   and enrlmnth = 12 
+  and a.gen <> ''
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'

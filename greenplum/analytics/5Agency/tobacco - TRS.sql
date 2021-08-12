@@ -24,7 +24,7 @@ from (
 	        or replace(a.icd9_dx_cd_8,'.','') = d.diag_cd 
 	        or replace(a.icd9_dx_cd_9,'.','') = d.diag_cd 
 	        or replace(a.icd9_dx_cd_10,'.','') = d.diag_cd 
-		where a.MED_FSCYR between 2014 and 2019 	       
+		where a.MED_FSCYR between 2014 and 2020 	       
 ) inrx;
 
 
@@ -38,13 +38,14 @@ select combo_ID, fscyr
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2014 and 2019 	
+		where a.MED_FSCYR between 2014 and 2020	
 		  and a.prcdr_cd  in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458',
 '1034F','4004F','4001F','G9906','G9907','G9908','G9909')	               
 ) inrx;
 
 
 --consolidate 
+drop table if exists wrk.dbo.wc_trs_tobacco_cohort
 select distinct combo_id, fscyr 
 into WRK.dbo.wc_TRS_tobacco_cohort
 from WRK.dbo.wc_TRS_tobacco_cohort_temp 
@@ -61,7 +62,7 @@ drop table if exists WRK.dbo.wc_TRS_tobacco_counselling_temp;
 select combo_id, med_FSCYR as fscyr 
 into WRK.dbo.wc_TRS_tobacco_counselling_temp
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2019 
+		where a.MED_FSCYR between 2016 and 2020 
 		 and (  replace(a.pri_icd9_dx_cd,'.','') = 'Z716'
 	        or replace(a.icd9_dx_cd_2,'.','') = 'Z716'
 	        or replace(a.icd9_dx_cd_3,'.','') = 'Z716'
@@ -78,14 +79,15 @@ into WRK.dbo.wc_TRS_tobacco_counselling_temp
 
 
 --counselling rx 
-insert into into WRK.dbo.wc_TRS_tobacco_counselling_temp
+insert into  WRK.dbo.wc_TRS_tobacco_counselling_temp
 select combo_id , FSCYR 
 from TRSERS.dbo.TRS_RX_FIN_NEW
 where Generic_Name like '%BUPROPION%'
-  and FSCYR between 2016 and 2019;
+  and FSCYR between 2016 and 2020;
 
  
  --consolidate
+ drop table if exists WRK.dbo.wc_TRS_tobacco_counselling 
  select distinct combo_id, fscyr 
 into WRK.dbo.wc_TRS_tobacco_counselling
  from WRK.dbo.wc_TRS_tobacco_counselling_temp
@@ -115,28 +117,28 @@ group by FSCYR order by FSCYR;
 ---active vs cobra vs ret
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')
 	  and age >= 15
     )
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.combo_id) as denom, count(distinct c.combo_id) as numer 
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- /*--tobacco use 
+ --tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
-     and c.fscyr between a.FSCYR - 2 and a.FSCYR   
-  */   
- --tobacco counselling
+     and c.fscyr between a.FSCYR - 2 and a.FSCYR      
+ /*--tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR  
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020 
 group by a.FSCYR , stat 
 order by a.FSCYR , stat 
 ;
@@ -146,29 +148,29 @@ order by a.FSCYR , stat
 ---ee vs dep / active vs retiree
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')
 	  and age >= 15
     )
 select replace( (str(a.FSCYR) +  stat + case when rel = 'S' then 'E' when rel = 'D' then 'D' else 'X' end ), ' ','' ) as nv, 
        count(distinct a.combo_id) as denom, count(distinct c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- /*--tobacco use 
+ --tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
-     and c.fscyr between a.FSCYR - 2 and a.FSCYR   
-  */   
- --tobacco counselling
+     and c.fscyr between a.FSCYR - 2 and a.FSCYR      
+ /*--tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR  
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020
 group by a.FSCYR , rel, stat 
 order by a.FSCYR, stat, rel desc
 ;
@@ -178,8 +180,8 @@ order by a.FSCYR, stat, rel desc
 ---age group active vs retiree vs cobra 
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')	
+	from TRSERS.dbo.TRS_AGG_YRMON 
+	where yearmonth in ('201608','201708','201808','201908','202008')	
 	  and age >= 15
     )
 select replace( str(a.FSCYR) + stat + 
@@ -191,23 +193,23 @@ select replace( str(a.FSCYR) + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(distinct c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- /*--tobacco use 
+ --tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
-     and c.fscyr between a.FSCYR - 2 and a.FSCYR   
-  */   
- --tobacco counselling
+     and c.fscyr between a.FSCYR - 2 and a.FSCYR      
+ /*--tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR  
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
-where a.FSCYR between 2016 and 2019 
+     */
+where a.FSCYR between 2016 and 2020
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'
@@ -229,8 +231,8 @@ order by  a.fscyr,  stat,    case when age between 0 and 19 then '1'
 ---age group active vs retiree vs cobra / male vs female 
 with dec_cohort as ( 
 	select distinct FSCYR, combo_id 
-	from TRSERS.dbo.TRS_AGG_YRMON_FIN 
-	where yearmonth in ('201608','201708','201808','201908')	
+	from TRSERS.dbo.TRS_AGG_YRMON
+	where yearmonth in ('201608','201708','201808','201908','202008')	
 	  and age >= 15
     )
 select replace( str(a.FSCYR) + gen + stat + 
@@ -242,23 +244,23 @@ select replace( str(a.FSCYR) + gen + stat +
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end, ' ','' ) as age_group,
        count(distinct a.combo_id) as denom, count(distinct c.combo_id) as numer
-from TRSERS.dbo.TRS_AGG_YR_FIN a 
+from TRSERS.dbo.TRS_AGG_YR a 
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- /*--tobacco use 
+ --tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
-     and c.fscyr between a.FSCYR - 2 and a.FSCYR   
-  */   
- --tobacco counselling
+     and c.fscyr between a.FSCYR - 2 and a.FSCYR      
+ /*--tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
      and b.fscyr between a.FSCYR - 2 and a.FSCYR  
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
-where  a.FSCYR between 2016 and 2019 
+     */
+where  a.FSCYR between 2016 and 2020
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'

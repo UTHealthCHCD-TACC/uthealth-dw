@@ -1,4 +1,14 @@
 /*
+Author | Date | Notes
+
+ ---  wcc001 | 8/01/21 | script creation 
+ ---  wcc002 | 8/11/21 | add distributed by
+ 
+ */
+
+
+
+/*
 new variables to be added to table
 retail_or_mail_indicator  bpchar(1) null,
 dispensed_as_written  bpchar(2) null,
@@ -49,16 +59,16 @@ vacuum analyze dev.truv_ccaed;
 
 
 ---work table to load
-drop table if exists dev.wc_truv_mdcd_rx_load;
+drop table if exists dev.wc_truv_rx_load;
 
-create table dev.wc_truv_mdcd_rx_load
+create table dev.wc_truv_rx_load
 with(appendonly=true,orientation=column)
-as select * from data_warehouse.pharmacy_claims limit 0
+as select * from data_warehouse.pharmacy_claims_new limit 0
 distributed by (uth_member_id);
 
 
 --truven medicare adv
-insert into dev.wc_truv_mdcd_rx_load (
+insert into dev.wc_truv_rx_load (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -96,7 +106,7 @@ select 'truv',
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
 	   a.svcdate,
-       lpad(ndcnum::text,11,'0'),
+       lpad(a.ndcnum::text,11,'0'),
        a.daysupp,
        null as script_id,
        a.refill,
@@ -113,7 +123,7 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.enrolid || ndcnum::text || svcdate::text,
+       a.enrolid || a.ndcnum::text || svcdate::text,
        a.enrolid::text,
        'mdcrd' as table_id_src,
 			 a.rxmr, --new
@@ -134,34 +144,13 @@ from dev.truv_mdcrd a -- truven.mdcrd a
 ;
 
 
-vacuum analyze dev.wc_truv_mdcd_rx_load;
-
-
-select count(*), year from truven.mdcrd group by year order by year;
-
-select count(*), year from dev.wc_truv_mdcd_rx_load group by year order by year;
-
----delete old recs
-delete from data_warehouse.pharmacy_claims where data_source ='truv' and table_id_src = 'mdcrd';
-
----insert new optz recs
-insert into data_warehouse.pharmacy_claims
-select * from dev.wc_truv_mdcd_rx_load ;
-
 
 ------********************************************************************
 --truven commercial
 
----work table to load
-drop table if exists dev.wc_truv_com_rx_load;
-
-create table dev.wc_truv_com_rx_load
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.pharmacy_claims limit 0
-distributed by (uth_member_id);
 
 ---truv commercial
-insert into dev.wc_truv_com_rx_load (
+insert into dev.wc_truv_rx_load (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -199,7 +188,7 @@ select 'truv',
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
 	   a.svcdate,
-       lpad(ndcnum::text,11,'0'),
+       lpad(a.ndcnum::text,11,'0'),
        a.daysupp,
        null as script_id,
        a.refill,
@@ -216,7 +205,7 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.enrolid || ndcnum::text || svcdate::text,
+       a.enrolid || a.ndcnum::text || svcdate::text,
        a.enrolid::text,
        'ccaed' as table_id_src,
 			 a.rxmr,--new
@@ -237,7 +226,7 @@ from dev.truv_ccaed a    --truven.ccaed a
 ;
 
 
-vacuum analyze dev.wc_truv_com_rx_load;
+vacuum analyze dev.wc_truv_rx_load;
 
 
 
@@ -249,17 +238,17 @@ select count(*), year from dev.wc_truv_com_rx_load group by year order by year;
 delete from data_warehouse.pharmacy_claims where data_source ='truv' and table_id_src = 'ccaed';
 
 ---insert new optz recs
-insert into data_warehouse.pharmacy_claims
-select * from dev.wc_truv_com_rx_load ;
+insert into data_warehouse.pharmacy_claims_new
+select * from dev.wc_truv_rx_load ;
 
 
 
-vacuum analyze data_warehouse.pharmacy_claims;
+vacuum analyze data_warehouse.pharmacy_claims_new;
 
 ---- validate
 
 select count(*), data_source, year
-from data_warehouse.pharmacy_claims
+from data_warehouse.pharmacy_claims_new
 group by data_source, year
 order by data_source, year
 

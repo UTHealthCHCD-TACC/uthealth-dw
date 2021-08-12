@@ -31,7 +31,7 @@ special_drug_ind bpchar(1) null
 ---******************************************************************************************************************
 
 --create copy of rx table and distribute on patid as text field
-drop table if exist dev.wc_optz_rx;
+drop table if exists dev.wc_optz_rx;
 
 create table dev.wc_optz_rx
 with(appendonly=true,orientation=column)
@@ -57,11 +57,11 @@ vacuum analyze dev.wc_optz_uth_rx_claim;
 
 
 ---work table to load
-drop table dev.wc_optz_rx_load;
+drop table if exists dev.wc_optz_rx_load;
 
 create table dev.wc_optz_rx_load
 with(appendonly=true,orientation=column)
-as select * from data_warehouse.pharmacy_claims limit 0
+as select * from data_warehouse.pharmacy_claims_new limit 0
 distributed by (uth_member_id);
 
 --optz
@@ -159,10 +159,11 @@ select count(*), year from optum_zip.rx group by year order by year;
 delete from data_warehouse.pharmacy_claims where data_source ='optz';
 
 ---insert new optz recs
-insert into data_warehouse.pharmacy_claims
+insert into data_warehouse.pharmacy_claims_new
 select * from dev.wc_optz_rx_load;
 
 
+vacuum analyze data_warehouse.pharmacy_claims_new;
 
 ---******************************************************************************************************************
 ------ Optum DoD - optd
@@ -195,11 +196,11 @@ vacuum analyze dev.wc_optd_uth_rx_claim;
 
 
 ---work table to load
-drop table dev.wc_optd_rx_load;
+drop table if exists dev.wc_optd_rx_load;
 
 create table dev.wc_optd_rx_load
 with(appendonly=true,orientation=column)
-as select * from data_warehouse.pharmacy_claims limit 0
+as select * from data_warehouse.pharmacy_claims_new limit 0
 distributed by (uth_member_id);
 
 --optd
@@ -303,11 +304,11 @@ delete from data_warehouse.pharmacy_claims where data_source = 'optd';
 
 
 ---insert new optz recs
-insert into data_warehouse.pharmacy_claims
+insert into data_warehouse.pharmacy_claims_new
 select * from dev.wc_optd_rx_load;
 
 
-vacuum analyze data_warehouse.pharmacy_claims;
+vacuum analyze data_warehouse.pharmacy_claims_new;
 
 
 ---validate

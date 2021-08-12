@@ -1,3 +1,19 @@
+/* ******************************************************************************************************
+ *  This script defines the data warehouse pharmacy claims table
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ *  jw001  || 8/11/2021 || add variables
+ * ******************************************************************************************************
+ * 
+ * 
+ * 
+ */
+
+
+
 drop table if exists data_warehouse.pharmacy_claims;
 
 
@@ -30,6 +46,14 @@ create table data_warehouse.pharmacy_claims (
 		therapeutic_class text,
 		ahfs_class text,
 		first_fill char(1),
+		---jw001 
+		retail_or_mail_indicator  bpchar(1) null,
+		dispensed_as_written  bpchar(2) null,
+		dose bpchar(50)  null,
+		strength bpchar(30)  null,
+		formulary_ind  bpchar(1) null,
+		special_drug_ind bpchar(1) null,
+		--- jw001 end/
 		rx_claim_id_src text, 
 		member_id_src text, 
 		table_id_src text

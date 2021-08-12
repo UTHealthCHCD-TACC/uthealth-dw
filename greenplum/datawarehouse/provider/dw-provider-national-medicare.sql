@@ -342,8 +342,6 @@ where c.data_source = 'mcrn';
 
  -----------outpatient_base_claims_k-----------------
  -----------whole claim one line so using 1--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -377,15 +375,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi 
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrn'
 and clmprov.uth_claim_id is null;
 
 
  -----------hospice_base_claims_k-----------------
  -----------whole claim one line so using 1--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -419,15 +415,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi 
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrn'
 and clmprov.uth_claim_id is null;
 
 
  -----------snf_base_claims_k-----------------
  -----------whole claim one line so using 1--------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -503,14 +497,13 @@ left outer join data_warehouse.dim_uth_provider_id rn_prov on rn_prov.provider_i
 left outer join data_warehouse.dim_uth_provider_id at_prov on at_prov.provider_id_src = a.at_physn_npi
 left outer join data_warehouse.dim_uth_provider_id op_prov on op_prov.provider_id_src = a.op_physn_npi 
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.org_npi_num
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrn'
 and clmprov.uth_claim_id is null;
 
 
  -----------bcarrier_claims_k-----------------
  -----------bcarrier does have lines, so using 0 for single claim before line level data--------
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -541,7 +534,7 @@ select 'mcrn' as data_source,
     on c.claim_id_src  = a.clm_id
 left outer join data_warehouse.dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.carr_clm_blg_npi_num
 left outer join data_warehouse.dim_uth_provider_id refer_prov on refer_prov.provider_id_src = a.rfr_physn_npi
-left outer join data_warehouse.claim_providerclmprov on clmprov.uth_claim_id = c.uth_claim_id 
+left outer join data_warehouse.claim_provider clmprov on clmprov.uth_claim_id = c.uth_claim_id 
 where c.data_source = 'mcrn'
 and clmprov.uth_claim_id is null;
 
@@ -549,8 +542,6 @@ and clmprov.uth_claim_id is null;
 -------------------------------------------------------------------------
 -----------bcarrier_line_k is only one with actual sequence numbers------
 -------------------------------------------------------------------------
-
-
 insert into data_warehouse.claim_provider
       (data_source,
        data_year,
@@ -586,6 +577,8 @@ select 'mcrn' as data_source,
 
    
 vacuum analyze data_warehouse.claim_provider;
+
+
 
    
   /* 
