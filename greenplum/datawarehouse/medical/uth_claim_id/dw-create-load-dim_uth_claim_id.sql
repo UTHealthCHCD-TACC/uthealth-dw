@@ -437,18 +437,24 @@ where c.uth_member_id is null
 ---medicaid
 --encounter
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
-select 'mdcd', a.derv_enc, a.mem_id, b.uth_member_id, a.year_fy 
+select 'mdcd', a.derv_enc, trim(a.mem_id), b.uth_member_id, a.year_fy 
 from medicaid.enc_proc a   
    join data_warehouse.dim_uth_member_id b 
-     on b.member_id_src = a.mem_id    
+     on b.member_id_src = trim(a.mem_id)    
    left outer join data_warehouse.dim_uth_claim_id c
      on c.member_id_src = a.mem_id
     and c.claim_id_src = a.derv_enc 
 where c.uth_claim_id is null 
 ;
 
+select * 
+from medicaid.enc_proc 
+where year_fy = 2020;
 
-select count(*) from data_warehouse.dim_uth_claim_id where data_source = 'mdcd';
+update data_warehouse.dim_uth_claim_id set member_id_src = trim(member_id_src) where data_source = 'mdcd';
+
+
+select count(*), data_year from data_warehouse.dim_uth_claim_id where data_source = 'mdcd' group by data_year order by data_year 
 
 
 select count(*) from medicaid.clm_header;

@@ -80,6 +80,27 @@ where  a.GENDER = 'Female'
  order by a.ptid, cast(v.VISIT_START_DATE as date)
 ;
 
+----new request 8/1/2021 to add insurance type 
+alter table g823066.wc_covid_pregnancy_study_extract add column ins_type text;
+
+
+update g823066.wc_covid_pregnancy_study_extract a set ins_type = b.ins_type 
+from  g823066.wc_covid_preg_ins_type b 
+where a.ptid = b.ptid 
+;
+
+select count(*) from g823066.wc_covid_pregnancy_study_extract where ins_type is null;
+
+drop table g823066.wc_covid_preg_ins_type ;
+
+
+select b.ptid, max(b.ins_type) as ins_type, max(insurance_date) as dt
+into g823066.wc_covid_preg_ins_type
+from coviddb.opt_20210401.ins b 
+  join g823066.wc_covid_pregnancy_study_extract a 
+     on a.ptid = b.ptid 
+group by b.ptid
+---------------end 8/1/2021 request 
 
 select count(*), count(distinct ptid) from g823066.wc_preg_pregnant_mems
 

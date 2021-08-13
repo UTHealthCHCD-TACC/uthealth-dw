@@ -44,7 +44,7 @@ vacuum analyze data_warehouse.member_enrollment_yearly;
 vacuum analyze data_warehouse.member_enrollment_monthly;
 
 ---remove old
-delete from data_warehouse.member_enrollment_yearly where data_source in ('optd','optz');
+delete from data_warehouse.member_enrollment_yearly where data_source in ('mdcd');
 
 --insert new recs from monthly 
 insert into data_warehouse.member_enrollment_yearly (data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
@@ -53,7 +53,7 @@ select distinct on( data_source, year, uth_member_id )
        data_source, year, uth_member_id, gender_cd, state, zip5, zip3, age_derived, dob_derived, death_date
       ,replace(plan_type,' ',''), bus_cd, employee_status, claim_created_flag, rx_coverage, fiscal_year, race_cd
 from data_warehouse.member_enrollment_monthly a 
-where data_source in ('optd','optz')
+where data_source in ('mdcd')
 ;
 
 
@@ -67,7 +67,7 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from data_warehouse.member_enrollment_monthly
-where data_source in ('optd','optz')
+where data_source in ('mdcd')
 distributed by(uth_member_id);
 
 vacuum analyze dev.temp_member_enrollment_month;
@@ -180,10 +180,10 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 
 
 --validate 
-select count(*), count(distinct uth_member_id ), data_source 
+select count(*), count(distinct uth_member_id ), data_source , year 
 from  data_warehouse.member_enrollment_yearly
-group by data_source 
-order by data_source-- , year ;
+group by data_source , year 
+order by data_source, year ;
 
 
 -- Drop temp table
@@ -208,7 +208,7 @@ group by uth_member_id, state, year
 create table dev.wc_state_yearly_final 
 with (appendonly=true, orientation=column)
 as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
 from dev.wc_state_yearly
 distributed by(uth_member_id);
   
@@ -218,6 +218,7 @@ from dev.wc_state_yearly_final b
 where a.uth_member_id = b.uth_member_id
 and a.year = b.year 
  and b.my_grp = 1;
+
 
 
 drop table dev.wc_state_yearly;
@@ -234,7 +235,7 @@ group by uth_member_id, zip3, year
 create table dev.wc_zip3_yearly_final 
 with (appendonly=true, orientation=column)
 as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
 from dev.wc_zip3_yearly
 distributed by(uth_member_id);
   
@@ -264,7 +265,7 @@ group by uth_member_id, zip5, year
 create table dev.wc_zip5_yearly_final 
 with (appendonly=true, orientation=column)
 as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
 from dev.wc_zip5_yearly
 distributed by(uth_member_id);
   
@@ -291,7 +292,7 @@ group by uth_member_id, plan_type, year
 create table dev.wc_plan_type_yearly_final
 with (appendonly=true, orientation=column)
 as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
 from dev.wc_plan_type_yearly
 distributed by(uth_member_id);
   
@@ -318,7 +319,7 @@ group by uth_member_id, employee_status, year
 create table dev.wc_employee_status_yearly_final
 with (appendonly=true, orientation=column)
 as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my asc) as my_grp
+select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
 from dev.wc_employee_status_yearly
 distributed by(uth_member_id);
   
