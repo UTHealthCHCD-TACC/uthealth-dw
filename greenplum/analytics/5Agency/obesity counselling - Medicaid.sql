@@ -14,7 +14,6 @@ insert into dev.wc_5a_obese_dx values
 drop table if exists dev.wc_5a_obese_temp;
 
 
-
 ---diag from claims
 select p.pcn, d.year_fy 
 into dev.wc_5a_obese_temp 
@@ -49,7 +48,7 @@ from medicaid.clm_dx d
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
     or a.diag_cd = d.dx_cd_25
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020 
 ;
 
 
@@ -86,7 +85,7 @@ from medicaid.enc_dx d
     or a.diag_cd = d.dx_cd_22
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020
 ;
 
 
@@ -153,7 +152,7 @@ from medicaid.clm_dx d
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
     or a.diag_cd = d.dx_cd_25
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020 
 ;
 
 
@@ -190,7 +189,7 @@ from medicaid.enc_dx d
     or a.diag_cd = d.dx_cd_22
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020
 ;
 
 
@@ -202,7 +201,7 @@ from medicaid.clm_detail d
   join medicaid.clm_proc p 
     on d.icn = p.icn 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2016 and 2019
+where d.year_fy between 2016 and 2020
   and d.proc_cd in ( '43770','43644','43645','43842','43843','43845','43846','43847','43659','S2082','S2085','43645',
 '43771','43772','43774','43775','43848','43886','43887','43888');
 
@@ -213,7 +212,7 @@ from medicaid.enc_det d
   join medicaid.enc_proc p 
     on d.derv_enc = p.derv_enc 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2016 and 2019
+where d.year_fy between 2016 and 2020
   and d.proc_cd in ( '43770','43644','43645','43842','43843','43845','43846','43847','43659','S2082','S2085','43645',
 '43771','43772','43774','43775','43848','43886','43887','43888');
 
@@ -255,7 +254,7 @@ join dev.wc_5a_obese_counsel_proc a
     or a.diag_cd = d.proc_icd_cd_23
     or a.diag_cd = d.proc_icd_cd_24
     or a.diag_cd = d.proc_icd_cd_25
-where d.year_fy between 2016 and 2019 ;
+where d.year_fy between 2016 and 2020 ;
 
 
 --icd proc from enc 
@@ -288,7 +287,7 @@ join dev.wc_5a_obese_counsel_proc a
     or a.diag_cd = d.proc_icd_cd_22
     or a.diag_cd = d.proc_icd_cd_23
     or a.diag_cd = d.proc_icd_cd_24
-where d.year_fy between 2016 and 2019 ;
+where d.year_fy between 2016 and 2020 ;
 
 
 ---drg from clm - none found 
@@ -298,7 +297,7 @@ where d.year_fy between 2016 and 2019 ;
 insert into dev.wc_5a_obese_counsel_temp
 select p.mem_id , p.year_fy 
 from  medicaid.enc_proc p 
-where p.year_fy between 2016 and 2019
+where p.year_fy between 2016 and 2020
   and p.drg in ('0619','0620','0621');
 
 
@@ -318,11 +317,11 @@ from dev.wc_5a_obese_counsel_temp
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
    group by client_nbr, enrl_fy 
 ) 
@@ -332,12 +331,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
+  ---obese 
+   left outer join dev.wc_5a_obese_members d 
+      on d.pcn = a.client_nbr 
+     and d.year_fy = a.enrl_fy 
+  /*--obese counsel
    join dev.wc_5a_obese_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_obese_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy 
+     and d.year_fy = a.enrl_fy    
+       */
 group by enrl_fy, mco_program_nm
 order by enrl_fy, mco_program_nm
 ;
@@ -347,11 +352,11 @@ order by enrl_fy, mco_program_nm
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '1' 
    group by client_nbr, enrl_fy 
 ) 
@@ -361,12 +366,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
+  ---obese 
+   left outer join dev.wc_5a_obese_members d 
+      on d.pcn = a.client_nbr 
+     and d.year_fy = a.enrl_fy 
+  /*--obese counsel
    join dev.wc_5a_obese_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_obese_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy      
+     and d.year_fy = a.enrl_fy    
+       */   
 group by a.ENRL_FY
 order by a.ENRL_FY
 ;
@@ -376,11 +387,11 @@ order by a.ENRL_FY
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
    group by client_nbr, enrl_fy 
 ) 
@@ -390,12 +401,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
+  ---obese 
+   left outer join dev.wc_5a_obese_members d 
+      on d.pcn = a.client_nbr 
+     and d.year_fy = a.enrl_fy 
+  /*--obese counsel
    join dev.wc_5a_obese_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_obese_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy        
+     and d.year_fy = a.enrl_fy    
+       */
 group by a.ENRL_FY , a.MCO_PROGRAM_NM, a.AgeGrp 
 order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 
@@ -404,11 +421,11 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
    group by client_nbr, enrl_fy 
 ) 
@@ -418,12 +435,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
+  ---obese 
+   left outer join dev.wc_5a_obese_members d 
+      on d.pcn = a.client_nbr 
+     and d.year_fy = a.enrl_fy 
+  /*--obese counsel
    join dev.wc_5a_obese_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_obese_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy         
+     and d.year_fy = a.enrl_fy    
+       */
 where sex in ('M','F')
 group by a.ENRL_FY , sex, a.MCO_PROGRAM_NM, a.AgeGrp  
 order by a.ENRL_FY, sex, a.MCO_PROGRAM_NM, a.AgeGrp 

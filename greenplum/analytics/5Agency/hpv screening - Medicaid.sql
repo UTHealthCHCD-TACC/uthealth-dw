@@ -28,7 +28,7 @@ group by mem_id, year_fy;
 
 
 ---consolidate hpv vaccs
-
+drop table if exists dev.wc_5a_mdcd_hpv_vacc;
 select sum(clm) as hpv_vacc_cnt, pcn, min(year_fy) as first_year 
 into dev.wc_5a_mdcd_hpv_vacc
 from dev.wc_5a_mdcd_hpv_clms 
@@ -46,7 +46,7 @@ from dev.wc_5a_mdcd_hpv_vacc;
 ----overall by medicaid type
 with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
                                  sum (enrl_months) as em 
-						   from medicaid.agg_enrl_mcd_fscyr 
+						   from medicaid.agg_enrl_mdcd_fscyr 
 						   where smib = '0'
 						     and age = 13
    							group by client_nbr, enrl_fy  ) 
@@ -57,7 +57,7 @@ from cte_mcd_enrl  a
      on b.pcn = a.CLIENT_NBR 
     and b.hpv_vacc_cnt > 1 
     and b.first_year <= a.enrl_fy
-where  a.ENRL_FY between 2016 and 2019
+where  a.ENRL_FY between 2016 and 2020
   and em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM
 order by a.ENRL_FY, a.MCO_PROGRAM_NM ;
@@ -67,7 +67,7 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM ;
 ---overall dual eligible
 with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
                                  sum (enrl_months) as em 
-						   from medicaid.agg_enrl_mcd_fscyr 
+						   from medicaid.agg_enrl_mdcd_fscyr 
 						   where smib = '1'
 						     and age = 13
    							group by client_nbr, enrl_fy  ) 
@@ -78,7 +78,7 @@ from cte_mcd_enrl a
      on b.pcn = a.CLIENT_NBR 
     and b.hpv_vacc_cnt > 1 
     and b.first_year <= a.enrl_fy
-where  a.ENRL_FY between 2016 and 2019
+where  a.ENRL_FY between 2016 and 2020
   and em >=12
 group by a.ENRL_FY
 order by a.ENRL_FY
@@ -88,7 +88,7 @@ order by a.ENRL_FY
 ---by age group and medicaid type
 with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
                                  sum (enrl_months) as em 
-						   from medicaid.agg_enrl_mcd_fscyr 
+						   from medicaid.agg_enrl_mdcd_fscyr 
 						   where smib = '0'
 						     and age = 13
    							group by client_nbr, enrl_fy  ) 
@@ -99,7 +99,7 @@ from cte_mcd_enrl a
      on b.pcn = a.CLIENT_NBR 
     and b.hpv_vacc_cnt > 1 
     and b.first_year <= a.enrl_fy
-where  a.ENRL_FY between 2016 and 2019
+where  a.ENRL_FY between 2016 and 2020
   and em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM, a.AgeGrp 
 order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
@@ -108,7 +108,7 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 ---by age group, gender, and medicaid type
 with cte_mcd_enrl as (    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp,
                                  sum (enrl_months) as em 
-						   from medicaid.agg_enrl_mcd_fscyr 
+						   from medicaid.agg_enrl_mdcd_fscyr 
 						   where smib = '0'
 						     and age = 13
    group by client_nbr, enrl_fy  ) 
@@ -119,18 +119,13 @@ from cte_mcd_enrl a
      on b.pcn = a.CLIENT_NBR 
     and b.hpv_vacc_cnt > 1 
     and b.first_year <= a.enrl_fy
-where  a.ENRL_FY between 2016 and 2019
+where  a.ENRL_FY between 2016 and 2020
   and em >=12
   and sex in ('M','F')
 group by a.ENRL_FY , sex, a.MCO_PROGRAM_NM, a.AgeGrp  
 order by a.ENRL_FY, sex, a.MCO_PROGRAM_NM, a.AgeGrp 
 ;
 
-
-select count(*) , enrl_fy 
-from medicaid.agg_enrl_mcd_fscyr 
-where age = 13 
-group by enrl_fy 
 
 
 
