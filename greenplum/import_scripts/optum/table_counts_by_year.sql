@@ -21,5 +21,5 @@ select 'lab_result' as table_name, year, count(*) as cnt from optum_dod.lab_resu
 select 'medical' as table_name, year, count(*) as cnt from optum_dod.medical group by 1, 2 union
 select 'procedure' as table_name, year, count(*) as cnt from optum_dod.procedure group by 1, 2 union
 select 'rx' as table_name, year, count(*) as cnt from optum_dod.rx group by 1, 2 union
-select 'member_enroll' as table_name, extract_ym, count(*) as cnt from optum_dod.mbr_enroll group by 1, 2 union
-select 'member_co_enroll' as table_name, extract_ym, count(*) as cnt from optum_dod.mbr_co_enroll group by 1, 2;
+select 'mbr_enroll_r' as table_name, extract_ym, count(*) as cnt from optum_dod.mbr_enroll_r group by 1, 2 union
+select 'mbr_co_enroll_r' as table_name, extract_ym, count(*) as cnt from optum_dod.mbr_co_enroll_r group by 1, 2;
