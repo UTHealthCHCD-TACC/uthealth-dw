@@ -20,11 +20,11 @@ insert into data_warehouse.claim_header (
        data_source, "year", uth_claim_id, uth_member_id, 
        from_date_of_service, claim_type, 
        total_charge_amount, total_allowed_amount, claim_id_src, member_id_src, 
-       table_id_src, bill_type, fiscal_year, to_date_of_service)
+       table_id_src, fiscal_year, to_date_of_service)
 select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, 
        h.hdr_frm_dos::Date, case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, h.icn , p.pcn, 
-       'clm_header' as tableidsrc, h.bill_prov_ty_cd, h.year_fy, h.hdr_to_dos::date
+       'clm_header' as tableidsrc,  h.year_fy, h.hdr_to_dos::date
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
       on h.icn  = p.icn 
@@ -36,6 +36,7 @@ from medicaid.clm_header h
       on pos.icn = h.icn 
 ;
 
+select * from medicaid.clm_proc cp where year_fy = 2020
 
 select count(*) from medicaid.enc_header eh 
 
@@ -53,14 +54,14 @@ insert into data_warehouse.claim_header (
        data_source, "year", uth_claim_id, uth_member_id, 
        from_date_of_service, claim_type, 
        total_charge_amount, total_allowed_amount, claim_id_src, member_id_src, 
-       table_id_src, bill_type, fiscal_year, to_date_of_service)
+       table_id_src,  fiscal_year, to_date_of_service)
 select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, 
        h.frm_dos::Date, 
        case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_chrg_amt::float ,h.mco_pd_amt::float, h.derv_enc , p.mem_id,
-       'enc_header' as tableidsrc, h.bill_prov_typ_cd, h.year_fy, h.to_dos::date       
-  from medicaid.enc_header_new h  
-join medicaid.enc_proc_new p 
+       'enc_header' as tableidsrc, h.year_fy, h.to_dos::date       
+  from medicaid.enc_header h  
+join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       
    join data_warehouse.dim_uth_claim_id c 
       on p.derv_enc = claim_id_src 
@@ -69,7 +70,8 @@ join medicaid.enc_proc_new p
    left outer join cte_pos pos 
       on pos.derv_enc = h.derv_enc 
 ;   
-     
+
+
 
 vacuum analyze data_warehouse.claim_header;
 
@@ -80,6 +82,51 @@ where data_source = 'mdcd'
 group by data_source, fiscal_year 
 order by data_source, fiscal_year 
 ;
+
+select data_source, data_year , count(*), count(distinct uth_claim_id)
+from data_warehouse.dim_uth_claim_id duci 
+where data_source = 'mdcd'
+group by data_source, data_year 
+order by data_source, data_year 
+;
+
+
+select count(*), year_fy 
+from medicaid.clm_header ch 
+group by year_fy 
+order by year_fy 
+
+
+select count(*), year_fy 
+from medicaid.enc_header eh 
+group by year_fy 
+order by year_fy 
+
+select count(*), data_year 
+from data_warehouse.dim_uth_claim_id duci 
+where data_source = 'mdcd'
+group by data_year order by data_year 
+;
+
+select count(*), year_fy 
+from medicaid.enc_proc eh 
+group by year_fy 
+order by year_fy 
+
+select * 
+from medicaid.table_counts
+order by 1, 2
+
+
+select * from medicaid.enrl where year_fy = 2019 and client_nbr = '519071846'
+
+
+select * from data_warehouse.dim_uth_member_id dumi where member_id_src = '519071846'
+
+
+select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 675476214
+
+
 
 ----- claim detail
 drop table if exists dev.wc_medicaid_detail ;
