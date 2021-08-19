@@ -134,6 +134,9 @@ from dev.temp_script_id_matches
 group by 1, 2, 3, 4, 5
 having count(*)>1;
 
+select distinct data_source, first_fill
+from data_warehouse.pharmacy_claims;
+
 --Verify
 select uth_member_id, count(*)
 from dev.temp_script_id

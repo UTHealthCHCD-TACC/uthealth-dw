@@ -14,7 +14,7 @@ create function rm_trail_spaces() returns void as
            from 
               INFORMATION_SCHEMA.COLUMNS 
            where 
-             table_schema in ('optum_zip', 'optum_dod', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
+             table_schema in ('medicaid')  
              and (data_type='text' or data_type='character varying' )
              and is_updatable='YES'
          ) c

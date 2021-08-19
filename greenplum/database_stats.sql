@@ -1,8 +1,8 @@
 --Activity
 select *
 from pg_stat_activity
-where state='active'
-and usename='walling';
+where state='active';
+and usename='gpadmin';
 
 select *
 from gp_toolkit.gp_skew_coefficients;

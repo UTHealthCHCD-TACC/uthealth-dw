@@ -31,7 +31,7 @@ PROC_ICD_QAL_22 varchar,PROC_ICD_CD_22 varchar,PROC_ICD_QAL_23 varchar,PROC_ICD_
 MEM_ID varchar,GEN varchar,AGE varchar,DOB varchar,ZIP varchar,DRG varchar,BILL varchar,DERV_ENC varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENC_PROC_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/ENC_PROC_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

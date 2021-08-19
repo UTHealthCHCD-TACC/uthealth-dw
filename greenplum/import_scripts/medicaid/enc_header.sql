@@ -29,7 +29,7 @@ PROC_DT_15 varchar,PROC_DT_16 varchar,PROC_DT_17 varchar,PROC_DT_18 varchar,PROC
 PROC_DT_22 varchar,PROC_DT_23 varchar,PROC_DT_24 varchar,MCO_SDA_NAME varchar,HDR_CAR_TYP_CD varchar,FIN_AGR_CD varchar,DERV_ENC varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/medicaid/load/*/ENC_HEADER_*.csv#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicaid/2020/ENC_HEADER_*.csv#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
