@@ -1,73 +1,34 @@
-drop table stage.dbo.wc_5a_depression_clms
+drop table dev.wc_5a_mdcd_depression_clms
 
 ----depression criteria	
 
 ---from claims
-select pcn, fscyr 
-into stage.dbo.wc_5a_depression_clms
-from (
-	select p.pcn, '2016' as fscyr
-	from [MEDICAID].[dbo].[CLM_DETAIL_16] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_16] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.pcn, '2017' as fscyr 
-	from [MEDICAID].[dbo].[CLM_DETAIL_17] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_17] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.pcn, '2018' as fscyr 
-	from [MEDICAID].[dbo].[CLM_DETAIL_18] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_18] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.pcn, '2019' as fscyr 
-	from [MEDICAID].[dbo].[CLM_DETAIL_19] d
-	   	  join [MEDICAID].[dbo].[CLM_PROC_19] p
-		     on d.ICN = p.ICN 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-) inr;	
+select distinct p.pcn, d.year_fy 
+into dev.wc_5a_mdcd_depression_clms
+from medicaid.clm_detail d
+   	  join medicaid.clm_proc p
+	     on d.ICN = p.ICN 
+where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
+  and d.year_fy between 2016 and 2020
+;
 	
 ---from encounter
-insert into stage.dbo.wc_5a_depression_clms
-select mem_id, fscyr 
-from (
-	select p.MEM_ID , '2016' as fscyr 
-	from [MEDICAID].[dbo].[ENC_DET_16] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_16] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.MEM_ID , '2017' as fscyr 
-	from [MEDICAID].[dbo].[ENC_DET_17] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_17] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.MEM_ID , '2018' as fscyr 
-	from [MEDICAID].[dbo].[ENC_DET_18] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_18] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
-union 
-	select p.MEM_ID , '2019' as fscyr 
-	from [MEDICAID].[dbo].[ENC_DET_19] d
-	   	  join [MEDICAID].[dbo].[ENC_PROC_19] p
-		     on d.DERV_ENC = p.DERV_ENC 
-	where d.PROC_CD in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')	
-) inr_enc;
+insert into dev.wc_5a_mdcd_depression_clms
+select distinct p.mem_id , d.year_fy
+from medicaid.enc_det d
+   	  join medicaid.enc_proc p
+	     on d.derv_enc = p.derv_enc 
+where d.proc_cd in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
+  and d.year_fy between 2016 and 2020
+;
 
 ---confirm this dx does not exist prior to 2019 data 
-select * from [MEDICAID].[dbo].[CLM_DX_18] where PRIM_DX_CD like 'Z133%';
 	
 ---z133 criteria clms
-insert into stage.dbo.wc_5a_depression_clms
-select p.PCN, '2019' as fscyr
-from [MEDICAID].[dbo].[CLM_DX_19] d
-  join [MEDICAID].[dbo].[CLM_PROC_19] p
+insert into dev.wc_5a_mdcd_depression_clms
+select p.PCN, d.year_fy
+from medicaid.clm_dx d
+  join medicaid.clm_proc p
      on d.ICN = p.ICN 
 where  ( d.PRIM_DX_CD like 'Z133%' or d.ADM_DX_CD like 'Z133%' or d.DX_CD_1 like 'Z133%' or 	d.DX_CD_2 like 'Z133%' or
 			d.DX_CD_3 like 'Z133%' or d.DX_CD_4 like 'Z133%' or	d.DX_CD_5 like 'Z133%' or	d.DX_CD_6 like 'Z133%' or
@@ -79,10 +40,10 @@ where  ( d.PRIM_DX_CD like 'Z133%' or d.ADM_DX_CD like 'Z133%' or d.DX_CD_1 like
 ); 
 			
 ---z133 criteria
-insert into stage.dbo.wc_5a_depression_clms
-select p.MEM_ID , '2019' as fscyr
-from [MEDICAID].[dbo].[enc_DX_19] d
-  join [MEDICAID].[dbo].[enc_PROC_19] p
+insert into dev.wc_5a_mdcd_depression_clms
+select p.MEM_ID , d.year_fy
+from medicaid.enc_dx d
+  join medicaid.enc_proc p
      on d.DERV_ENC = p.DERV_ENC 
   and ( d.PRIM_DX_CD like 'Z133%' or d.ADM_DX_CD like 'Z133%' or d.DX_CD_1 like 'Z133%' or 	d.DX_CD_2 like 'Z133%' or
 			d.DX_CD_3 like 'Z133%' or d.DX_CD_4 like 'Z133%' or	d.DX_CD_5 like 'Z133%' or	d.DX_CD_6 like 'Z133%' or
@@ -98,11 +59,11 @@ from [MEDICAID].[dbo].[enc_DX_19] d
 
 
 ---clms
-insert into stage.dbo.wc_5a_depression_exclusions
-select p.PCN, '2019' as fscyr
---into stage.dbo.wc_5a_depression_exclusions
-from [MEDICAID].[dbo].[CLM_DX_19] d
-  join [MEDICAID].[dbo].[CLM_PROC_19] p
+--insert into dev.wc_5a_mdcd_depression_exclusions
+select p.PCN, d.year_fy 
+into dev.wc_5a_mdcd_depression_exclusions
+from medicaid.clm_dx d
+  join medicaid.clm_proc p
      on d.ICN = p.ICN 
 where (   d.PRIM_DX_CD in ('F0151','F4321','F4323','F530','F531','O906','O99340','O99341','O99342','O99343','O99345')
        		or  d.PRIM_DX_CD like '296%' or (left(d.PRIM_DX_CD,3) between 'F31' and 'F34')
@@ -162,12 +123,11 @@ where (   d.PRIM_DX_CD in ('F0151','F4321','F4323','F530','F531','O906','O99340'
 
 
 
----enc  !!! Must run once for each year changing table names !!! 
-insert into stage.dbo.wc_5a_depression_exclusions
-select p.MEM_ID , '2016' as fscyr
---into stage.dbo.wc_5a_depression_exclusions
-from [MEDICAID].[dbo].[enc_DX_16] d
-  join [MEDICAID].[dbo].[enc_PROC_16] p
+---enc  
+insert into dev.wc_5a_mdcd_depression_exclusions
+select p.MEM_ID , d.year_fy
+from medicaid.enc_dx d
+  join medicaid.enc_proc p
      on d.DERV_ENC = p.DERV_ENC 
 where (   d.PRIM_DX_CD in ('F0151','F4321','F4323','F530','F531','O906','O99340','O99341','O99342','O99343','O99345')
        		or  d.PRIM_DX_CD like '296%' or (left(d.PRIM_DX_CD,3) between 'F31' and 'F34')
@@ -227,16 +187,16 @@ where (   d.PRIM_DX_CD in ('F0151','F4321','F4323','F530','F531','O906','O99340'
 ----------------------------------------------------get one member per year for counting purposes
 
 --cohort
-drop table if exists stage.dbo.wc_5a_depression_cohort
-select distinct pcn, fscyr 
-into stage.dbo.wc_5a_depression_cohort
-from stage.dbo.wc_5a_depression_clms;
+drop table if exists dev.wc_5a_mdcd_depression_cohort;
+select distinct pcn, year_fy 
+into dev.wc_5a_mdcd_depression_cohort
+from dev.wc_5a_mdcd_depression_clms;
 			
 --excl
-drop table if exists stage.dbo.wc_5a_depression_excl
-select distinct pcn, fscyr
-into stage.dbo.wc_5a_depression_excl
-from stage.dbo.wc_5a_depression_exclusions
+drop table if exists dev.wc_5a_mdcd_depression_excl;
+select distinct pcn, year_fy
+into dev.wc_5a_mdcd_depression_excl
+from dev.wc_5a_mdcd_depression_exclusions
 ;
 
 ----************************************************************************************************
@@ -249,47 +209,48 @@ from stage.dbo.wc_5a_depression_exclusions
 ----overall by medicaid type
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       where smib = 0
+                       from medicaid.agg_enrl_mdcd_fscyr 
+                       where smib = '0'
                        group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM), ' ','' )  as nv,
+select replace( ((a.ENRL_FY::text) || MCO_PROGRAM_NM), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl  a 
-  left outer join stage.dbo.wc_5a_depression_cohort b 
+  left outer join dev.wc_5a_mdcd_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
-    and b.fscyr = a.ENRL_FY 
-  left outer join stage.dbo.wc_5a_depression_excl c 
+    and b.year_fy = a.ENRL_FY 
+  left outer join dev.wc_5a_mdcd_depression_excl c 
      on c.pcn = a.CLIENT_NBR 
-    and c.fscyr = a.ENRL_FY 
+    and c.year_fy = a.ENRL_FY 
 where c.pcn is null 
-  and a.ENRL_FY between 2016 and 2019
+  and a.ENRL_FY between 2016 and 2020
   and age >= 18 
   and Em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM
-order by a.ENRL_FY, a.MCO_PROGRAM_NM ;
+order by a.ENRL_FY, a.MCO_PROGRAM_NM 
+;
 
 
 
 ---overall dual eligible
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       where SMIB = 1
+                       from medicaid.agg_enrl_mdcd_fscyr
+                       where SMIB = '1'
                        group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + 'DUAL ELIGIBLE'), ' ','' )  as nv,
+select replace( (a.ENRL_FY::text || 'DUAL ELIGIBLE'), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_depression_cohort b 
+  left outer join dev.wc_5a_mdcd_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
-    and b.fscyr = a.ENRL_FY 
-  left outer join stage.dbo.wc_5a_depression_excl c 
+    and b.year_fy = a.ENRL_FY 
+  left outer join dev.wc_5a_mdcd_depression_excl c 
      on c.pcn = a.CLIENT_NBR 
-    and c.fscyr = a.ENRL_FY 
+    and c.year_fy = a.ENRL_FY 
 where c.pcn is null 
-  and a.ENRL_FY between 2016 and 2019
+  and a.ENRL_FY between 2016 and 2020
   and age >= 18 
   and em >=12
-  and a.SMIB = 1
+  and a.SMIB = '1'
 group by a.ENRL_FY
 order by a.ENRL_FY
 ;
@@ -298,20 +259,20 @@ order by a.ENRL_FY
 ---by age group and medicaid type
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       where smib = 0
+                       from medicaid.agg_enrl_mdcd_fscyr
+                       where smib = '0'
                        group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM  + str(a.AgeGrp) ), ' ','' )  as nv,
+select replace( (a.ENRL_FY::text ||  MCO_PROGRAM_NM  || a.AgeGrp), ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_depression_cohort b 
+  left outer join dev.wc_5a_mdcd_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
-    and b.fscyr = a.ENRL_FY 
-  left outer join stage.dbo.wc_5a_depression_excl c 
+    and b.year_fy = a.ENRL_FY 
+  left outer join dev.wc_5a_mdcd_depression_excl c 
      on c.pcn = a.CLIENT_NBR 
-    and c.fscyr = a.ENRL_FY 
+    and c.year_fy = a.ENRL_FY 
 where c.pcn is null 
-  and a.ENRL_FY between 2016 and 2019
+  and a.ENRL_FY between 2016 and 2020
   and age >= 18 
   and em >=12
 group by a.ENRL_FY , a.MCO_PROGRAM_NM, a.AgeGrp 
@@ -321,20 +282,20 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 ---by age group, gender, and medicaid type
 with cte_mcd_enrl as ( select client_nbr, enrl_fy, sum(ENRL_MONTHS) as em, 
                               min(MCO_PROGRAM_NM) as MCO_PROGRAM_NM, min(sex) as sex, min(age) as age, min(smib) as smib, min(AgeGrp) as agegrp
-                       from [stage].[dbo].[AGG_ENRL_MCD_YR] 
-                       where smib = 0
+                       from medicaid.agg_enrl_mdcd_fscyr
+                       where smib = '0'
                        group by CLIENT_NBR, ENRL_FY ) 
-select replace( (str(a.ENRL_FY) + MCO_PROGRAM_NM + SEX + str(a.AgeGrp) ), ' ','' )  as nv,
+select replace( (a.ENRL_FY::text || MCO_PROGRAM_NM || SEX || a.AgeGrp::text) , ' ','' )  as nv,
       count(a.CLIENT_NBR) as uniq_den, count(b.pcn) as num
 from cte_mcd_enrl a 
-  left outer join stage.dbo.wc_5a_depression_cohort b 
+  left outer join dev.wc_5a_mdcd_depression_cohort b 
      on b.pcn = a.CLIENT_NBR 
-    and b.fscyr = a.ENRL_FY 
-  left outer join stage.dbo.wc_5a_depression_excl c 
+    and b.year_fy = a.ENRL_FY 
+  left outer join dev.wc_5a_mdcd_depression_excl c 
      on c.pcn = a.CLIENT_NBR 
-    and c.fscyr = a.ENRL_FY 
+    and c.year_fy = a.ENRL_FY 
 where c.pcn is null 
-  and a.ENRL_FY between 2016 and 2019
+  and a.ENRL_FY between 2016 and 2020
   and age >= 18 
   and em >=12
   and sex in ('M','F')

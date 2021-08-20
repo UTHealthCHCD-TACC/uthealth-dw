@@ -50,7 +50,7 @@ from medicaid.clm_dx d
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
     or a.diag_cd = d.dx_cd_25
-where d.year_fy between 2014 and 2019 
+where d.year_fy between 2014 and 2020
 ;
 
 
@@ -87,7 +87,7 @@ from medicaid.enc_dx d
     or a.diag_cd = d.dx_cd_22
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
-where d.year_fy between 2014 and 2019 
+where d.year_fy between 2014 and 2020
 ;
 
 
@@ -98,7 +98,7 @@ from medicaid.clm_detail d
   join medicaid.clm_proc p 
     on d.icn = p.icn 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2014 and 2019
+where d.year_fy between 2014 and 2020
   and d.proc_cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458',
 '1034F','4004F','4001F','G9906','G9907','G9908','G9909');
 
@@ -109,7 +109,7 @@ from medicaid.enc_det d
   join medicaid.enc_proc p 
     on d.derv_enc = p.derv_enc 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2014 and 2019
+where d.year_fy between 2014 and 2020
   and d.proc_cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458',
 '1034F','4004F','4001F','G9906','G9907','G9908','G9909');
 
@@ -176,7 +176,7 @@ from medicaid.clm_dx d
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
     or a.diag_cd = d.dx_cd_25
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020
 ;
 
 
@@ -213,7 +213,7 @@ from medicaid.enc_dx d
     or a.diag_cd = d.dx_cd_22
     or a.diag_cd = d.dx_cd_23
     or a.diag_cd = d.dx_cd_24
-where d.year_fy between 2016 and 2019 
+where d.year_fy between 2016 and 2020
 ;
 
 
@@ -225,7 +225,7 @@ from medicaid.clm_detail d
   join medicaid.clm_proc p 
     on d.icn = p.icn 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2016 and 2019
+where d.year_fy between 2016 and 2020
   and d.proc_cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','4004F','4001F');
 
 --cpt/hcpcs enc 
@@ -235,7 +235,7 @@ from medicaid.enc_det d
   join medicaid.enc_proc p 
     on d.derv_enc = p.derv_enc 
    and d.year_fy = p.year_fy 
-where d.year_fy between 2016 and 2019
+where d.year_fy between 2016 and 2020
   and d.proc_cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','4004F','4001F');
 
 
@@ -254,7 +254,7 @@ select a.pcn, a.year_fy
 from medicaid.chip_rx a 
   join dev.wc_5a_smoking_ndc b 
     on b.ncd_cd = substring(a.ndc,1,9)
-where a.year_fy between 2016 and 2019
+where a.year_fy between 2016 and 2020
  ;
  
 --ffs rx
@@ -273,10 +273,11 @@ select a.pcn, a.year_fy
 from medicaid.mco_rx a 
   join dev.wc_5a_smoking_ndc b 
     on b.ncd_cd = substring(a.ndc,1,9)
-where a.year_fy between 2016 and 2019
+where a.year_fy between 2016 and 2020
  ;
 
 --consolidate
+drop table if exists dev.wc_5a_smoking_counsel;
 select distinct pcn, year_fy 
 into dev.wc_5a_smoking_counsel
 from dev.wc_5a_smoking_counsel_temp
@@ -292,11 +293,11 @@ from dev.wc_5a_smoking_counsel_temp
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
      and age >= 15
    group by client_nbr, enrl_fy 
@@ -307,18 +308,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
-   --smoking 
+  /* --smoking 
    left outer join dev.wc_5a_smoking_members d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy
-/* --smoking cessation
+     */
+ --smoking cessation
    join dev.wc_5a_smoking_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_smoking_counsel d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy  
-   */    
 group by enrl_fy, mco_program_nm
 order by enrl_fy, mco_program_nm
 ;
@@ -328,11 +329,11 @@ order by enrl_fy, mco_program_nm
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '1' 
     and age >=15
    group by client_nbr, enrl_fy 
@@ -343,18 +344,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
-   --smoking 
+  /* --smoking 
    left outer join dev.wc_5a_smoking_members d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy
-/* --smoking cessation
+     */
+ --smoking cessation
    join dev.wc_5a_smoking_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_smoking_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy  
-   */      
+     and d.year_fy = a.enrl_fy   
 group by a.ENRL_FY
 order by a.ENRL_FY
 ;
@@ -364,11 +365,11 @@ order by a.ENRL_FY
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
      and age >= 15
    group by client_nbr, enrl_fy 
@@ -379,18 +380,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
-   --smoking 
+  /* --smoking 
    left outer join dev.wc_5a_smoking_members d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy
-/* --smoking cessation
+     */
+ --smoking cessation
    join dev.wc_5a_smoking_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_smoking_counsel d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy  
-   */        
 group by a.ENRL_FY , a.MCO_PROGRAM_NM, a.AgeGrp 
 order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 
@@ -399,11 +400,11 @@ order by a.ENRL_FY, a.MCO_PROGRAM_NM, a.AgeGrp ;
 with cte_dec as (
  select distinct client_nbr, year_fy 
   from medicaid.enrl 
-  where elig_date in ( '201608','201708','201808','201908')
+  where elig_date in ( '201608','201708','201808','201908','202008')
 ) 
 , cte_enrl as (  
    select client_nbr, enrl_fy , min(mco_program_nm) as mco_program_nm, min(sex) as sex, min(agegrp) as agegrp 
-   from medicaid.agg_enrl_mcd_fscyr 
+   from medicaid.agg_enrl_mdcd_fscyr 
    where smib = '0'
      and age >=15
    group by client_nbr, enrl_fy 
@@ -414,18 +415,18 @@ from cte_enrl a
    join cte_dec b 
      on a.client_nbr = b.client_nbr 
     and a.enrl_fy = b.year_fy
-   --smoking 
+  /* --smoking 
    left outer join dev.wc_5a_smoking_members d 
       on d.pcn = a.client_nbr 
      and d.year_fy = a.enrl_fy
-/* --smoking cessation
+     */
+ --smoking cessation
    join dev.wc_5a_smoking_members c 
       on c.pcn = a.client_nbr 
      and c.year_fy = a.enrl_fy 
    left outer join dev.wc_5a_smoking_counsel d 
       on d.pcn = a.client_nbr 
-     and d.year_fy = a.enrl_fy  
-   */       
+     and d.year_fy = a.enrl_fy       
 where sex in ('M','F')
 group by a.ENRL_FY , sex, a.MCO_PROGRAM_NM, a.AgeGrp  
 order by a.ENRL_FY, sex, a.MCO_PROGRAM_NM, a.AgeGrp 
