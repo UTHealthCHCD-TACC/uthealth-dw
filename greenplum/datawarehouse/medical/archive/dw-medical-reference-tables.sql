@@ -1,3 +1,13 @@
+/* ******************************************************************************************************
+ *  Creates a bunch of reference tables.  Loaded with static files in google drive
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+  *  wallingTACC  || 8/23/2021 || archived
+ * *******************************************************************************************************/
+
 ---Tables loaded from external data files
 
 create table reference_tables.ref_bill_type_classification ( bill_type_classification_cd char(1), bill_type_institution_cd_list text, bill_type_classification_desc text );

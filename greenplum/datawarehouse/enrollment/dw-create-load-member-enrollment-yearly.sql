@@ -1,41 +1,13 @@
-drop table if exists data_warehouse.member_enrollment_yearly cascade;
-
-
-create table data_warehouse.member_enrollment_yearly (
-	data_source char(4), 
-	year int2,
-	uth_member_id bigint,
-	total_enrolled_months int2,
-	bus_cd char(4),
-	gender_cd char(1),
-	state varchar,
-	zip5 char(5),
-	zip3 char(3),
-	age_derived int,
-	dob_derived date, 
-	race_cd char(2),
-	death_date date,
-	plan_type text,
-	employee_status text, 
-	rx_coverage int2, 
-	enrolled_jan int2 default 0, 
-	enrolled_feb int2 default 0,
-	enrolled_mar int2 default 0,
-	enrolled_apr int2 default 0,
-	enrolled_may int2 default 0,
-	enrolled_jun int2 default 0,
-	enrolled_jul int2 default 0,
-	enrolled_aug int2 default 0,
-	enrolled_sep int2 default 0,
-	enrolled_oct int2 default 0,
-	enrolled_nov int2 default 0,
-	enrolled_dec int2 default 0,
-	fiscal_year int2,
-	claim_created_flag bool default false,
-	member_id_src text 
-)
-with (appendonly=true, orientation=column)
-distributed by(uth_member_id);
+/* ******************************************************************************************************
+ * Deletes and recreates member_enrollment_yearly records based on member_enrollment_monthly for a given dataset.
+ * This includes creating all derived columns.
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC || 8/23/2021 || updated comments.
+ */
 
 
 ------------------------------------------------------------
@@ -55,9 +27,6 @@ select distinct on( data_source, year, uth_member_id )
 from data_warehouse.member_enrollment_monthly a 
 where data_source in ('mdcd')
 ;
-
-
-
 
 drop table dev.temp_member_enrollment_month;
 
@@ -358,4 +327,47 @@ select count(*), count(distinct uth_member_id ), year , data_source
 from  data_warehouse.member_enrollment_yearly
 group by year, data_source 
 order by data_source , year ;
+
+
+/* Original table creation. DO NOT RUN
+ * 
+drop table if exists data_warehouse.member_enrollment_yearly cascade;
+
+create table data_warehouse.member_enrollment_yearly (
+	data_source char(4), 
+	year int2,
+	uth_member_id bigint,
+	total_enrolled_months int2,
+	bus_cd char(4),
+	gender_cd char(1),
+	state varchar,
+	zip5 char(5),
+	zip3 char(3),
+	age_derived int,
+	dob_derived date, 
+	race_cd char(2),
+	death_date date,
+	plan_type text,
+	employee_status text, 
+	rx_coverage int2, 
+	enrolled_jan int2 default 0, 
+	enrolled_feb int2 default 0,
+	enrolled_mar int2 default 0,
+	enrolled_apr int2 default 0,
+	enrolled_may int2 default 0,
+	enrolled_jun int2 default 0,
+	enrolled_jul int2 default 0,
+	enrolled_aug int2 default 0,
+	enrolled_sep int2 default 0,
+	enrolled_oct int2 default 0,
+	enrolled_nov int2 default 0,
+	enrolled_dec int2 default 0,
+	fiscal_year int2,
+	claim_created_flag bool default false,
+	member_id_src text 
+)
+with (appendonly=true, orientation=column)
+distributed by(uth_member_id);
+
+*/
 

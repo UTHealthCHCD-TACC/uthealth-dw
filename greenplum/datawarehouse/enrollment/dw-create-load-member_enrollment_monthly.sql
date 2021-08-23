@@ -1,44 +1,18 @@
-/*
- * The member_enrollment_monthly table creates one record for each month/year that a member was enrolled in coverage
+/* ******************************************************************************************************
+ *  The member_enrollment_monthly table creates one record for each month/year that a member was enrolled in coverage
+ *  
+ *  Run the relevant code section for the dataset in (---------------- data loads --------------------)
  * 
  *  !!!!!!!!!  data_warehouse.dim_member_id_src table must be populated first !!!!!!!!!   
- *   	             Use dw-create-load-dim_member_id_src.sql in Git      
- */
-
-drop table if exists data_warehouse.member_enrollment_monthly cascade;
-
-
-create table data_warehouse.member_enrollment_monthly (
-	data_source char(4), 
-	year int2,
-	month_year_id int4,
-	uth_member_id bigint,
-	consecutive_enrolled_months int2,
-	gender_cd char(1),
-	state varchar,
-	zip5 char(5),
-	zip3 char(3),
-	age_derived int,
-	dob_derived date, 
-	death_date date,
-	plan_type text,
-	bus_cd char(4),
-	employee_status text, 
-	claim_created_flag bool default false,
-	row_identifier bigserial,
-	rx_coverage int2,
-	fiscal_year int2,
-	race_cd char(2)
-)
-WITH (appendonly=true, orientation=column)
-distributed by(uth_member_id);
-
-
-
-alter sequence data_warehouse.member_enrollment_monthly_row_identifier_seq cache 200;
-
-vacuum analyze data_warehouse.member_enrollment_monthly;
-
+ *   	             Use dw-create-load-dim_member_id_src.sql in Git    
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC  || 8/23/2021 || Cleaning up comments
+ * ******************************************************************************************************
+*/
 
 
     ---------------- data loads --------------------

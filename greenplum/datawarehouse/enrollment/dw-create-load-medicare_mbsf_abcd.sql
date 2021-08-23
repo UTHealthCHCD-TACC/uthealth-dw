@@ -1,4 +1,12 @@
- ---table contains extra medicare columns with very detailed information about enrollment 
+/* ******************************************************************************************************
+ *  table contains extra medicare columns with very detailed information about enrollment 
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 8/16/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC  || 8/23/2021 || updated comments.
+ * ****************************************************************************************************** */
 
 drop table data_warehouse.medicare_mbsf_abcd_enrollment;
 

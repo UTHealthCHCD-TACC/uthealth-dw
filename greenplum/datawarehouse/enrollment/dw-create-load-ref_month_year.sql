@@ -1,5 +1,14 @@
-drop table if exists reference_tables.ref_month_year;
+/* ******************************************************************************************************
+ *  This reference table is used by the load scripts for enrollment.
+ *  Ensure there are dates far enough into the future.
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ */
 
+drop table if exists reference_tables.ref_month_year;
 
 create table reference_tables.ref_month_year
 ( month_year_id int4, prior_month_year_id int4, next_month_year_id int4, start_of_month date, end_of_month date, days_in_month int2,

@@ -1,3 +1,14 @@
+/* ******************************************************************************************************
+ *  This script creates dim_uth_member_id values for a given dataset.  
+ * It also removes dim_uth_member_id values no longer found in dataset.
+ * Run the relevant section for the dataset.
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ */
+
 --- this table contains a map of all source members numbers mapped to uth_member_id values
 
 drop table if exists data_warehouse.dim_uth_member_id;
