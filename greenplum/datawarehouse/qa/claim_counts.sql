@@ -24,7 +24,7 @@
 insert into qa_reporting.claim_counts 
 select 'Optum ZIP' as "source", import."year", import."import_count", dw."dw_count"--, import."import_count" - dw."dw_count" as "difference"
 from (
-	select count(distinct m.clmid) as "import_count", extract(year from (min(m.fst_dt))) as "year"
+	select count(distinct m.clmid) as "import_count", m."year"
 	from optum_zip.medical m 
 	group by "year") import
 join (
@@ -37,7 +37,7 @@ UNION
 	
 select 'Optum DOD' as "source", import."year", import."import_count", dw."dw_count"--, import."import_count" - dw."dw_count" as "difference"
 from (
-	select count(distinct m.clmid) as "import_count", extract(year from (min(m.fst_dt))) as "year"
+	select count(distinct m.clmid) as "import_count", m."year"
 	from optum_dod.medical m 
 	group by "year") import
 join (
@@ -52,25 +52,25 @@ select 'Truven' as "source", import."year", import."import_count", dw."dw_count"
 from (
 	select sum("import_count") as "import_count", "year" from (
 		
-		select count(distinct co.msclmid) as "import_count", extract(year from (min(co.svcdate))) as "year"
+		select count(distinct co.msclmid) as "import_count", co."year"
 		from truven.ccaeo co -- comercial outpatient
 		group by "year"
 		
 		union
 		
-		select count(distinct mo.msclmid) as "import_count", extract(year from (min(mo.svcdate))) as "year"
+		select count(distinct mo.msclmid) as "import_count", mo."year"
 		from truven.mdcro mo -- medicare outpatient
 		group by "year"
 		
 		union
 		
-		select count(distinct ci.msclmid) as "import_count", extract(year from (min(ci.svcdate))) as "year"
+		select count(distinct ci.msclmid) as "import_count", ci."year"
 		from truven.ccaes ci -- commercial inpatient
 		group by "year" 
 		
 		union 
 		
-		select count(distinct mi.msclmid) as "import_count", extract(year from (min(mi.svcdate))) as "year"
+		select count(distinct mi.msclmid) as "import_count", mi."year"
 		from truven.mdcrs mi -- medicare inpatient
 		group by "year"
 		) sq
@@ -88,43 +88,43 @@ select 'Medicare' as "source", import."year", import."import_count", dw."dw_coun
 from (
 	select sum("import_count") as "import_count", "year" from (
 		
-		select count(distinct bc.clm_id) as "import_count", min(extract(year from bc.clm_from_dt::date)) as "year"
+		select count(distinct bc.clm_id) as "import_count", bc."year"
 		from medicare_national.bcarrier_claims_k bc -- B Carrier
 		group by "year"
 		
 		union
 		
-		select count(distinct dme.clm_id) as "import_count", min(extract(year from dme.clm_from_dt::date)) as "year"
+		select count(distinct dme.clm_id) as "import_count", dme."year"
 		from medicare_national.dme_claims_k dme -- DME
 		group by "year"
 		
 		union
 		
-		select count(distinct hha.clm_id) as "import_count", min(extract(year from hha.clm_from_dt::date)) as "year"
+		select count(distinct hha.clm_id) as "import_count", hha."year"
 		from medicare_national.hha_base_claims_k hha -- HHA
 		group by "year"
 		
 		union
 		
-		select count(distinct hosp.clm_id) as "import_count", min(extract(year from hosp.clm_from_dt::date)) as "year"
+		select count(distinct hosp.clm_id) as "import_count", hosp."year"
 		from medicare_national.hospice_base_claims_k hosp -- Hospice
 		group by "year"
 		
 		union
 		
-		select count(distinct ip.clm_id) as "import_count", min(extract(year from ip.clm_from_dt::date)) as "year"
+		select count(distinct ip.clm_id) as "import_count", ip."year"
 		from medicare_national.inpatient_base_claims_k ip -- Inpatient
 		group by "year"
 		
 		union
 			
-		select count(distinct op.clm_id) as "import_count", min(extract(year from op.clm_from_dt::date)) as "year"
+		select count(distinct op.clm_id) as "import_count", op."year"
 		from medicare_national.outpatient_base_claims_k op -- Outpatient
 		group by "year"
 		
 		union
 		
-		select count(distinct snf.clm_id) as "import_count", min(extract(year from snf.clm_from_dt::date)) as "year"
+		select count(distinct snf.clm_id) as "import_count", snf."year"
 		from medicare_national.snf_base_claims_k snf -- SNF
 		group by "year"
 		) sq
@@ -133,7 +133,7 @@ join (
 	select count(ch.claim_id_src) as "dw_count", ch."year" 
 		from data_warehouse.claim_header ch 
 		where data_source = 'mcrn'
-		group by "year") dw on dw."year" = import."year";	
+		group by "year") dw on dw."year"::int = import."year"::int;	
 	
 	
 
