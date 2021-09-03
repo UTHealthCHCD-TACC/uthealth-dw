@@ -1,22 +1,14 @@
-drop table if exists data_warehouse.dim_uth_admission_id;
-
-create table data_warehouse.dim_uth_admission_id (
-	data_source char(4),
-	year int2,
-	uth_admission_id bigserial,
-	uth_member_id bigint,
-	admission_id_src text,
-	member_id_src text
-) with (appendonly=true, orientation=column)
-distributed by (uth_member_id)
-;
-
-alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq cache 200;
-
-vacuum analyze data_warehouse.dim_uth_admission_id;
-
+/* ******************************************************************************************************
+ *  This table is used to generate a de-identified uth_admission_id that will be used to populate admission_diag and admission_proc_header tables
+ *	The uth_claim_id column will be a sequence that is initially set to a 100,000,000
+ *  This code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 8/16/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC  || 8/23/2021 || updated comments.
+ * ****************************************************************************************************** */
 
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
@@ -158,5 +150,28 @@ from data_warehouse.dim_uth_admission_id duai
 group by data_source , "year" 
 order by data_source , "year" 
 ;	
+
+/* Original Table Create
+ 
+drop table if exists data_warehouse.dim_uth_admission_id;
+
+create table data_warehouse.dim_uth_admission_id (
+	data_source char(4),
+	year int2,
+	uth_admission_id bigserial,
+	uth_member_id bigint,
+	admission_id_src text,
+	member_id_src text
+) with (appendonly=true, orientation=column)
+distributed by (uth_member_id)
+;
+
+alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq restart with 100000000;
+
+alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq cache 200;
+
+vacuum analyze data_warehouse.dim_uth_admission_id;
+
+**/
 
 

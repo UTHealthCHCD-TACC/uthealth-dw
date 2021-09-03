@@ -1,6 +1,6 @@
 --Medical
-drop table opt_20210401.enc;
-create table opt_20210401.enc (
+drop table opt_20210624.enc;
+create table opt_20210624.enc (
 PTID varchar, VISITID varchar,ENCID varchar,INTERACTION_TYPE varchar,INTERACTION_DATE date,INTERACTION_TIME time,ACADEMIC_COMMUNITY_FLAG varchar,SOURCEID varchar
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
@@ -11,7 +11,7 @@ CREATE EXTERNAL TABLE ext_covid_enc (
 PTID varchar, VISITID varchar,ENCID varchar,INTERACTION_TYPE varchar,INTERACTION_DATE date,INTERACTION_TIME time,ACADEMIC_COMMUNITY_FLAG varchar,SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210401/*enc_[0-9]*.txt.gz'
+'gpfdist://greenplum01:8081/covid/20210624/*enc_[0-9]*.txt.gz'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -22,11 +22,11 @@ from ext_covid_enc
 limit 1000;
 */
 
-insert into opt_20210401.enc
+insert into opt_20210624.enc
 select * from ext_covid_enc;
 
 --Scratch
 select year, count(*), min(admit_date), max(admit_date)
-from opt_20210401.enc
+from opt_20210624.enc
 group by 1
 order by 1;

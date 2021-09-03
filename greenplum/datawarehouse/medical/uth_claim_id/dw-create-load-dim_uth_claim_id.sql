@@ -1,37 +1,14 @@
---This table is used to generate a de-identified claim id that will be used to populate claim_detail and claim_header tables
---The uth_claim_id column will be a sequence that is initially set to a 100,000,000
-
-
-select count(*), data_source, data_year 
-from data_warehouse.dim_uth_claim_id 
-group by data_source, data_year
-order by data_source, data_year
-
-drop table if exists data_warehouse.dim_uth_claim_id;
-
-CREATE TABLE data_warehouse.dim_uth_claim_id (
-	uth_claim_id bigserial NOT NULL,
-	uth_member_id int8 null,
-	data_source bpchar(4) NULL,
-	claim_id_src text NOT NULL,
-	member_id_src text NOT NULL,
-	data_year int4 NOT NULL
-)
-WITH (appendonly=true, orientation=column)
-DISTRIBUTED BY (uth_member_id);
-
-alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq cache 200;
-
-
-analyze data_warehouse.dim_uth_claim_id;
-
-
-/* code to populate dim_uth_claim_id
- * 
- * this code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
- */
+/* ******************************************************************************************************
+ *  This table is used to generate a de-identified claim id that will be used to populate claim_detail and claim_header tables
+ *	The uth_claim_id column will be a sequence that is initially set to a 100,000,000
+ *  This code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 8/16/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC  || 8/23/2021 || updated comments.
+ * ****************************************************************************************************** */
 
 
 ---truven commercial, outpatient 
@@ -447,6 +424,7 @@ from medicaid.enc_proc a
 where c.uth_claim_id is null 
 ;
 
+-- Scratch
 select * 
 from medicaid.enc_proc 
 where year_fy = 2020;
@@ -486,3 +464,33 @@ select count(distinct a.clmid ), year from optum_dod.medical a group by year;
 select count(uth_member_id), data_source
 from data_warehouse.dim_uth_member_id
 group by data_source;
+
+
+select count(*), data_source, data_year 
+from data_warehouse.dim_uth_claim_id 
+group by data_source, data_year
+order by data_source, data_year
+
+/*  Original Table Create
+
+drop table if exists data_warehouse.dim_uth_claim_id;
+
+CREATE TABLE data_warehouse.dim_uth_claim_id (
+	uth_claim_id bigserial NOT NULL,
+	uth_member_id int8 null,
+	data_source bpchar(4) NULL,
+	claim_id_src text NOT NULL,
+	member_id_src text NOT NULL,
+	data_year int4 NOT NULL
+)
+WITH (appendonly=true, orientation=column)
+DISTRIBUTED BY (uth_member_id);
+
+alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq restart with 100000000;
+
+alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq cache 200;
+
+
+analyze data_warehouse.dim_uth_claim_id;
+*/
+
