@@ -1,39 +1,16 @@
-drop table if exists data_warehouse.dim_uth_rx_claim_id; 
+/* ******************************************************************************************************
+ *  This table is used to generate a de-identified pharmacy claim id that will be used to populate pharmacy_claims
+ *	The uth_rx_claim_id column will be a sequence that is initially set to a 100,000,000
+ *  This code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 8/31/2021 ||comments added
+ * ******************************************************************************************************
+ * 
+ * ****************************************************************************************************** */
 
-create table data_warehouse.dim_uth_rx_claim_id ( 
-			data_source char(4),	
-			year int2,
-			uth_rx_claim_id bigserial,
-			rx_claim_id_src text, 
-			uth_member_id int8, 			
-			member_id_src text
-) 
-with (appendonly=true, orientation = column)
-distributed by (uth_member_id);
-;
-
-alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq cache 200;
-
-
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
-
-
-
---create materialized view truven.ccaed_2015 with (appendonly=true, orientation = column)
---as select * from truven.ccaed a where a.year = 2015;
- 
-vacuum analyze truven.ccaed;
-
-
-select * 
-from truven.ccaed
-where enrolid = 28447501
-and ndcnum = 8083621;
-
-
-
+--//BEGIN SCRIPT
 
 ---truven commercial
 with truv_cte as (  
@@ -168,11 +145,6 @@ where c.uth_rx_claim_id is null
 
 
 --optum dod 
-with optd_cte as (  
-   select distinct on ( clmid )
-   clmid, patid, year
-   from optum_dod.rx
-   )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
@@ -186,7 +158,7 @@ select 'optd'
       ,a.clmid
       ,b.uth_member_id
       ,a.patid::text 
-from optd_cte a
+from optum_dod.rx a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text
@@ -194,19 +166,10 @@ left join data_warehouse.dim_uth_rx_claim_id c
   on c.data_source = 'optd'
  and c.member_id_src = a.patid::text
  and c.rx_claim_id_src = a.clmid
+ and c."year" = a."year" 
 where c.uth_rx_claim_id is null 
  ;
 
-
-
-select count(*)  from data_warehouse.dim_uth_rx_claim_id where data_source = 'optd'
-;
-
-select count(distinct clmid)
-from optum_dod.rx where patid is null
-;
-
-select count(*), count(distinct clmid) from optum_dod.rx;
 
 --optum zip 
 with optz_cte as (  
@@ -242,13 +205,28 @@ where c.uth_rx_claim_id is null
 
 vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 
+---//END SCRIPT 
+
+/*  Original Table Create
+ * --!do not run unless table has to be recreated
+
+create table data_warehouse.dim_uth_rx_claim_id ( 
+			data_source char(4),	
+			year int2,
+			uth_rx_claim_id bigserial,
+			rx_claim_id_src text, 
+			uth_member_id int8, 			
+			member_id_src text
+) 
+with (appendonly=true, orientation = column)
+distributed by (uth_member_id);
+;
+
+alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq restart with 100000000;
+
+alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq cache 200;
 
 
-select count(*), data_source 
-from data_warehouse.dim_uth_rx_claim_id 
-group by data_source ;
+vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 
-
-
-select * 
-from medicaid.ffs_rx fr 
+*/

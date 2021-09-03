@@ -10,25 +10,59 @@
  * ******************************************************************************************************
  *  wc001  || 1/01/2021 || script created 
  * ******************************************************************************************************
+ *  wc002  || 6/28/21 || added logic to exclude enrollment records after death optum dod
+ * ******************************************************************************************************
  *  wallingTACC  || 8/23/2021 || Cleaning up comments
  * ******************************************************************************************************
+ *  wc003  || 9/02/2021 || Changing process to load dw_staging. Add mapping for null race to assign 0 (Unknown).
+ * ******************************************************************************************************
+ * 
 */
 
 
-    ---------------- data loads --------------------
-    
+----  // BEGIN SCRIPT 
 
-select count(*) from data_warehouse.dim_uth_member_id dumi where data_source = 'optd' 
+---create working table in dw_staging 
+drop table if exists dw_staging.member_enrollment_monthly ;
 
-select count(distinct patid) from optum_dod.mbr_enroll_r mer 
+create table dw_staging.member_enrollment_monthly  (
+	data_source char(4),
+	year int2, 
+	uth_member_id bigint,
+	month_year_id int4, 
+	consecutive_enrolled_months int4, 
+	gender_cd char(1), 
+	race_cd char(1),
+	age_derived int4, 
+	dob_derived date, 
+	state text, 
+	zip5 char(5), 
+	zip3 char(3), 
+	death_date date, 
+	plan_type text, 
+	bus_cd char(4), 
+	employee_status text, 
+	claim_created_flag boolean default false,
+	rx_coverage int2, 
+	fiscal_year int2,
+	row_id bigserial
+) distributed by (uth_member_id);
+
+---
+                                                                           
+alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
+
+vacuum analyze dw_staging.member_enrollment_monthly;
 
 
 
-delete from data_warehouse.member_enrollment_monthly where data_source = 'optd';
+--(---------------- data loads --------------------)
 
 
--- Optum DOD --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+-- ***** Optum DOD ***** --------------------------------------------------------------------------------------
+delete from dw_staging.member_enrollment_monthly where data_source = 'optd';
+
+insert into dw_staging.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -46,8 +80,7 @@ from optum_dod.mbr_enroll_r m
   left outer join optum_dod.mbrwdeath dth 
     on dth.patid = m.patid 
   join reference_tables.ref_month_year b
- ---6/28/21 added logic to exclude enrollment records after death. note that this will cause some members to totally be excluded. i.e patid = 33020533586
-    on b.start_of_month between date_trunc('month', m.eligeff) and case when dth.death_ym is not null then dth.death_ym else m.eligend end
+    on b.start_of_month between date_trunc('month', m.eligeff) and case when dth.death_ym is not null then dth.death_ym else m.eligend end   ---wcc002
   left outer join reference_tables.ref_gender c
     on c.data_source = 'opt'
    and c.gender_cd_src = m.gdr_cd 
@@ -61,19 +94,20 @@ from optum_dod.mbr_enroll_r m
 ---------------------------------------------------------------------------------------------------
 
 
+-- ***** Optum ZIP ***** --------------------------------------------------------------------------------------
+delete from dw_staging.member_enrollment_monthly where data_source = 'optz';
 
--- Optum ZIP --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into dw_staging.member_enrollment_monthly  (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage, fiscal_year     
+	plan_type, bus_cd, rx_coverage, fiscal_year, race_cd         
 	)	
 select 
 	   'optz',b.year_int, b.month_year_id, a.uth_member_id,
        c.gender_cd, e.state, substring(zipcode_5,1,5), substring(zipcode_5,1,3),
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, null, 
-       d.plan_type, bus, 1 as rx, b.year_int 
+       d.plan_type, bus, 1 as rx, b.year_int, r.race_cd  
 from optum_zip.mbr_enroll m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
@@ -87,50 +121,58 @@ from optum_zip.mbr_enroll m
     on d.data_source = 'opt'
    and d.plan_type_src = m.product
   left outer join reference_tables.ref_zip_crosswalk e 
-   on e.zip = substring(zipcode_5,1,5)   
+   on e.zip = substring(zipcode_5,1,5) 
+    left outer join reference_tables.ref_race r --wc003 
+    on r.race_cd_src = null
+   and r.data_source = 'optz' 
 ; 
 ---------------------------------------------------------------------------------------------------
 
 
-vacuum analyze data_warehouse.member_enrollment_monthly;
-
-select count(distinct uth_member_id), data_source 
-from data_warehouse.member_enrollment_monthly 
-group by data_source ;
-
-
-
 ------ **** Truven *******
+delete from dw_staging.member_enrollment_monthly where data_source = 'truv';
 
 create table dev.truven_uth_mem
-with(appendonly=true,orientation=column,compresstype=zlib)
+with(appendonly=true,orientation=column)
 as select *
 from data_warehouse.dim_uth_member_id where data_source = 'truv'
 distributed by(member_id_src);
 
-
-
-
 vacuum analyze dev.truven_uth_mem;
 
 
+create table truven.ccaet_temp 
+with (appendonly=true, orientation=column) as 
+select * 
+from truven.ccaet
+distributed by (enrolid)
+;
+
+vacuum analyze truven.ccaet_temp;
+
+
+select count(*), year 
+from optum_zip.medical 
+group by year 
+order by year 
+;
 
 
 -- Truven Commercial ----------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+-- 9/2/21 runtime 58min
+insert into dw_staging.member_enrollment_monthly  (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage, fiscal_year         
+	plan_type, bus_cd, employee_status, rx_coverage, fiscal_year , race_cd        
 	)		
 select 
 	   'truv', b.year_int, b.month_year_id, a.uth_member_id, 
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
-       d.plan_type, 'COM', eestatu, m.rx, m.year 
-from truven.ccaet m
-  --join data_warehouse.dim_uth_member_id a
-  join dev.truven_uth_mem a
+       d.plan_type, 'COM', eestatu, m.rx, m.year , '0' as race
+from truven.ccaet_temp m
+  join dev.truven_uth_mem a --join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -142,11 +184,7 @@ from truven.ccaet m
    and c.gender_cd_src = m.sex::text
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
-  and d.plan_type_src::int = m.plantyp
-  left outer join data_warehouse.member_enrollment_monthly x 
-     on x.uth_member_id = a.uth_member_id 
-    and x.month_year_id = b.month_year_id 
-where x.uth_member_id is null    
+  and d.plan_type_src::int = m.plantyp  
 ;
 ---------------------------------------------------------------------------------------------------
 
@@ -155,20 +193,19 @@ where x.uth_member_id is null
 
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+insert into dw_staging.member_enrollment_monthly  (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, employee_status, rx_coverage , fiscal_year      
+	plan_type, bus_cd, employee_status, rx_coverage , fiscal_year, race_cd     
 	)		
 select 
        'truv', b.year_int,b.month_year_id, a.uth_member_id,
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, trunc(m.empzip,0)::text,
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
-       d.plan_type, 'MCR', eestatu, m.rx, m.year
+       d.plan_type, 'MCR', eestatu, m.rx, m.year, '0' as race 
 from truven.mdcrt m
-  --join data_warehouse.dim_uth_member_id a
-  join dev.truven_uth_mem a
+  join dev.truven_uth_mem a  --join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -181,36 +218,17 @@ from truven.mdcrt m
   left outer join reference_tables.ref_plan_type d
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
-  left outer join data_warehouse.member_enrollment_monthly x 
-     on x.uth_member_id = a.uth_member_id 
-    and x.month_year_id = b.month_year_id 
-where x.uth_member_id is null   
 ;
 ---------------------------------------------------------------------------------------------------
 
-
 drop table dev.truven_uth_mem;
 
-vacuum analyze data_warehouse.member_enrollment_monthly;
 
-
-select count(*), year 
-from data_warehouse.member_enrollment_monthly 
-where data_source = 'truv' 
-group by year 
-order by year; 
-
-
-select count(*), year 
-from truven.ccaet 
-group by year 
-order by year 
-;
 
 ----- End Truven ******
 
 
-
+/*
 create table reference_tables.ref_medicare_entlmt_buyin (buyin_cd char(1), plan_type text);
 
 insert into reference_tables.ref_medicare_entlmt_buyin values 
@@ -226,18 +244,18 @@ insert into reference_tables.ref_medicare_ptd_cntrct values
 
 
 select distinct substring(mas.ptd_cntrct_id_01,1,1) from medicare_texas.mbsf_abcd_summary mas 
+*/
 
 
-delete from data_warehouse.member_enrollment_monthly where data_source = 'mcrt';
-
-select * from data_warehouse.member_enrollment_monthly mem 
 
 -- Medicare  Texas--------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+delete from dw_staging.member_enrollment_monthly where data_source = 'mcrt';
+
+insert into dw_staging.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod , zip3,
+	gender_cd, state, zip5 , zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage, data_year , race_cd     
+	plan_type, bus_cd, rx_coverage, fiscal_year , race_cd     
 	)		
 select 'mcrt',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
@@ -305,11 +323,13 @@ from medicare_texas.mbsf_abcd_summary m
 
 
 -- Medicare National --------------------------------------------------------------------------------------
-insert into data_warehouse.member_enrollment_monthly (
+delete from dw_staging.member_enrollment_monthly where data_source = 'mcrt';
+
+insert into dw_staging.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, dod, zip3,
+	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage  ,data_year , race_cd    
+	plan_type, bus_cd, rx_coverage  ,fiscal_year , race_cd    
 	)	
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
@@ -375,11 +395,12 @@ from medicare_national.mbsf_abcd_summary m
 
 
 
-delete from data_warehouse.member_enrollment_monthly where data_source = 'mdcd';
 
 
----medicaid 
-insert into data_warehouse.member_enrollment_monthly (
+--- ***** Medicaid *****
+delete from dw_staging.member_enrollment_monthly where data_source = 'mdcd';
+
+insert into dw_staging.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -403,7 +424,7 @@ from medicaid.enrl  a
 ;
 
 ---medicaid chip
-insert into data_warehouse.member_enrollment_monthly (
+insert into dw_staging.member_enrollment_monthly(
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
 	age_derived, dob_derived, death_date,
@@ -427,51 +448,40 @@ from medicaid.chip_uth  a
 ;
 
 
-
-
----------------------------/End---------------------------------------
-
-vacuum analyze data_warehouse.member_enrollment_monthly;
+-------(---------------- data loads --------------------)
 
 
 
-select count(*),
-count(distinct uth_member_id ), 
-data_source , year
-from data_warehouse.member_enrollment_monthly
-group by data_source , year
-order by data_source , year 
-
-
-select count(*), year 
-from medicare_texas.mbsf_abcd_summary mas 
-group by year;
-
-
-select count(*) , year 
-from truven.ccaea 
-group by year;
---- 
-
----logic to add consecutive enrolled months
----------------------------------------------
-
+------run below code for data sources vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vacuum analyze dw_staging.member_enrollment_monthly;
 
 ---- delete duplicate rows
-delete from data_warehouse.member_enrollment_monthly where row_identifier in ( 
---select * from data_warehouse.member_enrollment_monthly mem where row_identifier in ( 
+delete from dw_staging.member_enrollment_monthly where row_identifier in ( 
 	select row_identifier
 	from
 	(		
 	select row_number() over(partition by uth_member_id, month_year_id order by month_year_id) as rn
 		      ,*
-		from data_warehouse.member_enrollment_monthly 		
+		from dw_staging.member_enrollment_monthly 		
 	) sub
 	where rn > 1
 );
 
 
 
+select * 
+from dw_staging.member_enrollment_monthly 
+where uth_member_id = 673299755
+
+
+	select row_number() over(partition by uth_member_id, month_year_id order by month_year_id) as rn
+		      ,*
+		from dw_staging.member_enrollment_monthly 	
+		where uth_member_id = 673299755
+
+
+---logic to add consecutive enrolled months
+---------------------------------------------
 with row_build_cte as ( 
 	select row_identifier 
 	      ,row_number() over(partition by uth_member_id, my_grp order by  month_year_id) as in_streak
@@ -480,27 +490,21 @@ with row_build_cte as (
 		         ,a.month_year_id
 		         ,a.uth_member_id
 		         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
-		   from data_warehouse.member_enrollment_monthly 	 a 
+		   from dw_staging.member_enrollment_monthly 	 a 
 		     join reference_tables.ref_month_year b 
 		       on a.month_year_id = b.month_year_id 	   		    
 		 ) sub    
 ) 
-update data_warehouse.member_enrollment_monthly c 
+update dw_staging.member_enrollment_monthly c 
 set consecutive_enrolled_months = d.in_streak 
 from row_build_cte d
 where c.row_identifier = d.row_identifier
 ;
 
-vacuum analyze data_warehouse.member_enrollment_monthly;
+vacuum analyze dw_staging.member_enrollment_monthly;
 
-select data_source, uth_member_id, month_year_id, consecutive_enrolled_months from data_warehouse.member_enrollment_monthly where data_source = 'truv';
-
-
-----
+-----run above code for all data sets              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-select count(*), data_source, year 
-from data_warehouse.member_enrollment_monthly mem 
-group by data_source, year 
-order by data_source, year 
+----/END SCRIPT
 
