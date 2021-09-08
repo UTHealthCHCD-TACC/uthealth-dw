@@ -807,10 +807,34 @@ from (
 
 
 --units
+   
+?????????
+   
+   
 --drg_cd
+
+
+
 --claim_id_src
+
+
+
+
+
 ---member_id_src
+
+
+
+
+
 --table_id_src
+
+select data_source, table_id_src
+from data_warehouse.claim_detail 
+group by data_source, table_id_src ;
+
+
+
 --claim_sequence_number_src
 --cob_type
 --fiscal_year
@@ -818,12 +842,25 @@ from (
 --discharge_status
 
 
+enc_det
+--ccaeo
+dme_claims_k
+medical
+outpatient_revenue_center_k
+ccaes
+bcarrier_claims_k
+clm_detail
+hospice_base_claims_k
+inpatient_revenue_center_k
+hha_revenue_center_k
+snf_base_claims_k
+--mdcrs
+--mdcro
 
 
-
-
-
-
+truven.ccaeo
+truven.mdcrs
+truven.mdcro
 
 
 
