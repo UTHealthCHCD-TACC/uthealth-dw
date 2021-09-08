@@ -33,9 +33,12 @@ SELECT version();
 select * from pg_stat_operations where objname = 'claim_header';
 
 --Total DB Size
-select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT,
-sum(reltuples) as num_tuples
+select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT
  FROM pg_tables;
+
+
+
+select pg_size_pretty(pg_database_size('uthealth'));
  
 --Total Schema Size
  SELECT schemaname,
