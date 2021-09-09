@@ -10,7 +10,7 @@
  *  wallingTACC  || 8/23/2021 || updated comments.
  * ****************************************************************************************************** */
 
-
+--- ***** Optum Zip *****
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'optz', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.conf_id, a.patid::text 
 from optum_zip.confinement a 
@@ -26,7 +26,7 @@ and a.patid is not null
 and c.uth_admission_id is null 
 ;
 
-
+--- ***** Optum DoD *****
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'optd', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.conf_id, a.patid::text 
 from optum_zip.confinement a 
@@ -43,7 +43,6 @@ and c.uth_admission_id is null
 ;
 
 
-delete from data_warehouse.dim_uth_admission_id where data_source = 'truv';
 
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
@@ -144,12 +143,7 @@ from medicare_texas.admit_clm b
 ---va 
 vacuum analyze data_warehouse.dim_uth_admission_id;
 
----verify
-select count(*), data_source , "year" 
-from data_warehouse.dim_uth_admission_id duai 
-group by data_source , "year" 
-order by data_source , "year" 
-;	
+
 
 /* Original Table Create
  

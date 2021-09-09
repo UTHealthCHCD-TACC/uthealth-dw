@@ -8,91 +8,20 @@
  *  wc001  || 8/16/2021 || script created 
  * ******************************************************************************************************
  *  wallingTACC  || 8/23/2021 || updated comments.
+ * ******************************************************************************************************
+ *  wc002  || 8/31/2021 || consolidate medicare script
+ * ******************************************************************************************************
+ * 
  * ****************************************************************************************************** */
 
 
----truven commercial, outpatient 
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
-from truven.ccaeo a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-         on  b.data_source = c.data_source
-        and a.msclmid::text = c.claim_id_src 
-        and a.enrolid::text = c.member_id_src 
-where a.enrolid is not null
-and c.uth_claim_id is null
-group by 1, 2, 3, 4;
 
 
-vacuum analyze truven.ccaes; 
-
-vacuum analyze data_warehouse.dim_uth_claim_id;
-
---truven commercial, inpatient
-insert into data_warehouse.dim_uth_claim_id ( data_source, claim_id_src, member_id_src , uth_member_id, data_year )                                              
-select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
-from truven.ccaes a  
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-	    on  b.data_source = c.data_source
-	      and a.msclmid::text = c.claim_id_src 
-	      and a.enrolid::text = c.member_id_src
-  where a.enrolid is not null
-and c.uth_claim_id is null
-group by 1, 2, 3, 4
-;
-
-
-
-vacuum analyze data_warehouse.dim_uth_claim_id;
-
-
----truven medicare, outpatient 
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
-from truven.mdcro a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-    on  b.data_source = c.data_source
-      and a.msclmid::text = c.claim_id_src 
-      and a.enrolid::text = c.member_id_src 
-where a.enrolid is not null
-and c.uth_claim_id is null
-group by 1, 2, 3, 4
-;
-
-
----truven medicare inpatient
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year )     
-select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
-from truven.mdcrs a  
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
-  left join data_warehouse.dim_uth_claim_id c
-    on  b.data_source = c.data_source
-      and a.msclmid::text = c.claim_id_src 
-      and a.enrolid::text = c.member_id_src
-where a.enrolid is not null
-and c.uth_claim_id is null
-group by 1,2,3,4;
-
-
-vacuum analyze data_warehouse.dim_uth_claim_id;
-
-
-
---Optum dod 
+-- ***** Optum dod ***** 
+--8/31/2021 runtime 10m16s
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_zip.medical a
+from optum_dod.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text 
@@ -106,11 +35,12 @@ group by 1, 2, 3, 4;
 
 
 ---cleanup optd 
+--11m59s
 delete from data_warehouse.dim_uth_claim_id clm
     using( 
 select a.uth_claim_id
 from data_warehouse.dim_uth_claim_id a 
-   left outer join optum_zip.medical b 
+   left outer join optum_dod.medical b 
      on a.member_id_src = b.patid::text 
     and a.claim_id_src = b.clmid::text 
 where a.data_source = 'optd' 
@@ -120,9 +50,8 @@ where clm.uth_claim_id = del.uth_claim_id
 ;
 
 
-delete from data_warehouse.dim_uth_claim_id where data_source = 'optz';
-
---Optum zip 20m
+-- ***** Optum zip ***** 
+--8/31/2021 runtime 10m16s
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
 from optum_zip.medical a
@@ -139,6 +68,7 @@ group by 1, 2, 3, 4;
 
 
 ---cleanup optz 
+--12m50s
 delete from data_warehouse.dim_uth_claim_id clm
     using( 
 select a.uth_claim_id
@@ -153,251 +83,185 @@ where clm.uth_claim_id = del.uth_claim_id
 ;
 
 
-
-vacuum analyze data_warehouse.dim_uth_claim_id;
-
-select count(*), data_source 
-from data_warehouse.dim_uth_claim_id
-group by data_source;
-
----------------------------------------------------------------------------------------------------
----- Medicare :
----- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,
----- and snf tables to generate uth_claim_ids.
----------------------------------------------------------------------------------------------------
-
-
-vacuum analyze data_warehouse.dim_uth_claim_id
-
---bcarrier
-drop table dev.wc_bcarrier_tx
-
-create table dev.wc_bcarrier_tx
-with (appendonly=true, orientation=column)
-as 
-select * from medicare_texas.bcarrier_claims_k where year = '2018'
-distributed by (bene_id);
-
-
---bcarrier
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)      
-select  'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from dev.wc_bcarrier_tx a 
---medicare_texas.bcarrier_claims_k a
+--- ***** truven commercial, outpatient  ***** 
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))                                            
+from truven.ccaeo a
   join data_warehouse.dim_uth_member_id b 
-    on b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.member_id_src = a.bene_id 
-   and c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-where c.uth_claim_id is null 
-;
-
-
-
-
---dme
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.dme_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null
-;
-
-
-
---hha
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.hha_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null 
-;
-
---hospice
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.hospice_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null
-;
-
-
---inpatient
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.inpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null
-;
-
---outpatient
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select 'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.outpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null 
-;
-
---snf
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select 'mcrt', clm_id, bene_id, b.uth_member_id, a.year::int2
-from medicare_texas.snf_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrt'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null 
-;
-
-
--------------------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------
----- Medicare **National**:
----- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient,
----- and snf tables to generate uth_claim_ids.
----------------------------------------------------------------------------------------------------
-
-
---bcarrier
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)      
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.bcarrier_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null 
+    on b.data_source = 'truv'
+   and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_claim_id c
+         on  b.data_source = c.data_source
+        and a.msclmid::text = c.claim_id_src 
+        and a.enrolid::text = c.member_id_src 
+where a.enrolid is not null
+and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 
-
---dme
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.dme_claims_k a
+-- ***** truven commercial, inpatient ***** 
+insert into data_warehouse.dim_uth_claim_id ( data_source, claim_id_src, member_id_src , uth_member_id, data_year )                                              
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id  , min(trunc(a.year,0))
+from truven.ccaes a  
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null
-group by 1, 2, 3, 4;
+    on b.data_source = 'truv'
+   and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_claim_id c
+	    on  b.data_source = c.data_source
+	      and a.msclmid::text = c.claim_id_src 
+	      and a.enrolid::text = c.member_id_src
+  where a.enrolid is not null
+and c.uth_claim_id is null
+group by 1, 2, 3, 4
+;
 
---hha
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.hha_base_claims_k a
+
+--- ***** truven medicare, outpatient *****  
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
+from truven.mdcro a
   join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
+    on b.data_source = 'truv'
+   and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_claim_id c
+    on  b.data_source = c.data_source
+      and a.msclmid::text = c.claim_id_src 
+      and a.enrolid::text = c.member_id_src 
+where a.enrolid is not null
+and c.uth_claim_id is null
+group by 1, 2, 3, 4
+;
+
+
+--- ***** truven medicare inpatient ***** 
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year )     
+select  'truv', a.msclmid::text, a.enrolid::text, b.uth_member_id, min(trunc(a.year,0))
+from truven.mdcrs a  
+  join data_warehouse.dim_uth_member_id b 
+    on b.data_source = 'truv'
+   and b.member_id_src = a.enrolid::text 
+  left join data_warehouse.dim_uth_claim_id c
+    on  b.data_source = c.data_source
+      and a.msclmid::text = c.claim_id_src 
+      and a.enrolid::text = c.member_id_src
+where a.enrolid is not null
+and c.uth_claim_id is null
+group by 1,2,3,4;
+
+
+---- ***** Medicare Texas***** 
+---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient, and snf tables
+---wc002
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)
+select 'mcrt', clm_id, bene_id, raw_clms.uth_member_id, raw_clms.data_year 
+from 
+( 
+    select clm_id, bene_id, uth_member_id, year::int2 as data_year
+    from medicare_texas.bcarrier_claims_k a 
+      join data_warehouse.dim_uth_member_id b 
+        on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.dme_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 	   
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.hha_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.hospice_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.inpatient_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.outpatient_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_texas.snf_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrt'
+	   and b.member_id_src = bene_id
+ ) raw_clms
+   left outer join data_warehouse.dim_uth_claim_id c 
+    on c.member_id_src = raw_clms.bene_id 
+   and c.data_source = 'mcrt'
+   and c.claim_id_src = raw_clms.clm_id
 where c.uth_claim_id is null 
-group by 1, 2, 3, 4;
+;
 
---hospice
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.hospice_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null
-group by 1, 2, 3, 4;
-
-
---inpatient
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.inpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.member_id_src = bene_id
-   and b.data_source = 'mcrn'
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.member_id_src = a.bene_id 
-   and c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-where c.uth_claim_id is null
-group by 1, 2, 3, 4;
-
---outpatient
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select 'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.outpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
+---- ***** Medicare National***** 
+---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient, and snf tables
+---wc002
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)
+select 'mcrn', clm_id, bene_id, raw_clms.uth_member_id, raw_clms.data_year 
+from 
+( 
+    select clm_id, bene_id, uth_member_id, year::int2 as data_year
+    from medicare_national.bcarrier_claims_k a 
+      join data_warehouse.dim_uth_member_id b 
+        on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.dme_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 	   
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.hha_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.hospice_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.inpatient_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.outpatient_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+union 
+	select clm_id, bene_id, b.uth_member_id, a.year::int2
+	from medicare_national.snf_base_claims_k a
+	  join data_warehouse.dim_uth_member_id b 
+	    on b.data_source = 'mcrn'
+	   and b.member_id_src = bene_id
+ ) raw_clms
+   left outer join data_warehouse.dim_uth_claim_id c 
+    on c.member_id_src = raw_clms.bene_id 
+   and c.data_source = 'mcrn'
+   and c.claim_id_src = raw_clms.clm_id
 where c.uth_claim_id is null 
-group by 1, 2, 3, 4;
+;
 
---snf
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year) 
-select  'mcrn', clm_id, bene_id, b.uth_member_id, year::int2
-from medicare_national.snf_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  left join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-where c.uth_claim_id is null 
-group by 1, 2, 3, 4;
-
-
-delete from data_warehouse.dim_uth_claim_id where data_source = 'mdcd';
-
-
-------------medicaid
+------------ ***** Medicaid ***** 
 --claims
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
 select 'mdcd', a.icn, a.pcn, b.uth_member_id, a.year_fy 
@@ -424,54 +288,14 @@ from medicaid.enc_proc a
 where c.uth_claim_id is null 
 ;
 
--- Scratch
-select * 
-from medicaid.enc_proc 
-where year_fy = 2020;
-
-update data_warehouse.dim_uth_claim_id set member_id_src = trim(member_id_src) where data_source = 'mdcd';
-
-
-select count(*), data_year from data_warehouse.dim_uth_claim_id where data_source = 'mdcd' group by data_year order by data_year 
-
-
-select count(*) from medicaid.clm_header;
-
-
-select count(*) from medicaid.enc_header;
-
---------------------------------------------------------------------/End/-------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------
 vacuum analyze  data_warehouse.dim_uth_claim_id;
 
--- Scratch
+---- // END SCRIPT 
 
-select  count(*), data_source, data_year 
-from data_warehouse.dim_uth_claim_id
-group by data_source, data_year
-order by data_source, data_year ;
-
-
-select count(distinct msclmid::text || enrolid::text || year::text ) from truven.ccaeo;
-
-
-select count(distinct msclmid) from truven.ccaes;
-
-
-select count(distinct a.clmid ), year from optum_zip.medical a group by year;
-
-
-select count(uth_member_id), data_source
-from data_warehouse.dim_uth_member_id
-group by data_source;
-
-
-select count(*), data_source, data_year 
-from data_warehouse.dim_uth_claim_id 
-group by data_source, data_year
-order by data_source, data_year
 
 /*  Original Table Create
+ * --!do not run unless table has to be recreated
 
 drop table if exists data_warehouse.dim_uth_claim_id;
 

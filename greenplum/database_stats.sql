@@ -1,32 +1,20 @@
-/* 
-******************************************************************************************************
- *  A collection of handy queries for grabbing database statistics
- * ******************************************************************************************************
- *  Author || Date      || Notes
- * ******************************************************************************************************
- *  wallingTACC  ||8/25/2021 || comments added
- * ******************************************************************************************************
- */
-
 --Activity
 select *
 from pg_stat_activity
-where state='active'
---and query like 'select%'
-and usename='wcough';
+where state='active';
+and usename='gpadmin';
 
 select *
 from gp_toolkit.gp_skew_coefficients;
 
 where skcrelname like 'wc%';
 
-select pg_terminate_backend(27840);
+select pg_terminate_backend(27852);
 
-select pg_cancel_backend(27840);
 
 select *
 from pg_settings
-where name like '%version%';
+where name like '%max%';
 
 select ceil((200 + 3 + 15 + 5) / 16)
 
@@ -45,11 +33,12 @@ SELECT version();
 select * from pg_stat_operations where objname = 'claim_header';
 
 --Total DB Size
-select pg_size_pretty(pg_database_size('uthealth'));
-
-select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT,
-sum(reltuples) as num_tuples
+select SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT
  FROM pg_tables;
+
+
+
+select pg_size_pretty(pg_database_size('uthealth'));
  
 --Total Schema Size
  SELECT schemaname,
@@ -146,7 +135,7 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('optum_zip', 'optum_zip', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
+and b.nspname in ('optum_zip', 'optum_dod', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
 AND a.oid=c.relid;
 
 --Roles and Members
@@ -203,7 +192,7 @@ INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('optum_zip', 'optum_zip')
+and nspname in ('optum_dod', 'optum_zip')
 order by 1, 2, 3;
 
 analyze data_warehouse.member_enrollment_yearly;
