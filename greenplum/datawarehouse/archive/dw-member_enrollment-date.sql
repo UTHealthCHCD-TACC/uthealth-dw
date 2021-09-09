@@ -67,7 +67,7 @@ plan_typ, plan_typ_src)
 select d.id, 'OPTD', patid, md5('OPTD' || cast(patid as varchar)), 
 gdr_cd, yrdob, family_id, null, state, 
 null, product
-from optum_dod.member m
+from optum_zip.member m
 join dim_date d on d.date between date_trunc('month', m.eligeff) and m.eligend; --date_trunc to match 1/1/2010 in dim_date to eligeff of 1/15/2010
 
 --Optum ZIP - 6 min
@@ -77,7 +77,7 @@ plan_typ, plan_typ_src)
 select d.id, 'OPTZ', patid, md5('OPTZ' || cast(patid as varchar)), 
 gdr_cd, yrdob, family_id, split_part(zipcode_5, '_', 1), null, 
 null, product
-from optum_dod.member m
+from optum_zip.member m
 join dim_date d on d.date between date_trunc('month', m.eligeff) and m.eligend; --date_trunc to match 1/1/2010 in dim_date to eligeff of 1/15/2010
 
 --Truven

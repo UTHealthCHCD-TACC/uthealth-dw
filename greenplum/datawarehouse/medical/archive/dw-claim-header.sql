@@ -49,10 +49,10 @@ sum(m.charge) as total_cost,
 sum(m.copay + m.coins) as total_paid--, 
 --count(distinct conf.conf_id) as conf_cnt, 
 --count(*) as record_cnt
-from optum_dod_medical m
-left join optum_dod_confinement conf on m.conf_id=conf.conf_id
-left join optum_dod.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
-left join optum_dod.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
+from optum_zip_medical m
+left join optum_zip_confinement conf on m.conf_id=conf.conf_id
+left join optum_zip.ref_admit_type rat on m.admit_type::varchar=rat.key::varchar
+left join optum_zip.ref_admit_channel rac on m.admit_chan::varchar=rac.key::varchar and case when m.admit_chan='4' then rac.type_id=4 else rac.type_id is null end
 --where clmid='187810755'
 group by 1, 2, 3;
 

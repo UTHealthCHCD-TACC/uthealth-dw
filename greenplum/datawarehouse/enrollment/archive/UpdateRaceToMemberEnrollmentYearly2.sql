@@ -34,7 +34,7 @@ insert into dev.am_member_race ( data_source , member_id_src , race , data_year 
 --OPTD
 insert into dev.am_member_race ( data_source ,  member_id_src , race )	
 	select distinct 'optd' as data_source,  patid as member_id_src, race as race
-		from optum_dod.mbr_enroll_r mer 
+		from optum_zip.mbr_enroll_r mer 
 		where race is not null
 -------------------------------------------------------------------------------------------				
 --get uth_member_id		

@@ -15,11 +15,11 @@ alter sequence data_warehouse.enrollment_id_seq cache 200;
 --Optum load
 insert into data_warehouse.enrollment(source, mbr_id, gndr_cd, mbr_dob, fam_id, state, cov_eff_dt, cov_term_dt, plan_ty_cd)
 select 'od', patid, gdr_cd, yrdob, family_id, state, eligeff, eligend, product
-from optum_dod.member;
+from optum_zip.member;
 
 -- State
 select distinct state
-from optum_dod.member;
+from optum_zip.member;
 
 
 --Truven load

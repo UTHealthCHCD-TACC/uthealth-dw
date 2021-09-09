@@ -264,7 +264,7 @@ drop table if exists dev.am_mbc_confinement;
 	
 select distinct x.uth_member_id , m.member_id_src , c.conf_id , c.admit_date , c.disch_date , c.dstatus 
 	into dev.am_mbc_confinement
-	from dev.am_mbc_dx x, data_warehouse.dim_uth_member_id m, optum_dod.confinement c 
+	from dev.am_mbc_dx x, data_warehouse.dim_uth_member_id m, optum_zip.confinement c 
 	where x.uth_member_id = m.uth_member_id 
 		and m.member_id_src = c.patid::text 
 		and c.year between 2014 and 2019;

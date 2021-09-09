@@ -38,7 +38,7 @@ UNION
 select 'Optum DOD' as "source", import."year", import."import_count", dw."dw_count"--, import."import_count" - dw."dw_count" as "difference"
 from (
 	select count(distinct m.clmid) as "import_count", extract(year from (min(m.fst_dt))) as "year"
-	from optum_dod.medical m 
+	from optum_zip.medical m 
 	group by "year") import
 join (
 	select count(distinct ch.claim_id_src) as "dw_count", ch."year" 

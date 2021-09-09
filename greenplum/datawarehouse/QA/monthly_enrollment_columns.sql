@@ -209,7 +209,7 @@ drop table if exists dev.qa_temp_ids_src;
     into dev.qa_temp_ids_src
     from (
         select patid::text as patidsrc
-        from optum_dod.mbr_enroll_r
+        from optum_zip.mbr_enroll_r
 
         union all
 
@@ -396,7 +396,7 @@ drop table if exists dev.qa_temp_all_states;
 		union all
 
 		select state as state
-		from optum_dod.mbr_enroll_r
+		from optum_zip.mbr_enroll_r
 
 		union all
 

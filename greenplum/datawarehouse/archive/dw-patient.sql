@@ -9,22 +9,22 @@ distributed randomly;
 --Optum load
 insert into data_warehouse.patient
 select distinct patid, gdr_cd, yrdob, 'od'
-from optum_dod.member;
+from optum_zip.member;
 
 -- Are there dulicates
 select patid, count(*)
-from optum_dod.member
+from optum_zip.member
 group by 1
 order by 2 desc
 limit 10;
 
-select * from optum_dod."member"
+select * from optum_zip."member"
 where patid=33040008958
 order by eligeff, eligend;
 
 -- Different family_id???  Yes, 33046809670 has 20 distinct records
 select patid, count(distinct family_id)
-from optum_dod."member"
+from optum_zip."member"
 group by 1
 having count(distinct family_id) > 1
 order by 2 desc
@@ -32,7 +32,7 @@ limit 10;
 
 -- Different states???  Yes, 33025997064 has 8 distinct states
 select patid, count(distinct state)
-from optum_dod."member"
+from optum_zip."member"
 group by 1
 having count(distinct state) > 1
 order by 2 desc
@@ -40,7 +40,7 @@ limit 10;
 
 -- Different date of birth???  No
 select patid, count(distinct yrdob)
-from optum_dod."member"
+from optum_zip."member"
 group by 1
 having count(distinct yrdob) > 1
 order by 2 desc

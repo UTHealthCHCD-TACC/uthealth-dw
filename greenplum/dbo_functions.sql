@@ -1,3 +1,12 @@
+/* 
+******************************************************************************************************
+ *  Adds functions in a dbo schema allowing non-superusers the ability to perform a subset of superuser activities.
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  ||8/25/2021 || comments added
+ * ******************************************************************************************************
+ */
 
 CREATE SCHEMA dbo;
 
@@ -74,7 +83,7 @@ BEGIN
 FOR table_name IN 
 SELECT schemaname||'.'||tablename AS table_name 
 FROM pg_tables 
-WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_dod', 'tableau', 'truven', 'reference_tables', 'medicare')
+WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_zip', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')
 LOOP
 RAISE NOTICE 'Setting permissions for %', table_name;
 EXECUTE 'grant ' || perm_level || ' on ' || table_name || ' to ' || role;
@@ -95,7 +104,7 @@ DECLARE
   seq_name TEXT;
 BEGIN
 FOR r in 
-SELECT schemaname||'.'||relname AS s FROM pg_catalog.pg_statio_all_sequences WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_dod', 'optum_dod', 'tableau', 'truven', 'reference_tables', 'medicare')
+SELECT schemaname||'.'||relname AS s FROM pg_catalog.pg_statio_all_sequences WHERE schemaname in ('data_warehouse', 'dev', 'dev2016', 'optum_zip', 'optum_zip', 'tableau', 'truven', 'reference_tables', 'medicare')
 loop
 seq_name := r.s;
 RAISE NOTICE 'Setting permissions for %', seq_name;

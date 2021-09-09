@@ -230,7 +230,7 @@ select data_year , data_source , count(distinct uth_member_id) uth_member_id_Cou
 	
 select e.uth_member_id 
 	from dev.am_mem_not_enrolled e
-	inner join optum_dod.mbr_co_enroll_r r on cast(r.patid as text) = e.member_id_src 
+	inner join optum_zip.mbr_co_enroll_r r on cast(r.patid as text) = e.member_id_src 
 	where en_mem is null
 		and data_source = 'optd'
 		and to_date(e.data_year::varchar, 'yyyy') between r.eligeff and r.eligend 

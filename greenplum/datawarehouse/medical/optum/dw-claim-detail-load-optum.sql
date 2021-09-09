@@ -19,7 +19,7 @@ drop table if exists dev.wc_optd_medical;
 
 create table dev.wc_optd_medical
 with(appendonly=true,orientation=column)
-as select patid::text as mem_id_src, * from optum_dod.medical
+as select patid::text as mem_id_src, * from optum_zip.medical
 where year between 2007 and 2010
 distributed by (mem_id_src);
 
@@ -64,7 +64,7 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_claim_id, null as clai
        substring(a.bill_type,2,1), substring(a.bill_type,3,1), a.units, a.drg, 
        a.clmid, a.patid::text, 'medical', a.clmseq, 
        a.cob as cob_type, a."year", c.standard_price_year, a.dstatus
-from dev.wc_optd_medical a   --optum_dod.medical a
+from dev.wc_optd_medical a   --optum_zip.medical a
 	join dev.wc_optd_uth_claim b  --data_warehouse.dim_uth_claim_id b 
 	   on b.member_id_src = a.mem_id_src 
 	  and b.claim_id_src = a.clmid
@@ -83,7 +83,7 @@ group by year
 order by year 
 ;
 
-select count(*), year from optum_dod.medical m group by year order by year;
+select count(*), year from optum_zip.medical m group by year order by year;
 
 --delete from claim detail
 delete from data_warehouse.claim_detail where data_source = 'optd';
@@ -104,7 +104,7 @@ order by year;
 
 --cross verify original data
 select count(*), year  
-from optum_dod.medical m 
+from optum_zip.medical m 
 group by year 
 order by year 
 

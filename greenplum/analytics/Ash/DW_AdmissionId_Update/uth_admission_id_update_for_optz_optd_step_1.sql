@@ -81,9 +81,9 @@ insert into dw_qa.admission_header (data_source , year , uth_admission_id , uth_
 			c.std_cost as total_allowed_amount,		
 			duai.admission_id_src, 
 			duai. member_id_src,
-			'dim_uth_admission_id , optum_dod.confinement' as table_id_src		
+			'dim_uth_admission_id , optum_zip.confinement' as table_id_src		
 		from data_warehouse.dim_uth_admission_id duai 
-		inner join optum_dod.confinement c on c.conf_id = duai.admission_id_src 
+		inner join optum_zip.confinement c on c.conf_id = duai.admission_id_src 
 											and cast(c.patid as text) = duai.member_id_src 
 											and c."year" = duai."year" 	
 		where data_source = 'optd'	

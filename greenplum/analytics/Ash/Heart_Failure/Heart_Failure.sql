@@ -1,7 +1,7 @@
 drop table if exists dev.am_hf_optd_members;	
 	select distinct m.member_id_src 
 		into dev.am_hf_optd_members
-		from optum_dod.diagnostic d, data_warehouse.dim_uth_member_id m, data_warehouse.member_enrollment_yearly y
+		from optum_zip.diagnostic d, data_warehouse.dim_uth_member_id m, data_warehouse.member_enrollment_yearly y
 		where d.patid::text = m.member_id_src
 			and m.uth_member_id = y.uth_member_id 
 			and y.age_derived between 18 and 85
@@ -13,7 +13,7 @@ drop table if exists dev.am_hf_optd_members;
 /*
 	select distinct y.member_id_src 
 		into dev.am_hf_optd_members
-		from optum_dod.diagnostic d, data_warehouse.member_enrollment_yearly y
+		from optum_zip.diagnostic d, data_warehouse.member_enrollment_yearly y
 		where d.patid::text = y.member_id_src 
 			and y.age_derived between 18 and 85
 			and y.data_source = 'optd'
@@ -30,7 +30,7 @@ drop table if exists dev.am_hf_optd_member_enrollment;
 	--select distinct e.patid, e.eligeff , e.eligend , e.gdr_cd , e.race , e.yrdob , e.extract_ym , e.lis_dual , 
 	--		e.state ,  e.bus , e.health_exch , e."version" 
 		into dev.am_hf_optd_member_enrollment
-		from optum_dod.mbr_enroll_r e
+		from optum_zip.mbr_enroll_r e
 		inner join dev.am_hf_optd_members m on e.patid::text = m.member_id_src
 		where date_part('year', e.eligeff) in (2015, 2016, 2017, 2018, 2019)
 			or date_part('year', e.eligend) in (2015, 2016, 2017, 2018, 2019)
@@ -48,7 +48,7 @@ drop table if exists dev.am_hf_optd_medical;
 	--		d.loc_cd , d.lst_dt , d.ndc , d.paid_status , d.provcat , d.rvnu_cd , d.std_cost , d.ndc_uom , d.ndc_qty , 
 	--		d.admit_chan , d.admit_type , d.bill_prov , d.conf_id , d.paid_dt
 		into dev.am_hf_optd_medical	
-		from optum_dod.medical d 
+		from optum_zip.medical d 
 		inner join dev.am_hf_optd_members m on d.patid::text = m.member_id_src
 		where d.year in (2015, 2016, 2017, 2018, 2019);
 
@@ -59,7 +59,7 @@ drop table if exists dev.am_hf_optd_procedure;
 	SELECT distinct p.patid, p.pat_planid, p.clmid, p.icd_flag, proc, proc_position, p.extract_ym, p."version", p.fst_dt
 --	select distinct p.patid , p.clmid , p.proc , p.proc_position , p.fst_dt 
 		into dev.am_hf_optd_procedure
-		from optum_dod.procedure p, dev.am_hf_optd_medical m
+		from optum_zip.procedure p, dev.am_hf_optd_medical m
 		where p.clmid = m.clmid
 			and p.patid  = m.patid; 
 -----------------------------------------------------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ drop table if exists dev.am_hf_optd_diagnostic;
 	SELECT distinct d.patid, d.pat_planid, d.clmid, diag, diag_position, d.icd_flag, d.loc_cd, poa, d.extract_ym, d."version", d.fst_dt
 	--select distinct d.patid , d.clmid , d.diag , d.diag_position , d.poa , d.fst_dt , d.extract_ym 
 		into dev.am_hf_optd_diagnostic
-		from optum_dod.diagnostic d , dev.am_hf_optd_medical m
+		from optum_zip.diagnostic d , dev.am_hf_optd_medical m
 		where d.clmid = m.clmid
 			and d.patid  = m.patid; 
  
@@ -84,7 +84,7 @@ drop table if exists dev.am_hf_optd_confinement;
 	--		c.ipstatus , c.los , c.pos , c.proc1 , c.proc2 , c.proc3 , c.proc4 , c.proc5 , c.std_cost , c.std_cost_yr ,
 	--		c.icu_ind , c.icu_surg_ind , c.maj_surg_ind , c.tos_cd 
 		into dev.am_hf_optd_confinement
-		from optum_dod.confinement c  
+		from optum_zip.confinement c  
 		inner join dev.am_hf_optd_members m on c.patid::text = m.member_id_src
 		where c.year in (2015, 2016, 2017, 2018, 2019);
 
@@ -100,7 +100,7 @@ drop table if exists dev.am_hf_optd_rx;
 --			r.pharm , r.prc_typ , r.quantity , r.rfl_nbr , r.spclt_ind , r.specclss , r.std_cost , r.std_cost_yr , 
 --			r.strength , r.extract_ym , r."version" 
 		into dev.am_hf_optd_rx	
-		from optum_dod.rx r 
+		from optum_zip.rx r 
 		inner join dev.am_hf_optd_members m on r.patid::text = m.member_id_src
 		where r.year in (2015, 2016, 2017, 2018, 2019);
 	
@@ -113,7 +113,7 @@ drop table if exists dev.am_hf_optd_lab_result;
 	--select distinct r.patid , r.abnl_cd , r.anlytseq , r.hi_nrml , r.loinc_cd , r.low_nrml , r.rslt_nbr , r.rslt_txt , 
 	--		r.rslt_unit_nm , r.fst_dt 
 		into dev.am_hf_optd_lab_result	
-		from optum_dod.lab_result r
+		from optum_zip.lab_result r
 		inner join dev.am_hf_optd_members m on r.patid::text = m.member_id_src
 		where r.year in (2015, 2016, 2017, 2018, 2019);
 		
@@ -127,7 +127,7 @@ drop table if exists dev.am_hf_optd_lu_ndc;
 --	select distinct r.brnd_nm , r.dosage_fm_desc , r.drg_strgth_desc , r.drg_strgth_nbr , r.drg_strgth_unit_desc ,
 --			r.drg_strgth_vol_nbr , r.drg_strgth_vol_unit_desc , r.gnrc_ind , r.gnrc_nbr , r.gnrc_nm , r.ndc 
 		into dev.am_hf_optd_lu_ndc	
-		from optum_dod.lu_ndc r	;
+		from optum_zip.lu_ndc r	;
 	
 --select count(*) from dev.am_hf_optd_lu_ndc;	
 -----------------------------------------------------------------------------------------------------------------------------			
@@ -137,7 +137,7 @@ drop table if exists dev.am_hf_optd_lu_diagnosis;
 		mdc_code, icd_ver_cd
 --	select distinct r.diag_cd , r.diag_desc , r.mdc_cd_desc , r.mdc_code , r.icd_ver_cd 
 		into dev.am_hf_optd_lu_diagnosis	
-		from optum_dod.lu_diagnosis r;
+		from optum_zip.lu_diagnosis r;
 	
 --select count(*) from dev.am_hf_optd_lu_ndc;			
 		
@@ -145,7 +145,7 @@ drop table if exists dev.am_hf_optd_lu_diagnosis;
 /* 
 	
 select d."year" , count(distinct y.member_id_src) as distinct_member_id_src_per_year
-	from optum_dod.diagnostic d , data_warehouse.member_enrollment_yearly y
+	from optum_zip.diagnostic d , data_warehouse.member_enrollment_yearly y
 	where d.patid::text = y.member_id_src 
 		and y.age_derived between 18 and 85
 		and diag in ('I501', 'I502', 'I504', 'I508', 'I509')

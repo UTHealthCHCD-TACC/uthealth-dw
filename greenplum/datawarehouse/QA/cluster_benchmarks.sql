@@ -36,7 +36,7 @@ select count(*) from truven.ccaeo;
 
 --old: X
 --new: 55.5 s
-analyze optum_dod.medical;
+analyze optum_zip.medical;
 
 --old: X
 --new: 6 s

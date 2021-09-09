@@ -26,7 +26,7 @@ select patid,
             when diag in ('F330','F331','F332','F333','F3340','F3341','F3342','F338','F339') then 'depression'
        end as cnd
   into dev.wc_dell_cohort_diags2
-from optum_dod.diagnostic d
+from optum_zip.diagnostic d
 where year = 2018
 and diag 
 in ('F3110','F3111','F3112','F3113','F312','F3130','F3131','F3132','F314','F315','F3160','F3161','F3162',
@@ -83,7 +83,7 @@ select
 select * from data_warehouse.member_enrollment_monthly where data_source = 'optd';
 
 
-select * from optum_dod.mbr_enroll mer 
+select * from optum_zip.mbr_enroll mer 
 
 
 update dev.wc_dell_med_study_table a set depression = 1 
@@ -385,7 +385,7 @@ where data_source = 'optd'
 insert into  dev.wc_dell_med_exclusions_test
 ---insert into  dev.wc_dell_med_exclusions
 select distinct uth_member_id, 'pos' as exclusion_rsn
-from optum_dod.confinement c 
+from optum_zip.confinement c 
   join data_warehouse.dim_uth_member_id b 
     on b.member_id_src = c.patid::text 
 where c.year = 2018 
@@ -399,7 +399,7 @@ select count(distinct uth_member_id) from dev.wc_dell_med_exclusions; _test;
     
 select  b.uth_member_id , min(a.race ) as rc
 into dev.wc_dm_race_temp
-from optum_dod.mbr_enroll_r a 
+from optum_zip.mbr_enroll_r a 
 join data_warehouse.dim_uth_member_id b 
   on b.member_id_src = a.patid::text 
 group by b.uth_member_id 
@@ -457,7 +457,7 @@ and age_derived between 21 and 64
 select count(patid) 
 from ( 
 select count(*) as rw, patid  
-from optum_dod.mbr_enroll_r a 
+from optum_zip.mbr_enroll_r a 
    join reference_tables.ref_month_year b 
      on b.start_of_month between a.eligeff and a.eligend 
     and b.year_int = 2018
@@ -473,7 +473,7 @@ where uth_member_id in (
 select uth_member_id 
 from data_warehouse.dim_uth_member_id 
 where data_source = 'optd'   
-and member_id_src::bigint not in ( select patid from optum_dod.mbr_enroll_r mer )
+and member_id_src::bigint not in ( select patid from optum_zip.mbr_enroll_r mer )
 ) 
 
 select * from data_warehouse.member_enrollment_yearly a 
@@ -483,11 +483,11 @@ select * from data_warehouse.member_enrollment_yearly a
   
   select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 102813129;
   
-  select count(distinct patid) from optum_dod.mbr_co_enroll mce where eligeff between '2018-01-02' and '2018-01-20';
+  select count(distinct patid) from optum_zip.mbr_co_enroll mce where eligeff between '2018-01-02' and '2018-01-20';
  
   select * from data_warehouse.dim_uth_member_id where data_source = 'optd' and member_id_src = '33003315584';
  
-  select * from optum_dod.mbr_co_enroll where patid = 33003315584
+  select * from optum_zip.mbr_co_enroll where patid = 33003315584
   
   
   select * from dev.wc_dell_med_exclusions where uth_member_id = 102813129

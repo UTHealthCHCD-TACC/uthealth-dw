@@ -16,7 +16,7 @@ GDR_CD char(1), GROUP_NBR char(20),
 HEALTH_EXCH char(1), LIS char(1), PRODUCT char(5), STATE char(2), YRDOB smallint, EXTRACT_YM int , VERSION numeric 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/dod_mbr_detail.txt'
+'gpfdist://c252-140:8801/zip5_mbr_detail.txt'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

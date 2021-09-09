@@ -78,7 +78,7 @@ create table dev.wc_optd_proc
 with(appendonly=true,orientation=column)
 as 
 	select patid::text as member_id_src, *
-	from optum_dod."procedure" 
+	from optum_zip."procedure" 
 distributed by (member_id_src);
 
 

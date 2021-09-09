@@ -20,7 +20,7 @@
 
 select count(*) from data_warehouse.dim_uth_member_id dumi where data_source = 'optd' 
 
-select count(distinct patid) from optum_dod.mbr_enroll_r mer 
+select count(distinct patid) from optum_zip.mbr_enroll_r mer 
 
 
 
@@ -39,11 +39,11 @@ select 'optd', b.year_int, b.month_year_id, a.uth_member_id,
        b.year_int - yrdob, case when yrdob = 0 then null else (yrdob::varchar || '-12-31')::date end as birth_dt, 
        case when death_ym is null then null else death_ym end as death_dt,  
        d.plan_type, bus, 1 as rx, b.year_int, r.race_cd 
-from optum_dod.mbr_enroll_r m
+from optum_zip.mbr_enroll_r m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.patid::text
    and a.data_source = 'optd'
-  left outer join optum_dod.mbrwdeath dth 
+  left outer join optum_zip.mbrwdeath dth 
     on dth.patid = m.patid 
   join reference_tables.ref_month_year b
  ---6/28/21 added logic to exclude enrollment records after death. note that this will cause some members to totally be excluded. i.e patid = 33020533586

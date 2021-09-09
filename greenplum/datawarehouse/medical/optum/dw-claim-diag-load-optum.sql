@@ -78,7 +78,7 @@ create table dev.wc_optd_diag
 with(appendonly=true,orientation=column)
 as 
 	select patid::text as member_id_src, *
-	from optum_dod.diagnostic d 
+	from optum_zip.diagnostic d 
 distributed by (member_id_src);
 
 

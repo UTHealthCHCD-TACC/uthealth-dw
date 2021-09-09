@@ -176,7 +176,7 @@ create table dev.wc_optd_rx
 with(appendonly=true,orientation=column)
 as
 	select patid::text as member_id_src, *
-	from optum_dod.rx
+	from optum_zip.rx
 distributed by (member_id_src);
 
 
@@ -294,7 +294,7 @@ select count(*), year
 from dev.wc_optd_rx_load group by year order by year;
 
 
-select count(*), year from optum_dod.rx group by year order by year;
+select count(*), year from optum_zip.rx group by year order by year;
 
 
 

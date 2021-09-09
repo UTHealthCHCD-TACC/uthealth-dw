@@ -1,4 +1,4 @@
-alter table reference_tables.ref_dod_crosswalk
+alter table reference_tables.ref_zip5_crosswalk
 	set schema data_warehouse
 	
 select distinct data_source from data_warehouse.dim_member_id_src limit 10

@@ -266,7 +266,7 @@ where  uth_member_id is null ;
     into dev.jw_ids_src
     from (
         select patid::text as patidsrc
-        from optum_dod.mbr_enroll_r
+        from optum_zip.mbr_enroll_r
 
         union all
 

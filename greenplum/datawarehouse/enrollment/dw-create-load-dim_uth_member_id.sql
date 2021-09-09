@@ -34,7 +34,7 @@ vacuum analyze data_warehouse.dim_uth_member_id;
 
 
 ---optd
-vacuum analyze optum_dod.mbr_enroll_r;
+vacuum analyze optum_zip.mbr_enroll_r;
 
 delete from data_warehouse.dim_uth_member_id where data_source = 'optz'
 
@@ -42,7 +42,7 @@ delete from data_warehouse.dim_uth_member_id where data_source = 'optz'
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.mbr_enroll_r 
+	from optum_zip.mbr_enroll_r 
 	 left outer join data_warehouse.dim_uth_member_id b 
 	              on b.data_source = 'optd'
 	             and b.member_id_src = patid::text
@@ -59,7 +59,7 @@ delete from data_warehouse.dim_uth_member_id mem
     using( 
 select a.uth_member_id
 from data_warehouse.dim_uth_member_id a 
-   left outer join optum_dod.mbr_enroll_r b 
+   left outer join optum_zip.mbr_enroll_r b 
      on a.member_id_src = b.patid::text 
 where a.data_source = 'optd' 
   and b.patid is null 
@@ -364,7 +364,7 @@ from cte_distinct_member
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
     select distinct patid as v_member_id
-    from optum_dod.rx
+    from optum_zip.rx
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'optd'
      and member_id_src = patid::text 

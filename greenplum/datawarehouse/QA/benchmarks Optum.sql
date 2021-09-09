@@ -41,12 +41,12 @@ order by year, bus
 select * from 
 (
 select count(distinct a.clmid),  sum(a.charge ) as chg, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'COM' as bus
-from optum_dod.medical a 
+from optum_zip.medical a 
 where patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'COM' and year = extract(year from a.fst_dt ) )
 group by extract(year from a.fst_dt )
 union 
 select count(distinct a.clmid),  sum(a.charge ) as chg, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'MCR' as bus
-from optum_dod.medical a 
+from optum_zip.medical a 
 where patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = extract(year from a.fst_dt ) )
 group by extract(year from a.fst_dt )
 ) x 
@@ -57,12 +57,12 @@ order by yr, bus
 select * 
 from ( 
 select count(distinct a.clmid) as clm , sum(a.std_cost) as alw ,  extract(year from a.fill_dt ) as yr , 'COM' as bus
-from optum_dod.rx a 
+from optum_zip.rx a 
 where a.patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'COM' and year = extract(year from a.fill_dt ) )
 group by  extract(year from a.fill_dt )
 union 
 select count(distinct a.clmid), sum(a.std_cost),  extract(year from a.fill_dt ), 'MCR'
-from optum_dod.rx a 
+from optum_zip.rx a 
 where a.patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = extract(year from a.fill_dt ) )
 group by  extract(year from a.fill_dt )
 ) X 
@@ -84,23 +84,23 @@ into dev.wc_bench_optz_pmpy
 from 
 (	--medical
 	select a.patid::text, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'COM' as bus
-	from optum_dod.medical a 
+	from optum_zip.medical a 
 	where patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'COM' and year = extract(year from a.fst_dt ) )
 	group by a.patid::text,extract(year from a.fst_dt )
 union 
 	select a.patid::text, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'MCR' as bus
-	from optum_dod.medical a 
+	from optum_zip.medical a 
 	where patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = extract(year from a.fst_dt ) )
 	group by a.patid::text,extract(year from a.fst_dt )
 union 
 	---rx
 	select a.patid::text, sum(a.std_cost) as alw ,  extract(year from a.fill_dt ) as yr , 'COM' as bus
-	from optum_dod.rx a 
+	from optum_zip.rx a 
 	where a.patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'COM' and year = extract(year from a.fill_dt ) )
 	group by  a.patid::text,extract(year from a.fill_dt )
 union 
 	select a.patid::text, sum(a.std_cost),  extract(year from a.fill_dt ), 'MCR'
-	from optum_dod.rx a 
+	from optum_zip.rx a 
 	where a.patid::text in ( select member_id_src from dev.wc_bench_optz_members where bus_cd = 'MCR' and year = extract(year from a.fill_dt ) )
 	group by a.patid::text, extract(year from a.fill_dt )
 ) inr 
@@ -126,12 +126,12 @@ order by yr, bus
 select * from 
 (
 select count(distinct a.clmid),  sum(a.charge ) as chg, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'COM' as bus
-from optum_dod.medical a 
+from optum_zip.medical a 
 where patid::text in ( select patid from dev.wc_bench_optz_pmpy where bus = 'COM' and yr = extract(year from a.fst_dt ) )
 group by extract(year from a.fst_dt )
 union 
 select count(distinct a.clmid),  sum(a.charge ) as chg, sum(a.std_cost ) as alw, extract(year from a.fst_dt ) as yr , 'MCR' as bus
-from optum_dod.medical a 
+from optum_zip.medical a 
 where patid::text in ( select patid from dev.wc_bench_optz_pmpy where bus = 'MCR' and yr = extract(year from a.fst_dt ) )
 group by extract(year from a.fst_dt )
 ) x 
@@ -142,12 +142,12 @@ order by yr, bus
 select * 
 from ( 
 select count(distinct a.clmid) as clm , sum(a.std_cost) as alw ,  extract(year from a.fill_dt ) as yr , 'COM' as bus
-from optum_dod.rx a 
+from optum_zip.rx a 
 where a.patid::text in ( select patid from dev.wc_bench_optz_pmpy where bus = 'COM' and yr = extract(year from a.fill_dt ) )
 group by  extract(year from a.fill_dt )
 union 
 select count(distinct a.clmid), sum(a.std_cost),  extract(year from a.fill_dt ), 'MCR'
-from optum_dod.rx a 
+from optum_zip.rx a 
 where a.patid::text in ( select patid from dev.wc_bench_optz_pmpy where bus = 'MCR' and yr = extract(year from a.fill_dt ) )
 group by  extract(year from a.fill_dt )
 ) X 
@@ -193,7 +193,7 @@ order by a.year, bus_cd, age_group
 ---RX 
 select a.year, bus_cd, age_group, 
        count(distinct a.clmid) as clm, sum(a.std_cost) as alw
-from optum_dod.rx a 
+from optum_zip.rx a 
    join dev.wc_bench_optz_members b 
      on b.member_id_src = a.patid::text 
     and b.year = extract(year from a.fill_dt )
@@ -218,7 +218,7 @@ order by year,gender_cd desc, bus_cd, age_group
 
 --inpatient
 select count(distinct conf_id), sum(std_cost) as alw, b.year, b.bus_cd
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
     on patid::text = member_id_src 
    and b.year = a.year 
@@ -229,7 +229,7 @@ from optum_dod.medical a
 
 --ER 
 select count(distinct patid::text||a.fst_dt::text), sum(std_cost) as alw, b.year, b.bus_cd
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
     on patid::text = member_id_src 
    and b.year = a.year 
@@ -260,7 +260,7 @@ drop table  dev.wc_optz_readmissions
 
 select patid, a.conf_id, b.year, b.age_group, b.bus_cd, b.gender_cd, min(a.fst_dt) as fst_dt
 into dev.wc_optz_readmissions
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
    on patid::text = member_id_src 
    and b.year = a.year 
@@ -284,7 +284,7 @@ select * from   dev.wc_bench_optz_pmpy
 
 --admissions
 select count(distinct conf_id), sum(std_cost) as alw, b.yr, b.bus
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_pmpy b 
    on b.patid = a.patid::text
    and b.yr = a.year 
@@ -295,7 +295,7 @@ from optum_dod.medical a
 
 ---ED Visits
  select count(distinct a.patid::text||a.fst_dt::text), sum(std_cost) as alw, b.yr, b.bus
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_pmpy b 
    on b.patid = a.patid::text
    and b.yr = a.year 
@@ -308,7 +308,7 @@ from optum_dod.medical a
 ---Readmission
 select a.patid, a.conf_id, b.yr, b.bus, min(a.fst_dt) as fst_dt
 into dev.wc_optz_readmissions_hcc
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_pmpy b 
    on b.patid = a.patid::text
    and b.yr = a.year 
@@ -332,7 +332,7 @@ order by yr, bus
 
 --inpatient
 select count(distinct conf_id), sum(std_cost) as alw, b.year, b.bus_cd, b.age_group 
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
     on patid::text = member_id_src 
    and b.year = a.year 
@@ -343,7 +343,7 @@ from optum_dod.medical a
 
 --ED visits
  select count(distinct patid::text||a.fst_dt::text), sum(std_cost) as alw, b.year, b.bus_cd, b.age_group 
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
     on patid::text = member_id_src 
    and b.year = a.year 
@@ -369,7 +369,7 @@ order by year, bus_cd , age_group
 --run once for M and once for F 
 --inpatient
 select count(distinct conf_id), sum(std_cost) as alw, b.year, b.bus_cd, b.age_group 
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
      on patid::text = member_id_src 
    and b.year = a.year 
@@ -381,7 +381,7 @@ from optum_dod.medical a
 
 --ED visits
  select count(distinct patid::text||a.fst_dt::text), sum(std_cost) as alw, b.year, b.bus_cd, b.age_group 
-from optum_dod.medical a 
+from optum_zip.medical a 
  join dev.wc_bench_optz_members b 
     on patid::text = member_id_src 
    and b.year = a.year 

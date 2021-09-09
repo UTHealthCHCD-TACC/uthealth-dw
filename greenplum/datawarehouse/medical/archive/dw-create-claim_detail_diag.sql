@@ -27,7 +27,7 @@ alter sequence dw_qa.claim_detail_diag_id_seq cache 100;
 insert into data_warehouse.claim_detail(claim_id, provider_id, seq_num, proc_id, proc, cost, paid, service_date, paid_date, 
 billing_provider_id_src, service_provider_id_src)
 select 
-from optum_dod.medical;
+from optum_zip.medical;
 
 select count(*)
 from data_warehouse.claim_detail;

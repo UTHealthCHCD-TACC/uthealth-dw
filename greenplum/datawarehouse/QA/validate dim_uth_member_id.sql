@@ -10,7 +10,7 @@ select schemaname, relname,
        vacuum_count, autovacuum_count, 
        analyze_count, autoanalyze_count
 from pg_stat_user_tables
-where schemaname in ('data_warehouse','conditions','dw_qa','reference_tables','medicare_national','medicare_texas','optum_dod','optum_zip','truven')
+where schemaname in ('data_warehouse','conditions','dw_qa','reference_tables','medicare_national','medicare_texas','optum_zip','optum_zip','truven')
 order by relname;
 
 
@@ -46,9 +46,9 @@ select count(distinct bene_id), 'mcrt' as ds  from medicare_texas.mbsf_abcd_summ
 union 
 select count(distinct bene_id), 'mcrn' from medicare_national.mbsf_abcd_summary
 union 
-select count(distinct patid), 'optd' from optum_dod.mbr_enroll_r 
+select count(distinct patid), 'optd' from optum_zip.mbr_enroll_r 
 union
-select count(distinct patid), 'optz' from optum_dod.mbr_enroll
+select count(distinct patid), 'optz' from optum_zip.mbr_enroll
 union
 select count(distinct enrolid), 'truv' from truven.ccaet
 union 
@@ -66,7 +66,7 @@ order by data_source , "year"
 
 
 select count(distinct r.clmid), year 
-from optum_dod.rx r 
+from optum_zip.rx r 
 group by r."year" 
 order by r."year" 
 ;
@@ -95,7 +95,7 @@ order by year
 
 
 select * 
-from optum_dod.mbr_enroll_r 
+from optum_zip.mbr_enroll_r 
 where patid = 33003327108
 ;
 

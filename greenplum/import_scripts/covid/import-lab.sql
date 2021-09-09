@@ -40,6 +40,8 @@ limit 1000;
 insert into opt_20210624.lab
 select * from ext_covid_lab;
 
+select count(*)
+from opt_20210624.lab;
 
 --Scratch
 select l.test_name, count(*)

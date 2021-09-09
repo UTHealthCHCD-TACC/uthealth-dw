@@ -171,7 +171,7 @@ where c.uth_rx_claim_id is null
 with optd_cte as (  
    select distinct on ( clmid )
    clmid, patid, year
-   from optum_dod.rx
+   from optum_zip.rx
    )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -203,10 +203,10 @@ select count(*)  from data_warehouse.dim_uth_rx_claim_id where data_source = 'op
 ;
 
 select count(distinct clmid)
-from optum_dod.rx where patid is null
+from optum_zip.rx where patid is null
 ;
 
-select count(*), count(distinct clmid) from optum_dod.rx;
+select count(*), count(distinct clmid) from optum_zip.rx;
 
 --optum zip 
 with optz_cte as (  

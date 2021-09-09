@@ -37,48 +37,48 @@ select a.*
 from employee_table a
 where salary > (select avg(salary) from employee_table b where b.dept_no=a.dept_no);
 
-create table sql_class.optum_dod_diag_row_zlib (like dev2016.optum_dod_diagnostic)
+create table sql_class.optum_zip_diag_row_zlib (like dev2016.optum_zip_diagnostic)
 with (appendonly =true, orientation=row, compresstype=zlib, compresslevel=5);
-insert into sql_class.optum_dod_diag_row_zlib
-select * from dev2016.optum_dod_diagnostic;
+insert into sql_class.optum_zip_diag_row_zlib
+select * from dev2016.optum_zip_diagnostic;
 
-create table sql_class.optum_dod_diag_col_zlibmin (like dev2016.optum_dod_diagnostic)
+create table sql_class.optum_zip_diag_col_zlibmin (like dev2016.optum_zip_diagnostic)
 with (appendonly =true, orientation=column, compresstype=zlib, compresslevel=1);
-insert into sql_class.optum_dod_diag_col_zlibmin
-select * from dev2016.optum_dod_diagnostic;
+insert into sql_class.optum_zip_diag_col_zlibmin
+select * from dev2016.optum_zip_diagnostic;
 
-select pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_row_nocomp')) as row_nocomp,
-pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_col_nocomp')) as col_nocop,
-pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_row_zlib')) as row_zlib5,
- pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_col_zlib')) as col_zlib5,
-   pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_col_zlibmin')) as col_zlib1,
-  pg_size_pretty(pg_relation_size('sql_class.optum_dod_diag_col_zlibmax')) as col_zlib9
+select pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_row_nocomp')) as row_nocomp,
+pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_col_nocomp')) as col_nocop,
+pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_row_zlib')) as row_zlib5,
+ pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_col_zlib')) as col_zlib5,
+   pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_col_zlibmin')) as col_zlib1,
+  pg_size_pretty(pg_relation_size('sql_class.optum_zip_diag_col_zlibmax')) as col_zlib9
  
-  select get_ao_compression_ratio('sql_class.optum_dod_diag_col_zlibmin'); 
-  select get_ao_compression_ratio('sql_class.optum_dod_diag_col_zlibmax'); 
+  select get_ao_compression_ratio('sql_class.optum_zip_diag_col_zlibmin'); 
+  select get_ao_compression_ratio('sql_class.optum_zip_diag_col_zlibmax'); 
  
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_row_nocomp
+ from sql_class.optum_zip_diag_row_nocomp
  group by 1;
 
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_col_nocomp
+ from sql_class.optum_zip_diag_col_nocomp
  group by 1;
 
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_row_zlib
+ from sql_class.optum_zip_diag_row_zlib
  group by 1;
 
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_col_zlib
+ from sql_class.optum_zip_diag_col_zlib
  group by 1;
 
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_col_zlibmin
+ from sql_class.optum_zip_diag_col_zlibmin
  group by 1;
 
  select icd_flag, count(*)
- from sql_class.optum_dod_diag_col_zlibmax
+ from sql_class.optum_zip_diag_col_zlibmax
  group by 1;
 
 

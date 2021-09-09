@@ -1,7 +1,7 @@
 /* 
   select m.conf_id, m.clmid , m.patid , m."year", duci.uth_claim_id, duci.data_source, duci.uth_member_id, 
 		duai.uth_admission_id, duai.admission_id_src 
-	from optum_dod.medical m 
+	from optum_zip.medical m 
 	left join data_warehouse.dim_uth_claim_id duci on duci.claim_id_src = m.clmid														
 														and duci.data_year = m."year" 
 														and duci.data_source = 'optd'	
@@ -79,7 +79,7 @@ select distinct ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id, ch.f
 												   
  select m.conf_id, m.clmid , m.patid , m."year", duci.uth_claim_id, duci.data_source, duci.uth_member_id, 
 		duai.uth_admission_id, duai.admission_id_src 
-	from optum_dod.medical m 
+	from optum_zip.medical m 
 	left join data_warehouse.dim_uth_claim_id duci on duci.claim_id_src = m.clmid														
 														and duci.data_year = m."year" 
 														and duci.data_source = 'optd'	
@@ -94,7 +94,7 @@ select distinct ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id, ch.f
 	
 	--same claim id for different patients; different file names and different years
 	select patid, clmid, year, conf_id 
-		from optum_dod.medical m 
+		from optum_zip.medical m 
 		where conf_id is not null
 		--clmid = '202667093'
 	    --	and year = 2010
@@ -108,7 +108,7 @@ select distinct ch.data_source, ch.year, ch.uth_claim_id, ch.uth_member_id, ch.f
 		
 		select uth_admission_id 
 			from data_warehouse.dim_uth_admission_id duai 
-			inner join optum_dod.medical m on m.conf_id = duai.admission_id_src 
+			inner join optum_zip.medical m on m.conf_id = duai.admission_id_src 
 			where cast(m.patid as text) = ch.member_id_src 				 
 				and m.clmid = ch.claim_id_src 
 				and m.year = ch.data_year 

@@ -23,7 +23,7 @@ FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
 -- Test
 /*
-select count(*)
+select *
 from ext_covid_diag
 limit 1000;
 */
@@ -32,6 +32,8 @@ insert into opt_20210624.diag
 select * from ext_covid_diag;
 
 analyze opt_20210624.diag;
+
+select count(*) from opt_20210624.diag;
 
 --Scratch
 select DIAGNOSIS_CD_TYPE, count(*), min(DIAG_DATE), max(DIAG_DATE), count(distinct ptid) as ptid_cnt

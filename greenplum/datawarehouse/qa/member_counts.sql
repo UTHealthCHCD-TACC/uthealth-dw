@@ -38,7 +38,7 @@ UNION
 select 'Optum DOD' as "source", import."year", import."import_count", dw."dw_count"--, import."import_count" - dw."dw_count" as "difference"
 from (
 	select count(m.patid) as "import_count", extract(year from generate_series(m.eligeff, m.eligend, interval '1 year')) as "year"
-	from optum_dod.mbr_enroll_r m 
+	from optum_zip.mbr_enroll_r m 
 	group by "year") import
 join (
 	select count(cey.uth_member_id) as "dw_count", cey."year" 

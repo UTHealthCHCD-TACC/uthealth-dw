@@ -1,4 +1,19 @@
---Medical
+/* 
+******************************************************************************************************
+ *  This script loads optum_zip/zip.confinement table
+ *  refresh table is provided in most recent quarters 
+ *  delete quarters provided in refresh, then load
+ *
+ * data should be staged in a parent folder with the year matching the filename year, a manual step
+ * Examples: staging/optum_zip_refresh/2018/zip5_proc2018q1.txt.gz, staging/optum_zip_refresh/2019/zip5_proc2019q1.txt.gz
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  ||8/25/2021 || comments added
+ * ******************************************************************************************************
+ */
+
+/* Original Create
 drop table optum_zip.confinement;
 create table optum_zip.confinement (
 year SMALLINT, file varchar,
@@ -11,7 +26,7 @@ ICU_IND text, ICU_SURG_IND text, MAJ_SURG_IND text, MATERNITY_IND text, NEWBORN_
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (patid);
-
+*/
 -- NOTE: Load each year 1 by one updating the gpfdist string and hard coded YEAR value in insert statement.
 
 /*
@@ -31,7 +46,7 @@ PROV numeric, STD_COST numeric, STD_COST_YR smallint, TOS_CD char(13), EXTRACT_Y
 ICU_IND text, ICU_SURG_IND text, MAJ_SURG_IND text, MATERNITY_IND text, NEWBORN_IND text, TOS text
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/OPT_ZIP_April2021/\*/zip5_c2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/\*/zip5_c2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -55,6 +70,12 @@ group by 1
 order by 1;
 
 --Refresh
+select file, count(*)
+from optum_zip.confinement 
+where file >= 'zip5_c2018q1%'
+group by 1
+order by 1;
+
 delete
 from optum_zip.confinement 
-where year > 2017 or file like '%2017q4%';
+where file >= 'zip5_c2018q1%';

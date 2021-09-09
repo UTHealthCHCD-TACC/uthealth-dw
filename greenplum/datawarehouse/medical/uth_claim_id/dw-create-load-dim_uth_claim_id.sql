@@ -92,7 +92,7 @@ vacuum analyze data_warehouse.dim_uth_claim_id;
 --Optum dod 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
 select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_dod.medical a
+from optum_zip.medical a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'optd'
    and b.member_id_src = a.patid::text 
@@ -110,7 +110,7 @@ delete from data_warehouse.dim_uth_claim_id clm
     using( 
 select a.uth_claim_id
 from data_warehouse.dim_uth_claim_id a 
-   left outer join optum_dod.medical b 
+   left outer join optum_zip.medical b 
      on a.member_id_src = b.patid::text 
     and a.claim_id_src = b.clmid::text 
 where a.data_source = 'optd' 
@@ -458,7 +458,7 @@ select count(distinct msclmid::text || enrolid::text || year::text ) from truven
 select count(distinct msclmid) from truven.ccaes;
 
 
-select count(distinct a.clmid ), year from optum_dod.medical a group by year;
+select count(distinct a.clmid ), year from optum_zip.medical a group by year;
 
 
 select count(uth_member_id), data_source

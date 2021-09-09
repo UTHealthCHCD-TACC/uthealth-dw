@@ -11,23 +11,23 @@ delete from dw_qa.admission_header where data_source like 'opt%';
 
 --
 drop table dev.optz_conf;
-create table dev.optz_conf (like optum_dod.confinement)
+create table dev.optz_conf (like optum_zip.confinement)
 WITH (appendonly=true, orientation=column)
 distributed by (patid);
 
 insert into dev.optz_conf
-select * from optum_dod.confinement;
+select * from optum_zip.confinement;
 
 analyze dev.optz_conf;
 
 --
 drop table dev.optz_med;
-create table dev.optz_med (like optum_dod.medical)
+create table dev.optz_med (like optum_zip.medical)
 WITH (appendonly=true, orientation=column)
 distributed by (patid);
 
 insert into dev.optz_med
-select * from optum_dod.medical;
+select * from optum_zip.medical;
 
 analyze dev.optz_med;
 
@@ -68,7 +68,7 @@ group by 1, 2
 order by 1, 2;
 
 select count(*), count(distinct conf_id)
-from dev2016.optum_dod_confinement;
+from dev2016.optum_zip_confinement;
 
 
 create table dev.optum_conf_dupe
@@ -91,13 +91,13 @@ select count(*), count(distinct admission_id_src)
 from data_warehouse.dim_uth_admission_id;
 
 select *
-from dev2016.optum_dod_confinement
+from dev2016.optum_zip_confinement
 limit 10;
 
-select distinct dstatus from dev2016.optum_dod_confinement odc2 ;
+select distinct dstatus from dev2016.optum_zip_confinement odc2 ;
 
 select conf_id, count(*)
-from dev2016.optum_dod_confinement odc 
+from dev2016.optum_zip_confinement odc 
 where conf_id is not null
 group by 1
 having count(*)=1;
@@ -110,7 +110,7 @@ from reference_tables.ref_admit_source;
 
 select * from dw_qa.admission_header where uth_admission_id = 132689515;
 
-select * from optum_dod.confinement where conf_id = 'L6Z4K4TK4OK4L';
+select * from optum_zip.confinement where conf_id = 'L6Z4K4TK4OK4L';
 
 select * from data_warehouse.dim_uth_admission_id where uth_admission_id = 132689515; 
 

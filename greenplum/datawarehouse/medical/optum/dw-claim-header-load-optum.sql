@@ -23,7 +23,7 @@ distributed by (member_id_src);
 drop table if exists dev.wc_optd_medical;
 create table dev.wc_optd_medical 
 with(appendonly=true,orientation=column,compresstype=zlib)
-as select * from optum_dod.medical
+as select * from optum_zip.medical
 distributed by (patid);
 
 vacuum analyze dev.wc_optd_medical;
@@ -79,7 +79,7 @@ insert into dev.wc_claim_header_optd(
 	a.year as fiscal, 
 	a.std_cost_yr::int as cost_year,
 	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-from dev.wc_optd_medical a  --*optum_dod.medical a
+from dev.wc_optd_medical a  --*optum_zip.medical a
     join dev.wc_optd_uth_claim b --data_warehouse.dim_uth_claim_id b 
 		on a.patid::text = b.member_id_src 
 		and a.clmid = b.claim_id_src
