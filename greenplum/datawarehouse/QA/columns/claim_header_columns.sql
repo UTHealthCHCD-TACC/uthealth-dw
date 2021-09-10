@@ -370,8 +370,9 @@ from (
 ---------------------------------	
 -----uth_admission_id_src------------
 ---------------------------------
-delete from qa_reporting.claim_header_column_checks where test_var = 'admission_id_src';
-select * from qa_reporting.claim_header_column_checks where test_var = 'admission_id_src';
+   
+--delete from qa_reporting.claim_header_column_checks where test_var = 'admission_id_src';
+--select * from qa_reporting.claim_header_column_checks where test_var = 'admission_id_src';
 
 with ut_admission_id_table_src
 as (
@@ -417,8 +418,7 @@ from (
        group by data_source, year
     ) a;      
    
-   select count(*) from data_warehouse.claim_header where admission_id_src is not null; --11049106360
-   --232391865
+   
    
 ------------------------------------
 --total_charge_amount
@@ -949,6 +949,7 @@ from (
 ------------------------------------
 --------cost factor year--------------
 ------------------------------------
+--delete from qa_reporting.claim_header_column_checks where test_var = 'cost_factor_year';
 
 
 insert into qa_reporting.claim_header_column_checks (
@@ -971,12 +972,13 @@ select 'cost_factor_year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when cost_factor_year between 2007 and 2020
+				when (cost_factor_year between 2007 and 2020 and cost_factor_year is not null)
+				or cost_factor_year is null
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when cost_factor_year not between 2007 and 2020
-						or cost_factor_year is null
+					when (cost_factor_year not between 2007 and 2020
+						and cost_factor_year is not null)
 						then 1
 					end), 0) as invalid_values,
 		year,

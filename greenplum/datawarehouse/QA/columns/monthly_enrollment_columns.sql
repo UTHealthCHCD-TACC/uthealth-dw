@@ -62,8 +62,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -103,8 +102,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -144,8 +142,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -161,7 +158,10 @@ from (
 -------------------------check 1: in dim table	
 with ut_id_table
 as (
-    select a.uth_member_id, a."year", a.data_source 
+    select a.uth_member_id, 
+    				a."year", 
+    				a.data_source, 
+    				b.uth_member_id as dim_id
     from data_warehouse.member_enrollment_monthly a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
@@ -185,18 +185,17 @@ select 'uth_member_id' as test_var,
     'validate in data_warehouse.dim_uth_member_id' as note
 from (
     select sum(case
-                when uth_member_id is not null
+                when dim_id is not null
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when uth_member_id is null
+                    when dim_id is null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
     from ut_id_table
-    group by 4,
-        3
+    group by data_source, year
     ) a;
 
 
@@ -251,7 +250,7 @@ drop table if exists dev.qa_temp_ids_src;
     
 with ut_id_table
 as (
-    select a.uth_member_id, a."year", a.data_source, b.member_id_src
+    select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
     from data_warehouse.member_enrollment_monthly a
     join data_warehouse.dim_uth_member_id b 
         on a.uth_member_id = b.uth_member_id
@@ -278,18 +277,17 @@ select 'uth_member_id' as test_var,
     'validate in source tables' as note
 from (
     select sum(case
-                when uth_member_id is not null
+                when dim_id is not null
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when uth_member_id is null
+                    when dim_id is null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
     from ut_id_table
-    group by 4,
-        3
+group by data_source, year
     ) a;
 
 
@@ -329,8 +327,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+group by data_source, year
 	) a;
 
 	
@@ -370,8 +367,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+group by data_source, year
 	) a;
 
 
@@ -396,7 +392,7 @@ drop table if exists dev.qa_temp_all_states;
 		union all
 
 		select state as state
-		from optum_zip.mbr_enroll_r
+		from optum_dod.mbr_enroll_r
 
 		union all
 
@@ -412,7 +408,7 @@ drop table if exists dev.qa_temp_all_states;
 		
 with state_table
 as (
-	select a.*
+	select a.*, b.state as state_check
 	from data_warehouse.member_enrollment_monthly a
 	left join dev.qa_temp_all_states b on a.state = b.state
 	)
@@ -436,18 +432,17 @@ select 'state' as test_var,
 	'' as note
 from (
 	select sum(case
-				when state is not null
+				when state_check is not null
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when state is null
+					when state_check is null
 						then 1
 					end), 0) as invalidvalues,
 		year,
 		data_source
 	from state_table
-	group by 4,
-		3
+group by data_source, year
 	) a;
 
 
@@ -488,8 +483,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'mdcd', 'optz', 'mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 --------zip5---------
@@ -525,8 +519,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('truv', 'optd')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -566,8 +559,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'truv', 'mdcd', 'optz', 'mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 --------zip3-----optd----
@@ -603,8 +595,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source = 'optd'
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -647,8 +638,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -691,8 +681,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -733,8 +722,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'mcrt', 'optd')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -771,8 +759,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('optz', 'mdcd', 'truv')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -813,8 +800,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('truv', 'optz', 'optd')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 	
 
@@ -851,8 +837,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 --------plan_type------mdcd----
@@ -887,8 +872,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mdcd')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -931,8 +915,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	--where data_source in ('mcrn','mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -973,8 +956,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source = 'truv'
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 ------------------------------------
@@ -1009,8 +991,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'optd', 'mdcd', 'optz', 'mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -1058,8 +1039,7 @@ from (
         year,
         data_source
     from data_warehouse.member_enrollment_monthly
-    group by 4,
-        3
+    group by data_source, year
     ) a;	
 	
 	
@@ -1115,8 +1095,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -1156,8 +1135,7 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 
 
@@ -1198,8 +1176,7 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('mcrn', 'optd', 'mdcd', 'mcrt')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 	
 	
@@ -1235,12 +1212,11 @@ from (
 		data_source
 	from data_warehouse.member_enrollment_monthly
 	where data_source in ('optz', 'truv')
-	group by 4,
-		3
+    group by data_source, year
 	) a;
 	
 	-- cleanup
 
-
+/*
 drop table if exists dev.qa_temp_all_states;
-drop table if exists dev.qa_temp_ids_src;
+drop table if exists dev.qa_temp_ids_src;*/

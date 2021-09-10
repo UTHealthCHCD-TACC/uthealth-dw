@@ -20,9 +20,9 @@ quarantine incorrect values into one table with flag for that variable
 --- quarantine table
 
 
-drop table if exists qa_reporting.claim_header_quarantine;
+drop table if exists qa_reporting.monthly_enroll_col_quarantine;
 
-create table qa_reporting.claim_header_quarantine 
+create table qa_reporting.monthly_enroll_col_quarantine 
 with(appendonly = true, orientation = column, compresstype = zlib)
 as
 select *
@@ -35,10 +35,10 @@ distributed by (uth_member_id);
 --------data source---------
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column data_source_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -88,10 +88,10 @@ where  data_source not in ( 'mcrt', 'optz', 'mdcd', 'mcrn',
 ------------------------------------
 --------year--------------
 ------------------------------------
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column year_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -142,10 +142,10 @@ where  year not between 2007 and 2020
 ------------------------------------
 --------month_year_id--------------
 ------------------------------------
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column month_year_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -194,22 +194,23 @@ where  month_year_id not between 200701 and 202012
 
     
     
-    
 ---------------------------------   
 -----uth_member_id---------------
 ---------------------------------
     
 -------------------------check 1: in dim table  
-alter table qa_reporting.claim_header_quarantine add column id_not_in_dim int;
+alter table qa_reporting.monthly_enroll_col_quarantine add column id_not_in_dim int;
 
-with ut_id_table as 
-( 
-          select    a.* 
-          from      data_warehouse.member_enrollment_monthly a 
-          left join data_warehouse.dim_uth_member_id b 
-          on        a.uth_member_id = b.uth_member_id 
-          ) 
-insert into qa_reporting.claim_header_quarantine 
+with ut_id_table
+as (
+    select a.uth_member_id, 
+    				a."year", 
+    				a.data_source, 
+    				b.uth_member_id as dim_id
+    from data_warehouse.member_enrollment_monthly a
+    left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
+    )
+insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
                         "year", 
@@ -255,7 +256,7 @@ select data_source,
        race_cd, 
        1 as id_not_in_dim 
 from   ut_id_table 
-where  uth_member_id is null ;  
+where  dim_id is null ;  
 
 ------------check 2 in src table
 
@@ -307,18 +308,18 @@ where  uth_member_id is null ;
     
     */
 
-alter table qa_reporting.claim_header_quarantine add column id_not_in_source int;
+alter table qa_reporting.monthly_enroll_col_quarantine add column id_not_in_source int;
 
 with ut_id_table as 
 ( 
-                select          a.* 
-                from            data_warehouse.member_enrollment_monthly a 
-                join            data_warehouse.dim_uth_member_id b 
-                on              a.uth_member_id = b.uth_member_id 
-                left outer join dev.jw_ids_src c 
-                on              b.member_id_src = c.patidsrc 
+    select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
+    from data_warehouse.member_enrollment_monthly a
+    join data_warehouse.dim_uth_member_id b 
+        on a.uth_member_id = b.uth_member_id
+    left outer join dev.qa_temp_ids_src c 
+        on b.member_id_src = c.patidsrc
 ) 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
                         "year", 
@@ -364,16 +365,16 @@ select data_source,
        race_cd, 
        1 as id_not_in_source 
 from   ut_id_table 
-where  uth_member_id is null ;  
+where  dim_id is null ;  
 
 ------------------------------------
 --------consecutive enrolled months---------change max range to # of years times 12 when new year added -----
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column consecutive_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -425,10 +426,10 @@ where  consecutive_enrolled_months not between 0 and 168
 --------gender_cd--------------
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column gender_cd_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -478,13 +479,15 @@ where  gender_cd not in ( 'M', 'F', 'U' )
 -----------------------------------
 -----state
 ------------------------------------
-alter table qa_reporting.claim_header_quarantine add column state_flag int;with state_table as 
+alter table qa_reporting.monthly_enroll_col_quarantine add column state_flag int;
+
+with state_table as 
 ( 
-          select    a.* 
-          from      data_warehouse.member_enrollment_monthly a 
-          left join dev.jw_all_states b 
-          on        a.state = b.state ) 
-insert into qa_reporting.claim_header_quarantine 
+	select a.*, b.state as state_check
+	from data_warehouse.member_enrollment_monthly a
+	left join dev.qa_temp_all_states b on a.state = b.state
+          ) 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
                         "year", 
@@ -530,7 +533,7 @@ select data_source,
        race_cd, 
        1 as state_flag 
 from   data_warehouse.member_enrollment_monthly 
-where  state is null ;  
+where  state_check is null ;  
 
 
 
@@ -544,10 +547,10 @@ where  state is null ;
 
 --------zip5---------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column zip5_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -597,7 +600,7 @@ where  ( zip5 !~ '^\d{5}$'
 
 --------zip5---------
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -649,10 +652,10 @@ where  zip5 is not null
 -----zip3
 ------------------------------------
    
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column zip3_flag INT; 
   
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -703,7 +706,7 @@ where   zip3 !~ '^\d{3}$'
 --------zip3-----optd----
 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -758,10 +761,10 @@ where  zip3 is not null
 
 
 --------age_derived----------
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column age_derived_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -812,13 +815,13 @@ where  age_derived not between 0 and 150
 -----------------------------------
 -----dob_derived
 ------------------------------------
-select * from qa_reporting.claim_header_quarantine where age_derived_flag = 1;
+select * from qa_reporting.monthly_enroll_col_quarantine where age_derived_flag = 1;
 
 --------dob_derived----------
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column dob_derived_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -873,10 +876,10 @@ where  dob_derived not between '1800-01-01' and '2050-01-01'
 
 --------death_date------mcrt mcrn optd----
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column death_date_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -927,7 +930,7 @@ where  death_date not between '1800-01-01' and '2050-01-01'
 --------death_date------mcrt mcrn optd----
    
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -979,12 +982,12 @@ where  death_date not between '1800-01-01' and '2050-01-01'
 -----plan_type
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column plan_type_flag INT; 
   
 
 --------plan_type------truv optz optd---- 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1036,12 +1039,12 @@ where  (plan_type not in ( 'ALL', 'EPO', 'GPO', 'HMO',
         or plan_type is null )
            and data_source in ( 'truv', 'optz', 'optd' );   
 
-select data_source, count() from qa_reporting.claim_header_quarantine where plan_type_flag = 1 group by data_source ;
+select data_source, count() from qa_reporting.monthly_enroll_col_quarantine where plan_type_flag = 1 group by data_source ;
 
 
 --------plan_type------mcrn mcrt---
        
-  insert into qa_reporting.claim_header_quarantine 
+  insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1092,7 +1095,7 @@ where   ( plan_type not in ( 'AB', 'B', 'A', 'AB',
 
 --------plan_type------mdcd----
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1145,10 +1148,10 @@ where  (plan_type is not null
 -----bus_cd
 ------------------------------------
    
-   alter table qa_reporting.claim_header_quarantine 
+   alter table qa_reporting.monthly_enroll_col_quarantine 
   add column bus_cd_flag INT; 
 
- insert into qa_reporting.claim_header_quarantine 
+ insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1202,14 +1205,14 @@ where  bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD')
 ------------------------------------
 
 
-alter table qa_reporting.claim_header_quarantine
+alter table qa_reporting.monthly_enroll_col_quarantine
 add column employee_status_flag int;
 
                 
                 
 -------------truven-----------------------
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
                         "year", 
@@ -1263,7 +1266,7 @@ and  data_source = 'truv' ;
 ------------------------------------
 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1322,10 +1325,10 @@ where  employee_status is not null
 -----row_identifier
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column row_identifier_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1390,10 +1393,10 @@ where  Pg_typeof(row_identifier) :: text not like 'bigint'
 -----rx_coverage
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine 
+alter table qa_reporting.monthly_enroll_col_quarantine 
   add column rx_coverage_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1445,10 +1448,10 @@ where  rx_coverage not between 0 and 1
 -----fiscal_year
 ------------------------------------
 
-  alter table qa_reporting.claim_header_quarantine 
+  alter table qa_reporting.monthly_enroll_col_quarantine 
   add column fiscal_year_flag INT; 
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1500,9 +1503,9 @@ where  fiscal_year not between 2007 and 2020
 -----race_cd
 ------------------------------------
 
-alter table qa_reporting.claim_header_quarantine add column race_cd_flag int;
+alter table qa_reporting.monthly_enroll_col_quarantine add column race_cd_flag int;
 
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
                         "year", 
@@ -1558,7 +1561,7 @@ and    data_source in ('mcrn',
 
 ------optz--------truv----------
                    
-insert into qa_reporting.claim_header_quarantine 
+insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
              month_year_id, 
@@ -1605,7 +1608,7 @@ from   data_warehouse.member_enrollment_monthly
 where  race_cd is not null 
        and data_source in ( 'optz', 'truv' );   
        
-   vacuum analyze qa_reporting.claim_header_quarantine;
+   vacuum analyze qa_reporting.monthly_enroll_col_quarantine;
    
    
    
@@ -1614,26 +1617,26 @@ where  race_cd is not null
    
 /*
 
-select * from qa_reporting.claim_header_quarantine where data_source_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where month_year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where id_not_in_dim= 1 ;
-select * from qa_reporting.claim_header_quarantine where id_not_in_source= 1 ;
-select * from qa_reporting.claim_header_quarantine where consecutive_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where gender_cd_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where state_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where zip5_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where zip3_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where age_derived_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where dob_derived_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where death_date_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where plan_type_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where bus_cd_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where employee_status_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where row_identifier_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where rx_coverage_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where fiscal_year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where race_cd_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where data_source_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where year_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where month_year_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where id_not_in_dim= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where id_not_in_source= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where consecutive_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where gender_cd_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where state_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where zip5_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where zip3_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where age_derived_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where dob_derived_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where death_date_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where plan_type_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where bus_cd_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where employee_status_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where row_identifier_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where rx_coverage_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where fiscal_year_flag= 1 ;
+select * from qa_reporting.monthly_enroll_col_quarantine where race_cd_flag= 1 ;
 
 */
 
