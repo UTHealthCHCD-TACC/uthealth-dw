@@ -40,8 +40,6 @@ grant uthealth_analyst to ctruong;
 
 grant uthealth_analyst to jharri66;
 
-grant uthealth_analyst to jwozny;
-
 grant uthealth_analyst to jfu2;
 
 grant uthealth_analyst to smadhuri;
@@ -115,7 +113,7 @@ alter default privileges in schema reference_tables grant select on tables to gr
 
 
 /*
- * uthealth_dev Role
+ * uthealth_dev role
  */
 
 -- uthealth_dev role definition
@@ -131,6 +129,7 @@ grant connect on database uthealth to uthealth_dev;
 grant uthealth_analyst to uthealth_dev;
 
 grant uthealth_dev to jwozny;
+
 
 --***********************************************************************************************************
 
@@ -174,6 +173,8 @@ grant connect on database uthealth to group uthealth_admin;
 grant uthealth_analyst to uthealth_admin;
 
 grant uthealth_dev to uthealth_admin;
+
+grant uthealth_admin to wcough; 
 
 --******************************************************************************************
 
