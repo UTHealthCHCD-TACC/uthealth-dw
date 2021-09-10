@@ -73,7 +73,7 @@ from (
 -- causes tables to be a bit crazy will look into later talk to lopita
 
 
-insert into dev.claim_detail_column_checks (
+/*insert into dev.claim_detail_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -82,7 +82,7 @@ insert into dev.claim_detail_column_checks (
     "year",
     data_source,
     note
-    )
+    )*/
 select 'year' as test_var,
     validvalues,
     invalidvalues,
@@ -680,7 +680,7 @@ from (
 --cob
 ------------------------------------
 
-
+select cob from data_warehouse.claim_detail group by cob;
 
 
 
@@ -766,7 +766,7 @@ from (
 ------------------------------------
 -- others
 
-/*insert into dev.claim_detail_column_checks (
+insert into dev.claim_detail_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -775,7 +775,7 @@ from (
     "year",
     data_source,
     note
-    )*/
+    )
 select 'bill_type_freq' as test_var,
     validvalues,
     invalidvalues,
@@ -803,15 +803,14 @@ from (
 
 
 
+select units from data_warehouse.claim_detail group by units order by units desc;
 
 
+--units ?????
 
---units
+--for optum we want to use alt units 
    
-?????????
-   
-   
---drg_cd
+--drg_cd ?????
 
 
 
@@ -829,40 +828,141 @@ from (
 
 --table_id_src
 
-select data_source, table_id_src
-from data_warehouse.claim_detail 
-group by data_source, table_id_src ;
-
-
+/*insert into dev.claim_detail_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    table_id_src,
+    note
+    )*/
+select 'table_id_src' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select sum(case
+                when table_id_src in ('dme_claims_k', 'inpatient_revenue_center_k', 'hospice_base_claims_k', 'outpatient_revenue_center_k', 
+'hha_revenue_center_k', 'snf_base_claims_k', 'bcarrier_claims_k', 'hospice_base_claims_k', 'enc_det', 
+'clm_detail', 'medical', 'medical', 'ccaeo', 'mdcro', 'mdcrs', 'ccaes')
+                    then 1
+                end) as validvalues,
+        coalesce(sum(case
+                    when table_id_src not in ('dme_claims_k', 'inpatient_revenue_center_k', 'hospice_base_claims_k', 'outpatient_revenue_center_k', 
+'hha_revenue_center_k', 'snf_base_claims_k', 'bcarrier_claims_k', 'hospice_base_claims_k', 'enc_det', 
+'clm_detail', 'medical', 'medical', 'ccaeo', 'mdcro', 'mdcrs', 'ccaes')
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from data_warehouse.claim_detail
+    group by data_source , year
+    ) a;
 
 --claim_sequence_number_src
+   
+   
+   
+   
+   
+   
+   
+   
 --cob_type
---fiscal_year
+   
+
+/*insert into dev.claim_detail_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )*/
+select 'cob_type' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select sum(case
+                when cob_type in ('C', 'A', 'N', 'Y', 'I') or cob_type is null
+                    then 1
+                end) as validvalues,
+        coalesce(sum(case
+                    when cob_type not in ('C', 'A', 'N', 'Y', 'I')
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from data_warehouse.claim_detail
+    group by data_source , year
+    ) a;
+   
+   
+select cob_type from data_warehouse.claim_detail where data_source = 'optz' and cob_type is not null;
+
+select cob from optum_zip.medical where cob is not null;
+
+-----------------------------------
+-----fiscal_year
+------------------------------------
+
+
+insert into qa_reporting.claim_detail_column_checks (
+	test_var,
+	validvalues,
+	invalidvalues,
+	percent_invalid,
+	pass_threshold,
+	"year",
+	data_source,
+	note
+	)
+select 'fiscal_year' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select sum(case
+				when fiscal_year between 2007 and 2020
+					then 1
+				end) as validvalues,
+		coalesce(sum(case
+					when fiscal_year not between 2007 and 2020
+						or fiscal_year is null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from data_warehouse.member_enrollment_monthly
+	group by data_source,
+		year
+	) a;
+   
+   
+   
 --cost_factor_year
+   
+   
+   
 --discharge_status
-
-
-enc_det
---ccaeo
-dme_claims_k
-medical
-outpatient_revenue_center_k
-ccaes
-bcarrier_claims_k
-clm_detail
-hospice_base_claims_k
-inpatient_revenue_center_k
-hha_revenue_center_k
-snf_base_claims_k
---mdcrs
---mdcro
-
-
-truven.ccaeo
-truven.mdcrs
-truven.mdcro
-
-
+   
 
 
 
