@@ -323,3 +323,5 @@ select * from pg_user where usename='wcough';
 select * from pg_roles where rolname='wcough';
 
 REASSIGN OWNED BY yliu26 to uthealthadmin;
+
+alter table qa_reporting.claim_diag_column_checks owner to jwozny;

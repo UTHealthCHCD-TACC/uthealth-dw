@@ -46,7 +46,9 @@ create table dw_staging.member_enrollment_monthly  (
 	rx_coverage int2, 
 	fiscal_year int2,
 	row_id bigserial
-) distributed by (member_id_src);
+) distributed by (uth_member_id);
+
+
 
 ---
                                                                            

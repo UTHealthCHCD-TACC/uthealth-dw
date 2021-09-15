@@ -14,14 +14,6 @@ as select * from data_warehouse.claim_detail limit 0
 distributed by (member_id_src);
 
 
----medical table distributed by member id 
-drop table if exists dev.wc_optd_medical;
-
-create table dev.wc_optd_medical
-with(appendonly=true,orientation=column)
-as select patid::text as mem_id_src, * from optum_zip.medical
-where year between 2007 and 2010
-distributed by (mem_id_src);
 
 
 
