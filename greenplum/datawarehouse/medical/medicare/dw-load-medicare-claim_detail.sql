@@ -16,8 +16,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, b.clm_drg_cd,
 	       b.clm_id, b.bene_id, 'inpatient_revenue_center_k', c.data_year 
-from medicare_texas.inpatient_revenue_center_k a 
-     join medicare_texas.inpatient_base_claims_k b
+from uthealth/medicare_national.inpatient_revenue_center_k a 
+     join uthealth/medicare_national.inpatient_base_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
      join data_warehouse.dim_uth_claim_id c
@@ -30,10 +30,10 @@ from medicare_texas.inpatient_revenue_center_k a
 ;
 
 select distinct ptnt_dschrg_stus_cd 
-from medicare_texas.inpatient_base_claims_k a 
+from uthealth/medicare_national.inpatient_base_claims_k a 
 
 select   a.line_coinsrnc_amt , a.line_service_deductible 
-from medicare_texas.bcarrier_line_k a
+from uthealth/medicare_national.bcarrier_line_k a
 
 ---outpatient
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, from_date_of_service, to_date_of_service,
@@ -48,8 +48,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'outpatient_revenue_center_k', c.data_year 
-from medicare_texas.outpatient_revenue_center_k a 
-     join medicare_texas.outpatient_base_claims_k b
+from uthealth/medicare_national.outpatient_revenue_center_k a 
+     join uthealth/medicare_national.outpatient_base_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
      join data_warehouse.dim_uth_claim_id c
@@ -67,19 +67,19 @@ alter table data_warehouse.claim_detail add column discharge_status char(2);
 
 ---outpatient has no discharge date
 update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd
-from medicare_texas.outpatient_base_claims_k b 
+from uthealth/medicare_national.outpatient_base_claims_k b 
 where b.bene_id = a.member_id_src 
 and b.clm_id = a.claim_id_src 
 and a.data_source = 'mcrt'
 ;
 
 select a.
-from medicare_texas.outpatient_revenue_center_k a
+from uthealth/medicare_national.outpatient_revenue_center_k a
 
 
 ---inpatient discharge date is coded in main insert
 update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd 
-from medicare_texas.inpatient_base_claims_k b 
+from uthealth/medicare_national.inpatient_base_claims_k b 
 where b.bene_id = a.member_id_src 
 and b.clm_id = a.claim_id_src 
 and a.data_source = 'mcrt'
@@ -91,7 +91,7 @@ and a.data_source = 'mcrt'
 update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
                                          discharge_date = b.nch_bene_dschrg_dt::date, 
                                          admit_date = b.clm_admsn_dt::date 
-from medicare_texas.hha_base_claims_k b 
+from uthealth/medicare_national.hha_base_claims_k b 
 where b.bene_id = a.member_id_src 
 and b.clm_id = a.claim_id_src 
 and a.data_source = 'mcrt'
@@ -101,7 +101,7 @@ and a.data_source = 'mcrt'
 update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
                                          discharge_date = b.nch_bene_dschrg_dt::date, 
                                         -- admit_date =  b.clm_hospc_start_dt_id::date
-from medicare_texas.hospice_base_claims_k b 
+from uthealth/medicare_national.hospice_base_claims_k b 
 where b.bene_id = a.member_id_src 
 and b.clm_id = a.claim_id_src 
 and a.data_source = 'mcrt'
@@ -111,7 +111,7 @@ and a.data_source = 'mcrt'
 update data_warehouse.claim_detail a set discharge_status = b.ptnt_dschrg_stus_cd, 
                                          discharge_date = b.nch_bene_dschrg_dt::date, 
                                          admit_date = b.clm_admsn_dt::date 
-from medicare_texas.snf_base_claims_k b 
+from uthealth/medicare_national.snf_base_claims_k b 
 where b.bene_id = a.member_id_src 
 and b.clm_id = a.claim_id_src 
 and a.data_source = 'mcrt'
@@ -130,13 +130,13 @@ select * from data_warehouse.claim_detail cd where data_source = 'mcrt' and bill
 create table dev.wc_bcarrier_claim_tx
 with (appendonly=true, orientation=column)
 as 
-select * from medicare_texas.bcarrier_claims_k
+select * from uthealth/medicare_national.bcarrier_claims_k
 distributed by (clm_id);
 
 create table dev.wc_bcarrier_line_tx
 with (appendonly=true, orientation=column)
 as 
-select * from medicare_texas.bcarrier_line_k
+select * from uthealth/medicare_national.bcarrier_line_k
 distributed by (clm_id);
 
 
@@ -163,8 +163,8 @@ select 'mcrt', c.data_year,c.uth_claim_id, a.line_num::numeric, c.uth_member_id,
 	       a.carr_line_cl_chrg_amt::numeric, null, a.line_bene_pmt_amt::numeric , a.line_bene_ptb_ddctbl_amt::numeric, null, a.line_coinsrnc_amt::numeric, null, 
 	       null,null,null, a.line_srvc_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'bcarrier_claims_k',	c.data_year  	      	      
-from dev.wc_bcarrier_line_tx a --from medicare_texas.bcarrier_line_k a 
-     join dev.wc_bcarrier_claim_tx b --join medicare_texas.bcarrier_claims_k b
+from dev.wc_bcarrier_line_tx a --from uthealth/medicare_national.bcarrier_line_k a 
+     join dev.wc_bcarrier_claim_tx b --join uthealth/medicare_national.bcarrier_claims_k b
        on b.clm_id = a.clm_id 
       and b.bene_id = a.bene_id 
      join dev.wc_uth_claim_bcarrier_tx c -- data_warehouse.dim_uth_claim_id c 
@@ -199,8 +199,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.line_sbmtd_chrg_amt::numeric, a.line_prmry_alowd_chrg_amt::numeric, a.line_bene_prmry_pyr_pd_amt::numeric, a.line_service_deductible::numeric, null, a.line_coinsrnc_amt::numeric, null,
 	       null, null, null, a.dmerc_line_mtus_cnt::numeric, null,
 	       a.clm_id, b.bene_id, 'dme_claims_k', c.data_year 
-from medicare_texas.dme_line_k a
-  join medicare_texas.dme_claims_k b
+from uthealth/medicare_national.dme_line_k a
+  join uthealth/medicare_national.dme_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 
@@ -226,8 +226,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'hha_revenue_center_k', c.data_year 
-from medicare_texas.hha_revenue_center_k a 
-     join medicare_texas.hha_base_claims_k b
+from uthealth/medicare_national.hha_revenue_center_k a 
+     join uthealth/medicare_national.hha_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 
@@ -254,8 +254,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'hospice_base_claims_k', c.data_year 
-from medicare_texas.hospice_revenue_center_k a 
-     join medicare_texas.hospice_base_claims_k b
+from uthealth/medicare_national.hospice_revenue_center_k a 
+     join uthealth/medicare_national.hospice_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 
@@ -280,8 +280,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'snf_base_claims_k', c.data_year 
-from medicare_texas.snf_revenue_center_k a 
-     join medicare_texas.snf_base_claims_k b
+from uthealth/medicare_national.snf_revenue_center_k a 
+     join uthealth/medicare_national.snf_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 

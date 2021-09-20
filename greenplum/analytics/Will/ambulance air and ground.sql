@@ -4,7 +4,7 @@ drop table dev.wc_ambulance_clm_detail;
 
 select count(distinct clm_id), "year" , 
 	case when hcpcs_cd in ('A0430','A0431') then 'A' else 'G' end as air_ground
-from medicare_texas.bcarrier_line_k k 
+from uthealth/medicare_national.bcarrier_line_k k 
 where k.hcpcs_cd in ('A0225','A0422','A0424','A0425','A0426','A0427','A0428','A0429','A0430','A0431',
 	                     'A0432','A0433','A0434','A0435','A0436','A0998','A0999','T2003','T2003') 
   and k.year::int2 between 2018 and 2019 
@@ -381,12 +381,12 @@ order by svcdate , seqnum
 	     
 	     ---random medicare claims
 select * 
-from medicare_texas.bcarrier_line_k 
+from uthealth/medicare_national.bcarrier_line_k 
 where bene_id = 'ggggggguuwwAnjn'
   and clm_id = 'ggggBuwygjgBgaf'
   
   select * 
-from medicare_texas.bcarrier_claims_k 
+from uthealth/medicare_national.bcarrier_claims_k 
 where bene_id = 'ggggggguuwwAnjn'
   and clm_id = 'ggggBuwygjgBgaf'
 
@@ -394,7 +394,7 @@ where bene_id = 'ggggggguuwwAnjn'
   
   ---city of houston npi search
  select * 
-from medicare_texas.bcarrier_line_k a 
+from uthealth/medicare_national.bcarrier_line_k a 
 where a.year::int2 = 2018 
   and a.hcpcs_cd in ('A0225','A0422','A0424','A0425','A0426','A0427','A0428','A0429','A0430','A0431',
 	                     'A0432','A0433','A0434','A0435','A0436','A0998','A0999','T2003','T2003') 
@@ -402,13 +402,13 @@ where a.year::int2 = 2018
 
 ---city of houston
 select * 
-from medicare_texas.bcarrier_claims_k 
+from uthealth/medicare_national.bcarrier_claims_k 
 where bene_id = 'gggggggffyjauwn'
   and clm_id = 'ggggBujAanfywwA'
 	
 	---private ambulance
 select * 
-from medicare_texas.bcarrier_line_k 
+from uthealth/medicare_national.bcarrier_line_k 
 where bene_id = 'gggggggnfBjjnuw'
   and clm_id = 'ggggBufywAyganA'
 	      

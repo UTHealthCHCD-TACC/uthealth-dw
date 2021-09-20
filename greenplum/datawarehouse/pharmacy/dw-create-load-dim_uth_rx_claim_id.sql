@@ -80,10 +80,10 @@ vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 
 
 --medicare texas 
-with medicare_texas_cte as (  
+with uthealth/medicare_national_cte as (  
     select distinct on (pde_id) 
         year, pde_id, bene_id 
-    from medicare_texas.pde_file
+    from uthealth/medicare_national.pde_file
     )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -98,7 +98,7 @@ select 'mcrt'
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from medicare_texas_cte a
+from uthealth/medicare_national_cte a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
    and b.member_id_src = a.bene_id

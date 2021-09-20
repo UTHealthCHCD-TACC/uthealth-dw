@@ -22,88 +22,88 @@ JW 7/26/2021:
 with providers as 
 (
         select org_npi_num as provider_id_src
-        from  medicare_texas.inpatient_base_claims_k 
+        from  uthealth/medicare_national.inpatient_base_claims_k 
         union all
         select at_physn_npi as provider_id_src
-        from  medicare_texas.inpatient_base_claims_k 
+        from  uthealth/medicare_national.inpatient_base_claims_k 
         union all
         select op_physn_npi as provider_id_src
-        from  medicare_texas.inpatient_base_claims_k 
+        from  uthealth/medicare_national.inpatient_base_claims_k 
         union all
         select ot_physn_npi as provider_id_src
-        from  medicare_texas.inpatient_base_claims_k 
+        from  uthealth/medicare_national.inpatient_base_claims_k 
         union all
         select rndrng_physn_npi as provider_id_src
-        from  medicare_texas.inpatient_base_claims_k
+        from  uthealth/medicare_national.inpatient_base_claims_k
 union all
         select org_npi_num as provider_id_src
-        from  medicare_texas.outpatient_base_claims_k 
+        from  uthealth/medicare_national.outpatient_base_claims_k 
         union all
         select at_physn_npi as provider_id_src
-        from  medicare_texas.outpatient_base_claims_k 
+        from  uthealth/medicare_national.outpatient_base_claims_k 
         union all
         select op_physn_npi as provider_id_src
-        from  medicare_texas.outpatient_base_claims_k 
+        from  uthealth/medicare_national.outpatient_base_claims_k 
         union all
         select ot_physn_npi as provider_id_src
-        from  medicare_texas.outpatient_base_claims_k 
+        from  uthealth/medicare_national.outpatient_base_claims_k 
         union all
         select rndrng_physn_npi as provider_id_src
-        from  medicare_texas.outpatient_base_claims_k
+        from  uthealth/medicare_national.outpatient_base_claims_k
 union all
         select org_npi_num as provider_id_src
-        from  medicare_texas.hospice_base_claims_k 
+        from  uthealth/medicare_national.hospice_base_claims_k 
         union all
         select at_physn_npi as provider_id_src
-        from  medicare_texas.hospice_base_claims_k 
+        from  uthealth/medicare_national.hospice_base_claims_k 
         union all
         select op_physn_npi as provider_id_src
-        from  medicare_texas.hospice_base_claims_k 
+        from  uthealth/medicare_national.hospice_base_claims_k 
         union all
         select ot_physn_npi as provider_id_src
-        from  medicare_texas.hospice_base_claims_k 
+        from  uthealth/medicare_national.hospice_base_claims_k 
         union all
         select rndrng_physn_npi as provider_id_src
-        from  medicare_texas.hospice_base_claims_k
+        from  uthealth/medicare_national.hospice_base_claims_k
 union all
         select org_npi_num as provider_id_src
-        from  medicare_texas.snf_base_claims_k 
+        from  uthealth/medicare_national.snf_base_claims_k 
         union all
         select at_physn_npi as provider_id_src
-        from  medicare_texas.snf_base_claims_k 
+        from  uthealth/medicare_national.snf_base_claims_k 
         union all
         select op_physn_npi as provider_id_src
-        from  medicare_texas.snf_base_claims_k 
+        from  uthealth/medicare_national.snf_base_claims_k 
         union all
         select ot_physn_npi as provider_id_src
-        from  medicare_texas.snf_base_claims_k 
+        from  uthealth/medicare_national.snf_base_claims_k 
         union all
         select rndrng_physn_npi as provider_id_src
-        from  medicare_texas.snf_base_claims_k
+        from  uthealth/medicare_national.snf_base_claims_k
 union all
         select org_npi_num as provider_id_src
-        from  medicare_texas.hha_base_claims_k 
+        from  uthealth/medicare_national.hha_base_claims_k 
         union all
         select at_physn_npi as provider_id_src
-        from  medicare_texas.hha_base_claims_k 
+        from  uthealth/medicare_national.hha_base_claims_k 
         union all
         select op_physn_npi as provider_id_src
-        from  medicare_texas.hha_base_claims_k 
+        from  uthealth/medicare_national.hha_base_claims_k 
         union all
         select ot_physn_npi as provider_id_src
-        from  medicare_texas.hha_base_claims_k 
+        from  uthealth/medicare_national.hha_base_claims_k 
         union all
         select rndrng_physn_npi as provider_id_src
-        from  medicare_texas.hha_base_claims_k
+        from  uthealth/medicare_national.hha_base_claims_k
 union all
         select carr_clm_blg_npi_num as provider_id_src
-          from medicare_texas.bcarrier_claims_k
+          from uthealth/medicare_national.bcarrier_claims_k
           union all
         select rfr_physn_npi as provider_id_src
-          from medicare_texas.bcarrier_claims_k
+          from uthealth/medicare_national.bcarrier_claims_k
 union all
         select prf_physn_npi as provider_id_src
-        from medicare_texas.bcarrier_line_k
+        from uthealth/medicare_national.bcarrier_line_k
 ),
 dstnc_providers as (
     select distinct provider_id_src as provider_id_src from providers 
@@ -131,7 +131,7 @@ with bcarrier_line
         prvdr_spclty as specialty_cd,
         prvdr_state_cd as state,
         prvdr_zip as zip
-        from medicare_texas.bcarrier_line_k  
+        from uthealth/medicare_national.bcarrier_line_k  
     ),
     spec_st 
      as (
@@ -139,133 +139,133 @@ with bcarrier_line
          null as specialty_cd,
          null as state,
          null as zip
-         from medicare_texas.bcarrier_claims_k bck 
+         from uthealth/medicare_national.bcarrier_claims_k bck 
    union all
          select rfr_physn_npi as npi,
          null as specialty_cd,
          null as state,
          null as zip
-         from medicare_texas.bcarrier_claims_k  
+         from uthealth/medicare_national.bcarrier_claims_k  
 union all
          select at_physn_npi as npi,
            at_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.inpatient_base_claims_k
+      from uthealth/medicare_national.inpatient_base_claims_k
     union all
     select op_physn_npi as npi,
            op_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.inpatient_base_claims_k
+      from uthealth/medicare_national.inpatient_base_claims_k
     union all
     select ot_physn_npi as npi,
            ot_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.inpatient_base_claims_k
+      from uthealth/medicare_national.inpatient_base_claims_k
     union all
     select rndrng_physn_npi as npi,
            rndrng_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.inpatient_base_claims_k
+      from uthealth/medicare_national.inpatient_base_claims_k
 union all
     select at_physn_npi as npi,
            at_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.outpatient_base_claims_k
+      from uthealth/medicare_national.outpatient_base_claims_k
     union all
     select op_physn_npi as npi,
            op_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.outpatient_base_claims_k
+      from uthealth/medicare_national.outpatient_base_claims_k
     union all
     select ot_physn_npi as npi,
            ot_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.outpatient_base_claims_k
+      from uthealth/medicare_national.outpatient_base_claims_k
     union all
     select rndrng_physn_npi as npi,
            rndrng_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.outpatient_base_claims_k
+      from uthealth/medicare_national.outpatient_base_claims_k
 union all
         select at_physn_npi as npi,
            at_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hospice_base_claims_k
+      from uthealth/medicare_national.hospice_base_claims_k
     union all
     select op_physn_npi as npi,
            op_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hospice_base_claims_k
+      from uthealth/medicare_national.hospice_base_claims_k
     union all
     select ot_physn_npi as npi,
            ot_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hospice_base_claims_k
+      from uthealth/medicare_national.hospice_base_claims_k
     union all
     select rndrng_physn_npi as npi,
            rndrng_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hospice_base_claims_k
+      from uthealth/medicare_national.hospice_base_claims_k
 union all
         select at_physn_npi as npi,
            at_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.snf_base_claims_k
+      from uthealth/medicare_national.snf_base_claims_k
     union all
     select op_physn_npi as npi,
            op_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.snf_base_claims_k
+      from uthealth/medicare_national.snf_base_claims_k
     union all
     select ot_physn_npi as npi,
            ot_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.snf_base_claims_k
+      from uthealth/medicare_national.snf_base_claims_k
     union all
     select rndrng_physn_npi as npi,
            rndrng_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.snf_base_claims_k
+      from uthealth/medicare_national.snf_base_claims_k
 union all
         select at_physn_npi as npi,
            at_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hha_base_claims_k
+      from uthealth/medicare_national.hha_base_claims_k
     union all
     select op_physn_npi as npi,
            op_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hha_base_claims_k
+      from uthealth/medicare_national.hha_base_claims_k
     union all
     select ot_physn_npi as npi,
            ot_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hha_base_claims_k
+      from uthealth/medicare_national.hha_base_claims_k
     union all
     select rndrng_physn_npi as npi,
            rndrng_physn_spclty_cd as specialty_cd,
            prvdr_state_cd as state,
            null as zip
-      from medicare_texas.hha_base_claims_k
+      from uthealth/medicare_national.hha_base_claims_k
 union all
         select  *
         from bcarrier_line
@@ -334,7 +334,7 @@ select 'mcrt' as data_source,
        rn_prov.uth_provider_id as perf_rn_provider,
        at_prov.uth_provider_id as perf_at_provider,
        op_prov.uth_provider_id as perf_op_provider
-  from medicare_texas.inpatient_base_claims_k a
+  from uthealth/medicare_national.inpatient_base_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id other_prov on other_prov.provider_id_src = a.ot_physn_npi and other_prov.data_source = 'mcrt'
@@ -375,7 +375,7 @@ select 'mcrt' as data_source,
        rn_prov.uth_provider_id as perf_rn_provider,
        at_prov.uth_provider_id as perf_at_provider,
        op_prov.uth_provider_id as perf_op_provider
-  from medicare_texas.outpatient_base_claims_k a
+  from uthealth/medicare_national.outpatient_base_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id other_prov on other_prov.provider_id_src = a.ot_physn_npi and other_prov.data_source = 'mcrt'
@@ -417,7 +417,7 @@ select 'mcrt' as data_source,
        rn_prov.uth_provider_id as perf_rn_provider,
        at_prov.uth_provider_id as perf_at_provider,
        op_prov.uth_provider_id as perf_op_provider
-  from medicare_texas.hospice_base_claims_k a
+  from uthealth/medicare_national.hospice_base_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id other_prov on other_prov.provider_id_src = a.ot_physn_npi and other_prov.data_source = 'mcrt'
@@ -459,7 +459,7 @@ select 'mcrt' as data_source,
        rn_prov.uth_provider_id as perf_rn_provider,
        at_prov.uth_provider_id as perf_at_provider,
        op_prov.uth_provider_id as perf_op_provider
-  from medicare_texas.snf_base_claims_k a
+  from uthealth/medicare_national.snf_base_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id other_prov on other_prov.provider_id_src = a.ot_physn_npi and other_prov.data_source = 'mcrt'
@@ -499,7 +499,7 @@ select 'mcrt' as data_source,
        rn_prov.uth_provider_id as perf_rn_provider,
        at_prov.uth_provider_id as perf_at_provider,
        op_prov.uth_provider_id as perf_op_provider
-  from medicare_texas.hha_base_claims_k a
+  from uthealth/medicare_national.hha_base_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id other_prov on other_prov.provider_id_src = a.ot_physn_npi and other_prov.data_source = 'mcrt'
@@ -541,7 +541,7 @@ select 'mcrt' as data_source,
        null as perf_rn_provider,
        null as perf_at_provider,
        null as perf_op_provider
-  from medicare_texas.bcarrier_claims_k a
+  from uthealth/medicare_national.bcarrier_claims_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
 left outer join dev.jw_dim_uth_provider_id bill_prov on bill_prov.provider_id_src = a.carr_clm_blg_npi_num and bill_prov.data_source = 'mcrt'
@@ -581,7 +581,7 @@ select 'mcrt' as data_source,
        null as perf_rn_provider,
        null as perf_at_provider,
        null as perf_op_provider
-  from medicare_texas.bcarrier_line_k a
+  from uthealth/medicare_national.bcarrier_line_k a
   join data_warehouse.dim_uth_claim_id c
     on c.claim_id_src  = a.clm_id
   left join dev.jw_dim_uth_provider_id b
@@ -605,43 +605,43 @@ select
     count(*) as count,
     'bcarrier_claims_k' as src_table
     from 
-    medicare_texas.bcarrier_claims_k
+    uthealth/medicare_national.bcarrier_claims_k
 union all
     select 
     count(*) as count,
     'bcarrier_line_k' as src_table
     from 
-    medicare_texas.bcarrier_line_k 
+    uthealth/medicare_national.bcarrier_line_k 
 union all
     select 
     count(*) as count,
     'hha_base_claims_k' as src_table
     from 
-    medicare_texas.hha_base_claims_k 
+    uthealth/medicare_national.hha_base_claims_k 
 union all 
     select 
     count(*) as count,
     'hospice_base_claims_k' as src_table
     from 
-    medicare_texas.hospice_base_claims_k 
+    uthealth/medicare_national.hospice_base_claims_k 
 union all 
     select 
     count(*) as count,
     'inpatient_base_claims_k' as src_table
     from 
-    medicare_texas.inpatient_base_claims_k 
+    uthealth/medicare_national.inpatient_base_claims_k 
 union all 
     select 
     count(*) as count,
     'outpatient_base_claims_k' as src_table
     from 
-    medicare_texas.outpatient_base_claims_k 
+    uthealth/medicare_national.outpatient_base_claims_k 
 union all 
     select 
     count(*) as count,
     'snf_base_claims_k' as src_table
     from 
-    medicare_texas.snf_base_claims_k 
+    uthealth/medicare_national.snf_base_claims_k 
     ;
     
 select count(distinct id) from (

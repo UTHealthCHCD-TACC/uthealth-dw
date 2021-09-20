@@ -31,7 +31,7 @@ from (
 	icd_prcdr_cd9,icd_prcdr_cd10,icd_prcdr_cd11,icd_prcdr_cd12,icd_prcdr_cd13,icd_prcdr_cd14,icd_prcdr_cd15,icd_prcdr_cd16,icd_prcdr_cd17,
 	icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) as proc,
 	clm_from_dt::date as clm_date
-	from medicare_texas.inpatient_base_claims_k) procs
+	from uthealth/medicare_national.inpatient_base_claims_k) procs
 join data_warehouse.claim_detail cd on cd.member_id_src = procs.bene_id and cd.claim_id_src = procs.clm_id
 where proc is not null) sq
 
@@ -51,7 +51,7 @@ from (
 	icd_prcdr_cd9,icd_prcdr_cd10,icd_prcdr_cd11,icd_prcdr_cd12,icd_prcdr_cd13,icd_prcdr_cd14,icd_prcdr_cd15,icd_prcdr_cd16,icd_prcdr_cd17,
 	icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) as proc,
 	clm_from_dt::date as clm_date
-	from medicare_texas.outpatient_base_claims_k) procs
+	from uthealth/medicare_national.outpatient_base_claims_k) procs
 join data_warehouse.claim_detail cd on cd.member_id_src = procs.bene_id and cd.claim_id_src = procs.clm_id
 where proc is not null) sq
 

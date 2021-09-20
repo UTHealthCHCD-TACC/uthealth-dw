@@ -77,7 +77,7 @@ select 'mcrt',
 		a.str, --new
 		null, --new
 		null --new
-from medicare_texas.pde_file a
+from uthealth/medicare_national.pde_file a
   join data_warehouse.dim_uth_rx_claim_id b
      on b.data_source = 'mcrt'
     and b.member_id_src = a.bene_id

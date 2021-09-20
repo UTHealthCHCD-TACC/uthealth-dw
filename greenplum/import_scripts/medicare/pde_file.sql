@@ -13,7 +13,7 @@ RX_ORGN_CD varchar, RPTD_GAP_DSCNT_NUM varchar, BRND_GNRC_CD varchar, PHRMCY_SRV
 SUBMSN_CLR_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_national/2017/*pde_file.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/medicare_national/2017/*pde_file.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -21,7 +21,7 @@ select *
 from ext_pde_file
 limit 1000;
 
-create table medicare_texas.pde_file
+create table uthealth/medicare_national.pde_file
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 

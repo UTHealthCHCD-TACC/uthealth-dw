@@ -50,7 +50,7 @@ select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
          dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
          cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
          cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
-from medicare_texas.mbsf_abcd_summary  a 
+from uthealth/medicare_national.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
      on b.member_id_src = a.bene_id 
     and b.data_source = 'mcrt'
@@ -95,7 +95,7 @@ select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
          dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
          cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
          cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
-from medicare_texas.mbsf_abcd_summary  a 
+from uthealth/medicare_national.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
      on b.member_id_src = a.bene_id 
     and b.data_source = 'mcrn'

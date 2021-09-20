@@ -135,7 +135,7 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('optum_zip', 'optum_dod', 'medicaid', 'medicare_texas', 'medicare_national', 'truven', 'data_warehouse')  
+and b.nspname in ('optum_zip', 'optum_dod', 'medicaid', 'uthealth/medicare_national', 'medicare_national', 'truven', 'data_warehouse')  
 AND a.oid=c.relid;
 
 --Roles and Members

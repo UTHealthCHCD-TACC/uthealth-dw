@@ -1,7 +1,7 @@
 REVOKE connect FROM PUBLIC;
 
-CREATE ROLE mdiaz1 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
-grant covid_analyst to mdiaz1;
+CREATE ROLE lyndie NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
+grant covid_analyst to lyndie;
 
 /*
  * Project Specific Roles

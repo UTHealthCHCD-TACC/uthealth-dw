@@ -14,8 +14,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, b.clm_drg_cd,
 	       b.clm_id, b.bene_id, 'inpatient_revenue_center_k'
-from medicare_texas.inpatient_revenue_center_k a 
-     join medicare_texas.inpatient_base_claims_k b
+from uthealth/medicare_national.inpatient_revenue_center_k a 
+     join uthealth/medicare_national.inpatient_base_claims_k b
        on b.bene_id = a.bene_id 
       and b.clm_id = a.clm_id  
      join data_warehouse.dim_uth_claim_id c
@@ -41,8 +41,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'outpatient_revenue_center_k'
-from medicare_texas.outpatient_revenue_center_k a 
-     join medicare_texas.outpatient_base_claims_k b
+from uthealth/medicare_national.outpatient_revenue_center_k a 
+     join uthealth/medicare_national.outpatient_base_claims_k b
        on b.bene_id = a.bene_id 
       and b.clm_id = a.clm_id 
      join data_warehouse.dim_uth_claim_id c
@@ -69,8 +69,8 @@ select 'mcrn', c.data_year,c.uth_claim_id, a.line_num::numeric, c.uth_member_id,
 	       a.carr_line_cl_chrg_amt::numeric, null, a.line_bene_pmt_amt::numeric , a.line_service_deductible::numeric, null, a.line_coinsrnc_amt::numeric, null, 
 	       null,null,null, a.line_srvc_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'bcarrier_claims_k'	 	      	      
-from medicare_texas.bcarrier_line_k a 
-     join medicare_texas.bcarrier_claims_k b
+from uthealth/medicare_national.bcarrier_line_k a 
+     join uthealth/medicare_national.bcarrier_claims_k b
        on b.bene_id = a.bene_id 
       and b.clm_id = a.clm_id 
      join data_warehouse.dim_uth_claim_id c 
@@ -96,8 +96,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.line_sbmtd_chrg_amt::numeric, a.line_prmry_alowd_chrg_amt::numeric, a.line_bene_prmry_pyr_pd_amt::numeric, a.line_service_deductible::numeric, null, a.line_coinsrnc_amt::numeric, null,
 	       null, null, null, a.dmerc_line_mtus_cnt::numeric, null,
 	       a.clm_id, b.bene_id, 'dme_claims_k'
-from medicare_texas.dme_line_k a
-  join medicare_texas.dme_claims_k b
+from uthealth/medicare_national.dme_line_k a
+  join uthealth/medicare_national.dme_claims_k b
      on a.clm_id = b.clm_id 
     and a.bene_id = b.bene_id
   join data_warehouse.dim_uth_claim_id c 
@@ -123,8 +123,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'hha_revenue_center_k'
-from medicare_texas.hha_revenue_center_k a 
-     join medicare_texas.hha_base_claims_k b
+from uthealth/medicare_national.hha_revenue_center_k a 
+     join uthealth/medicare_national.hha_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 
@@ -156,8 +156,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'hospice_base_claims_k'
-from medicare_texas.hospice_revenue_center_k a 
-     join medicare_texas.hospice_base_claims_k b
+from uthealth/medicare_national.hospice_revenue_center_k a 
+     join uthealth/medicare_national.hospice_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 
@@ -182,8 +182,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 	       a.rev_cntr_tot_chrg_amt::numeric, null, null, null, null, null, null, 
 	       substring(b.clm_fac_type_cd,1,1), substring(b.clm_srvc_clsfctn_type_cd,1,1), substring(b.clm_freq_cd,1,1), a.rev_cntr_unit_cnt::numeric, null,
 	       b.clm_id, b.bene_id, 'snf_base_claims_k'
-from medicare_texas.snf_revenue_center_k a 
-     join medicare_texas.snf_base_claims_k b
+from uthealth/medicare_national.snf_revenue_center_k a 
+     join uthealth/medicare_national.snf_base_claims_k b
      on a.bene_id = b.bene_id
     and a.clm_id = b.clm_id 
   join data_warehouse.dim_uth_claim_id c 

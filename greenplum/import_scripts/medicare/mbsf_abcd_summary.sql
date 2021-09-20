@@ -34,7 +34,7 @@ CST_SHR_GRP_CD_01 varchar,CST_SHR_GRP_CD_02 varchar,CST_SHR_GRP_CD_03 varchar,CS
 CST_SHR_GRP_CD_07 varchar,CST_SHR_GRP_CD_08 varchar,CST_SHR_GRP_CD_09 varchar,CST_SHR_GRP_CD_10 varchar,CST_SHR_GRP_CD_11 varchar,CST_SHR_GRP_CD_12 varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*mbsf_abcd_summary.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/MBSF_ABCD_SUMMARY.CSV#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -42,11 +42,11 @@ select *
 from ext_mbsf_abcd_summary
 limit 1000;
 
-create table medicare_texas.mbsf_abcd_summary
+create table medicare_national.mbsf_abcd_summary
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare_texas.mbsf_abcd_summary ( year,
+insert into medicare_national.mbsf_abcd_summary ( year,
 BENE_ID,BENE_ENROLLMT_REF_YR,ENRL_SRC,SAMPLE_GROUP,ENHANCED_FIVE_PERCENT_FLAG,CRNT_BIC_CD,STATE_CODE,COUNTY_CD,ZIP_CD,
 STATE_CNTY_FIPS_CD_01,STATE_CNTY_FIPS_CD_02,STATE_CNTY_FIPS_CD_03,STATE_CNTY_FIPS_CD_04,STATE_CNTY_FIPS_CD_05,STATE_CNTY_FIPS_CD_06,STATE_CNTY_FIPS_CD_07,STATE_CNTY_FIPS_CD_08,
 STATE_CNTY_FIPS_CD_09,STATE_CNTY_FIPS_CD_10,STATE_CNTY_FIPS_CD_11,STATE_CNTY_FIPS_CD_12,
@@ -114,6 +114,6 @@ from ext_mbsf_abcd_summary
 
 -- Scratch
 select year, count(*)
-from medicare_texas.mbsf_abcd_summary
+from medicare_national.mbsf_abcd_summary
 group by 1
 order by 1;

@@ -254,30 +254,30 @@ drop table dev.wc_zip3_yearly_final;
 
 --- zip5
 select count(*), min(month_year_id) as my, uth_member_id, zip5, year
- into dev.wc_zip5_yearly
+ into dev.wc_ZIP_yearly
 from data_warehouse.member_enrollment_monthly
 group by uth_member_id, zip5, year
 ;
 
 
-create table dev.wc_zip5_yearly_final
+create table dev.wc_ZIP_yearly_final
 with (appendonly=true, orientation=column)
 as
 select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_zip5_yearly
+from dev.wc_ZIP_yearly
 distributed by(uth_member_id);
 
 
 update data_warehouse.member_enrollment_yearly a set zip5 = b.zip5
-from dev.wc_zip5_yearly_final b
+from dev.wc_ZIP_yearly_final b
 where a.uth_member_id = b.uth_member_id
 and a.year = b.year
  and b.my_grp = 1;
 
 
-drop table dev.wc_zip5_yearly;
+drop table dev.wc_ZIP_yearly;
 
-drop table dev.wc_zip5_yearly_final;
+drop table dev.wc_ZIP_yearly_final;
 
 
 --- plan type

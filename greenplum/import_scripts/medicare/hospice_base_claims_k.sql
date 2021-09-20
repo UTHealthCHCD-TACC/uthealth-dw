@@ -16,13 +16,13 @@ ICD_DGNS_CD18 varchar, ICD_DGNS_CD19 varchar, ICD_DGNS_CD20 varchar, ICD_DGNS_CD
 ICD_DGNS_CD24 varchar, ICD_DGNS_CD25 varchar, FST_DGNS_E_CD varchar, ICD_DGNS_E_CD1 varchar, ICD_DGNS_E_CD2 varchar, ICD_DGNS_E_CD3 varchar, 
 ICD_DGNS_E_CD4 varchar, ICD_DGNS_E_CD5 varchar, ICD_DGNS_E_CD6 varchar, ICD_DGNS_E_CD7 varchar, ICD_DGNS_E_CD8 varchar, ICD_DGNS_E_CD9 varchar, 
 ICD_DGNS_E_CD10 varchar, ICD_DGNS_E_CD11 varchar, ICD_DGNS_E_CD12 varchar, CLM_HOSPC_START_DT_ID varchar, BENE_HOSPC_PRD_CNT varchar, 
-DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_zip5_CD varchar, 
+DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_ZIP_CD varchar, 
 CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, 
-CLM_SRVC_FAC_zip5_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
+CLM_SRVC_FAC_ZIP_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*hospice_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/*hospice_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -30,10 +30,10 @@ select *
 from ext_hospice_base_claims_k
 limit 1000;
 
-create table medicare_texas.hospice_base_claims_k
+create table uthealth/medicare_national.hospice_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
---insert into medicare_texas.hospice_base_claims_k 
+--insert into uthealth/medicare_national.hospice_base_claims_k 
 select * 
 from ext_hospice_base_claims_k
 distributed randomly;
@@ -55,17 +55,17 @@ ICD_DGNS_CD18,ICD_DGNS_CD19,ICD_DGNS_CD20,ICD_DGNS_CD21,ICD_DGNS_CD22,ICD_DGNS_C
 ICD_DGNS_CD24,ICD_DGNS_CD25,FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,
 ICD_DGNS_E_CD4,ICD_DGNS_E_CD5,ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,
 ICD_DGNS_E_CD10,ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HOSPC_START_DT_ID,BENE_HOSPC_PRD_CNT,
-DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_zip5_CD,
+DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_ZIP_CD,
 CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,
-CLM_SRVC_FAC_zip5_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
+CLM_SRVC_FAC_ZIP_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,CLM_MODEL_REIMBRSMT_AMT
  */
 
-alter table medicare_texas.hospice_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
-alter table medicare_texas.hospice_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
-alter table medicare_texas.hospice_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
-alter table medicare_texas.hospice_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
+alter table medicare_national.hospice_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
+alter table medicare_national.hospice_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
+alter table medicare_national.hospice_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
+alter table medicare_national.hospice_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
 
 drop external table ext_hospice_base_claims_k;
 
@@ -85,14 +85,14 @@ ICD_DGNS_CD18 varchar, ICD_DGNS_CD19 varchar, ICD_DGNS_CD20 varchar, ICD_DGNS_CD
 ICD_DGNS_CD24 varchar, ICD_DGNS_CD25 varchar, FST_DGNS_E_CD varchar, ICD_DGNS_E_CD1 varchar, ICD_DGNS_E_CD2 varchar, ICD_DGNS_E_CD3 varchar, 
 ICD_DGNS_E_CD4 varchar, ICD_DGNS_E_CD5 varchar, ICD_DGNS_E_CD6 varchar, ICD_DGNS_E_CD7 varchar, ICD_DGNS_E_CD8 varchar, ICD_DGNS_E_CD9 varchar, 
 ICD_DGNS_E_CD10 varchar, ICD_DGNS_E_CD11 varchar, ICD_DGNS_E_CD12 varchar, CLM_HOSPC_START_DT_ID varchar, BENE_HOSPC_PRD_CNT varchar, 
-DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_zip5_CD varchar, 
+DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_ZIP_CD varchar, 
 CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, 
-CLM_SRVC_FAC_zip5_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
+CLM_SRVC_FAC_ZIP_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, CLM_BENE_ID_TYPE_CD varchar,
 CLM_RSDL_PYMT_IND_CD varchar, PRVDR_VLDTN_TYPE_CD varchar, RR_BRD_EXCLSN_IND_SW varchar, CLM_MODEL_REIMBRSMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/2019/*hospice_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/HOSPICE_BASE_CLAIMS.CSV#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -100,7 +100,7 @@ select *
 from ext_hospice_base_claims_k
 limit 1000;
 
-insert into medicare_texas.hospice_base_claims_k (year,
+insert into medicare_national.hospice_base_claims_k (year,
 BENE_ID,CLM_ID,NCH_NEAR_LINE_REC_IDENT_CD,NCH_CLM_TYPE_CD,CLM_FROM_DT,CLM_THRU_DT,
 NCH_WKLY_PROC_DT,FI_CLM_PROC_DT,PRVDR_NUM,CLM_FAC_TYPE_CD,CLM_SRVC_CLSFCTN_TYPE_CD,
 CLM_FREQ_CD,FI_NUM,CLM_MDCR_NON_PMT_RSN_CD,CLM_PMT_AMT,NCH_PRMRY_PYR_CLM_PD_AMT,
@@ -115,9 +115,9 @@ ICD_DGNS_CD18,ICD_DGNS_CD19,ICD_DGNS_CD20,ICD_DGNS_CD21,ICD_DGNS_CD22,ICD_DGNS_C
 ICD_DGNS_CD24,ICD_DGNS_CD25,FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,
 ICD_DGNS_E_CD4,ICD_DGNS_E_CD5,ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,
 ICD_DGNS_E_CD10,ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HOSPC_START_DT_ID,BENE_HOSPC_PRD_CNT,
-DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_zip5_CD,
+DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_ZIP_CD,
 CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,
-CLM_SRVC_FAC_zip5_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
+CLM_SRVC_FAC_ZIP_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,CLM_MODEL_REIMBRSMT_AMT)
 select year,
@@ -135,15 +135,15 @@ ICD_DGNS_CD18,ICD_DGNS_CD19,ICD_DGNS_CD20,ICD_DGNS_CD21,ICD_DGNS_CD22,ICD_DGNS_C
 ICD_DGNS_CD24,ICD_DGNS_CD25,FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,
 ICD_DGNS_E_CD4,ICD_DGNS_E_CD5,ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,
 ICD_DGNS_E_CD10,ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HOSPC_START_DT_ID,BENE_HOSPC_PRD_CNT,
-DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_zip5_CD,
+DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,BENE_MLG_CNTCT_ZIP_CD,
 CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,
-CLM_SRVC_FAC_zip5_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
+CLM_SRVC_FAC_ZIP_CD,CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,CLM_MODEL_REIMBRSMT_AMT
 from ext_hospice_base_claims_k;
 
 -- Scratch
 select year, count(*)
-from medicare_texas.hospice_base_claims_k
+from medicare_national.hospice_base_claims_k
 group by 1
 order by 1;

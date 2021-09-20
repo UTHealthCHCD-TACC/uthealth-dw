@@ -115,7 +115,7 @@ where a.caseid is not null
 --medicare texas
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'mcrt' , a.year::int2, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.admit_id , a.pers_id 
-from medicare_texas.admit a
+from uthealth/medicare_national.admit a
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'mcrt'
    and b.member_id_src = a.pers_id 
@@ -127,13 +127,13 @@ where c.uth_admission_id is null
 ;
 
 
-select * from medicare_texas.admit;
+select * from uthealth/medicare_national.admit;
 
-select * from medicare_texas.admit_clm;
+select * from uthealth/medicare_national.admit_clm;
 
 
 update data_warehouse.claim_header a set admission_id_src = admit_id 
-from medicare_texas.admit_clm b 
+from uthealth/medicare_national.admit_clm b 
  where a.member_id_src = b.pers_id 
    and a.claim_id_src = b.clm_id 
    and a.data_source = 'mcrt'

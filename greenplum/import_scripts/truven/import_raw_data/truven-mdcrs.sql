@@ -189,7 +189,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/mdcrs/v1/*'
+'gpfdist://greenplum01:8081/mdcrs/v1/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -287,7 +287,7 @@ CREATE EXTERNAL TABLE ext_mdcrs_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/mdcrs/v2/*'
+'gpfdist://greenplum01:8081/mdcrs/v2/*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

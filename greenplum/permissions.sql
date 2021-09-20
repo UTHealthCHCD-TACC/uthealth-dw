@@ -32,7 +32,7 @@ create role uthealth_analyst;
 grant connect on database uthealth to uthealth_analyst;
 
 ---****uthealth_analyst assigned users *****************************************************
-grant uthealth_analyst to cms2;
+grant uthealth_analyst to turban;
 
 grant uthealth_analyst to lghosh1;
 
@@ -83,10 +83,10 @@ alter default privileges in schema dw_staging grant select on tables to group ut
 	grant usage on schema medicare_national to group uthealth_analyst; 
 	grant select on all tables in schema medicare_national to group uthealth_analyst; 
 	alter default privileges in schema medicare_national grant select on tables to group uthealth_analyst;
-	---medicare_texas
-	grant usage on schema medicare_texas to group uthealth_analyst; 
-	grant select on all tables in schema medicare_texas to group uthealth_analyst; 
-	alter default privileges in schema medicare_texas grant select on tables to group uthealth_analyst;
+	---uthealth/medicare_national
+	grant usage on schema uthealth/medicare_national to group uthealth_analyst; 
+	grant select on all tables in schema uthealth/medicare_national to group uthealth_analyst; 
+	alter default privileges in schema uthealth/medicare_national grant select on tables to group uthealth_analyst;
 	---optum_dod
 	grant usage on schema optum_dod to group uthealth_analyst; 
 	grant select on all tables in schema optum_dod to group uthealth_analyst; 
@@ -195,10 +195,10 @@ alter default privileges in schema data_warehouse grant all on tables to uthealt
 	grant all on schema medicare_national to group uthealth_admin; 
 	grant all on all tables in schema medicare_national to group uthealth_admin; 
 	alter default privileges in schema medicare_national grant all on tables to group uthealth_admin;
-	---medicare_texas
-	grant all on schema medicare_texas to group uthealth_admin; 
-	grant all on all tables in schema medicare_texas to group uthealth_admin; 
-	alter default privileges in schema medicare_texas grant all on tables to group uthealth_admin;
+	---uthealth/medicare_national
+	grant all on schema uthealth/medicare_national to group uthealth_admin; 
+	grant all on all tables in schema uthealth/medicare_national to group uthealth_admin; 
+	alter default privileges in schema uthealth/medicare_national grant all on tables to group uthealth_admin;
 	---optum_dod
 	grant all on schema optum_dod to group uthealth_admin; 
 	grant all on all tables in schema optum_dod to group uthealth_admin; 

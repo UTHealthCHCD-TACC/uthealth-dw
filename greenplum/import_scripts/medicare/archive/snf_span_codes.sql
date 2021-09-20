@@ -6,7 +6,7 @@ BENE_ID varchar, CLM_ID varchar, NCH_CLM_TYPE_CD varchar, RLT_SPAN_CD_SEQ varcha
 CLM_SPAN_THRU_DT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*snf_span_codes.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/uthealth/medicare_national/*/SNF_SPAN_CODES.CSV#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -14,11 +14,11 @@ select *
 from ext_snf_span_codes
 limit 1000;
 
-create table medicare_texas.snf_span_codes
+create table uthealth/medicare_national.snf_span_codes
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
-insert into medicare_texas.snf_span_codes (year,
+insert into uthealth/medicare_national.snf_span_codes (year,
 BENE_ID, CLM_ID, NCH_CLM_TYPE_CD, RLT_SPAN_CD_SEQ, CLM_SPAN_CD, CLM_SPAN_FROM_DT, CLM_SPAN_THRU_DT
 )
 select year,
@@ -28,4 +28,4 @@ from ext_snf_span_codes
 distributed randomly;
 
 select count(*)
-from medicare_texas.snf_span_codes;
+from uthealth/medicare_national.snf_span_codes;

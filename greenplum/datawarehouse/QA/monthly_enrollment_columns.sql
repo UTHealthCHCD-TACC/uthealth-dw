@@ -229,7 +229,7 @@ drop table if exists dev.qa_temp_ids_src;
         union all
 
         select bene_id::text as patidsrc
-        from medicare_texas.mbsf_abcd_summary
+        from uthealth/medicare_national.mbsf_abcd_summary
         
         union all
         

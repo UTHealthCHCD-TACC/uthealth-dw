@@ -17,13 +17,13 @@ FST_DGNS_E_CD varchar, ICD_DGNS_E_CD1 varchar, ICD_DGNS_E_CD2 varchar, ICD_DGNS_
 ICD_DGNS_E_CD6 varchar, ICD_DGNS_E_CD7 varchar, ICD_DGNS_E_CD8 varchar, ICD_DGNS_E_CD9 varchar, ICD_DGNS_E_CD10 varchar, 
 ICD_DGNS_E_CD11 varchar, ICD_DGNS_E_CD12 varchar, CLM_HHA_LUPA_IND_CD varchar, CLM_HHA_RFRL_CD varchar, CLM_HHA_TOT_VISIT_CNT varchar, 
 CLM_ADMSN_DT varchar, DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, 
-BENE_MLG_CNTCT_zip5_CD varchar, CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_MCO_PD_SW varchar, 
-NCH_BENE_DSCHRG_DT varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_zip5_CD varchar, 
+BENE_MLG_CNTCT_ZIP_CD varchar, CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_MCO_PD_SW varchar, 
+NCH_BENE_DSCHRG_DT varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_ZIP_CD varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, FINL_STD_AMT varchar, CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -31,10 +31,10 @@ select *
 from ext_hha_base_claims_k
 limit 1000;
 
-create table medicare_texas.hha_base_claims_k
+create table uthealth/medicare_national.hha_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
---insert into medicare_texas.hha_base_claims_k 
+--insert into uthealth/medicare_national.hha_base_claims_k 
 select * 
 from ext_hha_base_claims_k
 distributed randomly;
@@ -58,18 +58,18 @@ FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,ICD_DGNS_E_CD4,ICD_DG
 ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,ICD_DGNS_E_CD10,
 ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HHA_LUPA_IND_CD,CLM_HHA_RFRL_CD,CLM_HHA_TOT_VISIT_CNT,
 CLM_ADMSN_DT,DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,
-BENE_MLG_CNTCT_zip5_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
-NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_zip5_CD,
+BENE_MLG_CNTCT_ZIP_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
+NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_ZIP_CD,
 CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,FINL_STD_AMT,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,PPS_STD_VAL_PYMT_AMT,CLM_MODEL_REIMBRSMT_AMT
  */
 
-alter table medicare_texas.hha_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
-alter table medicare_texas.hha_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
-alter table medicare_texas.hha_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
-alter table medicare_texas.hha_base_claims_k add column PPS_STD_VAL_PYMT_AMT varchar;
-alter table medicare_texas.hha_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
+alter table medicare_national.hha_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
+alter table medicare_national.hha_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
+alter table medicare_national.hha_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
+alter table medicare_national.hha_base_claims_k add column PPS_STD_VAL_PYMT_AMT varchar;
+alter table medicare_national.hha_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
 
 drop external table ext_hha_base_claims_k;
 
@@ -90,14 +90,14 @@ FST_DGNS_E_CD varchar, ICD_DGNS_E_CD1 varchar, ICD_DGNS_E_CD2 varchar, ICD_DGNS_
 ICD_DGNS_E_CD6 varchar, ICD_DGNS_E_CD7 varchar, ICD_DGNS_E_CD8 varchar, ICD_DGNS_E_CD9 varchar, ICD_DGNS_E_CD10 varchar, 
 ICD_DGNS_E_CD11 varchar, ICD_DGNS_E_CD12 varchar, CLM_HHA_LUPA_IND_CD varchar, CLM_HHA_RFRL_CD varchar, CLM_HHA_TOT_VISIT_CNT varchar, 
 CLM_ADMSN_DT varchar, DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, BENE_CNTY_CD varchar, BENE_STATE_CD varchar, 
-BENE_MLG_CNTCT_zip5_CD varchar, CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_MCO_PD_SW varchar, 
-NCH_BENE_DSCHRG_DT varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_zip5_CD varchar, 
+BENE_MLG_CNTCT_ZIP_CD varchar, CLM_MDCL_REC varchar, CLAIM_QUERY_CODE varchar, FI_CLM_ACTN_CD varchar, CLM_MCO_PD_SW varchar, 
+NCH_BENE_DSCHRG_DT varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_ZIP_CD varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, FINL_STD_AMT varchar, CLM_BENE_ID_TYPE_CD varchar,
 CLM_RSDL_PYMT_IND_CD varchar, PRVDR_VLDTN_TYPE_CD varchar, RR_BRD_EXCLSN_IND_SW varchar, PPS_STD_VAL_PYMT_AMT varchar, CLM_MODEL_REIMBRSMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*hha_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/HHA_BASE_CLAIMS.CSV#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -105,7 +105,7 @@ select *
 from ext_hha_base_claims_k
 limit 1000;
 
-insert into medicare_texas.hha_base_claims_k (year,
+insert into medicare_national.hha_base_claims_k (year,
 BENE_ID,CLM_ID,NCH_NEAR_LINE_REC_IDENT_CD,NCH_CLM_TYPE_CD,CLM_FROM_DT,CLM_THRU_DT,
 NCH_WKLY_PROC_DT,FI_CLM_PROC_DT,PRVDR_NUM,CLM_FAC_TYPE_CD,CLM_SRVC_CLSFCTN_TYPE_CD,
 CLM_FREQ_CD,FI_NUM,CLM_MDCR_NON_PMT_RSN_CD,CLM_PMT_AMT,NCH_PRMRY_PYR_CLM_PD_AMT,
@@ -121,8 +121,8 @@ FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,ICD_DGNS_E_CD4,ICD_DG
 ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,ICD_DGNS_E_CD10,
 ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HHA_LUPA_IND_CD,CLM_HHA_RFRL_CD,CLM_HHA_TOT_VISIT_CNT,
 CLM_ADMSN_DT,DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,
-BENE_MLG_CNTCT_zip5_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
-NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_zip5_CD,
+BENE_MLG_CNTCT_ZIP_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
+NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_ZIP_CD,
 CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,FINL_STD_AMT,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,PPS_STD_VAL_PYMT_AMT,CLM_MODEL_REIMBRSMT_AMT)
@@ -142,8 +142,8 @@ FST_DGNS_E_CD,ICD_DGNS_E_CD1,ICD_DGNS_E_CD2,ICD_DGNS_E_CD3,ICD_DGNS_E_CD4,ICD_DG
 ICD_DGNS_E_CD6,ICD_DGNS_E_CD7,ICD_DGNS_E_CD8,ICD_DGNS_E_CD9,ICD_DGNS_E_CD10,
 ICD_DGNS_E_CD11,ICD_DGNS_E_CD12,CLM_HHA_LUPA_IND_CD,CLM_HHA_RFRL_CD,CLM_HHA_TOT_VISIT_CNT,
 CLM_ADMSN_DT,DOB_DT,GNDR_CD,BENE_RACE_CD,BENE_CNTY_CD,BENE_STATE_CD,
-BENE_MLG_CNTCT_zip5_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
-NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_zip5_CD,
+BENE_MLG_CNTCT_ZIP_CD,CLM_MDCL_REC,CLAIM_QUERY_CODE,FI_CLM_ACTN_CD,CLM_MCO_PD_SW,
+NCH_BENE_DSCHRG_DT,CLM_TRTMT_AUTHRZTN_NUM,CLM_PRCR_RTRN_CD,CLM_SRVC_FAC_ZIP_CD,
 CLM_NEXT_GNRTN_ACO_IND_CD1,CLM_NEXT_GNRTN_ACO_IND_CD2,CLM_NEXT_GNRTN_ACO_IND_CD3,
 CLM_NEXT_GNRTN_ACO_IND_CD4,CLM_NEXT_GNRTN_ACO_IND_CD5,ACO_ID_NUM,FINL_STD_AMT,CLM_BENE_ID_TYPE_CD,
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,PPS_STD_VAL_PYMT_AMT,CLM_MODEL_REIMBRSMT_AMT
@@ -151,6 +151,6 @@ from ext_hha_base_claims_k;
 
 -- Scratch
 select year, count(*)
-from medicare_texas.hha_base_claims_k
+from uthealth/medicare_national.hha_base_claims_k
 group by 1
 order by 1;

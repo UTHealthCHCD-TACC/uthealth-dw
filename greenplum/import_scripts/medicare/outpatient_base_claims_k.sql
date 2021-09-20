@@ -27,14 +27,14 @@ PRCDR_DT20 varchar, ICD_PRCDR_CD21 varchar, PRCDR_DT21 varchar, ICD_PRCDR_CD22 v
 PRCDR_DT23 varchar, ICD_PRCDR_CD24 varchar, PRCDR_DT24 varchar, ICD_PRCDR_CD25 varchar, PRCDR_DT25 varchar, RSN_VISIT_CD1 varchar, 
 RSN_VISIT_CD2 varchar, RSN_VISIT_CD3 varchar, NCH_BENE_PTB_DDCTBL_AMT varchar, NCH_BENE_PTB_COINSRNC_AMT varchar, 
 CLM_OP_PRVDR_PMT_AMT varchar, CLM_OP_BENE_PMT_AMT varchar, DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, 
-BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_zip5_CD varchar, CLM_MDCL_REC varchar, FI_CLM_ACTN_CD varchar, 
-NCH_BLOOD_PNTS_FRNSHD_QTY varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_zip5_CD varchar, 
+BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_ZIP_CD varchar, CLM_MDCL_REC varchar, FI_CLM_ACTN_CD varchar, 
+NCH_BLOOD_PNTS_FRNSHD_QTY varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_ZIP_CD varchar, 
 CLM_OP_TRANS_TYPE_CD varchar, CLM_OP_ESRD_MTHD_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, 
 CLM_BENE_ID_TYPE_CD varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/*outpatient_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -42,11 +42,11 @@ select *
 from ext_outpatient_base_claims_k
 limit 1000;
 
-create table medicare_texas.outpatient_base_claims_k
+create table uthealth/medicare_national.outpatient_base_claims_k
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as
 
---insert into medicare_texas.outpatient_base_claims_k 
+--insert into uthealth/medicare_national.outpatient_base_claims_k 
 select * 
 from ext_outpatient_base_claims_k
 
@@ -57,10 +57,10 @@ distributed randomly;
 CLM_RSDL_PYMT_IND_CD,PRVDR_VLDTN_TYPE_CD,RR_BRD_EXCLSN_IND_SW,CLM_MODEL_REIMBRSMT_AMT
  */
 
-alter table medicare_texas.outpatient_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
-alter table medicare_texas.outpatient_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
-alter table medicare_texas.outpatient_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
-alter table medicare_texas.outpatient_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
+alter table medicare_national.outpatient_base_claims_k add column CLM_RSDL_PYMT_IND_CD varchar;
+alter table medicare_national.outpatient_base_claims_k add column PRVDR_VLDTN_TYPE_CD varchar;
+alter table medicare_national.outpatient_base_claims_k add column RR_BRD_EXCLSN_IND_SW varchar;
+alter table medicare_national.outpatient_base_claims_k add column CLM_MODEL_REIMBRSMT_AMT varchar;
 
 drop external table ext_outpatient_base_claims_k;
 
@@ -91,15 +91,15 @@ PRCDR_DT20 varchar, ICD_PRCDR_CD21 varchar, PRCDR_DT21 varchar, ICD_PRCDR_CD22 v
 PRCDR_DT23 varchar, ICD_PRCDR_CD24 varchar, PRCDR_DT24 varchar, ICD_PRCDR_CD25 varchar, PRCDR_DT25 varchar, RSN_VISIT_CD1 varchar, 
 RSN_VISIT_CD2 varchar, RSN_VISIT_CD3 varchar, NCH_BENE_PTB_DDCTBL_AMT varchar, NCH_BENE_PTB_COINSRNC_AMT varchar, 
 CLM_OP_PRVDR_PMT_AMT varchar, CLM_OP_BENE_PMT_AMT varchar, DOB_DT varchar, GNDR_CD varchar, BENE_RACE_CD varchar, 
-BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_zip5_CD varchar, CLM_MDCL_REC varchar, FI_CLM_ACTN_CD varchar, 
-NCH_BLOOD_PNTS_FRNSHD_QTY varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_zip5_CD varchar, 
+BENE_CNTY_CD varchar, BENE_STATE_CD varchar, BENE_MLG_CNTCT_ZIP_CD varchar, CLM_MDCL_REC varchar, FI_CLM_ACTN_CD varchar, 
+NCH_BLOOD_PNTS_FRNSHD_QTY varchar, CLM_TRTMT_AUTHRZTN_NUM varchar, CLM_PRCR_RTRN_CD varchar, CLM_SRVC_FAC_ZIP_CD varchar, 
 CLM_OP_TRANS_TYPE_CD varchar, CLM_OP_ESRD_MTHD_CD varchar, CLM_NEXT_GNRTN_ACO_IND_CD1 varchar, CLM_NEXT_GNRTN_ACO_IND_CD2 varchar, 
 CLM_NEXT_GNRTN_ACO_IND_CD3 varchar, CLM_NEXT_GNRTN_ACO_IND_CD4 varchar, CLM_NEXT_GNRTN_ACO_IND_CD5 varchar, ACO_ID_NUM varchar, 
 CLM_BENE_ID_TYPE_CD varchar,
 CLM_RSDL_PYMT_IND_CD varchar, PRVDR_VLDTN_TYPE_CD varchar, RR_BRD_EXCLSN_IND_SW varchar, CLM_MODEL_REIMBRSMT_AMT varchar
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/medicare_texas/*/*outpatient_base_claims_k.csv.gz#transform=add_parentname_filename_comma'
+'gpfdist://greenplum01:8081/uthealth/medicare_national/*/OUTPATIENT_BASE_CLAIMS.CSV#transform=add_parentname_filename_comma'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
@@ -107,7 +107,7 @@ select *
 from ext_outpatient_base_claims_k
 limit 1000;
 
-insert into medicare_texas.outpatient_base_claims_k (year,
+insert into medicare_national.outpatient_base_claims_k (year,
 BENE_ID, CLM_ID, NCH_NEAR_LINE_REC_IDENT_CD, NCH_CLM_TYPE_CD, CLM_FROM_DT, CLM_THRU_DT, 
 NCH_WKLY_PROC_DT, FI_CLM_PROC_DT, CLAIM_QUERY_CODE, PRVDR_NUM, CLM_FAC_TYPE_CD, 
 CLM_SRVC_CLSFCTN_TYPE_CD, CLM_FREQ_CD, FI_NUM, CLM_MDCR_NON_PMT_RSN_CD, CLM_PMT_AMT, 
@@ -133,8 +133,8 @@ PRCDR_DT20, ICD_PRCDR_CD21, PRCDR_DT21, ICD_PRCDR_CD22, PRCDR_DT22, ICD_PRCDR_CD
 PRCDR_DT23, ICD_PRCDR_CD24, PRCDR_DT24, ICD_PRCDR_CD25, PRCDR_DT25, RSN_VISIT_CD1, 
 RSN_VISIT_CD2, RSN_VISIT_CD3, NCH_BENE_PTB_DDCTBL_AMT, NCH_BENE_PTB_COINSRNC_AMT, 
 CLM_OP_PRVDR_PMT_AMT, CLM_OP_BENE_PMT_AMT, DOB_DT, GNDR_CD, BENE_RACE_CD, 
-BENE_CNTY_CD, BENE_STATE_CD, BENE_MLG_CNTCT_zip5_CD, CLM_MDCL_REC, FI_CLM_ACTN_CD, 
-NCH_BLOOD_PNTS_FRNSHD_QTY, CLM_TRTMT_AUTHRZTN_NUM, CLM_PRCR_RTRN_CD, CLM_SRVC_FAC_zip5_CD, 
+BENE_CNTY_CD, BENE_STATE_CD, BENE_MLG_CNTCT_ZIP_CD, CLM_MDCL_REC, FI_CLM_ACTN_CD, 
+NCH_BLOOD_PNTS_FRNSHD_QTY, CLM_TRTMT_AUTHRZTN_NUM, CLM_PRCR_RTRN_CD, CLM_SRVC_FAC_ZIP_CD, 
 CLM_OP_TRANS_TYPE_CD, CLM_OP_ESRD_MTHD_CD, CLM_NEXT_GNRTN_ACO_IND_CD1, CLM_NEXT_GNRTN_ACO_IND_CD2, 
 CLM_NEXT_GNRTN_ACO_IND_CD3, CLM_NEXT_GNRTN_ACO_IND_CD4, CLM_NEXT_GNRTN_ACO_IND_CD5, ACO_ID_NUM, 
 CLM_BENE_ID_TYPE_CD,
@@ -166,8 +166,8 @@ PRCDR_DT20, ICD_PRCDR_CD21, PRCDR_DT21, ICD_PRCDR_CD22, PRCDR_DT22, ICD_PRCDR_CD
 PRCDR_DT23, ICD_PRCDR_CD24, PRCDR_DT24, ICD_PRCDR_CD25, PRCDR_DT25, RSN_VISIT_CD1, 
 RSN_VISIT_CD2, RSN_VISIT_CD3, NCH_BENE_PTB_DDCTBL_AMT, NCH_BENE_PTB_COINSRNC_AMT, 
 CLM_OP_PRVDR_PMT_AMT, CLM_OP_BENE_PMT_AMT, DOB_DT, GNDR_CD, BENE_RACE_CD, 
-BENE_CNTY_CD, BENE_STATE_CD, BENE_MLG_CNTCT_zip5_CD, CLM_MDCL_REC, FI_CLM_ACTN_CD, 
-NCH_BLOOD_PNTS_FRNSHD_QTY, CLM_TRTMT_AUTHRZTN_NUM, CLM_PRCR_RTRN_CD, CLM_SRVC_FAC_zip5_CD, 
+BENE_CNTY_CD, BENE_STATE_CD, BENE_MLG_CNTCT_ZIP_CD, CLM_MDCL_REC, FI_CLM_ACTN_CD, 
+NCH_BLOOD_PNTS_FRNSHD_QTY, CLM_TRTMT_AUTHRZTN_NUM, CLM_PRCR_RTRN_CD, CLM_SRVC_FAC_ZIP_CD, 
 CLM_OP_TRANS_TYPE_CD, CLM_OP_ESRD_MTHD_CD, CLM_NEXT_GNRTN_ACO_IND_CD1, CLM_NEXT_GNRTN_ACO_IND_CD2, 
 CLM_NEXT_GNRTN_ACO_IND_CD3, CLM_NEXT_GNRTN_ACO_IND_CD4, CLM_NEXT_GNRTN_ACO_IND_CD5, ACO_ID_NUM, 
 CLM_BENE_ID_TYPE_CD,
@@ -176,6 +176,6 @@ from ext_outpatient_base_claims_k;
 
 -- Scratch
 select year, count(*)
-from medicare_texas.outpatient_base_claims_k
+from uthealth/medicare_national.outpatient_base_claims_k
 group by 1
 order by 1;

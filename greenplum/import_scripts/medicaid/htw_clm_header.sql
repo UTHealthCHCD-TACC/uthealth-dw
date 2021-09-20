@@ -3,7 +3,7 @@ drop table medicaid.htw_clm_header;
 create table medicaid.htw_clm_header ( 
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
-HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_zip5_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
+HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_ZIP_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
 REAS_ICD_QAL_1 varchar,REAS_CD_1 varchar,REAS_ICD_QAL_2 varchar,REAS_CD_2 varchar,REAS_ICD_QAL_3 varchar,REAS_CD_3 varchar,
 PROC_DT_1 varchar,PROC_DT_2 varchar,PROC_DT_3 varchar,PROC_DT_4 varchar,PROC_DT_5 varchar,PROC_DT_6 varchar,PROC_DT_7 varchar,
 PROC_DT_8 varchar,PROC_DT_9 varchar,PROC_DT_10 varchar,PROC_DT_11 varchar,PROC_DT_12 varchar,PROC_DT_13 varchar,PROC_DT_14 varchar,
@@ -18,7 +18,7 @@ drop external table ext_htw_clm_header;
 CREATE EXTERNAL TABLE ext_htw_clm_header (
 ICN varchar,CLM_TYP_CD varchar,CLM_STAT_DT varchar,CLM_PRG_CD varchar,CLM_CUR_STAT_CD varchar,HDR_PD_DT varchar,HDR_FRM_DOS varchar,HDR_TO_DOS varchar,
 ADM_DT varchar,DIS_DT varchar,PAT_STAT_CD varchar,TOT_BILL_AMT varchar,TOT_ALWD_AMT varchar,HDR_PD_AMT varchar,BILL_PROV_NPI varchar,BILL_PROV_ID varchar,BILL_PROV_SFX varchar,
-HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_zip5_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
+HDR_TXM_CD varchar,BILL_PROV_TY_CD varchar,BILL_PROV_SP_CD varchar,HDR_ZIP_CD varchar,ATD_PROV_NPI varchar,FAC_PROV_TY_CD varchar,POA_CD varchar,PTA_CD varchar,
 REAS_ICD_QAL_1 varchar,REAS_CD_1 varchar,REAS_ICD_QAL_2 varchar,REAS_CD_2 varchar,REAS_ICD_QAL_3 varchar,REAS_CD_3 varchar,
 PROC_DT_1 varchar,PROC_DT_2 varchar,PROC_DT_3 varchar,PROC_DT_4 varchar,PROC_DT_5 varchar,PROC_DT_6 varchar,PROC_DT_7 varchar,
 PROC_DT_8 varchar,PROC_DT_9 varchar,PROC_DT_10 varchar,PROC_DT_11 varchar,PROC_DT_12 varchar,PROC_DT_13 varchar,PROC_DT_14 varchar,

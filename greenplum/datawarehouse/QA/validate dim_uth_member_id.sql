@@ -10,7 +10,7 @@ select schemaname, relname,
        vacuum_count, autovacuum_count, 
        analyze_count, autoanalyze_count
 from pg_stat_user_tables
-where schemaname in ('data_warehouse','conditions','dw_qa','reference_tables','medicare_national','medicare_texas','optum_zip','optum_zip','truven')
+where schemaname in ('data_warehouse','conditions','dw_qa','reference_tables','medicare_national','uthealth/medicare_national','optum_zip','optum_zip','truven')
 order by relname;
 
 
@@ -42,7 +42,7 @@ order by  data_source
 ;
 
 
-select count(distinct bene_id), 'mcrt' as ds  from medicare_texas.mbsf_abcd_summary
+select count(distinct bene_id), 'mcrt' as ds  from uthealth/medicare_national.mbsf_abcd_summary
 union 
 select count(distinct bene_id), 'mcrn' from medicare_national.mbsf_abcd_summary
 union 
@@ -88,7 +88,7 @@ order by a.year
 
 
 select count(*), year 
-from medicare_texas.admit_clm 
+from uthealth/medicare_national.admit_clm 
 group by "year" 
 order by year 
 ;

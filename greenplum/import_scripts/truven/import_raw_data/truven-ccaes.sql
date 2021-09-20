@@ -511,7 +511,7 @@ CREATE EXTERNAL TABLE ext_ccaes_v4 (
 	indstry bpchar(5)
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/truven/2019/ccaes*'
+'gpfdist://greenplum01:8081/truven/2019/ccaes*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

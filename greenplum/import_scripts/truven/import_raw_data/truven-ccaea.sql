@@ -232,7 +232,7 @@ CREATE EXTERNAL TABLE ext_ccaea_vDMS (
 	wgtkey text 
 ) 
 LOCATION ( 
-'gpfdist://192.168.58.179:8081/ccaea*'
+'gpfdist://greenplum01:8081/ccaea*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 

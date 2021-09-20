@@ -11,7 +11,7 @@ union
 	from optum_zip.mbr_enroll 
 union 
 	select count(distinct bene_id), 'mcrt' 
-	from medicare_texas.mbsf_abcd_summary 
+	from uthealth/medicare_national.mbsf_abcd_summary 
 union 
 	select count(distinct bene_id), 'mcrn'
 	from medicare_national.mbsf_abcd_summary 

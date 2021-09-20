@@ -18,7 +18,7 @@ insert into dev.am_member_race ( data_source , member_id_src , race , data_year 
 --MCRT
 insert into dev.am_member_race ( data_source , member_id_src , race , data_year )
 	select distinct 'mcrt' as data_source, bene_id as member_id_src, cast(bene_race_cd as int) as race ,cast(year as int)
-		from medicare_texas.mbsf_abcd_summary  
+		from uthealth/medicare_national.mbsf_abcd_summary  
 		where bene_id not in (select member_id_src from dev.am_member_race where data_source = 'mcrt')
  	 
 -------------------------------------------------------------------------------------------		

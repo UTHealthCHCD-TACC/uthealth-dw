@@ -26,9 +26,9 @@ ORDER_DATE date,ORDER_TIME time,COLLECTED_DATE date,COLLECTED_TIME time,RESULT_D
 TEST_RESULT varchar,RELATIVE_INDICATOR varchar,RESULT_UNIT varchar,NORMAL_RANGE varchar,EVALUATED_FOR_RANGE varchar,VALUE_WITHIN_RANGE varchar,SOURCEID varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210624/*lab-fixed.txt'
+'gpfdist://greenplum01:8081/covid/20210624/lab/*lab-fixed.txt'
 )
-FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
+FORMAT 'text' ( DELIMITER '|' null as '' escape 'OFF');
 
 -- Test
 /*

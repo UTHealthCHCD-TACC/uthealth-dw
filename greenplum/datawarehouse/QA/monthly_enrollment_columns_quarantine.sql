@@ -286,7 +286,7 @@ where  uth_member_id is null ;
         union all
 
         select bene_id::text as patidsrc
-        from medicare_texas.mbsf_abcd_summary
+        from uthealth/medicare_national.mbsf_abcd_summary
         
         union all
         
