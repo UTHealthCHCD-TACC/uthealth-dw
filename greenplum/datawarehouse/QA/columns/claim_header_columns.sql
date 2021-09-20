@@ -10,7 +10,6 @@
 -- jw | 9/9/21 | edit 1
 */
 
-
 drop table if exists qa_reporting.claim_header_column_checks ;
 
 create table qa_reporting.claim_header_column_checks 
@@ -281,9 +280,9 @@ from (
     group by data_source, year
     ) a;   
    
+---truven missing to_date_of_service in insert statement
    
-   
------------------------------------
+   -----------------------------------
 -----claim_type--------------------
 -----------------------------------
 

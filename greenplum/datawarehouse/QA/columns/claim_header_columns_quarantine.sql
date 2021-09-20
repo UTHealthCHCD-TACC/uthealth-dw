@@ -22,10 +22,11 @@ create table qa_reporting.claim_header_quarantine
 with(appendonly = true, orientation = column, compresstype = zlib)
 as
 select *
-from data_warehouse.member_enrollment_monthly
+from data_warehouse.claim_header
 limit 0 
 distributed by (uth_member_id);
 
+vacuum analyze  qa_reporting.claim_header_quarantine;
 
 ------------------------------------
 --------data source---------
@@ -137,11 +138,12 @@ where  year not between 2007 and 2020
 ---------------------------------
     
 -------------------------check 1: in dim table  
-alter table qa_reporting.claim_header_quarantine add column uth_claim_id_flag int;
+alter table qa_reporting.claim_header_quarantine 
+add column uth_claim_id_flag int;
 
 with ut_claim_id_table
 as (
-    select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
+    select a.*, b.uth_claim_id as dim_id
     from data_warehouse.claim_header a
     left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
     )
@@ -185,7 +187,7 @@ select
 				cost_factor_year,
 				to_date_of_service,
        1 as uth_claim_id_flag 
-from   ut_claim_id_table 
+from  ut_claim_id_table 
 where dim_id is null;  
 
 
@@ -193,12 +195,13 @@ where dim_id is null;
 -----uth_member_id---------------
 ---------------------------------
 	
-alter table qa_reporting.claim_header_quarantine add column member_id_flag int;
+alter table qa_reporting.claim_header_quarantine 
+add column member_id_flag int;
 
 
 with ut_id_table
 as (
-    select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
+    select a.*, b.uth_member_id as src_id
     from data_warehouse.claim_header a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
@@ -241,7 +244,7 @@ select
 						fiscal_year,
 						cost_factor_year,
 						to_date_of_service,
-						1 as id_not_in_source 
+						1 as member_id_flag 
 from   ut_id_table 
 where  src_id is null ;  
 
@@ -300,7 +303,7 @@ where  from_date_of_service not between '2007-01-01' and current_date
                
                        
 ------------------------------------
---------from_date_of_service--------
+--------to_date_of_service--------
 ------------------------------------
 
                        
@@ -349,7 +352,7 @@ insert into qa_reporting.claim_header_quarantine
 						1 as to_date_of_service_flag 
 from   data_warehouse.claim_header
 where  to_date_of_service not between '2007-01-01' and current_date
-                        or to_date_of_service is null ;
+                        and to_date_of_service is not null ;
                        
                        
                        
@@ -420,7 +423,7 @@ alter table qa_reporting.claim_header_quarantine
 
 with ut_admission_id_table
 as (
-    select b.uth_admission_id, a."year", a.data_source, b.uth_admission_id as dim_admit
+    select a.*, b.uth_admission_id as dim_admit
     from data_warehouse.claim_header a
     left join data_warehouse.dim_uth_admission_id b on a.uth_admission_id = b.uth_admission_id 
     where a.uth_admission_id is not null
@@ -483,9 +486,7 @@ alter table qa_reporting.claim_header_quarantine
 
 with ut_admission_id_table_src
 as (
-    select a.admission_id_src , 
-    				a."year", 
-    				a.data_source, 
+    select a.*,
     				b.admission_id_src as dim_admit
      	from data_warehouse.claim_header a
   	  left join data_warehouse.dim_uth_admission_id b 
@@ -773,7 +774,7 @@ alter table qa_reporting.claim_header_quarantine
  
 with ut_id_table
 as (
-    select a.uth_member_id, a."year", a.data_source, a.member_id_src, c.id_src 
+    select a.*, c.id_src as id_src 
     from data_warehouse.claim_header a
     left outer join dev.qa_claim_header_temp_member_idsrc c 
         on a.member_id_src = c.id_src
@@ -818,7 +819,7 @@ insert into qa_reporting.claim_header_quarantine
 						cost_factor_year,
 						to_date_of_service,
 						1 as member_id_flag 	
-				from src_table 
+				from ut_id_table 
 			 where id_src is null;                       
                        
 			
@@ -871,7 +872,7 @@ insert into qa_reporting.claim_header_quarantine
 						to_date_of_service,
 						1 as table_id_src_flag 
 from   data_warehouse.claim_header
-where  table_id_srctable_id_src not in ('outpatient_base_claims_k','medical',
+where  table_id_src not in ('outpatient_base_claims_k','medical',
 'hha_base_claims_k','enc_header','ccaeo','dme_claims_k','snf_base_claims_k',
 'mdcrs','mdcro','inpatient_base_claims_k','ccaes','bcarrier_claims_k',
 'clm_header','hospice_base_claims_k')               ;                
@@ -902,7 +903,7 @@ insert into qa_reporting.claim_header_quarantine
 				claim_id_src,
 				member_id_src,
 				table_id_src,
-				fiscal_year_flag,
+				fiscal_year,
 				cost_factor_year,
 				to_date_of_service,
 				fiscal_year_flag
@@ -922,7 +923,7 @@ select
 				claim_id_src,
 				member_id_src,
 				table_id_src,
-				fiscal_year,,
+				fiscal_year,
 				cost_factor_year,
 				to_date_of_service,
        1 as fiscal_year_flag 
@@ -999,28 +1000,68 @@ where  (cost_factor_year not between 2007 and 2020
        
        
        
-/*
 
-select * from qa_reporting.claim_header_quarantine where data_source_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where month_year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where id_not_in_dim= 1 ;
-select * from qa_reporting.claim_header_quarantine where id_not_in_source= 1 ;
-select * from qa_reporting.claim_header_quarantine where consecutive_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where gender_cd_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where state_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where zip5_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where zip3_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where age_derived_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where dob_derived_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where death_date_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where plan_type_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where bus_cd_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where employee_status_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where row_identifier_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where rx_coverage_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where fiscal_year_flag= 1 ;
-select * from qa_reporting.claim_header_quarantine where race_cd_flag= 1 ;
+
+select * from qa_reporting.claim_header_quarantine
+where data_source_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where year_flag = 1;
+
+-- fiscal year is normal but year is higher
+-- lopita said some claims are older 
+-- should we say ... if not in range and fiscal year in range then fine? 
+
+
+select * from qa_reporting.claim_header_quarantine
+where uth_claim_id_flag = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where member_id_flag = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where from_date_of_service_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where to_date_of_service_flag = 1
+and data_source = 'truv';
+
+
+select * from qa_reporting.claim_header_quarantine
+where claim_type_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where admission_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where admission_id_src_flag = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where total_charge_amount_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where total_allowed_amount = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where claim_id_source_flag = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where member_id_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where table_id_src_flag = 1;
+
+
+select * from qa_reporting.claim_header_quarantine
+where fiscal_year_flag = 1;
+
+select * from qa_reporting.claim_header_quarantine
+where cost_factor_year = 1;
 
 */
 

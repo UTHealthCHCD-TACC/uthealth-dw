@@ -8,6 +8,7 @@
 --------------------------------------------------------------------------------
 
 --- jw001 | 8/16/21 | script creation
+--- jw002 | 9/2021  | updated with new conditions for zip codes that don't join state ref b/c source is 00000
 
 */
 
@@ -316,11 +317,11 @@ select 'consecutive_enrolled_months' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when consecutive_enrolled_months between 0 and 168
+				when consecutive_enrolled_months between 0 and 156
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when consecutive_enrolled_months not between 0 and 168
+					when consecutive_enrolled_months not between 0 and 156
 						or consecutive_enrolled_months is null
 						then 1
 					end), 0) as invalidvalues,
@@ -412,7 +413,7 @@ as (
 	from data_warehouse.member_enrollment_monthly a
 	left join dev.qa_temp_all_states b on a.state = b.state
 	)
-insert into qa_reporting.monthly_enrollment_column_checks (
+/*insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
 	validvalues,
 	invalidvalues,
@@ -421,7 +422,7 @@ insert into qa_reporting.monthly_enrollment_column_checks (
 	"year",
 	data_source,
 	note
-	)
+	)*/
 select 'state' as test_var,
 	validvalues,
 	invalidvalues,
@@ -432,11 +433,11 @@ select 'state' as test_var,
 	'' as note
 from (
 	select sum(case
-				when state_check is not null
+				when state_check is not null or zip5 = '00000'
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when state_check is null
+					when state_check is null and zip5 <> '00000'
 						then 1
 					end), 0) as invalidvalues,
 		year,
@@ -799,7 +800,43 @@ from (
 		year,
 		data_source
 	from data_warehouse.member_enrollment_monthly
-	where data_source in ('truv', 'optz', 'optd')
+	where data_source in ('optz', 'optd')
+    group by data_source, year
+	) a;
+
+/*--------plan_type------truv----
+insert into qa_reporting.monthly_enrollment_column_checks (
+	test_var,
+	validvalues,
+	invalidvalues,
+	percent_invalid,
+	pass_threshold,
+	"year",
+	data_source,
+	note
+	)*/
+select 'plan_type' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'from reference_tables.ref_plan_type' as note
+from (
+	select sum(case
+				when plan_type in ('ALL', 'EPO', 'GPO', 'HMO', 'IND', 'IPP', 'NONE', 'OTH', 'POS', 'PPO', 'SPN', 'UNK', 'BMM', 'CMP', 'EPO', 'HMO', 'POS', 'PPO', 'POS', 'CDHP', 'HDHP')
+					or plan_type is null then 1
+				end) as validvalues,
+		coalesce(sum(case
+					when plan_type not in ('ALL', 'EPO', 'GPO', 'HMO', 'IND', 'IPP', 'NONE', 'OTH', 'POS', 'PPO', 'SPN', 'UNK', 'BMM', 'CMP', 'EPO', 'HMO', 'POS', 'PPO', 'POS', 'CDHP', 'HDHP')
+						and plan_type is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from data_warehouse.member_enrollment_monthly
+	where data_source in ('truv')
     group by data_source, year
 	) a;
 	
