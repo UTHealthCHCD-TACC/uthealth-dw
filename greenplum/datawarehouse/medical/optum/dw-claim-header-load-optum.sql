@@ -30,41 +30,18 @@ vacuum analyze dw_staging.claim_header;
 
 
 ---create copy of dimension table distributed on member id src 
-drop table if exists dw_staging.temp_dim_uth_claim_id_optd;
+drop table if exists dw_staging.optd_uth_claim_id;
 
-create table dw_staging.temp_dim_uth_claim_id_optd
+create table dw_staging.optd_uth_claim_id
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.temp_dim_uth_claim_id_optd;
+vacuum analyze dw_staging.optd_uth_claim_id;
 
-<<<<<<< Updated upstream
---optd medical
-drop table if exists dev.wc_optd_medical;
-create table dev.wc_optd_medical 
-with(appendonly=true,orientation=column,compresstype=zlib)
-as select * from optum_zip.medical
-distributed by (patid);
-
-vacuum analyze dev.wc_optd_medical;
-
-vacuum analyze dev.wc_optd_uth_claim;
-
-
---admit id for optd only
-drop table dev.wc_uth_admission_id_optd; 
-
-create table dev.wc_uth_admission_id_optd 
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.dim_uth_admission_id where data_source = 'optd'
-distributed by (member_id_src);
-=======
->>>>>>> Stashed changes
 
 
 --optd
---insert into data_warehouse.claim_header(
 insert into dw_staging.claim_header 
 (
 	data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
@@ -83,18 +60,12 @@ select distinct on(b.uth_claim_id)
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
 	a.year as fiscal, 
-<<<<<<< Updated upstream
 	a.std_cost_yr::int as cost_year,
 	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-from dev.wc_optd_medical a  --*optum_zip.medical a
-    join dev.wc_optd_uth_claim b --data_warehouse.dim_uth_claim_id b 
-		on a.patid::text = b.member_id_src 
-=======
 	a.std_cost_yr::int as cost_year
 from optum_dod.medical a
-    join dw_staging.temp_dim_uth_claim_id_optd b 
+    join dw_staging.optd_uth_claim_id b 
 		on a.member_id_src = b.member_id_src 
->>>>>>> Stashed changes
 		and a.clmid = b.claim_id_src
 	join reference_tables.ref_optum_cost_factor c
 		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
@@ -112,14 +83,14 @@ from optum_dod.medical a
 --------------------------------------------------------------------------------------------------
 
 ---create copy of dimension table distributed on member id src optz
-drop table if exists dw_staging.temp_dim_uth_claim_id_optz;
+drop table if exists dw_staging.optz_uth_claim_id;
 
-create table dw_staging.temp_dim_uth_claim_id_optz
+create table dw_staging.optz_uth_claim_id
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.temp_dim_uth_claim_id_optz;
+vacuum analyze dw_staging.optz_uth_claim_id;
 
 ---optum zip insert 
 insert into dw_staging.claim_header 
@@ -142,7 +113,7 @@ select distinct on(b.uth_claim_id)
 	a.year as fiscal, 
 	a.std_cost_yr::int as cost_year
 from optum_zip.medical a
-    join dw_staging.temp_dim_uth_claim_id_optz b   
+    join dw_staging.optz_uth_claim_id b   
 		on a.patid::text = b.member_id_src 
 		and a.clmid = b.claim_id_src
 	join reference_tables.ref_optum_cost_factor c 
@@ -154,4 +125,8 @@ from optum_zip.medical a
       and d."year" = a."year" 
      ;
     
+  ---va 
+ vacuum analyze dw_staging.claim_header ;
+    
 
+--------------- END SCRIPT -------
