@@ -1,110 +1,80 @@
+
+/* ******************************************************************************************************
+ *  load claim header for optum zip and optum dod 
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ * ******************************************************************************************************
+ *  wcc001  || 9/09/2021 || add comment block. migrate to dw_staging load 
+ * ****************************************************************************************************** 
+ * */
+
+
+--------------- BEGIN SCRIPT -------
+
+---create a copy of production data warehouse table 
+create table dw_staging.claim_header 
+with (appendonly=true, orientation=column) as 
+select data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
+       total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+from data_warehouse.claim_header ch 
+where data_source not in ('optd','optz')
+distributed by (uth_member_id) 
+;
+
+vacuum analyze dw_staging.claim_header; 
+
 --------------------------------------------------------------------------------------------------
 --- ** OPTD **
 --------------------------------------------------------------------------------------------------
 
----working table
-drop table if exists dev.wc_claim_header_optd;
 
-create table dev.wc_claim_header_optd
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.claim_header limit 0
-distributed by (member_id_src);
+---create copy of dimension table distributed on member id src 
+drop table if exists dw_staging.optd_uth_claim_id;
 
-
----dim uth claims for optd 
-drop table if exists dev.wc_optd_uth_claim;
-create table dev.wc_optd_uth_claim
+create table dw_staging.optd_uth_claim_id
 with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
+vacuum analyze dw_staging.optd_uth_claim_id;
 
---optd medical
-drop table if exists dev.wc_optd_medical;
-create table dev.wc_optd_medical 
-with(appendonly=true,orientation=column,compresstype=zlib)
-as select * from optum_zip.medical
-distributed by (patid);
-
-vacuum analyze dev.wc_optd_medical;
-
-vacuum analyze dev.wc_optd_uth_claim;
-
-
---admit id for optd only
-drop table dev.wc_uth_admission_id_optd; 
-
-create table dev.wc_uth_admission_id_optd 
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.dim_uth_admission_id where data_source = 'optd'
-distributed by (member_id_src);
 
 
 --optd
---insert into data_warehouse.claim_header(
-insert into dev.wc_claim_header_optd(
-		data_source, 
-		year,
-		uth_claim_id, 
-		uth_member_id,
-	    from_date_of_service,
-	    claim_type,
-	    uth_admission_id,
-		total_charge_amount, 
-		total_allowed_amount, 
-		total_paid_amount,
-		claim_id_src,
-		member_id_src,
-		table_id_src,
-		bill_type,
-		fiscal_year, 
-		cost_factor_year, 
-		to_date_of_service
-		)	
-	select distinct on(b.uth_claim_id)
+insert into dw_staging.claim_header 
+(
+	data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
+	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+)	
+select distinct on(b.uth_claim_id)
 	'optd', 
 	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
-	b.uth_claim_id,
 	b.uth_member_id, 
+	b.uth_claim_id,
+	c.claim_type_code,	
 	min(a.fst_dt) over(partition by b.uth_claim_id) as from_date_of_service,
-	c.claim_type_code,
+	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service,
 	d.uth_admission_id,
 	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
-	a.clmid,
-	a.patid::text, 
-	'medical' as table_src,	
-	a.bill_type,
 	a.year as fiscal, 
 	a.std_cost_yr::int as cost_year,
 	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-from dev.wc_optd_medical a  --*optum_zip.medical a
-    join dev.wc_optd_uth_claim b --data_warehouse.dim_uth_claim_id b 
-		on a.patid::text = b.member_id_src 
+	a.std_cost_yr::int as cost_year
+from optum_dod.medical a
+    join dw_staging.optd_uth_claim_id b 
+		on a.member_id_src = b.member_id_src 
 		and a.clmid = b.claim_id_src
 	join reference_tables.ref_optum_cost_factor c
 		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
 		and c.standard_price_year = a.std_cost_yr::int
-    left outer join dev.wc_uth_admission_id_optd d  --data_warehouse.dim_uth_admission_id d 
+    left outer join data_warehouse.dim_uth_admission_id d 
        on d.member_id_src = a.patid::text 
       and d.admission_id_src = a.conf_id 
       and d."year" = a."year" 
 ;
-
-
-
-    --va
-vacuum analyze dev.wc_claim_header_optd;
-
---remove existing records from claim header
-delete from data_warehouse.claim_header where data_source = 'optd';
-
-
----load new records into claim header
-insert into data_warehouse.claim_header 
-select * from dev.wc_claim_header_optd;
-
 
 
 
@@ -112,169 +82,51 @@ select * from dev.wc_claim_header_optd;
 --- ** OPTZ **
 --------------------------------------------------------------------------------------------------
 
----working table
-drop table if exists dev.wc_claim_header_optz;
+---create copy of dimension table distributed on member id src optz
+drop table if exists dw_staging.optz_uth_claim_id;
 
-create table dev.wc_claim_header_optz
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.claim_header limit 0
-distributed by (member_id_src);
-
-
----drop if exist
-drop table if exists dev.wc_optz_medical;
-create table dev.wc_optz_medical 
-with(appendonly=true,orientation=column)
-as select * from optum_zip.medical
-distributed by (clmid );
-
----dim uth claim
-drop table dev.wc_optz_uth_claim;
-create table dev.wc_optz_uth_claim
-with(appendonly=true,orientation=column)
+create table dw_staging.optz_uth_claim_id
+with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
-distributed by (claim_id_src);
-
-
-vacuum analyze dev.wc_optz_uth_claim;
-
-vacuum analyze dev.wc_optz_medical;
-
-
---optz admissions
-create table dev.wc_uth_admission_id_optz 
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.dim_uth_admission_id where data_source = 'optz'
 distributed by (member_id_src);
 
+vacuum analyze dw_staging.optz_uth_claim_id;
 
----optz claim header
-insert into dev.wc_claim_header_optz(
-		data_source, 
-		year,
-		uth_claim_id, 
-		uth_member_id,
-	    from_date_of_service,
-	    claim_type,
-	    uth_admission_id,
-		total_charge_amount, 
-		total_allowed_amount, 
-		total_paid_amount,
-		claim_id_src,
-		member_id_src,
-		table_id_src,
-		bill_type,
-		fiscal_year, 
-		cost_factor_year, 
-		to_date_of_service
-		)
-	select distinct on(b.uth_claim_id)
+---optum zip insert 
+insert into dw_staging.claim_header 
+(
+	data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
+	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+)	
+select distinct on(b.uth_claim_id)
 	'optz', 
 	extract(year from (min(a.fst_dt) over(partition by b.uth_claim_id))),
-	b.uth_claim_id,
 	b.uth_member_id, 
+	b.uth_claim_id,
+	c.claim_type_code,	
 	min(a.fst_dt) over(partition by b.uth_claim_id) as from_date_of_service,
-	c.claim_type_code,
+	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service,
 	d.uth_admission_id,
 	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
-	a.clmid,
-	a.patid::text, 
-	'medical' as table_src,	
-	a.bill_type,
 	a.year as fiscal, 
-	a.std_cost_yr::int as cost_year,
-	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-from dev.wc_optz_medical a    --*from optum_zip.medical a
-    join dev.wc_optz_uth_claim b   --*data_warehouse.dim_uth_claim_id b
+	a.std_cost_yr::int as cost_year
+from optum_zip.medical a
+    join dw_staging.optz_uth_claim_id b   
 		on a.patid::text = b.member_id_src 
 		and a.clmid = b.claim_id_src
 	join reference_tables.ref_optum_cost_factor c 
 	    on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
 	   and c.standard_price_year = a.std_cost_yr::int
-    left outer join dev.wc_uth_admission_id_optz d    --*data_warehouse.dim_uth_admission_id d
+    left outer join data_warehouse.dim_uth_admission_id d
        on d.member_id_src = a.patid::text 
       and d.admission_id_src = a.conf_id 
       and d."year" = a."year" 
      ;
     
+  ---va 
+ vacuum analyze dw_staging.claim_header ;
     
-    select * from dev.wc_claim_header_optz ch where data_source = 'optz' and bill_type is not null;
 
-   
-   select * from optum_zip.medical m where bill_type is not null;
-    
-    --va
-vacuum analyze dev.wc_claim_header_optz;
-
-select count(*), count(distinct uth_cla
-im_id), year from dev.wc_claim_header_optz group by year order by year;
-
-
-select count(*), count(distinct clmid), year from optum_zip.medical m group by year order by year;
-
-
-select count(*), count(distinct uth_claim_id), data_year from data_warehouse.dim_uth_claim_id duci where data_source = 'optz'
-group by data_year order by data_year 
-
-
-select a.*, b.*
-from data_warehouse.dim_uth_claim_id a 
-left outer join optum_zip.medical b 
-   on a.claim_id_src = b.clmid 
-  and a.member_id_src = b.patid::text 
-where b.patid is null 
-  and a.data_source = 'optz'
-;
-
-
---remove existing records from claim header
-delete from data_warehouse.claim_header where data_source = 'optz';
-
-
-
-
-
----load new records into claim header
-insert into data_warehouse.claim_header 
-select * from dev.wc_claim_header_optz;
-
---va
-vacuum analyze data_warehouse.claim_header;
-
-
-select * from data_warehouse.claim_header ch where data_source = 'optd' and bill_type is not null;
-
-
---validate
-select count(*), count(distinct uth_claim_id), data_source
-from data_warehouse.claim_header 
-group by data_source; 
-
-
---validate
-select count(*), count(distinct uth_claim_id), data_source, year 
-from data_warehouse.claim_header 
-group by data_source, year 
-order by data_source , year ; 
-
-
------ optd *CLEANUP
-drop table dev.wc_claim_header_optd;
-
-drop table dev.wc_optd_uth_claim;
-
-drop table dev.wc_optd_medical;
-
-drop table dev.wc_uth_admission_id_optd ;
-
-
----optz *CLEANUP
-drop table dev.wc_claim_header_optz;
-
-drop table dev.wc_optz_uth_claim;
-
-drop table dev.wc_optz_medical;
-
-drop table dev.wc_uth_admission_id_optz ;
+--------------- END SCRIPT -------

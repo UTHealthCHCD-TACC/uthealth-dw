@@ -63,6 +63,7 @@ begin
 			  and y.year = m.year 
 			  and m.month = ' || month_counter || ';';
 	raise notice 'Month of %', my_update_column[array_counter];
+	raise notice 'Month equals %', month_counter;
   month_counter = month_counter + 1;
 	array_counter = month_counter + 1;
 	end loop;
@@ -71,8 +72,14 @@ end $$;
 
 
 
+select * from dev.jw_function_yearly;
+select * from dev.jw_function_monthly;
 
-
+select a.uth_member_id, a."year", a."month", b. 
+from dev.jw_function_monthly a
+left join dev.jw_function_yearly b on a.uth_member_id = b.uth_member_id and a."year" = b."year" 
+where a."month" = 5
+order by a.uth_member_id, a.year, a.month;
 
 
 

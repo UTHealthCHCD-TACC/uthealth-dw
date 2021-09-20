@@ -4,7 +4,7 @@
 --------------------------------------------------------------------------------
 
 --********************************************----------------------------------
---------Monthly enrollment QA
+--------Claim header QA quarantine table
 --********************************************----------------------------------
 
 --------------------------------------------------------------------------------
@@ -194,7 +194,6 @@ where  month_year_id not between 200701 and 202012
 
     
     
-    
 ---------------------------------   
 -----uth_member_id---------------
 ---------------------------------
@@ -202,13 +201,15 @@ where  month_year_id not between 200701 and 202012
 -------------------------check 1: in dim table  
 alter table qa_reporting.monthly_enroll_col_quarantine add column id_not_in_dim int;
 
-with ut_id_table as 
-( 
-          select    a.* 
-          from      data_warehouse.member_enrollment_monthly a 
-          left join data_warehouse.dim_uth_member_id b 
-          on        a.uth_member_id = b.uth_member_id 
-          ) 
+with ut_id_table
+as (
+    select a.uth_member_id, 
+    				a."year", 
+    				a.data_source, 
+    				b.uth_member_id as dim_id
+    from data_warehouse.member_enrollment_monthly a
+    left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
+    )
 insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
@@ -255,7 +256,7 @@ select data_source,
        race_cd, 
        1 as id_not_in_dim 
 from   ut_id_table 
-where  uth_member_id is null ;  
+where  dim_id is null ;  
 
 ------------check 2 in src table
 
@@ -311,12 +312,12 @@ alter table qa_reporting.monthly_enroll_col_quarantine add column id_not_in_sour
 
 with ut_id_table as 
 ( 
-                select          a.* 
-                from            data_warehouse.member_enrollment_monthly a 
-                join            data_warehouse.dim_uth_member_id b 
-                on              a.uth_member_id = b.uth_member_id 
-                left outer join dev.jw_ids_src c 
-                on              b.member_id_src = c.patidsrc 
+    select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
+    from data_warehouse.member_enrollment_monthly a
+    join data_warehouse.dim_uth_member_id b 
+        on a.uth_member_id = b.uth_member_id
+    left outer join dev.qa_temp_ids_src c 
+        on b.member_id_src = c.patidsrc
 ) 
 insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
@@ -364,7 +365,7 @@ select data_source,
        race_cd, 
        1 as id_not_in_source 
 from   ut_id_table 
-where  uth_member_id is null ;  
+where  dim_id is null ;  
 
 ------------------------------------
 --------consecutive enrolled months---------change max range to # of years times 12 when new year added -----
@@ -417,7 +418,7 @@ select data_source,
        race_cd, 
        1 as consecutive_flag 
 from   data_warehouse.member_enrollment_monthly 
-where  consecutive_enrolled_months not between 0 and 168 
+where  consecutive_enrolled_months not between 0 and 156
         or consecutive_enrolled_months is null;   
     
                    
@@ -478,12 +479,14 @@ where  gender_cd not in ( 'M', 'F', 'U' )
 -----------------------------------
 -----state
 ------------------------------------
-alter table qa_reporting.monthly_enroll_col_quarantine add column state_flag int;with state_table as 
+alter table qa_reporting.monthly_enroll_col_quarantine add column state_flag int;
+
+with state_table as 
 ( 
-          select    a.* 
-          from      data_warehouse.member_enrollment_monthly a 
-          left join dev.jw_all_states b 
-          on        a.state = b.state ) 
+	select a.*, b.state as state_check
+	from data_warehouse.member_enrollment_monthly a
+	left join dev.qa_temp_all_states b on a.state = b.state
+          ) 
 insert into qa_reporting.monthly_enroll_col_quarantine 
             ( 
                         data_source, 
@@ -530,7 +533,7 @@ select data_source,
        race_cd, 
        1 as state_flag 
 from   data_warehouse.member_enrollment_monthly 
-where  state is null ;  
+where  state_check is null and zip5 <> '00000';  
 
 
 
@@ -983,7 +986,7 @@ alter table qa_reporting.monthly_enroll_col_quarantine
   add column plan_type_flag INT; 
   
 
---------plan_type------truv optz optd---- 
+--------plan_type------ optz optd---- 
 insert into qa_reporting.monthly_enroll_col_quarantine 
             (data_source, 
              "year", 
@@ -1034,9 +1037,60 @@ where  (plan_type not in ( 'ALL', 'EPO', 'GPO', 'HMO',
                           'BMM', 'CMP', 'EPO', 'HMO', 
                           'POS', 'PPO', 'POS', 'CDHP', 'HDHP' ) 
         or plan_type is null )
-           and data_source in ( 'truv', 'optz', 'optd' );   
+           and data_source in ( 'optz', 'optd' );   
 
-select data_source, count() from qa_reporting.monthly_enroll_col_quarantine where plan_type_flag = 1 group by data_source ;
+--------plan_type------ 'truv'---- 
+insert into qa_reporting.monthly_enroll_col_quarantine 
+            (data_source, 
+             "year", 
+             month_year_id, 
+             uth_member_id, 
+             consecutive_enrolled_months, 
+             gender_cd, 
+             state, 
+             zip5, 
+             zip3, 
+             age_derived, 
+             dob_derived, 
+             death_date, 
+             plan_type, 
+             bus_cd, 
+             employee_status, 
+             claim_created_flag, 
+             row_identifier, 
+             rx_coverage, 
+             fiscal_year, 
+             race_cd, 
+             plan_type_flag) 
+select data_source, 
+       "year", 
+       month_year_id, 
+       uth_member_id, 
+       consecutive_enrolled_months, 
+       gender_cd, 
+       state, 
+       zip5, 
+       zip3, 
+       age_derived, 
+       dob_derived, 
+       death_date, 
+       plan_type, 
+       bus_cd, 
+       employee_status, 
+       claim_created_flag, 
+       row_identifier, 
+       rx_coverage, 
+       fiscal_year, 
+       race_cd, 
+       1 as plan_type_flag 
+from   data_warehouse.member_enrollment_monthly 
+where  (plan_type not in ( 'ALL', 'EPO', 'GPO', 'HMO', 
+                          'IND', 'IPP', 'NONE', 'OTH', 
+                          'POS', 'PPO', 'SPN', 'UNK', 
+                          'BMM', 'CMP', 'EPO', 'HMO', 
+                          'POS', 'PPO', 'POS', 'CDHP', 'HDHP' ) 
+        and plan_type is not null )
+           and data_source in ( 'truv' );   
 
 
 --------plan_type------mcrn mcrt---
@@ -1611,8 +1665,10 @@ where  race_cd is not null
    
    select * from qa_reporting.monthly_enrollment_column_checks 
    order by test_var, data_source, "year";
-   
-/*
+
+  
+
+
 
 select * from qa_reporting.monthly_enroll_col_quarantine where data_source_flag= 1 ;
 select * from qa_reporting.monthly_enroll_col_quarantine where year_flag= 1 ;
@@ -1635,7 +1691,8 @@ select * from qa_reporting.monthly_enroll_col_quarantine where rx_coverage_flag=
 select * from qa_reporting.monthly_enroll_col_quarantine where fiscal_year_flag= 1 ;
 select * from qa_reporting.monthly_enroll_col_quarantine where race_cd_flag= 1 ;
 
-*/
+
+
 
 
    

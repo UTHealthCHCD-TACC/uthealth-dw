@@ -1,0 +1,249 @@
+---TDCJ tobacco				
+
+					
+---free world		 
+select state_id, FSCYR 
+into wrk.dbo.wc_5a_tdcj_tobacco_clms	
+from (
+	select STATE_ID , FSCYR 
+	from TDCJ1620.dbo.AS400_201617_SID 
+	where [PROC CODE] in  ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	or replace(DX,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')						 
+	UNION 
+	select SID_NO , FSCYR 
+	from TDCJ1620.dbo.AS400_201819_SID 
+	where [PROC CODE] in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	or replace(DX,'.','')  in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')			
+	UNION 
+	select SID_NO , FSCYR 
+	from TDCJ1620.dbo.FREEWRLD_20
+	where [PROC_CD] in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	or replace(DX1,'.','')  in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')			
+	or replace(DX2,'.','')  in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	UNION 
+	select SID_NO , FSCYR 
+	from TDCJ1620.dbo.PCM201819_SID 
+	where [PROC_CD] in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	or replace(DX,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+) inr ;
+
+
+---ttumc
+insert into wrk.dbo.wc_5a_tdcj_tobacco_clms				
+select state_id, FSCYR 
+from 
+(
+	select STATE_ID, FSCYR 
+	from TDCJ1620.dbo.TTUMC_CLM_SID
+	where replace(DX,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	  or CPT_Cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+union 
+	select SID_NO, 2020 as FSCYR  
+	from TDCJ1620.dbo.TTUMC_CLM_SID_2020 
+	where replace(DX_001,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	  or CPT_Cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+) inr ;
+
+
+---perl
+insert into wrk.dbo.wc_5a_tdcj_tobacco_clms				
+select sid_no, FSCYR 
+from 
+(
+	select sid_no , FSCYR 
+	from TDCJ1620.dbo.perl_diag_sid a
+	where replace(DX,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	UNION 
+	select SID_no , FSCYR 
+	from TDCJ1620.dbo.PERL_DX_1620_upd 
+	where replace(ICD9,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+) inr;
+	
+---epic
+insert into wrk.dbo.wc_5a_tdcj_tobacco_clms				
+select state_id, FSCYR 
+from 
+(
+	select STATE_ID , FSCYR 
+	from TDCJ1620.dbo.INST_EPIC_SID
+	where replace(VAL,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	  or UB_CPT_CODE in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')		 
+	UNION
+	select SID_NO , 2020 as fscyr
+	from TDCJ1620.dbo.INST_EPIC_SID_2020 
+	where replace(VAL,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')			
+	  or replace(DX2 ,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	  or [PROC Code] in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	UNION
+	select STATE_ID, FSCYR 
+	from TDCJ1620.dbo.PROF_EPIC_SID 
+	where CPT_CODE in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')		 								 
+	UNION
+	select  state_id , FSCYR 
+	from TDCJ1620.dbo.PROF_EPIC_SID_2020 
+	where proc_cd in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458','1034F','4004F','4001F','G9906','G9907','G9908','G9909')	
+	or replace(dx_cd ,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+	or replace(DX2 ,'.','') in ('F17200','F17201','F17203','F17208','F17209','F17210','F17211','F17213','F17218','F17219','F17220','F17221',
+'F17223','F17228','F17229','F17290','F17291','F17293','F17298','F17299','T65211A','T65211D','T65211S','T65212A',
+'T65212D','T65212S','T65213A','T65213D','T65213S','T65214A','T65214D','T65214S','T65221A','T65221D','T65221S','T65222A',
+'T65222D','T65222S','T65223A','T65223D','T65223S','T65224A','T65224D','T65224S','T65291A','T65291D','T65291S','T65292A',
+'T65292D','T65292S','T65293A','T65293D','T65293S','T65294A','T65294D','T65294S','Z716','Z720','Z87891','P9681','P042',
+'O99330','O99331','O99332','O99333','O99334','O99335')		
+) inr;
+
+---consolidate
+select distinct state_id, fscyr 
+into wrk.dbo.wc_5a_tdcj_tobacco_cohort	
+from wrk.dbo.wc_5a_tdcj_tobacco_clms		
+;
+
+
+-----counts for spreadsheet
+---******************************************
+
+
+
+--by region
+select replace(str(a.FSCYR) + case when left(reg,4)   is null then 'U' else left(reg,4)  end, ' ','' )  as nv, 
+       count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
+from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New a 
+   left outer join wrk.dbo.wc_5a_tdcj_tobacco_cohort	 b  
+    on b.state_id = a.sid_no 
+   and b.fscyr = a.FSCYR 
+where  a.FSCYR between 2016 and 2020 
+group by case when left(reg,4)   is null then 'U' else left(reg,4) end , a.FSCYR 
+order by a.FSCYR , case when left(reg,4)   is null then 'U' else left(reg,4)  end
+;
+
+
+ --by age group
+select replace(str(a.FSCYR) + 'A' +
+       str(case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end), ' ','' )  as nv,
+       count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
+from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New a 
+   left outer join wrk.dbo.wc_5a_tdcj_tobacco_cohort	 b  
+    on b.state_id = a.sid_no 
+   and b.fscyr = a.FSCYR 
+where  a.FSCYR between 2016 and 2020  and a.AGE_FSC >= 15
+group by a.FSCYR , case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end
+order by  a.FSCYR , case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end
+; 
+
+
+ --by age group and gender
+select replace(str(a.FSCYR) + a.sex +
+       str(case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end), ' ','' )  as nv,
+       count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
+from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New a 
+   left outer join wrk.dbo.wc_5a_tdcj_tobacco_cohort	 b  
+    on b.state_id = a.sid_no 
+   and b.fscyr = a.FSCYR 
+where  a.FSCYR between 2016 and 2020 and a.AGE_FSC >= 15
+group by a.FSCYR , sex, case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end
+order by  a.FSCYR , sex, case when a.AGE_FSC between 0 and 19 then 1 
+            when a.AGE_FSC between 20 and 34 then 2 
+            when a.AGE_FSC between 35 and 44 then 3 
+            when a.AGE_FSC between 45 and 54 then 4 
+            when a.AGE_FSC between 55 and 64 then 5 
+            when a.AGE_FSC between 65 and 74 then 6 
+            else 7 end
+; 
+
+
+
+
