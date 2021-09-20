@@ -1,19 +1,16 @@
 /* ******************************************************************************************************
- *  Custom script to manually expore each numeric field and convert int if applicable
+ *  Convenience code to move a table to another schema
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
  *  wallingTACC  || 1/1/2019 || script created
  * ******************************************************************************************************
- */
-select min(enrolid), max(enrolid)
-from truven.ccaea;
+ * 
+*/
 
-ALTER TABLE truven.ccaea
-ALTER COLUMN seqnum TYPE int;
+ALTER TABLE dw_qa.claim_detail_diag_by_claim
+SET SCHEMA dev;
 
-ALTER TABLE truven.ccaea
-ALTER COLUMN efamid TYPE int;
-
-ALTER TABLE truven.ccaea
-ALTER COLUMN enrolid TYPE bigint;
+create table dw_qa.claim_header (like data_warehouse.claim_header);
+insert into dw_qa.claim_header
+select * from data_warehouse.claim_header;
