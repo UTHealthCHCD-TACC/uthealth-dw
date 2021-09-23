@@ -23,33 +23,56 @@
 
 ----  // BEGIN SCRIPT 
 
------- **** Truven *******
-delete from dw_staging.member_enrollment_monthly where data_source = 'truv';
 
-create table dev.truven_uth_mem
+---create working table in dw_staging 
+drop table if exists dw_staging.member_enrollment_monthly ;
+
+create table dw_staging.member_enrollment_monthly  (
+	data_source char(4),
+	year int2, 
+	uth_member_id bigint,
+	month_year_id int4, 
+	consecutive_enrolled_months int4, 
+	gender_cd char(1), 
+	race_cd char(1),
+	age_derived int4, 
+	dob_derived date, 
+	state text, 
+	zip5 char(5), 
+	zip3 char(3), 
+	death_date date, 
+	plan_type text, 
+	bus_cd char(4), 
+	employee_status text, 
+	claim_created_flag boolean default false,
+	rx_coverage int2, 
+	fiscal_year int2,
+	row_id bigserial
+) distributed by (row_id);
+
+                                                                        
+alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
+
+
+-------------insert existing records from data warehouse. except for this data source
+insert into dw_staging.member_enrollment_monthly 
+select * 
+from data_warehouse.member_enrollment_monthly 
+where data_source not in ('truv')
+;
+
+vacuum analyze dw_staging.member_enrollment_monthly;
+
+------ **** Truven *******
+
+--copy of uth id table distributed on member id src 
+create table dw_staging.truven_uth_member_id
 with(appendonly=true,orientation=column)
 as select *
 from data_warehouse.dim_uth_member_id where data_source = 'truv'
 distributed by(member_id_src);
 
-vacuum analyze dev.truven_uth_mem;
-
-
-create table truven.ccaet_temp 
-with (appendonly=true, orientation=column) as 
-select * 
-from truven.ccaet
-distributed by (enrolid)
-;
-
-vacuum analyze truven.ccaet_temp;
-
-
-select count(*), year 
-from optum_zip.medical 
-group by year 
-order by year 
-;
+vacuum analyze dw_staging.truven_uth_member_id;
 
 --(---------------- data loads --------------------)
 
@@ -66,8 +89,8 @@ select
        c.gender_cd, case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'),
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null, 
        d.plan_type, 'COM', eestatu, m.rx, m.year , '0' as race
-from truven.ccaet_temp m
-  join dev.truven_uth_mem a --join data_warehouse.dim_uth_member_id a
+from truven.ccaet m
+  join dw_staging.truven_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -85,8 +108,6 @@ from truven.ccaet_temp m
 
 
 
-
-
 -- Truven Medicare Advantage ----------------------------------------------------------------------
 insert into dw_staging.member_enrollment_monthly  (
 	data_source, year, month_year_id, uth_member_id,
@@ -100,7 +121,7 @@ select
        b.year_int - dobyr, (trunc(dobyr,0)::varchar || '-12-31')::date, null,
        d.plan_type, 'MCR', eestatu, m.rx, m.year, '0' as race 
 from truven.mdcrt m
-  join dev.truven_uth_mem a  --join data_warehouse.dim_uth_member_id a
+  join dw_staging.truven_uth_member_id a
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
@@ -116,19 +137,18 @@ from truven.mdcrt m
 ;
 ---------------------------------------------------------------------------------------------------
 
-drop table dev.truven_uth_mem;
+---cleanup
+drop table dw_staging.truven_uth_member_id;
 
-
+--vacuum
 vacuum analyze dw_staging.member_enrollment_monthly;
 
+--validate
 select count(*), data_source, year 
 from dw_staging.member_enrollment_monthly mem 
 group by data_source, year  
 order by data_source, year 
 
 
--------(^---------------- data loads --------------------^)
-
------ *** End Truven **** -----
 
 ----/END SCRIPT
