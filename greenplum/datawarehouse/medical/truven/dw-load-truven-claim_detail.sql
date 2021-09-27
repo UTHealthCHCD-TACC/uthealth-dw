@@ -1,4 +1,14 @@
 
+/* ******************************************************************************************************
+ *  load claim detail for optum zip and optum dod 
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ * ******************************************************************************************************
+ *  jw001 add discharge status and pad rev code 
+ * ****************************************************************************************************** 
+ * */
+
 vacuum analyze data_warehouse.claim_detail;
 
 -- Need to use temp tables to optimize load and avoid 'broadcast motion' which can use up all disk space
@@ -16,8 +26,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src, data_year )										   								 								   
 select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
-       c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
-       null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
+       c.month_year_id, a.provid, null, null, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
+       null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'ccaeo', a.year 
@@ -42,8 +52,8 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src, data_year )										   								 								   
 select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
-       c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
-       null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
+       c.month_year_id, a.provid, null, null, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
+       null, null, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
        a.msclmid, a.enrolid, 'mdcro', a.year 
@@ -66,15 +76,15 @@ delete from data_warehouse.claim_detail where table_id_src in ('mdcrs','ccaes');
 -------------------------------- truven commercial inpatient--------------------------------------
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
-								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
+								   admit_date, discharge_date, discharge_status, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src, data_year )										   								   								   
 select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
-       c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
-       a.admdate, a.disdate, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
+       c.month_year_id, a.provid, null, null, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
+       a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
-       null, null, null,  trunc(a.qty,0) as units, a.drg,  
+       null, null, null,  trunc(a.qty,0) as units, lpad(drg::int::text,3,'0'), 
        a.msclmid, a.enrolid, 'ccaes', a.year
 from truven.ccaes a 
   join dev.truven_dim_uth_claim_id b 
@@ -95,15 +105,15 @@ and a.year between 2011 and 2014
 -------------------------------- truven medicare adv inpatient--------------------------------------
 insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, claim_sequence_number_src, uth_member_id, from_date_of_service, to_date_of_service,
 								   month_year_id, perf_provider_id, bill_provider_id, ref_provider_id, place_of_service, network_ind, network_paid_ind,
-								   admit_date, discharge_date, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
+								   admit_date, discharge_date, discharge_status, procedure_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
 								   claim_id_src, member_id_src, table_id_src, data_year )										   								   								   
 select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
-       c.month_year_id, a.provid, null, null, a.stdplac, a.ntwkprov::bool, a.paidntwk::bool, 
-       a.admdate, a.disdate, a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), a.revcode, 
+       c.month_year_id, a.provid, null, null, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
+       a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, substring(a.procmod,1,1), substring(procmod,2,1), lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
-       null, null, null,  trunc(a.qty,0) as units, a.drg,  
+       null, null, null,  trunc(a.qty,0) as units,  lpad(drg::int::text,3,'0'), 
        a.msclmid, a.enrolid, 'mdcrs', a.year
 from truven.mdcrs a 
   join dev.truven_dim_uth_claim_id b
