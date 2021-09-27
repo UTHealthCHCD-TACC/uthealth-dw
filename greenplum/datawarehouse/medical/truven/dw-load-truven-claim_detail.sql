@@ -1,7 +1,8 @@
 
 vacuum analyze data_warehouse.claim_detail;
 
---Need to use temp tables to optimize load and avoid 'broadcast motion' which can use up all disk space
+-- Need to use temp tables to optimize load and avoid 'broadcast motion' which can use up all disk space
+
 
 alter table data_warehouse.claim_detail add column data_year int2;
 

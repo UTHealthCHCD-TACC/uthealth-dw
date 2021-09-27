@@ -1,4 +1,5 @@
 --- claim diag load for truven
+--- jw001 9/24/2021 - need to put claim sequence number in insert and select statements. 
 
 delete from data_warehouse.claim_diag where data_source = 'truv' and data_year = 2019;
 

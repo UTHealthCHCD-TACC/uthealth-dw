@@ -3,16 +3,16 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.claim_diag Column QA ------------------
+--------   data_warehouse.claim_icd_proc Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
---- tu001 | 9/8/21 | script creation
+--- jw001 | 9/21/21 | | script creation
 */
 
 
-drop table if exists qa_reporting.claim_diag_column_checks ;
+drop table if exists qa_reporting.claim_proc_column_checks ;
 
-create table qa_reporting.claim_diag_column_checks 
+create table qa_reporting.claim_proc_column_checks 
   ( 
      test_var        UNKNOWN null, 
      valid_values     INT8 null, 
@@ -30,7 +30,7 @@ create table qa_reporting.claim_diag_column_checks
 ------------------------------------
 
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -59,7 +59,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_diag
+	from data_warehouse.claim_icd_proc
 	group by data_source,
 		year
 	) a;
@@ -69,7 +69,7 @@ from (
 ------------------------------------
 
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
 	test_var,
 	valid_values,
 	invalid_values,
@@ -99,7 +99,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_diag 
+	from data_warehouse.claim_icd_proc 
 	group by data_source,
 		year
 	) a;
@@ -107,48 +107,54 @@ from (
 
 
 
+---------------------------------   
+-----uth_claim_id---------------
+--------------------------------- 
 
-------------------------------------
---------claim_sequence_number-------max is currently 667
-------------------------------------
-
-insert into qa_reporting.claim_diag_column_checks (
-    test_var,
-    valid_values,
-    invalid_values,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
+with ut_claim_id_table
+as (
+    select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
+    from data_warehouse.claim_icd_proc a
+    left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
     )
-select 'claim_sequence_number' as test_var,
+insert into qa_reporting.claim_header_column_checks 
+(
+	test_var,
+	valid_values,
+	invalid_values,
+	percent_invalid,
+	pass_threshold,
+	"year",
+	data_source,
+	note
+	)
+select 'uth_claim_id' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
     ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
     year,
     data_source,
-    '' as notes
+    'validate in data_warehouse.dim_uth_claim_id' as note
 from (
     select sum(case
-                when claim_sequence_number between 1 and 700
+                when dim_id is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when claim_sequence_number not between 1 and 700
-                        or claim_sequence_number is null
+                    when dim_id is null
                         then 1
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag
-    group by data_source, year
+    from ut_claim_id_table
+	group by data_source,
+		year
     ) a;
 
 
-
-
+   
+   
 ---------------------------------   
 -----uth_member_id---------------
 ---------------------------------
@@ -157,10 +163,10 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
-    from data_warehouse.claim_diag a
+    from data_warehouse.claim_icd_proc a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -193,13 +199,58 @@ from (
 	group by data_source,
 		year
     ) a;
+   
+   
+   
+   
+------------------------------------
+--------claim_sequence_number-------max is currently 667
+------------------------------------
+
+insert into qa_reporting.claim_proc_column_checks (
+    test_var,
+    valid_values,
+    invalid_values,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'claim_sequence_number' as test_var,
+    valid_values,
+    invalid_values,
+    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
+    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as notes
+from (
+    select sum(case
+                when claim_sequence_number between 1 and 700
+                    then 1
+                end) as valid_values,
+        coalesce(sum(case
+                    when claim_sequence_number not between 1 and 700
+                        or claim_sequence_number is null
+                        then 1
+                    end), 0) as invalid_values,
+        year,
+        data_source
+    from data_warehouse.claim_icd_proc
+    group by data_source, year
+    ) a;
+
+
+
+
 
 ------------------------------------
 --------from_date_of_service--------
 ------------------------------------
 
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -229,17 +280,18 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag
+    from data_warehouse.claim_icd_proc
     group by data_source, year
     ) a;  
    
 
 
+
 ------------------------------------
---------diag code-------------------
+--------proc_cd-------------------
 ------------------------------------
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -249,7 +301,7 @@ insert into qa_reporting.claim_diag_column_checks (
     data_source,
     note
     )
-select 'diag_cd' as test_var,
+select 'proc_cd' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
@@ -259,19 +311,19 @@ select 'diag_cd' as test_var,
     '' as note
 from (
     select sum(case
-                when diag_cd ~ '^[[:alnum:]]{3,7}$'
-                and diag_cd is not null
+                when proc_cd ~ '^[[:alnum:]]{3,7}$'
+                and proc_cd is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when (diag_cd !~ '^[[:alnum:]]{3,7}$'
-                    and diag_cd is not null)
-                    or diag_cd is null
+                    when (proc_cd !~ '^[[:alnum:]]{3,7}$'
+                    and proc_cd is not null)
+                    or proc_cd is null
                         then 1
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag 
+    from data_warehouse.claim_icd_proc
 	group by data_source,
 		year
     ) a;
@@ -279,10 +331,10 @@ from (
 
 
 ------------------------------------
---------diag_position---------------
+--------proc_position---------------
 ------------------------------------
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -292,7 +344,7 @@ insert into qa_reporting.claim_diag_column_checks (
     data_source,
     note
     )
-select 'diag_position' as test_var,
+select 'proc_position' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
@@ -302,30 +354,26 @@ select 'diag_position' as test_var,
     '' as notes
 from (
     select sum(case
-                when diag_position between 1 and 25 
-                or diag_position is null
+                when proc_position between 1 and 25
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when diag_position not between 1 and 25
-                        and diag_position is not null
+                    when proc_position not between 1 and 25
+                        or proc_position is null
                         then 1
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag
+    from data_warehouse.claim_icd_proc
     group by data_source, year
     ) a;
 
-
-
-delete from qa_reporting.claim_diag_column_checks where test_var = 'diag_position';
-
+   
 ------------------------------------
 --------icd_type--------------------
 ------------------------------------
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
     test_var,
     valid_values,
     invalid_values,
@@ -355,56 +403,16 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag
+    from data_warehouse.claim_icd_proc
     group by data_source, year
     ) a;
 
-   
- 
-------------------------------------
---------poa_src--------------------
-------------------------------------
-
-insert into qa_reporting.claim_diag_column_checks (
-    test_var,
-    valid_values,
-    invalid_values,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'poa_src' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as notes
-from (
-    select sum(case
-                when poa_src in ('0', '1','Y','N','U',) or poa_src is null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when poa_src not in ('0', '1','Y','N','U') and poa_src is not null
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from data_warehouse.claim_diag
-    group by data_source, year
-    ) a;
-
-   delete from qa_reporting.claim_diag_column_checks  where test_var = 'fiscal_year';
    
 -----------------------------------
 -----fiscal_year------------------
 -----------------------------------
 
-insert into qa_reporting.claim_diag_column_checks (
+insert into qa_reporting.claim_proc_column_checks (
 	test_var,
 	valid_values,
 	invalid_values,
@@ -424,20 +432,28 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2020
-				or fiscal_year is null
+				when (fiscal_year between 2007 and 2020)
+				                        or fiscal_year is null
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020 and fiscal_year is not null
-						or fiscal_year is null
+					when fiscal_year not between 2007 and 2020 
+					and fiscal_year is not null
 						then 1
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_diag 
-group by data_source, "year" 
+	from data_warehouse.claim_icd_proc 
+	group by data_source,
+		year
 	) a;
 
- select * from   qa_reporting.claim_diag_column_checks
- order by test_var , data_source , year;
+select * from qa_reporting.claim_proc_column_checks order by test_var, data_source, year;
+   delete from data_warehouse.claim_icd_proc where data_source = 'mdcd';
+   
+   
+delete from qa_reporting.claim_proc_column_checks where test_var = 'fiscal_year';
+
+
+
+
