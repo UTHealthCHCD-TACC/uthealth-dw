@@ -110,6 +110,11 @@ grant select on all tables in schema reference_tables to group uthealth_analyst;
 grant select on all sequences in schema reference_tables to uthealth_analyst;
 alter default privileges in schema reference_tables grant select on tables to group uthealth_analyst;
 
+--truven_pay (all access)
+grant all on schema truven_pay to uthealth_analyst; 
+grant all on all tables in schema truven_pay to uthealth_analyst; 
+grant all privileges on all sequences in schema truven_pay to uthealth_analyst; 
+alter default privileges in schema truven_pay grant all on tables to uthealth_analyst; 
 
 
 /*

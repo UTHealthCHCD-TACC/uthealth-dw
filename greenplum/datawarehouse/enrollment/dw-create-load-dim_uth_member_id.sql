@@ -182,6 +182,11 @@ from cte_distinct_member
 
 ------   
 
+
+qa_reporting.staging_claim_detail_checks 
+;
+
+
 ---*******************************************************
 --// wcc002 - claim created ids 
 ---*******************************************************
@@ -201,6 +206,9 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq'), true as claim_created
 from cte_distinct_member 
 ;
+
+
+select * from data_warehouse.dim_uth_member_id where claim_created_id is true and year = 2007;
 
 
 --Optum zip claim created wcc002
