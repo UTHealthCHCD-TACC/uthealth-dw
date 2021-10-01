@@ -46,7 +46,7 @@ create table dw_staging.member_enrollment_yearly (
     rx_coverage int2,
 	fiscal_year int2
 )
-with (appendonly=true, orientation=column)
+with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5)
 distributed by(uth_member_id);
 
 
@@ -188,11 +188,11 @@ group by uth_member_id, zip5, year
 ;
 
 
-create table dev.wc_ZIP_yearly_final
+create table dev.wc_ZIP5_yearly_final
 with (appendonly=true, orientation=column)
 as
 select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_ZIP_yearly
+from dev.wc_ZIP5_yearly
 distributed by(uth_member_id);
 
 update dw_staging.member_enrollment_yearly a set zip5 = b.zip5
@@ -202,9 +202,9 @@ and a.year = b.year
  and b.my_grp = 1;
 
 
-drop table dev.wc_ZIP_yearly;
+drop table dev.wc_ZIP5_yearly;
 
-drop table dev.wc_ZIP_yearly_final;
+drop table dev.wc_ZIP5_yearly_final;
 
 
 --- plan type

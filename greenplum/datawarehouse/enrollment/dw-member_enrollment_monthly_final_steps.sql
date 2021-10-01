@@ -7,7 +7,7 @@
  *  wc001  || 1/01/2021 || script created 
  * ******************************************************************************************************
  * ******************************************************************************************************
- *  jw001  || 9/20/2021 || Cut to its own script file from longer file
+ *  wc002  || 9/30/2021 || add compression level to final table
  *  ******************************************************************************************************
 */
 
@@ -37,7 +37,7 @@ delete from dw_staging.member_enrollment_monthly a
 ; 
  	
 		
----**script to build consecutive enrolled months	  16min	
+---**script to build consecutive enrolled months	  10min	
 drop table if exists dev.temp_consec_enrollment;
 
 create table dev.temp_consec_enrollment 
@@ -63,6 +63,8 @@ from dev.temp_consec_enrollment b
 where a.row_id = b.row_id
 ;
 
+select * from dw_staging.member_enrollment_monthly mem where data_source = 'mcrt' and year = 2020;
+
 ------------------------------------------------------------
 --**cleanup
 drop table if exists dev.temp_consec_enrollment;
@@ -72,7 +74,7 @@ drop table if exists dev.temp_dupe_enrollment_rows;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 
 create table dw_staging.member_enrollment_monthly_new 
-with (appendonly=true, orientation=column, compresstype=zlib) as 
+with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
 select * 
 from dw_staging.member_enrollment_monthly 
 distributed by (uth_member_id)

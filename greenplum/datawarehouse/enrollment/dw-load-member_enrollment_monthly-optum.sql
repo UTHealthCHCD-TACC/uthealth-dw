@@ -27,7 +27,8 @@
 ---create working table in dw_staging 
 drop table if exists dw_staging.member_enrollment_monthly ;
 
-create table dw_staging.member_enrollment_monthly  (
+create table dw_staging.member_enrollment_monthly 
+(
 	data_source char(4),
 	year int2, 
 	uth_member_id bigint,

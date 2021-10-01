@@ -127,3 +127,33 @@ insert into data_warehouse.ref_bus_cd (data_source, bus_cd_src, bus_cd, column_n
 	          ('mdcr',null,'MDCR',null,'Medicare')
 	         ;
  
+---ref_race
+create table reference_tables.ref_race (data_source char(4), race_cd_src text, race_cd char(1), race_desc text );     
+       
+
+insert into reference_tables.ref_race values  ('mcrn','1','1','White'), 
+											  ('mcrn','2','2','Black'), 
+											  ('mcrn','3','3','Other'), 
+											  ('mcrn','4','4','Asian'), 
+											  ('mcrn','5','5','Hispanic'), 
+											  ('mcrn','6','6','North American Native'), 
+											  ('mcrn','0','0','Unknown'), 
+											  ('mcrt','1','1','White'), 
+											  ('mcrt','2','2','Black'), 
+											  ('mcrt','3','3','Other'), 
+											  ('mcrt','4','4','Asian'), 
+											  ('mcrt','5','5','Hispanic'), 
+											  ('mcrt','6','6','North American Native'), 
+											  ('mcrt','0','0','Unknown'), 
+											  ('optd','W','0','White'), 
+											  ('optd','B','0','Black'), 
+											  ('optd','H','0','Hispanic'), 
+											  ('optd','A','0','Asian'), 
+											  ('optd','0','0','Unknown');
+
+					
+						when r.data_source = 'optd' and r.race = 'W' then '1' 
+						when r.data_source = 'optd' and r.race = 'B' then '2' 
+						when r.data_source = 'optd' and r.race = 'H' then '5' 
+						when r.data_source = 'optd' and r.race = 'A' then '4'
+						else '0' 		

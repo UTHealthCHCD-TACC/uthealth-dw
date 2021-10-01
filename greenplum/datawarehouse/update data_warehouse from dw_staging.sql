@@ -64,3 +64,20 @@ alter table data_warehouse.member_enrollment_yearly_old set schema dw_staging;
 
 
 
+-----// rename _old tables in staging 
+alter table dw_staging.claim_header_old rename to claim_header;
+
+alter table dw_staging.claim_detail_old rename to claim_detail;
+
+alter table dw_staging.claim_diag_old rename to claim_diag;
+
+alter table dw_staging.claim_icd_proc_old rename to claim_icd_proc;
+
+alter table dw_staging.pharmacy_claims_old rename to pharmacy_claims;
+
+alter table dw_staging.member_enrollment_monthly_old rename to member_enrollment_monthly;
+
+alter table dw_staging.member_enrollment_yearly_old rename to member_enrollment_yearly;
+-----//
+
+

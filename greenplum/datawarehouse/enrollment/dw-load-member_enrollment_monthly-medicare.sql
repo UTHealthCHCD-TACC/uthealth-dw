@@ -24,7 +24,7 @@
 ----  // BEGIN SCRIPT 
 
 ---create working table in dw_staging 
-drop table if exists dw_staging.member_enrollment_monthly ;
+drop table if exists dw_staging.member_enrollment_monthly cascade ;
 
 create table dw_staging.member_enrollment_monthly  (
 	data_source char(4),
@@ -73,7 +73,7 @@ insert into dw_staging.member_enrollment_monthly (
 select 'mcrt',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, r.race_cd 
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, case when r.race_cd is null then '0' else r.race_cd end
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
@@ -145,7 +145,7 @@ insert into dw_staging.member_enrollment_monthly (
 select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
 	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
 	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, r.race_cd
+	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, case when r.race_cd is null then '0' else r.race_cd end
 from medicare_national.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
