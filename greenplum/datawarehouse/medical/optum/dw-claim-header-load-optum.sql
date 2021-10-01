@@ -15,8 +15,7 @@
 ---create a copy of production data warehouse table 
 create table dw_staging.claim_header 
 with (appendonly=true, orientation=column) as 
-select data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
-       total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+select *
 from data_warehouse.claim_header ch 
 where data_source not in ('optd','optz')
 distributed by (uth_member_id) 
