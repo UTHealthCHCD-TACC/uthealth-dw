@@ -9,14 +9,6 @@
  * ****************************************************************************************************** 
  * */
 
-drop table if exists dev.medicaid_pharmacy_claims ;
-
-create table dev.medicaid_pharmacy_claims 
-with (appendonly=true, orientation=column, compresstype=zlib) as 
-select *  
-from data_warehouse.pharmacy_claims 
-limit 0 
-distributed by (uth_member_id);
 
 
 create table dev.medicaid_dim_uth_rx_id 
@@ -29,7 +21,7 @@ distributed by (member_id_src);
 
 
 ---chip 
-insert into dev.medicaid_pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
+insert into dw_staging.pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
                                                  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
                                                  quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
                                                  fiscal_year, rx_claim_id_src, member_id_src, table_id_src )
@@ -45,7 +37,7 @@ from medicaid.chip_rx a
 
 
 ---ffs 
-insert into dev.medicaid_pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
+insert into dw_staging.pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
                                                  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
                                                  quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
                                                  fiscal_year, rx_claim_id_src, member_id_src, table_id_src )
@@ -61,7 +53,7 @@ from medicaid.ffs_rx a
 
 
 ---mco 
-insert into dev.medicaid_pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
+insert into dw_staging.pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
                                                  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
                                                  quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
                                                  fiscal_year, rx_claim_id_src, member_id_src, table_id_src )
@@ -79,7 +71,12 @@ from medicaid.mco_rx a
 ----finalize 
 drop table if exists dev.medicaid_dim_uth_rx_id;
 
-vacuum analyze dev.medicaid_pharmacy_claims;
+vacuum analyze dw_staging.pharmacy_claims;
 
-
+---validate
+select data_source, year, count(*) 
+from dw_staging.pharmacy_claims pc 
+group by data_source, year 
+order by data_source, year 
+;
 

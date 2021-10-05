@@ -6,7 +6,7 @@
  * ******************************************************************************************************
  * ******************************************************************************************************
  *  wcc001  || 10/01/2021 || add comment block. migrate to dw_staging load 
- * 					         logical groupings: [inpatient, hha, hospics, snf], [outpatient], [bcarrier, dme]
+ * 					         logical groupings: [inpatient, hha, hospice, snf], [outpatient], [bcarrier, dme]
  * ****************************************************************************************************** 
  *  jw001   || 10/05/2021 || remove substrings to change hcpcs_1st_mdfr_cd's to 2 characters like raw table
  * 													 change from_date_of_service to rev_cntr_dt in hha, hospice, outpatient
