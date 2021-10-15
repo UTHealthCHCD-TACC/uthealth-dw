@@ -6,7 +6,10 @@
  *  wc001  || 8/16/2021 || script created 
  * ******************************************************************************************************
  *  wallingTACC  || 8/23/2021 || updated comments.
- * ****************************************************************************************************** */
+ * ****************************************************************************************************** 
+ *  wc002        || 10/5/2021 || migrate to dw_staging
+ * 
+ * */
 
 drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
 
@@ -107,39 +110,18 @@ from medicare_national.mbsf_abcd_summary  a
     and b.data_source = 'mcrn'
    ;
   
-delete from dw_staging.medicare_mbsf_abcd_enrollment where data_source = 'mcrn' ; 
 
-select count(*), year, data_source from dw_staging.member_enrollment_yearly where data_source in ('mcrn','mcrt')
-group by data_source , "year" order by data_source ,"year" ;
-
----validate
+---finalize
 vacuum analyze dw_staging.medicare_mbsf_abcd_enrollment;
 
- 
+ --validate
  select count(*), count(distinct uth_member_id), data_source, year 
- from data_warehouse.medicare_mbsf_abcd_enrollment
+ from dw_staging.medicare_mbsf_abcd_enrollment
  group by data_source, year 
   order by data_source, year ;
  
  
- select a.*, b.uth_member_id 
- from data_warehouse.dim_uth_member_id a 
-   left outer join dw_staging.medicare_mbsf_abcd_enrollment b 
-       on a.uth_member_id = b.uth_member_id 
-     where a.uth_member_id is null and a.data_source = 'mcrn'; 
  
-    
-select count(distinct bene_id) from medicare_national.mbsf_abcd_summary;
-   
-select count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'mcrn';
-    
+---- end script 
   
-  ---- end script 
   
-  select count(*), year 
-  from medicare_texas.mbsf_abcd_summary 
-  group by year order by year; 
- 
-   select count(*), year 
-  from medicare_national.mbsf_abcd_summary 
-  group by year order by year; 

@@ -7,46 +7,95 @@
  * ******************************************************************************************************
  *  jw001  || 9/27/2021 || add discharge status 
  * ****************************************************************************************************** 
+ *  wc001  || 10/11/2021 || migrate to dw_staging
+ * ****************************************************************************************************** 
  * */
 
 
 
+----  // BEGIN SCRIPT 
 
+---create working table in dw_staging 
+drop table if exists dw_staging.claim_detail;
 
-
------ claim detail
-drop table if exists dev.wc_medicaid_detail ;
-create table dev.wc_medicaid_detail 
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.claim_detail limit 0
-distributed by (member_id_src);
+create table dw_staging.claim_detail (
+	data_source bpchar(4),
+	"year" int2,
+	uth_member_id int8,
+	uth_claim_id numeric,
+	claim_sequence_number int4,
+	from_date_of_service date,
+	to_date_of_service date,
+	month_year_id int4,
+	place_of_service text,
+	network_ind bool,
+	network_paid_ind bool,
+	admit_date date,
+	discharge_date date,
+	discharge_status bpchar(2),
+	cpt_hcpcs_cd text,
+	procedure_type text,
+	proc_mod_1 bpchar(2),
+	proc_mod_2 bpchar(2),
+	drg_cd text,
+	revenue_cd bpchar(4),
+	charge_amount numeric(13,2),
+	allowed_amount numeric(13,2),
+	paid_amount numeric(13,2),
+	copay numeric(13,2),
+	deductible numeric(13,2),
+	coins numeric(13,2),
+	cob numeric(13,2),
+	bill_type_inst bpchar(1),
+	bill_type_class bpchar(1),
+	bill_type_freq bpchar(1),
+	units int4,
+	fiscal_year int2,
+	cost_factor_year int2,
+	table_id_src text,
+	claim_sequence_number_src text,
+	row_id bigserial
+	) 
+with(appendonly=true,orientation=column, compresstype=zlib, compresslevel=5)
+distributed by (row_id);
 ;
 
+alter sequence dw_staging.claim_detail_row_id_seq cache 200;
+
+
+
+-------------insert existing records from data warehouse. except for this data source
+insert into dw_staging.claim_detail 
+select * from data_warehouse.claim_detail 
+where data_source not in ('mdcd')
+;
+
+vacuum analyze dw_staging.claim_detail;
 
 
 ---claim
-insert into dev.wc_medicaid_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
+insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
                                      from_date_of_service, to_date_of_service, month_year_id, place_of_service,
-                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs, 
+                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd, 
                                      procedure_type, proc_mod_1, proc_mod_2, revenue_cd, 
                                      charge_amount, allowed_amount, paid_amount, 
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
-                                     units, drg_cd, claim_id_src, member_id_src, table_id_src, claim_sequence_number_src, 
-                                     cob_type, fiscal_year, cost_factor_year, discharge_status 
+                                     units, drg_cd,  claim_sequence_number_src, 
+                                     fiscal_year, cost_factor_year, discharge_status 
                                      )                                          
-select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, a.clm_dtl_nbr::int2, c.uth_member_id, 
-       a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, lpad(a.pos,2,'0'), 
+select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id, 
+       a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos), 
        true, true, case when d.adm_dt = '' then null else d.adm_dt::date end , case when d.dis_dt = '' then null else d.dis_dt::date end, a.proc_cd, 
-       null, substring(proc_mod_1,1,1), substring(proc_mod_2,1,1), 
+       null, proc_mod_1, proc_mod_2, 
        case when isdigit(rev_cd) is false then null 
             when length(rev_cd) > 4 then null 
             else lpad(rev_cd,4,'0') end as revenue_code,  
        a.dtl_bill_amt, a.dtl_alwd_amt, a.dtl_pd_amt,     
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1), 
-       null, b.drg, b.icn, b.pcn, 'clm_detail', a.clm_dtl_nbr, 
-       null, a.year_fy, null, d.pat_stat_cd 
+       null, b.drg, a.clm_dtl_nbr, 
+       a.year_fy, null, d.pat_stat_cd
 from medicaid.clm_detail a 
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -61,29 +110,30 @@ from medicaid.clm_detail a
 
 
 
----enc
-insert into dev.wc_medicaid_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
+---enc  20min
+insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
                                      from_date_of_service, to_date_of_service, month_year_id, place_of_service,
-                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs, 
-                                     procedure_type, proc_mod_1, proc_mod_2, revenue_cd, 
+                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd, 
+                                     procedure_type, proc_mod_1, proc_mod_2, 
+                                     revenue_cd, 
                                      charge_amount, allowed_amount, paid_amount, 
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
-                                     units, drg_cd, claim_id_src, member_id_src, table_id_src, claim_sequence_number_src, 
-                                     cob_type, fiscal_year, cost_factor_year, discharge_status 
+                                     units, drg_cd, claim_sequence_number_src, 
+                                     fiscal_year, cost_factor_year, discharge_status 
                                      )                                      
-select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, a.ln_nbr::numeric, c.uth_member_id, 
-       a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, lpad(a.pos,2,'0'),
+select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id, 
+       a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
        true, true, d.adm_dt::date, d.dis_dt::date, a.proc_cd, 
-       null,  substring(proc_mod_cd_1,1,1), substring(proc_mod_cd_2,1,1), 
+       null,  proc_mod_cd_1, proc_mod_cd_2,
        case when isdigit(rev_cd) is false then null 
             when length(rev_cd) > 4 then null 
             else lpad(rev_cd,4,'0') end as revenue_code,  
        a.sub_chrg_amt::numeric, null, a.dt_pd_amt::numeric, 
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),  
-       a.dt_ln_unt::numeric, b.drg, b.derv_enc, b.mem_id, 'enc_det', null, 
-       null, a.year_fy, null, a.pat_stat
+       a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
+       a.year_fy, null, a.enc_stat_cd 
 from medicaid.enc_det a 
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc 
@@ -97,24 +147,15 @@ from medicaid.enc_det a
 ;   
 
 
-vacuum analyze dev.wc_medicaid_detail;
+---finalize 12min
+vacuum analyze dw_staging.claim_detail;
 
-
-select table_id_src, fiscal_year, count(*) 
-from dev.wc_medicaid_detail 
-group by table_id_src, fiscal_year
-order by table_id_src, fiscal_year
-;
-
-
+---validate
 select count(*), fiscal_year 
-from data_warehouse.claim_detail cd 
+from dw_staging.claim_detail
 where data_source = 'mdcd'
 group by fiscal_year 
 order by fiscal_year 
 ;
 
-
-insert into data_warehouse.claim_detail select * from dev.wc_medicaid_detail;
-
-vacuum analyze data_warehouse.claim_detail;
+----------------- END SCRIPT 

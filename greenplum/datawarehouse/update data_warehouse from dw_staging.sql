@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  *  wc001  || 9/29/2021 || script creation
  * ****************************************************************************************************** 
+ *  wc002  || 10/05/2021 || add mbsf_abcd table
+ * ****************************************************************************************************** 
  * */
 
 ----rename existing production tables to _old
@@ -23,6 +25,8 @@ alter table data_warehouse.pharmacy_claims rename to pharmacy_claims_old;
 alter table data_warehouse.member_enrollment_monthly rename to member_enrollment_monthly_old;
 
 alter table data_warehouse.member_enrollment_yearly rename to member_enrollment_yearly_old;
+
+alter table data_warehouse.medicare_mbsf_abcd_enrollment rename to medicare_mbsf_abcd_enrollment_old;
 ----
 
 
@@ -40,6 +44,8 @@ alter table dw_staging.pharmacy_claims set schema data_warehouse;
 alter table dw_staging.member_enrollment_monthly set schema data_warehouse;
 
 alter table dw_staging.member_enrollment_yearly set schema data_warehouse;
+
+alter table dw_staging.medicare_mbsf_abcd_enrollment set schema data_warehouse;
 -----//
 
 
@@ -59,6 +65,8 @@ alter table data_warehouse.pharmacy_claims_old set schema dw_staging;
 alter table data_warehouse.member_enrollment_monthly_old set schema dw_staging;
 
 alter table data_warehouse.member_enrollment_yearly_old set schema dw_staging;
+
+alter table data_warehouse.medicare_mbsf_abcd_enrollment_old set schema dw_staging;
 -----||
 
 
@@ -78,6 +86,8 @@ alter table dw_staging.pharmacy_claims_old rename to pharmacy_claims;
 alter table dw_staging.member_enrollment_monthly_old rename to member_enrollment_monthly;
 
 alter table dw_staging.member_enrollment_yearly_old rename to member_enrollment_yearly;
+
+alter table dw_staging.medicare_mbsf_abcd_enrollment_old rename to medicare_mbsf_abcd_enrollment;
 -----//
 
 

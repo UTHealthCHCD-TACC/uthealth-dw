@@ -16,6 +16,14 @@
 
 
 ---(----------  *****************  ----------------------------------------------------------------------------------------------------)  
+
+---utility query to check permissions on a given table 
+select grantee, privilege_type, table_name , table_schema 
+from information_schema.role_table_grants 
+where table_schema = 'dev' and table_name = 'gm_test'
+;
+
+
 ---(---------- Role Definitions    ----------------------------------------------------------------------------------------------------)
 
 /*
@@ -44,8 +52,16 @@ grant uthealth_analyst to jfu2;
 
 grant uthealth_analyst to smadhuri;
 
---***********************************************************************************************************
 
+----! run this query for each new uthealth_analyst so that everyone can access their dev tables freely
+set role lghosh1;
+alter default privileges for user lghosh1 in schema dev grant all on tables to uthealth_analyst; 
+----!
+
+set role wcough;  select session_user;  select current_user;
+
+
+--***********************************************************************************************************
 --Schemas permissions for uthealth_analyst 
 
 ---conditions (select only)
@@ -81,10 +97,10 @@ alter default privileges in schema dw_staging grant select on tables to group ut
 	grant usage on schema medicare_national to group uthealth_analyst; 
 	grant select on all tables in schema medicare_national to group uthealth_analyst; 
 	alter default privileges in schema medicare_national grant select on tables to group uthealth_analyst;
-	---uthealth/medicare_national
-	grant usage on schema uthealth/medicare_national to group uthealth_analyst; 
-	grant select on all tables in schema uthealth/medicare_national to group uthealth_analyst; 
-	alter default privileges in schema uthealth/medicare_national grant select on tables to group uthealth_analyst;
+	---medicare_texas
+	grant usage on schema medicare_texas to group uthealth_analyst; 
+	grant select on all tables in schema medicare_texas to group uthealth_analyst; 
+	alter default privileges in schema medicare_texas grant select on tables to group uthealth_analyst;
 	---optum_dod
 	grant usage on schema optum_dod to group uthealth_analyst; 
 	grant select on all tables in schema optum_dod to group uthealth_analyst; 
@@ -201,10 +217,10 @@ alter default privileges in schema data_warehouse grant all on tables to uthealt
 	grant all on schema medicare_national to group uthealth_admin; 
 	grant all on all tables in schema medicare_national to group uthealth_admin; 
 	alter default privileges in schema medicare_national grant all on tables to group uthealth_admin;
-	---uthealth/medicare_national
-	grant all on schema uthealth/medicare_national to group uthealth_admin; 
-	grant all on all tables in schema uthealth/medicare_national to group uthealth_admin; 
-	alter default privileges in schema uthealth/medicare_national grant all on tables to group uthealth_admin;
+	---medicare_texas
+	grant all on schema medicare_texas to group uthealth_admin; 
+	grant all on all tables in schema medicare_texas to group uthealth_admin; 
+	alter default privileges in schema medicare_texas grant all on tables to group uthealth_admin;
 	---optum_dod
 	grant all on schema optum_dod to group uthealth_admin; 
 	grant all on all tables in schema optum_dod to group uthealth_admin; 
