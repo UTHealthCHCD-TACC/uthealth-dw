@@ -20,6 +20,7 @@ from medicaid.agg_enrl_medicaid_cy1220 a
       on b.member_id_src = a.client_nbr
 where enrl_months = 12 
   and enrl_cy = 2019
+  and age::float < 65.00
  and zip3::int between 750 and 799;
  
  
@@ -84,16 +85,6 @@ update dev.wc_mdcd_ape_2019 a set vacc_flag = 1
   from dev.wc_mdcd_ape_mem_2019 b 
     where a.uth_member_id = b.uth_member_id
  ;
-
---agg table to be used in agg65+ code
-drop table dev.wc_mdcd_ape_agg_2019 ;
-
-select * 
-into dev.wc_mdcd_ape_agg_2019 
-from dev.wc_mdcd_ape_2019 a 
-where a.age_group = 7;
-
-delete from dev.wc_mdcd_ape_2019 where age_group = 7;
 
 
 

@@ -109,6 +109,15 @@ from medicaid.clm_detail a
 ;     
 
 
+select * 
+from dw_staging.claim_detail cd 
+where data_source = 'mdcd' 
+  and year = 2019;
+
+where year_fy = 2019
+;
+
+
 
 ---enc  20min
 insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
