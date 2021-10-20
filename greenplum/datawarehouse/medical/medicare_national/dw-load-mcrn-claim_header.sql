@@ -7,8 +7,9 @@
  * ******************************************************************************************************
  *  wcc001  || 10/01/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/20/2021 || added fiscal year logic
+ * ******************************************************************************************************
  * */
-
 
 --------------- BEGIN SCRIPT -------
 
@@ -29,7 +30,12 @@ vacuum analyze dw_staging.claim_header;
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)							        						        
 select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a."year"::int2
+        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
+      case
+        when extract( month from a.clm_thru_dt::date) >= 9 
+          then extract( year from a.clm_thru_dt::date)+ 1
+        else extract( year from a.clm_thru_dt::date)
+      end as fiscal_year
 from medicare_national.inpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -44,7 +50,11 @@ from medicare_national.inpatient_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                              
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a."year"::int2
+        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       case
+        when extract( month from a.clm_thru_dt::date) >= 9 
+          then extract( year from a.clm_thru_dt::date)+ 1
+        else extract( year from a.clm_thru_dt::date)
+      end as fiscal_year
 from medicare_national.outpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -92,7 +102,12 @@ from medicare_national.dme_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                               
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a."year"::int2
+        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
+      case
+        when extract( month from a.clm_thru_dt::date) >= 9 
+          then extract( year from a.clm_thru_dt::date)+ 1
+        else extract( year from a.clm_thru_dt::date)
+      end as fiscal_year
 from medicare_national.hha_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -109,7 +124,12 @@ from medicare_national.hha_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a."year"::int2
+        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
+      case
+        when extract( month from a.clm_thru_dt::date) >= 9 
+          then extract( year from a.clm_thru_dt::date)+ 1
+        else extract( year from a.clm_thru_dt::date)
+      end as fiscal_year
 from medicare_national.hospice_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
@@ -125,7 +145,12 @@ from medicare_national.hospice_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                        
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, a."year"::int2
+        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
+      case
+        when extract( month from a.clm_thru_dt::date) >= 9 
+          then extract( year from a.clm_thru_dt::date)+ 1
+        else extract( year from a.clm_thru_dt::date)
+      end as fiscal_year
 from medicare_national.snf_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrn'
