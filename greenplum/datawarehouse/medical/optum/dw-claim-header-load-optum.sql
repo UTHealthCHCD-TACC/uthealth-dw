@@ -7,7 +7,7 @@
  * ******************************************************************************************************
  *  wcc001  || 9/09/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
- *  gmunoz  || 10/20/2021 || added fiscal year logic
+ *  gmunoz  || 10/20/2021 || added fiscal year logic with function dev.fiscal_year_func
  * ****************************************************************************************************** 
  * */
 
@@ -60,11 +60,7 @@ select distinct on(b.uth_claim_id)
 	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
-	case
-		when extract( month from min(a.fst_dt) over(partition by b.uth_claim_id)) >= 9 
-			then extract( year from min(a.fst_dt) over(partition by b.uth_claim_id))+ 1
-		else extract( year from min(a.fst_dt) over(partition by b.uth_claim_id)) 
-	end as fiscal_year, 
+	dev.fiscal_year_func(min(a.fst_dt) over(partition by b.uth_claim_id)) as fiscal_year,
 	a.std_cost_yr::int as cost_year,
 	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
 	a.std_cost_yr::int as cost_year
@@ -115,11 +111,7 @@ select distinct on(b.uth_claim_id)
 	sum((a.charge * c.cost_factor)) over(partition by b.uth_claim_id) as total_charge_amount,
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
-	case
-		when extract( month from min(a.fst_dt) over(partition by b.uth_claim_id)) >= 9 
-			then extract( year from min(a.fst_dt) over(partition by b.uth_claim_id))+ 1
-		else extract( year from min(a.fst_dt) over(partition by b.uth_claim_id)) 
-	end as fiscal_year,
+	dev.fiscal_year_func(min(a.fst_dt) over(partition by b.uth_claim_id)) as fiscal_year,
 	a.std_cost_yr::int as cost_year
 from optum_zip.medical a
     join dw_staging.optz_uth_claim_id b   

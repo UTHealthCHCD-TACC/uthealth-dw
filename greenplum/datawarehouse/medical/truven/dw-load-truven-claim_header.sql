@@ -8,7 +8,7 @@
  * ******************************************************************************************************
  *  jsw001  || 9/20/2021 || add to_date_of_service and cost_factor_year. change to dw_staging
  * ******************************************************************************************************
- *  gmunoz  || 10/20/2021 || added fiscal year logic
+ *  gmunoz  || 10/20/2021 || added fiscal year logic with function dev.fiscal_year_func
  * ******************************************************************************************************
  * */
 alter table dw_staging.claim_header add column fiscal_year int2;
@@ -57,11 +57,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaeo',
-	case
-		when extract( month from a.svcdate) >= 9 
-			then extract( year from a.svcdate)+ 1
-		else extract( year from a.svcdate)
-	end as fiscal_year, 
+	dev.fiscal_year(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaeo a
@@ -96,11 +92,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcro',
-	case
-		when extract( month from a.svcdate) >= 9 
-			then extract( year from a.svcdate)+ 1
-		else extract( year from a.svcdate)
-	end as fiscal_year, 
+	dev.fiscal_year(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcro a
@@ -136,11 +128,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaes',
-	case
-		when extract( month from a.svcdate) >= 9 
-			then extract( year from a.svcdate)+ 1
-		else extract( year from a.svcdate)
-	end as fiscal_year, 
+	dev.fiscal_year(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaes a
@@ -171,11 +159,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcrs',
-	case
-		when extract( month from a.svcdate) >= 9 
-			then extract( year from a.svcdate)+ 1
-		else extract( year from a.svcdate)
-	end as fiscal_year, 
+	dev.fiscal_year(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcrs a

@@ -35,11 +35,7 @@ select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_i
        h.hdr_frm_dos::Date, case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, h.icn , p.pcn, 
        'clm_header' as tableidsrc,  
-       case
-         when extract( month from h.hdr_frm_dos::date) >= 9 
-            then extract( year from h.hdr_frm_dos::date)+ 1
-         else extract( year from h.hdr_frm_dos::date)
-	    end as fiscal_year,  
+       dev.fiscal_year(h.hdr_frm_dos::date) as fiscal_year,
        h.hdr_to_dos::date
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
@@ -75,12 +71,8 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
        h.frm_dos::Date, 
        case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_chrg_amt::float ,h.mco_pd_amt::float, h.derv_enc , p.mem_id,
-       'enc_header' as tableidsrc,        
-       case
-         when extract( month from h.hdr_frm_dos::date) >= 9 
-            then extract( year from h.hdr_frm_dos::date)+ 1
-         else extract( year from h.hdr_frm_dos::date)
-	   end as fiscal_year,   
+       'enc_header' as tableidsrc,      
+       dev.fiscal_year(h.hdr_frm_dos::date) as fiscal_year,
       h.to_dos::date       
   from medicaid.enc_header h  
 join medicaid.enc_proc p 
