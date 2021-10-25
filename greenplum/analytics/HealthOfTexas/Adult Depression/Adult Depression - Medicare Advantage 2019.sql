@@ -37,11 +37,11 @@ where c.uth_member_id is null
 --prevalance all - row 51  -- optum 
 select * 
 from (
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems, 'all' as grp 
+select ( sum(vacc_flag) / count(uth_member_id)::float )*100 as prev, count(uth_member_id) as mems, 'all' as grp 
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'optz'
 union all
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, gender_cd
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev, count(uth_member_id) as mems, gender_cd
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'optz'
 group by a.gender_cd
@@ -52,11 +52,11 @@ order by grp
 --prevalance all - row 51  -- truven weight
 select * 
 from (
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev,count(uth_member_id) as mems,  'all' as grp 
+select ( sum(vacc_flag) / count(uth_member_id)::float )*100 as prev,count(uth_member_id) as mems,  'all' as grp 
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'truv'
 union all
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev,count(uth_member_id) as mems,  gender_cd
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev,count(uth_member_id) as mems,  gender_cd
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'truv'
 group by a.gender_cd
@@ -86,14 +86,14 @@ order by grp
 (0012, 772,6,'F','optz',0)
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float ) *100 as prev, count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'optz'
 group by a.zip3 
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float ) *100 as prev, count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'F'
@@ -102,7 +102,7 @@ order by a.zip3
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev, count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'M'
@@ -112,14 +112,14 @@ order by a.zip3
   
  
  -- truven
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev , count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'truv'
 group by a.zip3 
 order by a.zip3
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev, count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'truv'
   and a.gender_cd = 'F'
@@ -128,7 +128,7 @@ order by a.zip3
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
+select ( sum(vacc_flag) / count(uth_member_id)::float )  *100 as prev, count(uth_member_id) as mems
 from dev.wc_depression_mcradv_2019 a 
 where a.data_source = 'truv'
   and a.gender_cd = 'M'

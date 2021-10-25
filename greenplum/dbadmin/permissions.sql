@@ -82,6 +82,13 @@ grant all on all tables in schema dev to uthealth_analyst;
 grant all privileges on all sequences in schema dev to uthealth_analyst; 
 alter default privileges in schema dev grant all on tables to uthealth_analyst; 
 
+
+--tableau (all access)
+grant all on schema tableau to uthealth_analyst; 
+grant all on all tables in schema tableau to uthealth_analyst; 
+grant all privileges on all sequences in schema tableau to uthealth_analyst; 
+alter default privileges in schema tableau grant all on tables to uthealth_analyst; 
+
 --dw_staging (select only )
 grant usage on schema dw_staging to group uthealth_analyst; 
 grant select on all tables in schema dw_staging to group uthealth_analyst; 

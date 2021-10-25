@@ -1,8 +1,8 @@
----optum and truven cohorts from DW
-drop table dev.wc_flu_com_2019;
+--Adult Depression - Commercial 2019
+drop table dev.wc_depression_com_2019;
 
-select distinct on (uth_member_id) 
-       uth_member_id, 
+select distinct on (a.uth_member_id) 
+       a.uth_member_id, 
        a.zip3, 
 	   case  when a.age_derived between 0  and 17 then 1 
 	         when a.age_derived between 18 and 29 then 2
@@ -12,10 +12,16 @@ select distinct on (uth_member_id)
 	         when a.age_derived between 60 and 64 then 6 
 	   end as age_group,
        a.gender_cd, 
-       data_source 
- into dev.wc_flu_com_2019
+       data_source,
+       case when b.uth_member_id is null then 0 else 1 end as vacc_flag
+ into dev.wc_depression_com_2019
 from data_warehouse.member_enrollment_yearly a
-where a.data_source in ('truv','optz')
+  left outer join dev.wc_depression_2019_vacc b 
+     on b.uth_member_id = a.uth_member_id 
+  left outer join dev.wc_depression_2019_exclusions c
+     on c.uth_member_id = a.uth_member_id
+where c.uth_member_id is null 
+  and a.data_source in ('truv','optz')
   and a.year = 2019 
   and a.state = 'TX'
   and a.zip3 between '750' and '799'
@@ -25,28 +31,10 @@ where a.data_source in ('truv','optz')
   and a.gender_cd in ('M','F')
 ;
 
-delete from dev.wc_flu_com_2019 where age_group is null;
+delete from dev.wc_depression_com_2019 where age_group is null;
 
-delete from dev.wc_flu_com_2019 where length(zip3::text) = 2
+delete from dev.wc_depression_com_2019 where length(zip3::text) = 2
 
----
-select distinct uth_member_id 
-into dev.wc_flu_2019_vacc
-from data_warehouse.claim_detail a
-where a.cpt_hcpcs in ('90630','90654','90655','90655','90656','90657','90658','90658','90660','90661','90662',
-		  '90672','90672','90673','90674','90682','90685','90685','90686','90687','90688','90756','90756',
-		  '90653','90657','90658','90658','G0008','Q2034','Q2035','Q2036','Q2037','Q2038','Q2039','G8482')
-      and a.year = 2019 
-;
-
----
-alter table dev.wc_flu_com_2019 add column vacc_flag int2 default 0;
-
-
-update dev.wc_flu_com_2019 a set vacc_flag = 1
-  from dev.wc_flu_2019_vacc b 
-    where b.uth_member_id = a.uth_member_id
- ;
 
 ------ Calculations ---------------------------   
 			    
@@ -54,50 +42,92 @@ update dev.wc_flu_com_2019 a set vacc_flag = 1
 ---********************** Prevalance All **************************
 ----------------------------------------------------------------------------------------
 --prevalance all - row 51  -- optum 
-select * 
-from (
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems, 'all' as grp 
-from dev.wc_flu_com_2019 a 
+select  ( sum(a.vacc_flag) / count(a.uth_member_id)::float )*100 as prev, count(a.uth_member_id) as mems, 
+		( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems 
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.gender_cd = 'F'
+    left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.gender_cd = 'M'
 where a.data_source = 'optz'
-union all
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, gender_cd
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-group by a.gender_cd
-) x 
-order by grp
 ;
 
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, age_group 
-from dev.wc_flu_com_2019 a 
+---age group row 51 optum
+select  ( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems, 
+		( sum(d.vacc_flag) / count(d.uth_member_id)::float )*100 as prev, count(d.uth_member_id) as mems, 
+		( sum(e.vacc_flag) / count(e.uth_member_id)::float )*100 as prev, count(e.uth_member_id) as mems, 
+		( sum(f.vacc_flag) / count(f.uth_member_id)::float )*100 as prev, count(f.uth_member_id) as mems, 
+		( sum(g.vacc_flag) / count(g.uth_member_id)::float )*100 as prev, count(g.uth_member_id) as mems
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.age_group = 1
+  left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.age_group = 2 
+  left outer join dev.wc_depression_com_2019 d 
+     on d.uth_member_id = a.uth_member_id 
+    and d.age_group = 3 
+   left outer join dev.wc_depression_com_2019 e 
+     on e.uth_member_id = a.uth_member_id 
+    and e.age_group = 4
+   left outer join dev.wc_depression_com_2019 f 
+     on f.uth_member_id = a.uth_member_id 
+    and f.age_group = 5
+   left outer join dev.wc_depression_com_2019 g 
+     on g.uth_member_id = a.uth_member_id 
+    and g.age_group = 6 
 where a.data_source = 'optz'
-group by age_group 
-order by age_group;
+;
 
 
 --prevalance all - row 51  -- truven weight
-select * 
-from (
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev,count(uth_member_id) as mems,  'all' as grp 
-from dev.wc_flu_com_2019 a 
+select  ( sum(a.vacc_flag) / count(a.uth_member_id)::float )*100 as prev, count(a.uth_member_id) as mems, 
+		( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems 
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.gender_cd = 'F'
+    left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.gender_cd = 'M'
 where a.data_source = 'truv'
-union all
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev,count(uth_member_id) as mems,  gender_cd
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-group by a.gender_cd
-) x 
-order by grp
 ;
 
 
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems, age_group 
-from dev.wc_flu_com_2019 a 
+---age group row 51 truv
+select  ( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems, 
+		( sum(d.vacc_flag) / count(d.uth_member_id)::float )*100 as prev, count(d.uth_member_id) as mems, 
+		( sum(e.vacc_flag) / count(e.uth_member_id)::float )*100 as prev, count(e.uth_member_id) as mems, 
+		( sum(f.vacc_flag) / count(f.uth_member_id)::float )*100 as prev, count(f.uth_member_id) as mems, 
+		( sum(g.vacc_flag) / count(g.uth_member_id)::float )*100 as prev, count(g.uth_member_id) as mems
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.age_group = 1
+  left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.age_group = 2 
+  left outer join dev.wc_depression_com_2019 d 
+     on d.uth_member_id = a.uth_member_id 
+    and d.age_group = 3 
+   left outer join dev.wc_depression_com_2019 e 
+     on e.uth_member_id = a.uth_member_id 
+    and e.age_group = 4
+   left outer join dev.wc_depression_com_2019 f 
+     on f.uth_member_id = a.uth_member_id 
+    and f.age_group = 5
+   left outer join dev.wc_depression_com_2019 g 
+     on g.uth_member_id = a.uth_member_id 
+    and g.age_group = 6 
 where a.data_source = 'truv'
-group by age_group 
-order by age_group;
-
+;
 
 
 ----------------------------------------------------------------------------------------
@@ -107,7 +137,7 @@ order by age_group;
 
  
  -- optum weight  missing zip 753 772 
- insert into dev.wc_flu_com_2019 values 
+ insert into dev.wc_depression_com_2019 values 
 (0001, 753,1,'M','optz',0),
 (0002, 753,2,'M','optz',0),
 (0003, 753,3,'M','optz',0),
@@ -122,151 +152,96 @@ order by age_group;
 (0012, 772,6,'F','optz',0)
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
+select  ( sum(a.vacc_flag) / count(a.uth_member_id)::float )*100 as prev, count(a.uth_member_id) as mems, 
+		( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems 
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.gender_cd = 'F'
+    left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.gender_cd = 'M'
 where a.data_source = 'optz'
 group by a.zip3 
-order by a.zip3
+order by a.zip3;
+
+
+
+
+select  ( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems, 
+		( sum(d.vacc_flag) / count(d.uth_member_id)::float )*100 as prev, count(d.uth_member_id) as mems, 
+		( sum(e.vacc_flag) / count(e.uth_member_id)::float )*100 as prev, count(e.uth_member_id) as mems, 
+		( sum(f.vacc_flag) / count(f.uth_member_id)::float )*100 as prev, count(f.uth_member_id) as mems, 
+		( sum(g.vacc_flag) / count(g.uth_member_id)::float )*100 as prev, count(g.uth_member_id) as mems
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.age_group = 1
+  left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.age_group = 2 
+  left outer join dev.wc_depression_com_2019 d 
+     on d.uth_member_id = a.uth_member_id 
+    and d.age_group = 3 
+   left outer join dev.wc_depression_com_2019 e 
+     on e.uth_member_id = a.uth_member_id 
+    and e.age_group = 4
+   left outer join dev.wc_depression_com_2019 f 
+     on f.uth_member_id = a.uth_member_id 
+    and f.age_group = 5
+   left outer join dev.wc_depression_com_2019 g 
+     on g.uth_member_id = a.uth_member_id 
+    and g.age_group = 6 
+where a.data_source = 'optz'
+group by a.zip3 
+order by a.zip3 
 ;
 
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.gender_cd = 'F'
-  group by a.zip3 
-order by a.zip3
-;
-
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.gender_cd = 'M'
-  group by a.zip3 
-order by a.zip3
-;
-
-
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '1'
-  group by a.zip3 
-order by a.zip3
-  ;
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '2'
-  group by a.zip3 
-order by a.zip3
-  ; 
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '3'
-  group by a.zip3 
-order by a.zip3
-  ; 
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '4'
-  group by a.zip3 
-order by a.zip3
-  ; 
- 
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '5'
-  group by a.zip3 
-order by a.zip3
-  ; 
- 
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev ,count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'optz'
-  and a.age_group = '6'
-  group by a.zip3 
-order by a.zip3
-  ;  
  
  -- truven
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
+select  ( sum(a.vacc_flag) / count(a.uth_member_id)::float )*100 as prev, count(a.uth_member_id) as mems, 
+		( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems 
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.gender_cd = 'F'
+    left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.gender_cd = 'M'
 where a.data_source = 'truv'
 group by a.zip3 
-order by a.zip3
+order by a.zip3;
+
+
+select  ( sum(b.vacc_flag) / count(b.uth_member_id)::float )*100 as prev, count(b.uth_member_id) as mems, 
+		( sum(c.vacc_flag) / count(c.uth_member_id)::float )*100 as prev, count(c.uth_member_id) as mems, 
+		( sum(d.vacc_flag) / count(d.uth_member_id)::float )*100 as prev, count(d.uth_member_id) as mems, 
+		( sum(e.vacc_flag) / count(e.uth_member_id)::float )*100 as prev, count(e.uth_member_id) as mems, 
+		( sum(f.vacc_flag) / count(f.uth_member_id)::float )*100 as prev, count(f.uth_member_id) as mems, 
+		( sum(g.vacc_flag) / count(g.uth_member_id)::float )*100 as prev, count(g.uth_member_id) as mems
+from dev.wc_depression_com_2019 a 
+  left outer join dev.wc_depression_com_2019 b  
+     on b.uth_member_id = a.uth_member_id 
+    and b.age_group = 1
+  left outer join dev.wc_depression_com_2019 c 
+     on c.uth_member_id = a.uth_member_id 
+    and c.age_group = 2 
+  left outer join dev.wc_depression_com_2019 d 
+     on d.uth_member_id = a.uth_member_id 
+    and d.age_group = 3 
+   left outer join dev.wc_depression_com_2019 e 
+     on e.uth_member_id = a.uth_member_id 
+    and e.age_group = 4
+   left outer join dev.wc_depression_com_2019 f 
+     on f.uth_member_id = a.uth_member_id 
+    and f.age_group = 5
+   left outer join dev.wc_depression_com_2019 g 
+     on g.uth_member_id = a.uth_member_id 
+    and g.age_group = 6 
+where a.data_source = 'truv'
+group by a.zip3 
+order by a.zip3 
 ;
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.gender_cd = 'F'
-  group by a.zip3 
-order by a.zip3
-;
-
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.gender_cd = 'M'
-  group by a.zip3 
-order by a.zip3
-;
-
-
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '1'
-  group by a.zip3 
-order by a.zip3
-  ;
-  
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '2'
-  group by a.zip3 
-order by a.zip3
-  ;
- 
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems 
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '3'
-  group by a.zip3 
-order by a.zip3
-  ;
- 
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems 
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '4'
-  group by a.zip3 
-order by a.zip3
-  ;
- 
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev , count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '5'
-  group by a.zip3 
-order by a.zip3
-  ;
- 
-select ( sum(vacc_flag) / count(uth_member_id)::float )as prev, count(uth_member_id) as mems
-from dev.wc_flu_com_2019 a 
-where a.data_source = 'truv'
-  and a.age_group = '6'
-  group by a.zip3 
-order by a.zip3
-  ; 
