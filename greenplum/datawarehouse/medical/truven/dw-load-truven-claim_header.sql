@@ -57,7 +57,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaeo',
-	dev.fiscal_year(a.svcdate) as fiscal_year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaeo a
@@ -92,7 +92,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcro',
-	dev.fiscal_year(a.svcdate) as fiscal_year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcro a
@@ -128,7 +128,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaes',
-	dev.fiscal_year(a.svcdate) as fiscal_year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaes a
@@ -159,7 +159,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcrs',
-	dev.fiscal_year(a.svcdate) as fiscal_year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcrs a

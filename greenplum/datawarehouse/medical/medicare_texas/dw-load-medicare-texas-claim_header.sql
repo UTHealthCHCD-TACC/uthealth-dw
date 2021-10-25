@@ -37,7 +37,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)							        						        
 select 'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.inpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
@@ -53,7 +53,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                              
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.outpatient_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
@@ -70,7 +70,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                               
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.nch_clm_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date,
         null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, 
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.bcarrier_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.member_id_src = bene_id
@@ -87,7 +87,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                              
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.nch_clm_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date,
         null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, 
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.dme_claims_k a
   join data_warehouse.dim_uth_member_id b 
    on b.member_id_src = bene_id
@@ -103,7 +103,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                               
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.hha_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
@@ -121,7 +121,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.hospice_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
@@ -138,7 +138,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year)	                        
 select  'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
-      	dev.fiscal_year(a.clm_thru_dt::date) as fiscal_year
+      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year
 from medicare_texas.snf_base_claims_k a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
