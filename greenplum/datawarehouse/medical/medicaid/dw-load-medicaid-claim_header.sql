@@ -1,4 +1,14 @@
----medicaid claim_header load script
+
+
+/* ******************************************************************************************************
+ *  load claim header for medicaid
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ * ****************************************************************************************************** 
+ * gmunoz  || 10/20/2021 || adding fiscal year logic
+ * ******************************************************************************************************
+ * */
 
 
 --confirm 1 to 1 icn
@@ -24,7 +34,9 @@ insert into data_warehouse.claim_header (
 select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, 
        h.hdr_frm_dos::Date, case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, h.icn , p.pcn, 
-       'clm_header' as tableidsrc,  h.year_fy, h.hdr_to_dos::date
+       'clm_header' as tableidsrc,  
+       dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
+       h.hdr_to_dos::date
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
       on h.icn  = p.icn 
@@ -59,7 +71,9 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
        h.frm_dos::Date, 
        case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
        h.tot_chrg_amt::float ,h.mco_pd_amt::float, h.derv_enc , p.mem_id,
-       'enc_header' as tableidsrc, h.year_fy, h.to_dos::date       
+       'enc_header' as tableidsrc,      
+       dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
+      h.to_dos::date       
   from medicaid.enc_header h  
 join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       

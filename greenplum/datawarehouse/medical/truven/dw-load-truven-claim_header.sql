@@ -8,6 +8,8 @@
  * ******************************************************************************************************
  *  jsw001  || 9/20/2021 || add to_date_of_service and cost_factor_year. change to dw_staging
  * ******************************************************************************************************
+ *  gmunoz  || 10/20/2021 || added fiscal year logic with function dev.fiscal_year_func
+ * ******************************************************************************************************
  * */
 alter table dw_staging.claim_header add column fiscal_year int2;
 
@@ -38,7 +40,8 @@ drop table dev.truven_dim_uth_claim_id;
 insert into dw_staging.claim_header
 (
 data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, cost_factor_year, to_date_of_service
+total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, 
+cost_factor_year, to_date_of_service
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -54,7 +57,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaeo',
-	a.year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaeo a
@@ -72,7 +75,8 @@ where a.year = 2019;
 insert into dw_staging.claim_header
 (
 data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, cost_factor_year, to_date_of_service
+total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, 
+cost_factor_year, to_date_of_service
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -88,7 +92,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcro',
-	a.year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcro a
@@ -124,7 +128,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'ccaes',
-	a."year",
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.ccaes a
@@ -155,7 +159,7 @@ select distinct on (uth_claim_id) 'truv',
 	a.msclmid,
 	a.enrolid,
 	'mdcrs',
-	a.year,
+	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
 	a.tsvcdat
 from truven.mdcrs a
