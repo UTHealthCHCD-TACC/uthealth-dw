@@ -7,8 +7,9 @@
  * ******************************************************************************************************
  *  wcc001  || 10/04/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
-
 
 --------------- BEGIN SCRIPT -------
 
@@ -41,7 +42,8 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null, d."year"
+		,null, null, 
+    dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.outpatient_revenue_center_k a 
      join medicare_texas.outpatient_base_claims_k b
         on a.bene_id = b.bene_id 
@@ -66,7 +68,7 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null, null, d."year"
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.bcarrier_claims_k a
      join medicare_texas.bcarrier_line_k b 
         on a.bene_id = b.bene_id 
@@ -91,7 +93,7 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null, null, d."year"
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.dme_claims_k  a
      join medicare_texas.dme_line_k b 
         on a.bene_id = b.bene_id 
@@ -115,7 +117,7 @@ select  'mcrt', d."year", d.uth_member_id, d.uth_claim_id, d.claim_sequence_numb
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos
-		,null, null, d."year"
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.inpatient_revenue_center_k a 
      join medicare_texas.inpatient_base_claims_k b 
         on a.bene_id = b.bene_id 
@@ -140,7 +142,7 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null, d."year"
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.hha_revenue_center_k a 
      join medicare_texas.hha_base_claims_k b 
          on a.bene_id = b.bene_id 
@@ -165,7 +167,7 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null, d."year"
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.hospice_revenue_center_k a 
      join medicare_texas.hospice_base_claims_k b 
          on a.bene_id = b.bene_id 
@@ -190,7 +192,7 @@ select  'mcrt', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null, d."year"		
+		,null, null, dev.fiscal_year_func(d.from_date_of_service)
 from medicare_texas.snf_revenue_center_k a 
     join medicare_texas.snf_base_claims_k b 
        on a.clm_id = b.clm_id 

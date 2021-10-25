@@ -11,6 +11,8 @@
  * 												--- inpatient tables use extract year from service date for year, outpatient reference dim table, not sure about that - will knows best
  * 												--- need to change data_year to fiscal year, but it shows up multiple places in script referencing other temp tables so i left it in some places
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
 
 vacuum analyze data_warehouse.claim_detail;
@@ -34,7 +36,8 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
-       'ccaeo', a.year 
+       'ccaeo', 
+       dev.fiscal_year_func(a.svcdate)
 from truven.ccaeo a
   join dev.truven_dim_uth_claim_id b -- jw: i'm not sure where this table is or gets made, but curious if it has data_year, which is being inserted into year for DW table
     on b.member_id_src = a.enrolid::text
@@ -60,7 +63,8 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
-       'mdcro', a.year 
+       'mdcro', 
+       dev.fiscal_year_func(a.svcdate)
 from truven.mdcro a 
   join dev.truven_dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
@@ -89,7 +93,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, lpad(drg::int::text,3,'0'), 
-      'ccaes', a.year
+      'ccaes', 
+      dev.fiscal_year_func(a.svcdate)
 from truven.ccaes a 
   join dev.truven_dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
@@ -118,7 +123,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units,  lpad(drg::int::text,3,'0'), 
-      'mdcrs', a.year
+      'mdcrs', 
+      dev.fiscal_year_func(a.svcdate)
 from truven.mdcrs a 
   join dev.truven_dim_uth_claim_id b
     on b.member_id_src = a.enrolid::text
