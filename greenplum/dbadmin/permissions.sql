@@ -97,6 +97,10 @@ alter default privileges in schema dw_staging grant select on tables to group ut
 	grant usage on schema truven to group uthealth_analyst; 
 	grant select on all tables in schema truven to group uthealth_analyst; 
 	alter default privileges in schema truven grant select on tables to group uthealth_analyst;
+	---tables
+	grant all on schema tableau to group uthealth_analyst; 
+	grant all on all tables in schema tableau to group uthealth_analyst; 
+	alter default privileges in schema tableau grant all on tables to group uthealth_analyst;
 
 --qa_reporting (select only )
 grant usage on schema qa_reporting to group uthealth_analyst; 
@@ -212,7 +216,10 @@ alter default privileges in schema data_warehouse grant all on tables to uthealt
 	grant all on schema truven to group uthealth_admin; 
 	grant all on all tables in schema truven to group uthealth_admin; 
 	alter default privileges in schema truven grant all on tables to group uthealth_admin;
-
+	---tableau
+	grant all on schema tableau to group uthealth_admin; 
+	grant all on all tables in schema tableau to group uthealth_admin; 
+	alter default privileges in schema tableau grant all on tables to group uthealth_admin;
 
 ---(----------  End Role Definitions    ----------------------------------------------------------------------------------------------------)
 ---(----------  ********************   ----------------------------------------------------------------------------------------------------)
@@ -230,11 +237,11 @@ alter default privileges in schema data_warehouse grant all on tables to uthealt
 drop role uthtest;
 
 
-CREATE ROLE uthtest NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN PASSWORD 'd3f@ult$';
+CREATE ROLE rhansen1 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN; --PASSWORD 'd3f@ult$';
 
 grant uthealthadmin to jharri66;
 grant uthealthdev to jharri66;
-grant uthealth_analyst to jharri66;
+grant uthealth_analyst to rhansen1;
 
 grant connect on database uthealth to dwtest;
 

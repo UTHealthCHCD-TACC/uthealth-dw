@@ -1,3 +1,11 @@
+/* ******************************************************************************************************
+ *  Collection of queries for exploring database settings and performance/resource usage
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ * ******************************************************************************************************
+ */
 /*
 v1 Fields:
 
@@ -9,8 +17,15 @@ v2 Fields: (Drop PLANKEY and WGTKEY)
 SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
 DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
+v3 fields: (Added MEDADV)
+SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
+DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
 */
 
+/*
+ * V1
+ */
 drop table truven.ccaet;
 CREATE TABLE truven.ccaet (
 	seqnum numeric NULL,
@@ -44,56 +59,13 @@ CREATE TABLE truven.ccaet (
 )
 DISTRIBUTED RANDOMLY;
 
-drop external table ext_ccaet_v1;
-CREATE EXTERNAL TABLE ext_ccaet_v1 (
-	seqnum numeric ,
-	version int2 ,
-	efamid numeric ,
-	enrolid numeric ,
-	dtend date ,
-	dtstart date ,
-	--empzip numeric ,
-	memdays numeric ,
-	mhsacovg int2 ,
-	plantyp numeric ,
-	year numeric ,
-	age numeric ,
-	dobyr numeric ,
-	region int2 ,
-	msa numeric ,
-	datatyp numeric ,
-	plankey numeric ,
-	wgtkey numeric ,
-	agegrp int2 ,
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	emprel int2 ,
-	phyflag int2 ,
-	rx int2 ,
-	sex int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/ccaet*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
+/*
+ * V3
+ */
+alter table truven.ccaet add column medadv int2;
 
-select *
-from ext_ccaet_v1
-limit 1000;
-
-truncate table truven.ccaet;
-
-insert into truven.ccaet (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,
-DOBYR,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,
-DOBYR,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_ccaet_v1;
-
-drop external table ext_ccaet_v2;
-CREATE EXTERNAL TABLE ext_ccaet_v2 (
+drop external table ext_ccaet;
+CREATE EXTERNAL TABLE ext_ccaet (
 	seqnum numeric ,
 	version int2 ,
 	efamid numeric ,
@@ -110,6 +82,7 @@ CREATE EXTERNAL TABLE ext_ccaet_v2 (
 	region int2 ,
 	
 	datatyp numeric ,
+	medadv int2,
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -122,19 +95,20 @@ CREATE EXTERNAL TABLE ext_ccaet_v2 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/*/CCAET*'
+'gpfdist://greenplum01:8081/uthealth/truven/CCAET*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select *
-from ext_ccaet_v2
+select min(dtstart), max(dtstart)
+from ext_ccaet;
 limit 1000;
 
 insert into truven.ccaet (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
-DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
+DATATYP,MEDADV, AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
 select SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
-DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_ccaet_v2;
+DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+from ext_ccaet;
+
 
 -- Verify
 
@@ -149,7 +123,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.ccaet where year=2019)
 distributed randomly;
 
-delete from truven.ccaet where year>=2019;
+delete from truven.ccaet where year>=2020;
 
 --drop table truven.ccaet;
 --alter table truven.ccaet_new rename to ccaet;

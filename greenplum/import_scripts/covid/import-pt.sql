@@ -4,8 +4,8 @@
  * SOURCEID|SOURCE_DATA_THROUGH
 */
 --Medical
-drop table opt_20210624.pt;
-create table opt_20210624.pt (
+drop table opt_20210916.pt;
+create table opt_20210916.pt (
 PTID varchar,BIRTH_YR varchar,GENDER varchar,RACE varchar,ETHNICITY varchar,REGION varchar,DIVISION varchar,DECEASED_INDICATOR varchar,DATE_OF_DEATH varchar,
 PROVID_PCP varchar,IDN_INDICATOR varchar, FIRST_MONTH_ACTIVE varchar,LAST_MONTH_ACTIVE varchar,NOTES_ELIGIBLE varchar,HAS_NOTES varchar,
 SOURCEID varchar,SOURCE_DATA_THROUGH varchar--,INTEGRATED varchar
@@ -22,7 +22,7 @@ PROVID_PCP varchar,IDN_INDICATOR varchar, FIRST_MONTH_ACTIVE varchar,LAST_MONTH_
 SOURCEID varchar,SOURCE_DATA_THROUGH varchar--,INTEGRATED varchar
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/covid/20210624/*pt*.txt.gz'
+'gpfdist://greenplum01:8081/covid/20210916/*pt*.txt.gz'
 )
 FORMAT 'text' ( HEADER DELIMITER '|' null as '' escape 'OFF');
 
@@ -33,11 +33,11 @@ from ext_covid_pt
 limit 1000;
 */
 -- ptert: 2s, Updated Rows	548665
-insert into opt_20210624.pt
+insert into opt_20210916.pt
 select * from ext_covid_pt;
 
 --Scratch
 select year, count(*), min(admit_date), max(admit_date)
-from opt_20210624.pt
+from opt_20210916.pt
 group by 1
 order by 1;

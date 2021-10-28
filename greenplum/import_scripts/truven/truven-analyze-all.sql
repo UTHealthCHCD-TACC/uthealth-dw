@@ -1,20 +1,20 @@
-analyze truven.abs;
-analyze truven.ltd;
+vacuum analyze truven.abs;
+vacuum analyze truven.ltd;
 
-analyze truven.ccaea;
-analyze truven.ccaed;
-analyze truven.ccaef;
-analyze truven.ccaei;
-analyze truven.ccaeo;
-analyze truven.ccaep;
-analyze truven.ccaes;
-analyze truven.ccaet;
+vacuum analyze truven.ccaea;
+vacuum analyze truven.ccaed;
+vacuum analyze truven.ccaef;
+vacuum analyze truven.ccaei;
+vacuum analyze truven.ccaeo;
+vacuum analyze truven.ccaep;
+vacuum analyze truven.ccaes;
+vacuum analyze truven.ccaet;
 
-analyze truven.mdcra;
-analyze truven.mdcrd;
-analyze truven.mdcrf;
-analyze truven.mdcri;
-analyze truven.mdcro;
-analyze truven.mdcrp;
-analyze truven.mdcrs_new;
-analyze truven.mdcrt_new;
+vacuum analyze truven.mdcra;
+vacuum analyze truven.mdcrd;
+vacuum analyze truven.mdcrf;
+vacuum analyze truven.mdcri;
+vacuum analyze truven.mdcro;
+vacuum analyze truven.mdcrp;
+vacuum analyze truven.mdcrs;
+vacuum analyze truven.mdcrt;

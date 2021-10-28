@@ -1,3 +1,12 @@
+/* ******************************************************************************************************
+ *  Collection of queries for exploring database settings and performance/resource usage
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ * ******************************************************************************************************
+ */
+
 /*
 v1 Fields:
 
@@ -13,9 +22,23 @@ EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARM
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
 DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
 
+vDMS Fields: (Drops EMPZIP, adds MSA)
+
+SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
+GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,THERCLS,
+DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,MSA,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,
+ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY
+
+v3 fields: Added MEDADV
+SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
+EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
+THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
+DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
 */
 
-drop table truven.mdcrd;
+create table truven.mdcrd (like truven.mdcrd)
+WITH (appendonly=true, orientation=column, compresstype=zlib);
+
 CREATE TABLE truven.mdcrd (
 	seqnum numeric NULL,
 	version int2 NULL,
@@ -59,7 +82,7 @@ CREATE TABLE truven.mdcrd (
 	maintin bpchar(5) null,
 	thergrp bpchar(5) null,
 	region int2 null,
-	
+	msa bpchar(7) ,
 	
 	datatyp numeric null,
 	plankey numeric null,
@@ -78,8 +101,14 @@ CREATE TABLE truven.mdcrd (
 )
 DISTRIBUTED RANDOMLY;
 
-drop external table ext_mdcrd_v1;
-CREATE EXTERNAL TABLE ext_mdcrd_v1 (
+/*
+ * V3
+ */
+
+ alter table truven.mdcrd add column medadv int2;
+
+drop external table ext_mdcrd;
+CREATE EXTERNAL TABLE ext_mdcrd (
 	seqnum numeric ,
 	version int2 ,
 	efamid numeric ,
@@ -125,8 +154,7 @@ CREATE EXTERNAL TABLE ext_mdcrd_v1 (
 	
 	
 	datatyp numeric ,
-	plankey numeric ,
-	wgtkey numeric ,
+	medadv int2, 
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -140,107 +168,30 @@ CREATE EXTERNAL TABLE ext_mdcrd_v1 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://c252-140:8801/*'
+'gpfdist://greenplum01:8081/uthealth/truven/MDCRD*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
-from ext_mdcrd_v1
-limit 1000;
-
-truncate table truven.mdcrd;
-
-insert into truven.mdcrd (SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
-EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
-THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
-DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
-EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
-THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
-DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY
-from ext_mdcrd_v1;
-
-drop external table ext_mdcrd_v2;
-CREATE EXTERNAL TABLE ext_mdcrd_v2 (
-	seqnum numeric ,
-	version int2 ,
-	efamid numeric ,
-	enrolid numeric ,
-	ndcnum numeric ,
-	svcdate date ,
-	dobyr numeric ,
-	year numeric ,
-	age numeric ,
-	awp numeric ,
-	cap_svc bpchar(1) ,
-	cob numeric ,
-	coins numeric ,
-	copay numeric ,
-	daysupp numeric ,
-	deduct numeric ,
-	dispfee numeric ,
-	
-	empzip numeric ,
-	generid numeric ,
-	ingcost numeric ,
-	metqty numeric ,
-	mhsacovg int2 ,
-	netpay numeric ,
-	ntwkprov bpchar(1) ,
-	paidntwk bpchar(1) ,
-	pay numeric ,
-	pddate date ,
-	pharmid numeric ,
-	plantyp numeric ,
-	qty numeric ,
-	refill numeric ,
-	rxmr bpchar(5) ,
-	saletax numeric ,
-	
-	thercls numeric ,
-	dawind bpchar(5) ,
-	deaclas bpchar(5) ,
-	genind  bpchar(5) ,
-	maintin bpchar(5) ,
-	thergrp bpchar(5) ,
-	region int2 ,
-	
-	
-	datatyp numeric ,
-	agegrp int2 ,
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	eidflag int2 ,
-	emprel int2 ,
-	enrflag int2 ,
-	phyflag int2 ,
-	sex int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRD*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
-
-select *
-from ext_mdcrd_v2
+from ext_mdcrd
 limit 1000;
 
 insert into truven.mdcrd (SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
 EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
-DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY )
+DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY )
 select SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COINS,COPAY,DAYSUPP,DEDUCT,DISPFEE,
 EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
-DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
-from ext_mdcrd_v2;
+DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
+from ext_mdcrd;
+
 
 -- Verify
 
-select count(*), min(year), max(year) from truven.mdcrd;
+select count(*), min(year), max(year)  from truven.mdcrd;
+
+
 
 -- Fix storage options
 create table truven.mdcrd_2019
@@ -248,7 +199,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcrd where year=2019)
 distributed randomly;
 
-delete from truven.mdcrd where year>=2019;
+delete from truven.mdcrd where year>=2020;
 
 drop table truven.mdcrd;
 alter table truven.mdcrd_new rename to mdcrd;

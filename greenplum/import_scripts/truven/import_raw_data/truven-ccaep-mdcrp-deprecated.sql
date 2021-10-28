@@ -1,3 +1,13 @@
+/* ******************************************************************************************************
+ *  Collection of queries for exploring database settings and performance/resource usage
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ * wallingTACC  || 10/27/2021 || P files no longer sent.
+ * ******************************************************************************************************
+ */
+
 /*
 v1 Fields:
 

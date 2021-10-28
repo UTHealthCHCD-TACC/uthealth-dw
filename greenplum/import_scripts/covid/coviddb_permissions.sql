@@ -1,13 +1,13 @@
 REVOKE connect FROM PUBLIC;
 
-CREATE ROLE lyndie NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
-grant covid_analyst to lyndie;
+CREATE ROLE zena21 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
+grant covid_analyst to zena21;
 
 /*
  * Project Specific Roles
  */
 create role g823676;
-grant g823429 to mdiaz1;
+grant g823429 to johnjero;
 revoke g823429 from mdiaz1;
 
 create schema g823429;
@@ -25,8 +25,8 @@ grant all on database coviddb to coviddbadmin;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA shared  grant all on tables to group coviddbadmin;
 
-grant all on all tables in schema opt_20210624 to group coviddbadmin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA opt_20210624  grant all on tables to group coviddbadmin;
+grant all on all tables in schema opt_20210916 to group coviddbadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA opt_20210916  grant all on tables to group coviddbadmin;
 /*
  * Analyst Role
  */
@@ -37,9 +37,9 @@ grant all on schema shared to group covid_analyst;
 grant all on all tables in schema shared to group covid_analyst;
 ALTER DEFAULT PRIVILEGES IN SCHEMA shared  grant all on tables to group covid_analyst;
 
-grant usage on schema opt_20210624 to group covid_analyst;
-grant select on all tables in schema opt_20210624 to group covid_analyst;
-ALTER DEFAULT PRIVILEGES IN SCHEMA opt_20210624 grant select on tables to group covid_analyst; 
+grant usage on schema opt_20210916 to group covid_analyst;
+grant select on all tables in schema opt_20210916 to group covid_analyst;
+ALTER DEFAULT PRIVILEGES IN SCHEMA opt_20210916 grant select on tables to group covid_analyst; 
 
 
 

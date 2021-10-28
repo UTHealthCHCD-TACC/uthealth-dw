@@ -25,7 +25,7 @@ create table data_warehouse.pharmacy_claims_truv(like data_warehouse.pharmacy_cl
 with(appendonly=true, orientation=column)
 distributed by (uth_member_id);
 
-truncate data_warehouse.pharmacy_claims_truv;
+--truncate data_warehouse.pharmacy_claims_truv;
 
 --Generate random selection
 drop table data_warehouse.pharmacy_claims_uth_member_ids;
@@ -51,6 +51,11 @@ where p.data_source='truv';
 alter table data_warehouse.pharmacy_claims rename to temp_script_id_truv;
 alter table data_warehouse.pharmacy_claims_truv rename to temp_script_id;
 
+--- NON-DEV/PROD Start Here !!!!!!
+
+update data_warehouse.pharmacy_claims
+set uth_script_id = null;
+
 -- Create uth_script_ids
 --alter table data_warehouse.pharmacy_claims drop column uth_script_id;
 --alter table data_warehouse.pharmacy_claims add column uth_script_id int8;
@@ -58,7 +63,7 @@ drop sequence data_warehouse.pharmacy_claims_uth_script_id_seq;
 create sequence data_warehouse.pharmacy_claims_uth_script_id_seq;
 alter sequence data_warehouse.pharmacy_claims_uth_script_id_seq cache 500;
 
-drop table dev.uth_script_ids;
+--drop table dev.uth_script_ids;
 create table dev.uth_script_ids
 with(appendonly=true, orientation=column)
 as
@@ -102,8 +107,8 @@ and ((a.script_id is null and u.script_id is null) or (a.script_id=u.script_id))
 and a.fill_date=u.fill_date and a.refill_count is not distinct from u.refill_count;
 
 --Get just the first/min records
-drop table data_warehouse.pharmacy_claims_0;
-create table data_warehouse.pharmacy_claims_0
+--drop table dev.pharmacy_claims_0;
+create table dev.pharmacy_claims_0
 with(appendonly=true,orientation=column)
 as
 select distinct uth_script_id, uth_member_id, ndc, script_id, fill_date, refill_count
@@ -113,7 +118,7 @@ and refill_count is not null
 distributed by (uth_member_id);
 
 vacuum analyze data_warehouse.pharmacy_claims;
-vacuum analyze data_warehouse.pharmacy_claims_0;
+vacuum analyze dev.pharmacy_claims_0;
 
 --Verify = no rows
 /*
@@ -125,7 +130,7 @@ having count(*) > 1;
 
 -- Update refill_count>0 to match above
 update data_warehouse.pharmacy_claims b set uth_script_id=a.uth_script_id
-from data_warehouse.pharmacy_claims_0 as a
+from dev.pharmacy_claims_0 as a
 where b.refill_count is not null
 and a.uth_member_id=b.uth_member_id and a.ndc=b.ndc 
 and ((a.script_id is null and b.script_id is null) or (a.script_id=b.script_id)) 
@@ -161,7 +166,7 @@ having count(distinct a.uth_script_id) > 1;
 */
 
 -- Now get those with no-0 refill_count
-drop table dev.uth_script_ids_no_zero;
+--drop table dev.uth_script_ids_no_zero;
 create table dev.uth_script_ids_no_zero as
 select nextval('data_warehouse.pharmacy_claims_uth_script_id_seq') as uth_script_id, a.*
 from (select distinct uth_member_id, ndc, script_id, year, min(fill_date) as fill_date, min(refill_count) as refill_count
@@ -197,6 +202,10 @@ and c.refill_count <= b.refill_count
 and EXTRACT(DAY FROM age(c.fill_date, b.fill_date)) < 180
 );
 
+--Drop temp tables
+drop table dev.uth_script_ids;
+drop table dev.pharmacy_claims_0;
+drop table dev.uth_script_ids_no_zero;
 /*
  * SCRATCH
  */

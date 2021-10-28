@@ -10,15 +10,15 @@
 --Activity
 select *
 from pg_stat_activity
-where state='active';
-and usename='gpadmin';
+where state='active'
+and usename='walling';
 
 select *
 from gp_toolkit.gp_skew_coefficients;
 
 where skcrelname like 'wc%';
 
-select pg_terminate_backend(27852);
+select pg_terminate_backend(31587);
 
 
 select *
@@ -53,7 +53,7 @@ select pg_size_pretty(pg_database_size('uthealth'));
  SELECT schemaname,
  pg_size_pretty(SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT) 
  FROM pg_tables 
- WHERE schemaname in ('truven')
+-- WHERE schemaname in ('truven')
  group by 1
 order by 2 desc;
 
@@ -82,11 +82,11 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dev.wc_claim_detail_optd')
+SELECT get_ao_distribution('dev.jw_mehta_allelig')
 order by 1;
 
 create table reference_tables.ndc_tier_map_imp2 (like reference_tables.ndc_tier_map_imp)
-WITH (appendonly=true, orientation=column, compresstype=none)
+WITH (appendonly=true, orientation=column), compresstype=none)
 distributed randomly;
 
 
@@ -120,15 +120,16 @@ SELECT
 	pgn.nspname as table_owner
 	,pgc.relname as table_name
 	,COALESCE(pga.attname,'DISTRIBUTED RANDOMLY') as distribution_keys
-	,get_ao_compression_ratio(pgc.oid) as compression_ratio
+	--,get_ao_compression_ratio(pgc.oid) as compression_ratio
 from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('dev') and pgc.relname = 'temp_script_id'
+where pgn.nspname in ('truven')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression
+drop view qa_reporting.compression_status;
 create view qa_reporting.compression_status as
 SELECT  b.nspname||'.'||a.relname as TableName
 ,CASE c.columnstore
@@ -144,10 +145,12 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname in ('optum_zip', 'optum_dod', 'medicaid', 'uthealth/medicare_national', 'medicare_national', 'truven', 'data_warehouse')  
+and b.nspname not in ('information_schema', 'dbo', 'pg_aoseg', 'pg_bitmapindex', 'pg_catalog', 'public', 'qa_reporting', 'dev')  
+--and b.nspname in ('dw_staging')
 AND a.oid=c.relid;
 
 --Roles and Members
+create view qa_reporting.user_roles as
 SELECT t.rarolename as RoleName ,t.ramembername as RoleMember
 FROM pg_roles pr,
      (
@@ -158,8 +161,22 @@ AND  spr.rolcanlogin = 'f'
 ) as t
 WHERE pr.rolcanlogin =  'f'
 AND pr.rolname = t.rarolename
-ORDER BY t.rarolename, t.ramembername;
+and t.rarolename like 'uthealth%'
+ORDER BY t.rarolename, t.ramembername
 
+SELECT usename AS role_name,
+  CASE 
+     WHEN usesuper AND usecreatedb THEN 
+	   CAST('superuser, create database' AS pg_catalog.text)
+     WHEN usesuper THEN 
+	    CAST('superuser' AS pg_catalog.text)
+     WHEN usecreatedb THEN 
+	    CAST('create database' AS pg_catalog.text)
+     ELSE 
+	    CAST('' AS pg_catalog.text)
+  END role_attributes
+FROM pg_catalog.pg_user
+ORDER BY role_name desc;
 
 --Index Usage
 SELECT   t.schemaname AS schema_name, t.tablename AS table_name    

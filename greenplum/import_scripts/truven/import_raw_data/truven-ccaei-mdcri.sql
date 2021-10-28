@@ -1,3 +1,12 @@
+/* ******************************************************************************************************
+ *  Collection of queries for exploring database settings and performance/resource usage
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ * ******************************************************************************************************
+ */
+
 /*
 v1 Fields:
 
@@ -10,6 +19,7 @@ AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHP
 
 
 v2 Fields: (Drop PLANKEY and WGTKEY, Add DXVER)
+
 SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
 EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
 TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
@@ -25,6 +35,25 @@ TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
 DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
 POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,POADX11,POADX12,POADX13,POADX14,POADX15,
 PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
+AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
+
+vDMS Fields: (Drop EMPZIP, Add MSA)
+
+SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,
+HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
+TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,MSA,DATATYP,PLANKEY,WGTKEY,
+DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
+PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
+AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
+
+v4 fields: Added MEDADV 2020
+
+SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
+EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
+TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
+DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
+POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,POADX11,POADX12,POADX13,POADX14,POADX15,
+PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,MEDADV
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
 
 */
@@ -66,6 +95,7 @@ CREATE TABLE truven.mdcri (
 	mdc bpchar(10) null,
 	dstatus int2 null,
 	region int2 null,
+	msa bpchar(7) ,
 	datatyp numeric null,
 	plankey numeric null,
 	wgtkey numeric null,
@@ -75,6 +105,7 @@ CREATE TABLE truven.mdcri (
 	proc1 bpchar(10) null,proc2 bpchar(10) null,proc3 bpchar(10) null,proc4 bpchar(10) null,proc5 bpchar(10) null,proc6 bpchar(10) null,proc7 bpchar(10) null,proc8 bpchar(10) null,
 	proc9 bpchar(10) null,proc10 bpchar(10) null,proc11 bpchar(10) null,proc12 bpchar(10) null,proc13 bpchar(10) null,proc14 bpchar(10) null,proc15 bpchar(10) null,
 	
+	medadv int2,
 	agegrp int2 null,
 	eeclass int2 null,
 	eestatu int2 null,
@@ -109,176 +140,13 @@ add column poadx13 bpchar(1),
 add column poadx14 bpchar(1),
 add column poadx15 bpchar(1);
 
--- V1
-drop external table ext_mdcri_v1;
-CREATE EXTERNAL TABLE ext_mdcri_v1 (
-	seqnum numeric ,
-	version int2 ,
-	efamid numeric ,
-	enrolid numeric ,
-	dobyr numeric ,
-	year numeric ,
-	admdate date ,
-	age numeric ,
-	caseid numeric ,
-	days numeric ,
-	disdate date ,
-	drg numeric ,
-		
-	empzip numeric ,
-	hospnet numeric ,
-	hosppay numeric ,
-	mhsacovg int2 ,
-	pdx bpchar(10) ,
-	physid numeric ,
-	physnet numeric ,
-	physpay numeric ,
-	plantyp numeric ,
-	pproc bpchar(10) ,
-	
-	totcob numeric ,
-	totcoins numeric ,
-	totcopay numeric ,
-	totded numeric ,
-	totnet numeric ,
-	totpay numeric ,
-	admtyp int2 ,
-	mdc bpchar(10) ,
-	dstatus int2 ,
-	region int2 ,
-	datatyp numeric ,
-	plankey numeric ,
-	wgtkey numeric ,
-	
-	dx1 bpchar(10) ,dx2 bpchar(10) ,dx3 bpchar(10) ,dx4 bpchar(10) ,dx5 bpchar(10) ,dx6 bpchar(10) ,dx7 bpchar(10) ,dx8 bpchar(10) ,
-	dx9 bpchar(10) ,dx10 bpchar(10) ,dx11 bpchar(10) ,dx12 bpchar(10) ,dx13 bpchar(10) ,dx14 bpchar(10) ,dx15 bpchar(10) ,
-	proc1 bpchar(10) ,proc2 bpchar(10) ,proc3 bpchar(10) ,proc4 bpchar(10) ,proc5 bpchar(10) ,proc6 bpchar(10) ,proc7 bpchar(10) ,proc8 bpchar(10) ,
-	proc9 bpchar(10) ,proc10 bpchar(10) ,proc11 bpchar(10) ,proc12 bpchar(10) ,proc13 bpchar(10) ,proc14 bpchar(10) ,proc15 bpchar(10) ,
-	
-	agegrp int2 ,
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	eidflag int2 ,
-	emprel int2 ,
-	enrflag int2 ,
-	phyflag int2 ,
-	rx int2 ,
-	sex int2 ,
-	state int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
-select *
-from ext_mdcri_v1
-limit 1000;
+/*
+ * V4
+ */
 
---truncate table truven.mdcri;
-
-insert into truven.mdcri (SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,
-EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
-TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,PLANKEY,WGTKEY,
-DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
-AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,
-EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
-TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,PLANKEY,WGTKEY,
-DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
-AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
-from ext_mdcri_v1;
-
-drop external table ext_mdcri_v2;
-CREATE EXTERNAL TABLE ext_mdcri_v2 (
-	seqnum numeric ,
-	version int2 ,
-	efamid numeric ,
-	enrolid numeric ,
-	dobyr numeric ,
-	year numeric ,
-	admdate date ,
-	age numeric ,
-	caseid numeric ,
-	days numeric ,
-	disdate date ,
-	drg numeric ,
-	dxver bpchar(10) ,
-		
-	empzip numeric ,
-	hospnet numeric ,
-	hosppay numeric ,
-	mhsacovg int2 ,
-	pdx bpchar(10) ,
-	physid numeric ,
-	physnet numeric ,
-	physpay numeric ,
-	plantyp numeric ,
-	pproc bpchar(10) ,
-	
-	totcob numeric ,
-	totcoins numeric ,
-	totcopay numeric ,
-	totded numeric ,
-	totnet numeric ,
-	totpay numeric ,
-	admtyp int2 ,
-	mdc bpchar(10) ,
-	dstatus int2 ,
-	region int2 ,
-	datatyp numeric ,
-	
-	dx1 bpchar(10) ,dx2 bpchar(10) ,dx3 bpchar(10) ,dx4 bpchar(10) ,dx5 bpchar(10) ,dx6 bpchar(10) ,dx7 bpchar(10) ,dx8 bpchar(10) ,
-	dx9 bpchar(10) ,dx10 bpchar(10) ,dx11 bpchar(10) ,dx12 bpchar(10) ,dx13 bpchar(10) ,dx14 bpchar(10) ,dx15 bpchar(10) ,
-	proc1 bpchar(10) ,proc2 bpchar(10) ,proc3 bpchar(10) ,proc4 bpchar(10) ,proc5 bpchar(10) ,proc6 bpchar(10) ,proc7 bpchar(10) ,proc8 bpchar(10) ,
-	proc9 bpchar(10) ,proc10 bpchar(10) ,proc11 bpchar(10) ,proc12 bpchar(10) ,proc13 bpchar(10) ,proc14 bpchar(10) ,proc15 bpchar(10) ,
-	
-	agegrp int2 ,
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	eidflag int2 ,
-	emprel int2 ,
-	enrflag int2 ,
-	phyflag int2 ,
-	rx int2 ,
-	sex int2 ,
-	state int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
-
-select *
-from ext_mdcri_v2
-limit 1000;
-
-insert into truven.mdcri (SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
-EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
-TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
-DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
-AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
-EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
-TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
-DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
-AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
-from ext_mdcri_v2;
-
--- V3
-
-drop external table ext_mdcri_v3;
-CREATE EXTERNAL TABLE ext_mdcri_v3 (
+drop external table ext_mdcri;
+CREATE EXTERNAL TABLE ext_mdcri (
 	seqnum numeric ,
 	version int2 ,
 	efamid numeric ,
@@ -325,6 +193,7 @@ CREATE EXTERNAL TABLE ext_mdcri_v3 (
 	proc1 bpchar(10) ,proc2 bpchar(10) ,proc3 bpchar(10) ,proc4 bpchar(10) ,proc5 bpchar(10) ,proc6 bpchar(10) ,proc7 bpchar(10) ,proc8 bpchar(10) ,
 	proc9 bpchar(10) ,proc10 bpchar(10) ,proc11 bpchar(10) ,proc12 bpchar(10) ,proc13 bpchar(10) ,proc14 bpchar(10) ,proc15 bpchar(10) ,
 	
+	medadv int2,
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -340,35 +209,40 @@ CREATE EXTERNAL TABLE ext_mdcri_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRI*'
+'gpfdist://greenplum01:8081/uthealth/truven/MDCRI*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
+/*
 select *
-from ext_mdcri_v3
+from ext_mdcri
 limit 1000;
+ */
+
+--alter table truven.mdcri add column medadv int2;
 
 insert into truven.mdcri (SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
 EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
 TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
 DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
 POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,POADX11,POADX12,POADX13,POADX14,POADX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
+PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,MEDADV,
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY)
 select SEQNUM,VERSION,EFAMID,ENROLID,DOBYR,YEAR,ADMDATE,AGE,CASEID,DAYS,DISDATE,DRG,DXVER,
 EMPZIP,HOSPNET,HOSPPAY,MHSACOVG,PDX,PHYSID,PHYSNET,PHYSPAY,PLANTYP,PPROC,
 TOTCOB,TOTCOINS,TOTCOPAY,TOTDED,TOTNET,TOTPAY,ADMTYP,MDC,DSTATUS,REGION,DATATYP,
 DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
 POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,POADX11,POADX12,POADX13,POADX14,POADX15,
-PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,
+PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,MEDADV,
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
-from ext_mdcri_v3;
+from ext_mdcri;
+
 
 -- Verify
 
 select count(*), min(year), max(year) from truven.mdcri;
 
-
+select count(*), min(year), max(year) from truven.mdcri_distinct;
 
 -- Fix storage options
 create table truven.mdcri_2019
@@ -376,7 +250,7 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcri where year=2019)
 distributed randomly;
 
-delete from truven.mdcri where year=2019 or year=2020;
+delete from truven.mdcri where year>=2020;
 
 drop table truven.mdcri;
 alter table truven.mdcri_new rename to mdcri;

@@ -1,3 +1,12 @@
+/* ******************************************************************************************************
+ *  Collection of queries for exploring database settings and performance/resource usage
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ * ******************************************************************************************************
+ */
+
 /*
 v1 Fields:
 
@@ -14,20 +23,30 @@ DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,P
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
-v3 Fields: (Added POADX fields)
+v3 Fields: (Added POADX# fields)
 
 SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
 DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
 POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
+vDMS Fields: (Drop EMPZIP, MSCLMID, Add MSA
+
+SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,DEDUCT
+,DX3,DX4,DX5,DX6,DX7,DX8,DX9,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,PROC2,PROC3,PROC4,PROC5,PROC6,PROVID
+,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,MSA,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,
+EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
+v4 Fields: (Added MEDADV# fields)
+
+SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
+DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
+POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
+PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,MEDADV,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
 */
-
--- !!!!!!!!!!!!!!!!
--- NOTE: Issue with a 'F' value found in MHSACOVG and 's' for dstatus in mdcrf113.csv and also non-character data.  Leaving that file out for now.
--- UPDATED: Deleted bad rows (4 total) from mdcrf113, including the non-unicode characters and 1 row where '***********' for pddate.
--- !!!!!!!!!!!!!!!
-
 
 drop table truven.mdcrf;
 CREATE TABLE truven.mdcrf (
@@ -79,6 +98,7 @@ CREATE TABLE truven.mdcrf (
 	mdc bpchar(10) null,
 	dstatus int2 null,
 	region int2 null,
+	msa bpchar(7) ,
 	stdplac numeric NULL,
 	stdprov numeric NULL,
 	datatyp numeric null,
@@ -98,7 +118,6 @@ CREATE TABLE truven.mdcrf (
 	hlthplan int2 null,
 	indstry bpchar(5) null
 )
-WITH (appendonly=true, orientation=column)
 DISTRIBUTED RANDOMLY;
 
 alter TABLE truven.mdcrf
@@ -112,185 +131,14 @@ add column 	poadx7 bpchar(1),
 add column 	poadx8 bpchar(1),
 add column 	poadx9 bpchar(1);
 
--- V1
-drop external table ext_mdcrf_v1;
-CREATE EXTERNAL TABLE ext_mdcrf_v1 (
-	seqnum numeric ,
-	version int2 ,
-	dx1 bpchar(10) ,
-	dx2 bpchar(10) ,
-	proc1 bpchar(10) ,
-	fachdid numeric ,
-	efamid numeric ,
-	enrolid numeric ,
-	dobyr numeric ,
-	year numeric ,
-	age numeric ,
-	billtyp bpchar(5) ,
-	cap_svc bpchar(1) ,
-	caseid numeric ,
-	cob numeric ,
-	coins numeric ,
-	copay numeric ,
-	
-	deduct numeric ,
-	dx3 bpchar(10) ,
-	dx4 bpchar(10) ,
-	dx5 bpchar(10) ,
-	dx6 bpchar(10) ,
-	dx7 bpchar(10) ,
-	dx8 bpchar(10) ,
-	dx9 bpchar(10) ,
-	empzip numeric ,
-	mhsacovg int2 ,
-	msclmid numeric ,
-	netpay numeric ,
-	ntwkprov bpchar(1) ,
-	paidntwk bpchar(1) ,
-	pddate date ,
-	plantyp numeric ,
-	
-	proc2 bpchar(10) ,
-	proc3 bpchar(10) ,
-	proc4 bpchar(10) ,
-	proc5 bpchar(10) ,
-	proc6 bpchar(10) ,
-	provid numeric ,
-	svcdate date ,
-	tsvcdat date ,
-	mdc bpchar(10) ,
-	dstatus int2 ,
-	region int2 ,
-	stdplac numeric ,
-	stdprov numeric ,
-	datatyp numeric ,
-	plankey numeric ,
-	wgtkey numeric ,
-	agegrp int2 ,
-	
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	eidflag int2 ,
-	emprel int2 ,
-	enrflag int2 ,
-	phyflag int2 ,
-	rx int2 ,
-	sex int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' QUOTE '"' null '');
+alter table truven.mdcrf add column medadv int2;
+ 
+/*
+ * V4
+ */
 
-select *
-from ext_mdcrf_v1
-limit 10000;
-
-truncate table truven.mdcrf;
-
-insert into truven.mdcrf (SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
-DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,
-EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
-DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,PLANKEY,WGTKEY,AGEGRP,
-EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_mdcrf_v1;
-
-drop external table ext_mdcrf_v2;
-CREATE EXTERNAL TABLE ext_mdcrf_v2 (
-	seqnum numeric ,
-	version int2 ,
-	dx1 bpchar(10) ,
-	dx2 bpchar(10) ,
-	dxver bpchar(10) ,
-	proc1 bpchar(10) ,
-	fachdid numeric ,
-	efamid numeric ,
-	enrolid numeric ,
-	dobyr numeric ,
-	year numeric ,
-	age numeric ,
-	billtyp bpchar(5) ,
-	cap_svc bpchar(1) ,
-	caseid numeric ,
-	cob numeric ,
-	coins numeric ,
-	copay numeric ,
-	
-	deduct numeric ,
-	dx3 bpchar(10) ,
-	dx4 bpchar(10) ,
-	dx5 bpchar(10) ,
-	dx6 bpchar(10) ,
-	dx7 bpchar(10) ,
-	dx8 bpchar(10) ,
-	dx9 bpchar(10) ,
-	empzip numeric ,
-	mhsacovg int2 ,
-	msclmid numeric ,
-	netpay numeric ,
-	npi bpchar(10) ,
-	ntwkprov bpchar(1) ,
-	paidntwk bpchar(1) ,
-	pddate date ,
-	plantyp numeric ,
-	
-	proc2 bpchar(10) ,
-	proc3 bpchar(10) ,
-	proc4 bpchar(10) ,
-	proc5 bpchar(10) ,
-	proc6 bpchar(10) ,
-	provid numeric ,
-	svcdate date ,
-	tsvcdat date ,
-	mdc bpchar(10) ,
-	dstatus int2 ,
-	region int2 ,
-	stdplac numeric ,
-	stdprov numeric ,
-	datatyp numeric ,
-	agegrp int2 ,
-	
-	eeclass int2 ,
-	eestatu int2 ,
-	egeoloc int2 ,
-	eidflag int2 ,
-	emprel int2 ,
-	enrflag int2 ,
-	phyflag int2 ,
-	rx int2 ,
-	sex int2 ,
-	hlthplan int2 ,
-	indstry bpchar(5) 
-) 
-LOCATION ( 
-'gpfdist://c252-140:8801/*'
-)
-FORMAT 'CSV' ( HEADER DELIMITER ',' );
-
-select *
-from ext_mdcrf_v2
-limit 10000;
-
-insert into truven.mdcrf (SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
-DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
-EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
-select SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
-DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
-EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_mdcrf_v2;
-
--- V3
-
-drop external table ext_mdcrf_v3;
-CREATE EXTERNAL TABLE ext_mdcrf_v3 (
+drop external table ext_mdcrf;
+CREATE EXTERNAL TABLE ext_mdcrf (
 	seqnum numeric ,
 	version int2 ,
 	dx1 bpchar(10) ,
@@ -352,6 +200,7 @@ CREATE EXTERNAL TABLE ext_mdcrf_v3 (
 	stdplac numeric ,
 	stdprov numeric ,
 	datatyp numeric ,
+	medadv int2,
 	agegrp int2 ,
 	
 	eeclass int2 ,
@@ -367,35 +216,41 @@ CREATE EXTERNAL TABLE ext_mdcrf_v3 (
 	indstry bpchar(5) 
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/*/MDCRF*'
+'gpfdist://greenplum01:8081/uthealth/truven/MDCRF*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
-from ext_mdcrf_v3
+from ext_mdcrf
 limit 1000;
 
 insert into truven.mdcrf (SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
 DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
 POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
+PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
 select SEQNUM,VERSION,DX1,DX2,PROC1,FACHDID,EFAMID,ENROLID,DOBYR,YEAR,AGE,BILLTYP,CAP_SVC,CASEID,COB,COINS,COPAY,
 DEDUCT,DX3,DX4,DX5,DX6,DX7,DX8,DX9,EMPZIP,MHSACOVG,MSCLMID,NETPAY,NTWKPROV,PAIDNTWK,PDDATE,PLANTYP,
 POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
-PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
+PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_mdcrf_v3;
+from ext_mdcrf;
+
 
 -- Verify
+
+select count(*), min(year), max(year) from truven.mdcrf;
+
+
+-- Fix storage options
 create table truven.mdcrf_2019
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as (select * from truven.mdcrf where year=2019)
 distributed randomly;
 
-delete from truven.mdcrf where year=2019 or year=2020;
+delete from truven.mdcrf where year>=2020;
 
-select count(*), min(year), max(year) from truven.mdcrf;
-
+drop table truven.mdcrf;
+alter table truven.mdcrf_new rename to mdcrf;
 
 
