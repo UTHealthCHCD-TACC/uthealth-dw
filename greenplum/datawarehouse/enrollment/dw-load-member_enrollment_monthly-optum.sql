@@ -24,10 +24,47 @@
 
 ----  // BEGIN SCRIPT 
 
+---create working table in dw_staging 
+drop table if exists dw_staging.member_enrollment_monthly ;
+
+create table dw_staging.member_enrollment_monthly 
+(
+	data_source char(4),
+	year int2, 
+	uth_member_id bigint,
+	month_year_id int4, 
+	consecutive_enrolled_months int4, 
+	gender_cd char(1), 
+	race_cd char(1),
+	age_derived int4, 
+	dob_derived date, 
+	state text, 
+	zip5 char(5), 
+	zip3 char(3), 
+	death_date date, 
+	plan_type text, 
+	bus_cd char(4), 
+	employee_status text, 
+	claim_created_flag boolean default false,
+	rx_coverage int2, 
+	fiscal_year int2,
+	row_id bigserial
+) distributed by (row_id);
+
+                                                                        
+alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
+
+
+-------------insert existing records from data warehouse. except for this data source
+insert into dw_staging.member_enrollment_monthly 
+select * 
+from data_warehouse.member_enrollment_monthly 
+where data_source not in ('optd','optz')
+;
+
+vacuum analyze dw_staging.member_enrollment_monthly;
 
 -- ***** Optum DOD ***** --------------------------------------------------------------------------------------
-delete from dw_staging.member_enrollment_monthly where data_source = 'optd';
-
 insert into dw_staging.member_enrollment_monthly (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -60,8 +97,6 @@ from optum_dod.mbr_enroll_r m
 ---------------------------------------------------------------------------------------------------
 
 -- ***** Optum ZIP ***** --------------------------------------------------------------------------------------
-delete from dw_staging.member_enrollment_monthly where data_source = 'optz';
-
 insert into dw_staging.member_enrollment_monthly  (
 	data_source, year, month_year_id, uth_member_id,
 	gender_cd, state, zip5, zip3,
@@ -92,8 +127,5 @@ from optum_zip.mbr_enroll m
    and r.data_source = 'optz' 
 ;
 
---- *** End Optum *** ---
 
--------(^---------------- data loads --------------------^)
-
-----/END SCRIPT
+----END SCRIPT

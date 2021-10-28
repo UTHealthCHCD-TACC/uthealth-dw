@@ -1,6 +1,6 @@
 /*
 ------------------------------------------------------------------------------------------
---Medicare
+--Medicare National 
 ------------------------------------------------------------------------------------------
 7/26/2021:      
        Leaving in non-numeric NPI's for now.... We may take out later, but not yet
@@ -8,119 +8,11 @@
        Base claims are put in as line level '1' 
        Bcarrier base claims are put in at 0 and then line level for that claim starts at 1
 ------------------------------------------------------------------------------------------
-
-----------------------------------------------------------------------------------
--------Make uth ids --add records to dim_uth_provider_id
------------------------------------------------------------------------------------------------------------
--- has no provider_id aside from npi to generate uth id, so using that as both provider_id_src and npi ... 
-----------------------------------------------------------------------------------------------------------------------------------
 */
 
-
-with providers as 
-(
-        select org_npi_num as provider_id_src
-        from  medicare_national.inpatient_base_claims_k 
-        union all
-        select at_physn_npi as provider_id_src
-        from  medicare_national.inpatient_base_claims_k 
-        union all
-        select op_physn_npi as provider_id_src
-        from  medicare_national.inpatient_base_claims_k 
-        union all
-        select ot_physn_npi as provider_id_src
-        from  medicare_national.inpatient_base_claims_k 
-        union all
-        select rndrng_physn_npi as provider_id_src
-        from  medicare_national.inpatient_base_claims_k
-union all
-        select org_npi_num as provider_id_src
-        from  medicare_national.outpatient_base_claims_k 
-        union all
-        select at_physn_npi as provider_id_src
-        from  medicare_national.outpatient_base_claims_k 
-        union all
-        select op_physn_npi as provider_id_src
-        from  medicare_national.outpatient_base_claims_k 
-        union all
-        select ot_physn_npi as provider_id_src
-        from  medicare_national.outpatient_base_claims_k 
-        union all
-        select rndrng_physn_npi as provider_id_src
-        from  medicare_national.outpatient_base_claims_k
-union all
-        select org_npi_num as provider_id_src
-        from  medicare_national.hospice_base_claims_k 
-        union all
-        select at_physn_npi as provider_id_src
-        from  medicare_national.hospice_base_claims_k 
-        union all
-        select op_physn_npi as provider_id_src
-        from  medicare_national.hospice_base_claims_k 
-        union all
-        select ot_physn_npi as provider_id_src
-        from  medicare_national.hospice_base_claims_k 
-        union all
-        select rndrng_physn_npi as provider_id_src
-        from  medicare_national.hospice_base_claims_k
-union all
-        select org_npi_num as provider_id_src
-        from  medicare_national.snf_base_claims_k 
-        union all
-        select at_physn_npi as provider_id_src
-        from  medicare_national.snf_base_claims_k 
-        union all
-        select op_physn_npi as provider_id_src
-        from  medicare_national.snf_base_claims_k 
-        union all
-        select ot_physn_npi as provider_id_src
-        from  medicare_national.snf_base_claims_k 
-        union all
-        select rndrng_physn_npi as provider_id_src
-        from  medicare_national.snf_base_claims_k
-union all
-        select org_npi_num as provider_id_src
-        from  medicare_national.hha_base_claims_k 
-        union all
-        select at_physn_npi as provider_id_src
-        from  medicare_national.hha_base_claims_k 
-        union all
-        select op_physn_npi as provider_id_src
-        from  medicare_national.hha_base_claims_k 
-        union all
-        select ot_physn_npi as provider_id_src
-        from  medicare_national.hha_base_claims_k 
-        union all
-        select rndrng_physn_npi as provider_id_src
-        from  medicare_national.hha_base_claims_k
-union all
-        select carr_clm_blg_npi_num as provider_id_src
-          from medicare_national.bcarrier_claims_k
-          union all
-        select rfr_physn_npi as provider_id_src
-          from medicare_national.bcarrier_claims_k
-union all
-        select prf_physn_npi as provider_id_src
-        from medicare_national.bcarrier_line_k
-),
-dstnc_providers as (
-    select distinct provider_id_src as provider_id_src from providers 
-)
-insert into data_warehouse.dim_uth_provider_id (data_source, provider_id_src)
-select distinct 'mcrn' as data_source, p.provider_id_src
-  from dstnc_providers p
-  left join data_warehouse.dim_uth_provider_id d 
-    on d.provider_id_src = p.provider_id_src
-   and d.data_source = 'mcrn' 
- where d.uth_provider_id is null
-   and p.provider_id_src is not null;
-    
-   
 ----------------------------------------------------------
 -------------provider table------------------------------
 ----------------------------------------------------------
-
-
 with bcarrier_line 
     as (
         select prf_physn_npi as npi,

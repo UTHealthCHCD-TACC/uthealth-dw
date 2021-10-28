@@ -157,43 +157,43 @@ select 'mcrt', clm_id, bene_id, raw_clms.uth_member_id, raw_clms.data_year
 from 
 ( 
     select clm_id, bene_id, uth_member_id, year::int2 as data_year
-    from uthealth/medicare_national.bcarrier_claims_k a 
+    from medicare_texas.bcarrier_claims_k a 
       join data_warehouse.dim_uth_member_id b 
         on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.dme_claims_k a
+	from medicare_texas.dme_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 	   
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.hha_base_claims_k a
+	from medicare_texas.hha_base_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.hospice_base_claims_k a
+	from medicare_texas.hospice_base_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.inpatient_base_claims_k a
+	from medicare_texas.inpatient_base_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.outpatient_base_claims_k a
+	from medicare_texas.outpatient_base_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id
 union 
 	select clm_id, bene_id, b.uth_member_id, a.year::int2
-	from uthealth/medicare_national.snf_base_claims_k a
+	from medicare_texas.snf_base_claims_k a
 	  join data_warehouse.dim_uth_member_id b 
 	    on b.data_source = 'mcrt'
 	   and b.member_id_src = bene_id

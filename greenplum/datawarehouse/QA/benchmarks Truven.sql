@@ -186,14 +186,109 @@ order by c.year, c.bus_cd
 --ED Visits
 drop table dev.wc_bench_trv_ER;
 
+select revenue_cd from data_warehouse.claim_detail cd 
+where data_source = 'truv'; 
+
+
+select count(distinct msclmid) as clms, sum(allowed) as alw, inr.year , active_retiree , age_group
+from ( 
+	select enrolid, msclmid, sum(a.pay) as allowed,  a.year , 'A' as active_retiree, b.age_group , gender_cd 
+	from truven.ccaeo a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , b.age_group , gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay), a.year , 'A' as active_retiree, b.age_group , gender_cd 
+	from truven.ccaes a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , b.age_group , gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay) as allowed,  a.year , 'R' as active_retiree, b.age_group , gender_cd 
+	from truven.mdcro a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , b.age_group , gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay), a.year , 'R' as active_retiree, b.age_group , gender_cd 
+	from truven.mdcrs a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , b.age_group , gender_cd 
+ ) inr 
+ /*---pmpy
+    join data_warehouse.dim_uth_member_id y 
+       on y.member_id_src = inr.enrolid::text 
+    join dev.wc_bench_trv_pmpy x 
+       on x.uth_member_id = y.uth_member_id */
+ where  gender_cd = 'F'
+ group by  inr.year, active_retiree, age_group   order by inr.year , active_retiree , age_group 
+
+
+
+select count(distinct msclmid), sum(allowed) as alw, inr.year , active_retiree , age_group
+from ( 
+	select enrolid,msclmid, sum(a.pay) as allowed,  a.year , 'A' as active_retiree, age_group, gender_cd 
+	from truven_pay.ccaeo a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year, age_group , gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay), a.year , 'A' as active_retiree, age_group, gender_cd 
+	from truven_pay.ccaes a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , age_group, gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay) as allowed,  a.year , 'R' as active_retiree, age_group, gender_cd 
+	from truven_pay.mdcro a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , age_group, gender_cd 
+union 
+	select enrolid,msclmid, sum(a.pay), a.year , 'R' as active_retiree, age_group, gender_cd 
+	from truven_pay.mdcrs a
+	  join dev.wc_bench_trv_members b 
+	     on b.member_id_src = a.enrolid::text 
+	    and a.year = b."year" 
+	where revcode in ('450','451','452','456','459')
+	 group by enrolid,msclmid, a.year , age_group, gender_cd 
+ ) inr 
+  /*---pmpy
+    join data_warehouse.dim_uth_member_id y 
+       on y.member_id_src = inr.enrolid::text 
+    join dev.wc_bench_trv_pmpy x 
+       on x.uth_member_id = y.uth_member_id */
+where gender_cd = 'F'
+ group by inr.year, active_retiree, age_group  order by inr.year , active_retiree , age_group
+ ;
+
 select b.uth_member_id, a.from_date_of_service , min(uth_claim_id) as uth_claim_id 
 into dev.wc_bench_trv_ER
 from data_warehouse.claim_detail a 
   join dev.wc_bench_trv_members b 
      on b.uth_member_id = a.uth_member_id 
     and a.year = b.year 
-    and a.revenue_cd in ('450','451','452','456','459','0450','0451','0452','0456','0459')
+    and a.revenue_cd in ('450','451','452','456','459')
 group by b.uth_member_id, a.from_date_of_service;
+
+
+select * from dev.wc_bench_trv_er;
+
 
 ---ed for spreadsheet
 select count(a.uth_claim_id ), sum(total_allowed_amount ) as alw, a.year, b.bus_cd 

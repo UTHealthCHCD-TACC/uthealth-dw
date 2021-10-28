@@ -6,13 +6,22 @@
  *  wc001  || 8/16/2021 || script created 
  * ******************************************************************************************************
  *  wallingTACC  || 8/23/2021 || updated comments.
- * ****************************************************************************************************** */
+ * ****************************************************************************************************** 
+ *  wc002        || 10/5/2021 || migrate to dw_staging
+ * 
+ * */
 
-drop table data_warehouse.medicare_mbsf_abcd_enrollment;
+drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
 
-create table data_warehouse.medicare_mbsf_abcd_enrollment 
-with(appendonly=true,orientation=column,compresstype=zlib)
-as 
+create table dw_staging.medicare_mbsf_abcd_enrollment 
+with(appendonly=true,orientation=column,compresstype=zlib, compresslevel=5)
+ as select * from data_warehouse.medicare_mbsf_abcd_enrollment 
+ limit 0 
+distributed by (uth_member_id)
+;
+
+
+insert into dw_staging.medicare_mbsf_abcd_enrollment  
 select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
          enrl_src, sample_group,
          enhanced_five_percent_flag,
@@ -50,14 +59,14 @@ select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
          dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
          cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
          cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
-from uthealth/medicare_national.mbsf_abcd_summary  a 
+from medicare_texas.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
      on b.member_id_src = a.bene_id 
     and b.data_source = 'mcrt'
-distributed by(uth_member_id );
+;
 
 --medicare national 
-insert into data_warehouse.medicare_mbsf_abcd_enrollment
+insert into dw_staging.medicare_mbsf_abcd_enrollment
 select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
          enrl_src, sample_group,
          enhanced_five_percent_flag,
@@ -95,19 +104,24 @@ select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
          dual_stus_cd_07,	dual_stus_cd_08,	dual_stus_cd_09,	dual_stus_cd_10,	dual_stus_cd_11,	dual_stus_cd_12,
          cst_shr_grp_cd_01,	cst_shr_grp_cd_02,	cst_shr_grp_cd_03,	cst_shr_grp_cd_04,	cst_shr_grp_cd_05,	cst_shr_grp_cd_06,
          cst_shr_grp_cd_07,	cst_shr_grp_cd_08,	cst_shr_grp_cd_09,	cst_shr_grp_cd_10,	cst_shr_grp_cd_11,	cst_shr_grp_cd_12
-from uthealth/medicare_national.mbsf_abcd_summary  a 
+from medicare_national.mbsf_abcd_summary  a 
    join data_warehouse.dim_uth_member_id b
-     on b.member_id_src = a.bene_id 
+     on trim(b.member_id_src) = trim(a.bene_id::text)
     and b.data_source = 'mcrn'
-    
-    
+   ;
+  
 
+---finalize
+vacuum analyze dw_staging.medicare_mbsf_abcd_enrollment;
 
----validate
-vacuum analyze data_warehouse.medicare_mbsf_abcd_enrollment;
-
- 
+ --validate
  select count(*), count(distinct uth_member_id), data_source, year 
- from data_warehouse.medicare_mbsf_abcd_enrollment
+ from dw_staging.medicare_mbsf_abcd_enrollment
  group by data_source, year 
-  order by data_source, year 
+  order by data_source, year ;
+ 
+ 
+ 
+---- end script 
+  
+  

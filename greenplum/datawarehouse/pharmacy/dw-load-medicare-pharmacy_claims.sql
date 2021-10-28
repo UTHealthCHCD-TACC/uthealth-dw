@@ -1,17 +1,33 @@
-/*
-new variables to be added to table
-retail_or_mail_indicator  bpchar(1) null,
-dispensed_as_written  bpchar(2) null,
-dose bpchar(50)  null,
-strength bpchar(30)  null,
-formulary_ind  bpchar(1) null,
-special_drug_ind bpchar(1) null
-*/
 
+/* ******************************************************************************************************
+ *  load pharmacy claims for medicare national and medicare texas
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ * ******************************************************************************************************
+ *  wcc001  || 10/05/2021 || add comment block. migrate to dw_staging load 
+ * ****************************************************************************************************** 
+ * */
+
+
+--------------- BEGIN SCRIPT -------
+
+---create copy of data warehouse table in dw_staging 
+drop table if exists dw_staging.pharmacy_claims;
+
+create table dw_staging.pharmacy_claims
+with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
+select *
+from data_warehouse.pharmacy_claims
+where data_source not in ('mcrn','mcrt')
+distributed by (uth_member_id) 
+;
+
+vacuum analyze dw_staging.pharmacy_claims;
 
 
 ---Medicare Texas
-insert into data_warehouse.pharmacy_claims_new (
+insert into dw_staging.pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -77,7 +93,7 @@ select 'mcrt',
 		a.str, --new
 		null, --new
 		null --new
-from uthealth/medicare_national.pde_file a
+from medicare_texas.pde_file a
   join data_warehouse.dim_uth_rx_claim_id b
      on b.data_source = 'mcrt'
     and b.member_id_src = a.bene_id
@@ -90,7 +106,7 @@ from uthealth/medicare_national.pde_file a
 
 ---*********************************************************************************
 ---Medicare National
-insert into data_warehouse.pharmacy_claims_new (
+insert into dw_staging.pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -167,11 +183,11 @@ from medicare_national.pde_file a
  ;
 
 
-vacuum analyze data_warehouse.pharmacy_claims_new;
+vacuum analyze dw_staging.pharmacy_claims;
 
 ---validate
 select count(*), data_source, year
-from data_warehouse.pharmacy_claims_new pc
+from dw_staging.pharmacy_claims
 group by data_source , year
 order by data_source , year
 ;

@@ -29,32 +29,21 @@ drop table data_warehouse.ref_data_source ;
 create table data_warehouse.ref_data_source
 (
 	data_source char(4),
-	data_source_cd smallint,
 	data_source_desc text,
 	fiscal_year_flag bool,
 	fiscal_year_begin_month int
 )
 ;
 
-
-select * 
-from data_warehouse.member_enrollment_monthly where data_source = 'trvc';
-
-
 insert into data_warehouse.ref_data_source (data_source, data_source_cd, data_source_desc, fiscal_year_flag, fiscal_year_begin_month)
-       values ('optz',10,'Optum Zip',false,1),
-   			  ('optd',20,'Optum Date of Death',false,1),
-   			  ('trvc',30,'Truven Commercial',false,1),
-   			  ('trvm',30,'Truven Medicare',false,1),  --- the 30 is intentional, truven commercial and medicare members should have the same ID
-   			 -- ('bcbs',40,'BlueCross BlueShield'),
-   			  ('mdcr',50,'Medicare',false,1);
-   			 -- ('mdcd',60,'Medicaid'),
-   			 -- ('cern',70,'Cerner')	       
-       
-   			 
-
-
-
+       values ('optz','Optum Zip',false,1),
+   			  ('optd','Optum Date of Death',false,1),
+   			  ('truv','Truven',false,1),
+   			  ('mcrt','Medicare Texas',false,1),
+   			  ('mcrn','Medicare National',false,1),
+   			  ('mdcd','Medicaid Texas',true,10)
+   			  ;
+         	
 
 --- gender decode table
 create table data_warehouse.ref_gender 
@@ -127,3 +116,36 @@ insert into data_warehouse.ref_bus_cd (data_source, bus_cd_src, bus_cd, column_n
 	          ('mdcr',null,'MDCR',null,'Medicare')
 	         ;
  
+---ref_race
+create table reference_tables.ref_race (data_source char(4), race_cd_src text, race_cd char(1), race_desc text );     
+       
+
+insert into reference_tables.ref_race values  ('mcrn','1','1','White'), 
+											  ('mcrn','2','2','Black'), 
+											  ('mcrn','3','3','Other'), 
+											  ('mcrn','4','4','Asian'), 
+											  ('mcrn','5','5','Hispanic'), 
+											  ('mcrn','6','6','North American Native'), 
+											  ('mcrn','0','0','Unknown'), 
+											  ('mcrt','1','1','White'), 
+											  ('mcrt','2','2','Black'), 
+											  ('mcrt','3','3','Other'), 
+											  ('mcrt','4','4','Asian'), 
+											  ('mcrt','5','5','Hispanic'), 
+											  ('mcrt','6','6','North American Native'), 
+											  ('mcrt','0','0','Unknown'), 
+											  ('optd','W','0','White'), 
+											  ('optd','B','0','Black'), 
+											  ('optd','H','0','Hispanic'), 
+											  ('optd','A','0','Asian'), 
+											  ('optd','0','0','Unknown');
+											 
+											 
+											 
+											 
+---medicare enrollment ref tables 
+create table ref_medicare_ptd_cntrct (ptd_first_char char(1), ptd_coverage int2);
+
+
+										
+		

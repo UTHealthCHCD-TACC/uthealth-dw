@@ -122,7 +122,7 @@ where mem.uth_member_id = del.uth_member_id
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrt' as v_raw_data
-	from uthealth/medicare_national.mbsf_abcd_summary
+	from medicare_texas.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
       on b.data_source = 'mcrt'
      and b.member_id_src = bene_id::text
@@ -182,6 +182,11 @@ from cte_distinct_member
 
 ------   
 
+
+qa_reporting.staging_claim_detail_checks 
+;
+
+
 ---*******************************************************
 --// wcc002 - claim created ids 
 ---*******************************************************
@@ -201,6 +206,9 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq'), true as claim_created
 from cte_distinct_member 
 ;
+
+
+select * from data_warehouse.dim_uth_member_id where claim_created_id is true and year = 2007;
 
 
 --Optum zip claim created wcc002

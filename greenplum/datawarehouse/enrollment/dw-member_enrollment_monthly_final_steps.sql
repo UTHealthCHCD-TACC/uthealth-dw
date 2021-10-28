@@ -1,49 +1,18 @@
 /* ******************************************************************************************************
- *  The member_enrollment_monthly table creates one record for each month/year that a member was enrolled in coverage
- *  This file runs the cleanup for duplicate rows and gets the value for consecutive enrolled months
- *  Run the relevant code section for the dataset in (---------------- data loads --------------------)
- * 
- *  !!!!!!!!!  data_warehouse.dim_member_id_src table must be populated first !!!!!!!!!  
- * !!!!!!!!!    dw_staging.member_enrollment_monthly must be populated first  !!!!!!!!!   
- *   	             Use dw-create-load-dim_member_id_src.sql in Git    
+ *  The script should be run as the final step once dw_staging.member_enrollment_monthly has been updated
  * 	
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
  *  wc001  || 1/01/2021 || script created 
  * ******************************************************************************************************
- *  wc002  || 6/28/21 || added logic to exclude enrollment records after death optum dod
  * ******************************************************************************************************
- *  wallingTACC  || 8/23/2021 || Cleaning up comments
- * ******************************************************************************************************
- *  wc003  || 9/02/2021 || Changing process to load dw_staging. Add mapping for null race to assign 0 (Unknown).
- * ******************************************************************************************************
- *  jw001  || 9/20/2021 || Cut to its own script file from longer file
+ *  wc002  || 9/30/2021 || add compression level to final table
  *  ******************************************************************************************************
 */
 
 
-
-----  // BEGIN SCRIPT 
-
--------(^---------------- data loads --------------------^)
-
-
-
-------*****run below code for data sources***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
----redistribute table on row id so below scripts run quicker
-create table dw_staging.temp_member_enrollment_monthly
-with (appendonly=true, orientation=column) as 
-select * from dw_staging.member_enrollment_monthly 
-distributed by (row_id);
-
-drop table if exists dw_staging.member_enrollment_monthly; 
-
-alter table dw_staging.temp_member_enrollment_monthly rename to dw_staging.member_enrollment_monthly;
-
-vacuum analyze dw_staging.member_enrollment_monthly;
-
+---- BEGIN SCRIPT -----
 
 
 ---- get row id of duplicate rows
@@ -68,7 +37,7 @@ delete from dw_staging.member_enrollment_monthly a
 ; 
  	
 		
----**script to build consecutive enrolled months	  16min	
+---**script to build consecutive enrolled months	  10min	
 drop table if exists dev.temp_consec_enrollment;
 
 create table dev.temp_consec_enrollment 
@@ -94,16 +63,40 @@ from dev.temp_consec_enrollment b
 where a.row_id = b.row_id
 ;
 
------*****run above code for all data sets*****              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+select * from dw_staging.member_enrollment_monthly mem where data_source = 'mcrt' and year = 2020;
 
---final
+------------------------------------------------------------
+--**cleanup
+drop table if exists dev.temp_consec_enrollment;
+drop table if exists dev.temp_dupe_enrollment_rows;
+
+---/drop sequence, rebuild table distributed on uth_member_id 
+alter table dw_staging.member_enrollment_monthly drop column row_id;
+
+create table dw_staging.member_enrollment_monthly_new 
+with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
+select * 
+from dw_staging.member_enrollment_monthly 
+distributed by (uth_member_id)
+;
+
+drop table if exists dw_staging.member_enrollment_monthly;
+
+alter table dw_staging.member_enrollment_monthly_new rename to member_enrollment_monthly;
+--------/
+
+--finalize
 vacuum analyze dw_staging.member_enrollment_monthly;
 
-----/END SCRIPT
 
 
+---validate
 select data_source, year, count(*)
 from dw_staging.member_enrollment_monthly
 group by data_source, year
 order by data_source, year
 ;
+
+
+
+----END SCRIPT-------------------------------------------------------
