@@ -9,15 +9,62 @@
 
 ---***adding conditions to enrollment***
 
+drop table if exists conditions.member_enrollment_yearly;
+
 --copy of table
 create table conditions.member_enrollment_yearly
-with (appendoptimized=false)
+with (appendoptimized=true, orientation=column, compresstype=zlib)
 as
 select * 
 from data_warehouse.member_enrollment_yearly
 distributed by (uth_member_id)
 ;
 
+
+update conditions.condition_desc set logic_version = 'v37'
+
+
+vacuum analyze conditions.member_enrollment_yearly ;
+
+create or replace function conditions.cond_columns(_schm text, _tbl text)
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+as $$ 
+declare
+	r_cond_cd text;
+begin
+	
+for r_cond_cd 
+	 in 
+		select condition_cd 
+		from conditions.condition_desc cd 		
+	loop 	
+		if exists ( select 1 
+	                from information_schema.columns 
+	                where table_schema = _schm
+	               	  and table_name = _tbl
+	                  and column_name = r_cond_cd)
+	        then
+	        raise notice 'column % already exists', r_cond_cd;	
+		else 
+			
+		   execute format ('alter table %s.%s add column %s char(1)', _schm, _tbl, r_cond_cd);
+		   raise notice 'added:  %.% add column % ', _schm, _tbl, r_cond_cd;
+		end if;
+	end loop;
+	
+end 
+$$ EXECUTE ON ANY;
+
+
+select conditions.cond_columns('conditions','member_enrollment_yearly');
+
+select * from conditions.member_enrollment_yearly;
+
+
+select * 
+from conditions.condition_desc cd 
 
 select condition_cd, carry_forward, condition_desc , replace(condition_desc,' ','_') as colname
 into dev.wc_cond_desc_temp

@@ -27,6 +27,7 @@ with cond_cte as
     on b.condition_cd in ('CA-L','COPD') 
    and b.condition_cd = a.condition_cd 
    and b.diag_flag = '1' 
+   AND b.additional_logic_flag = '0'
    and position('%' in a.cd_value) = 0   
 )
 select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward

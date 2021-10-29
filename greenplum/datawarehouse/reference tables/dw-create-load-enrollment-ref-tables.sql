@@ -5,6 +5,8 @@
  * ******************************************************************************************************
  *  wc001  || 1/01/2021 || script created 
  * ******************************************************************************************************
+ *  wc002  || 10/25/2021 || employee status 
+ * ******************************************************************************************************
  */
 
 -------------------------------------------------------------------------------------------------------
@@ -147,5 +149,22 @@ insert into reference_tables.ref_race values  ('mcrn','1','1','White'),
 create table ref_medicare_ptd_cntrct (ptd_first_char char(1), ptd_coverage int2);
 
 
-										
+---**wcc002
+
+---employee status based on truven data dictionary eestatu
+create table reference_tables.ref_employee_status (employee_status int2, employee_status_desc text);
+
+
+insert into reference_tables.ref_employee_status values (1, 'Active Full Time'),
+                                                        (2, 'Active Part Time'),
+                                                        (3, 'Early Retiree'),
+                                                        (4, 'Medicare Eligible Retiree'),
+                                                        (5, 'Retiree (status unknown)'),
+                                                        (6, 'COBRA'),
+                                                        (7, 'Long Term Disability'),
+                                                        (8, 'Surviving Spouse/Depend'),
+                                                        (9, 'Other/Unknown');
+
+                                                       
+---** end wcc002									
 		

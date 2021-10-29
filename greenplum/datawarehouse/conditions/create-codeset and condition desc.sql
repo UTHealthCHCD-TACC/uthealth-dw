@@ -140,8 +140,9 @@ select * from conditions.condition_desc cd ;
 
 
 
+update conditions.condition_desc set condition_cd = replace(condition_cd,'-','');
 
-
+update conditions.codeset set condition_cd = replace(condition_cd,'-','');
 
 
 
