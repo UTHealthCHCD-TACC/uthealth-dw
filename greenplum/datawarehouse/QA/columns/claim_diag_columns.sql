@@ -3,7 +3,7 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.claim_diag Column QA ------------------
+--------   dw_staging.claim_diagColumn QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 --- tu001 | 9/8/21 | script creation
@@ -99,7 +99,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_diag 
+	from dw_staging.claim_diag
 	group by data_source,
 		year
 	) a;
@@ -157,7 +157,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
-    from data_warehouse.claim_diag a
+    from dw_staging.claim_diaga
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.claim_diag_column_checks (
@@ -271,7 +271,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_diag 
+    from dw_staging.claim_diag
 	group by data_source,
 		year
     ) a;
@@ -435,7 +435,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_diag 
+	from dw_staging.claim_diag
 group by data_source, "year" 
 	) a;
 

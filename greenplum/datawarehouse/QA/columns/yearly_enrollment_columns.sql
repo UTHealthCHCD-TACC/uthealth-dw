@@ -3,11 +3,12 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.member_enrollment_yearly Column QA ------------------
+--------   dw_staging.member_enrollment_yearly Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 
---- jw001 | 9/28/2021 | script creation
+--- jw001 | 9/28/2021  | script creation
+--- jw002 | 10/20/2021 | point all at staging
 
 */
 
@@ -61,7 +62,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_yearly
+	from dw_staging.member_enrollment_yearly
     group by data_source, year
 	) a;
 
@@ -101,7 +102,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_yearly
+	from dw_staging.member_enrollment_yearly
     group by data_source, year
 	) a;
 
@@ -143,7 +144,7 @@ enrolled_jul + enrolled_aug + enrolled_sep + enrolled_oct + enrolled_nov + enrol
                 end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;	
 	
@@ -183,7 +184,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
 group by data_source, year
     ) a;
 	
@@ -226,7 +227,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
     
@@ -266,7 +267,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -311,7 +312,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -357,7 +358,7 @@ drop table if exists dev.qa_temp_all_states;
 with state_table
 as (
     select a.*, b.state as state_check
-    from data_warehouse.member_enrollment_yearly a
+    from dw_staging.member_enrollment_yearly a
     left join dev.qa_temp_all_states b on a.state = b.state
     )
 insert into qa_reporting.yearly_enrollment_column_checks (
@@ -432,7 +433,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -472,7 +473,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -514,7 +515,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -567,7 +568,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -608,7 +609,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -660,7 +661,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -701,7 +702,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -740,7 +741,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -779,7 +780,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -819,7 +820,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -858,7 +859,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -898,7 +899,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -937,7 +938,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -976,7 +977,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -1015,7 +1016,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -1055,7 +1056,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -1094,7 +1095,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -1133,7 +1134,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_yearly
+    from dw_staging.member_enrollment_yearly
     group by data_source, year
     ) a;
 
@@ -1156,7 +1157,7 @@ as (
     				a."year", 
     				a.data_source, 
     				b.uth_member_id as dim_id
-    from data_warehouse.member_enrollment_yearly a
+    from dw_staging.member_enrollment_yearly a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.yearly_enrollment_column_checks (
@@ -1245,7 +1246,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
-    from data_warehouse.member_enrollment_yearly a
+    from dw_staging.member_enrollment_yearly a
     join data_warehouse.dim_uth_member_id b 
         on a.uth_member_id = b.uth_member_id
     left outer join dev.qa_temp_ids_src c 
@@ -1336,7 +1337,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_yearly
+	from dw_staging.member_enrollment_yearly
     group by data_source, year
 	) a;
 
@@ -1376,11 +1377,6 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_yearly
+	from dw_staging.member_enrollment_yearly
     group by data_source, year
 	) a;
-
-
-/*
-drop table if exists dev.qa_temp_all_states;
-drop table if exists dev.qa_temp_ids_src;*/

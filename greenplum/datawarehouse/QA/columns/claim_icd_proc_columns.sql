@@ -3,7 +3,7 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.claim_icd_proc Column QA ------------------
+--------   dw_staging.claim_icd_proc Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 --- jw001 | 9/21/21 | | script creation
@@ -99,7 +99,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_icd_proc 
+	from dw_staging.claim_icd_proc 
 	group by data_source,
 		year
 	) a;
@@ -114,7 +114,7 @@ from (
 with ut_claim_id_table
 as (
     select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
-    from data_warehouse.claim_icd_proc a
+    from dw_staging.claim_icd_proc a
     left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
     )
 insert into qa_reporting.claim_header_column_checks 
@@ -163,7 +163,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
-    from data_warehouse.claim_icd_proc a
+    from dw_staging.claim_icd_proc a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.claim_proc_column_checks (
@@ -443,17 +443,10 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_icd_proc 
+	from dw_staging.claim_icd_proc 
 	group by data_source,
 		year
 	) a;
-
-select * from qa_reporting.claim_proc_column_checks order by test_var, data_source, year;
-   delete from data_warehouse.claim_icd_proc where data_source = 'mdcd';
-   
-   
-delete from qa_reporting.claim_proc_column_checks where test_var = 'fiscal_year';
-
 
 
 

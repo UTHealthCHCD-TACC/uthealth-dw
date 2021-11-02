@@ -3,11 +3,12 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.claim_detail Column QA ------------------
+--------   dw_staging.claim_detail Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 
---- jw001 | 8/16/21 | script creation
+--- jw001 | 8/16/21  | script creation
+--- jw002 | 10/20/21 | point at dw_staging
 
 */
 
@@ -61,7 +62,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -71,8 +72,6 @@ from (
 ------------------------------------
 --------year--------------
 ------------------------------------
--- jw right now year is extracted from date of service for medicaid
--- causes tables to be a bit crazy will look into later talk to lopita
 
 
 insert into qa_reporting.claim_detail_column_checks (
@@ -105,7 +104,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -117,7 +116,7 @@ from (
 with ut_claim_id_table
 as (
     select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
-    from data_warehouse.claim_detail a
+    from dw_staging.claim_detail a
     left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
     )
 insert into qa_reporting.claim_detail_column_checks (
@@ -189,7 +188,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -203,7 +202,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as dim_id
-    from data_warehouse.claim_detail a
+    from dw_staging.claim_detail a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.claim_detail_column_checks (
@@ -278,7 +277,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -317,7 +316,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -359,7 +358,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -398,7 +397,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
     group by data_source, year
     ) a;
 
@@ -454,7 +453,7 @@ from (
                     end),0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -494,11 +493,11 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
-select count(*) from data_warehouse.claim_detail where admit_date is not null; 
+select count(*) from dw_staging.claim_detail where admit_date is not null; 
 
 -----------------------------------
 -----cpt_hcpcs
@@ -514,7 +513,7 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'cpt_hcpcs' as test_var,
+select 'cpt_hcpcs_cd' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
@@ -524,18 +523,18 @@ select 'cpt_hcpcs' as test_var,
     '' as note
 from (
     select sum(case
-                when cpt_hcpcs ~ '^[[:alnum:]]{5,7}$'
-                and cpt_hcpcs is not null
+                when cpt_hcpcs_cd ~ '^[[:alnum:]]{5,7}$'
+                and cpt_hcpcs_cd is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when (cpt_hcpcs !~ '^[[:alnum:]]{5,7}$'
-                    and cpt_hcpcs is not null)
+                    when (cpt_hcpcs_cd !~ '^[[:alnum:]]{5,7}$'
+                    and cpt_hcpcs_cd is not null)
                         then 1
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
 	group by data_source,
 		year
     ) a;
@@ -578,7 +577,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
 	group by data_source,
 		year
     ) a; 
@@ -618,7 +617,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
 	group by data_source,
 		year
     ) a;  
@@ -660,7 +659,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
 	group by data_source,
 		year
     ) a;  
@@ -702,7 +701,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
     group by data_source, year
     ) a;   
    
@@ -739,7 +738,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -775,7 +774,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -812,7 +811,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -860,7 +859,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -898,7 +897,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -935,7 +934,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -972,7 +971,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -1010,7 +1009,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -1049,7 +1048,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -1090,7 +1089,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
@@ -1146,7 +1145,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
 	group by data_source,
 		year
     ) a;  
@@ -1520,7 +1519,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source , year
     ) a;
 
@@ -1567,7 +1566,7 @@ from (
                     end), 0) as invalid_values,
         "year",
         data_source
-    from data_warehouse.claim_detail 
+    from dw_staging.claim_detail 
     group by data_source, year
     ) a;   
    
@@ -1604,7 +1603,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source , year
     ) a;
    
@@ -1646,7 +1645,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.claim_detail 
+	from dw_staging.claim_detail 
 	group by data_source,
 		year
 	) a;
@@ -1686,22 +1685,14 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.claim_detail 
+	from dw_staging.claim_detail 
 	group by data_source,
 		year
 	) a;   
    
-
-
 ------------------------------------
 -- discharge_status
 ------------------------------------
-
-
--- need padding for single digits
--- need to change na > null
-
-   
 
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
@@ -1733,7 +1724,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.claim_detail
+    from dw_staging.claim_detail
     group by data_source, year
     ) a;
 
