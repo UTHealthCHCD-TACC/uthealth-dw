@@ -3,7 +3,7 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.claim_header Column QA ------------------
+--------   dw_staging.claim_header Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 --- tu | 9/1/21 | script creation
@@ -59,7 +59,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_header
+	from dw_staging.claim_header
 	group by data_source,
 		year
 	) a;
@@ -68,7 +68,6 @@ from (
 ------------------------------------
 --------year--------------
 ------------------------------------
--- add which years it should be? 
 
 insert into qa_reporting.claim_header_column_checks (
 	test_var,
@@ -100,7 +99,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_header
+	from dw_staging.claim_header
 	group by data_source,
 		year
 	) a;
@@ -115,7 +114,7 @@ from (
 with ut_claim_id_table
 as (
     select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
-    from data_warehouse.claim_header a
+    from dw_staging.claim_header a
     left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
     )
 insert into qa_reporting.claim_header_column_checks (
@@ -161,7 +160,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
-    from data_warehouse.claim_header a
+    from dw_staging.claim_header a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.claim_header_column_checks (
@@ -235,7 +234,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header
+    from dw_staging.claim_header
     group by data_source, year
     ) a;
 
@@ -276,7 +275,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header
+    from dw_staging.claim_header
     group by data_source, year
     ) a;   
    
@@ -314,7 +313,7 @@ from (
                     end), 0) as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header 
+    from dw_staging.claim_header 
     group by data_source, year
     ) a;
    
@@ -328,7 +327,7 @@ from (
 with ut_admission_id_table
 as (
     select b.uth_admission_id, a."year", a.data_source, b.uth_admission_id as dim_admit
-    from data_warehouse.claim_header a
+    from dw_staging.claim_header a
     left join data_warehouse.dim_uth_admission_id b on a.uth_admission_id = b.uth_admission_id 
     where a.uth_admission_id is not null
     )
@@ -379,7 +378,7 @@ as (
     				a."year", 
     				a.data_source, 
     				b.admission_id_src as dim_admit
-     	from data_warehouse.claim_header a
+     	from dw_staging.claim_header a
   	  left join data_warehouse.dim_uth_admission_id b 
    				 on a.admission_id_src::text = b.admission_id_src
      where a.admission_id_src is not null
@@ -452,7 +451,7 @@ from (
                     end), 0)  as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header
+    from dw_staging.claim_header
     group by data_source, year
     ) a;
    
@@ -490,7 +489,7 @@ from (
                     end), 0)  as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header
+    from dw_staging.claim_header
     group by data_source, year
     ) a;   
    
@@ -528,7 +527,7 @@ from (
                     end), 0)  as invalid_values,
         year,
         data_source
-    from data_warehouse.claim_header
+    from dw_staging.claim_header
     group by data_source, year
     ) a;      
 
@@ -661,7 +660,7 @@ vacuum analyze dev.qa_claim_header_temp_idsrc;
 with src_table
 as (
 	select a.*, b.id_src as id_src
-	from data_warehouse.claim_header a
+	from dw_staging.claim_header a
 	left join dev.qa_claim_header_temp_idsrc b on a.claim_id_src = b.id_src
 	)
 insert into qa_reporting.claim_header_column_checks (
@@ -827,7 +826,7 @@ vacuum analyze dev.qa_claim_header_temp_member_idsrc;*/
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, a.member_id_src, c.id_src 
-    from data_warehouse.claim_header a
+    from dw_staging.claim_header a
     left outer join dev.qa_claim_header_temp_member_idsrc c 
         on a.member_id_src = c.id_src
     )   
@@ -900,7 +899,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_header
+	from dw_staging.claim_header
     group by data_source, year
 	) a;
    
@@ -939,7 +938,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_header 
+	from dw_staging.claim_header 
     group by data_source, year
 	) a;
 
@@ -948,7 +947,7 @@ from (
 ------------------------------------
 --------cost factor year--------------
 ------------------------------------
---delete from qa_reporting.claim_header_column_checks where test_var = 'cost_factor_year';
+
 
 
 insert into qa_reporting.claim_header_column_checks (
@@ -982,7 +981,7 @@ from (
 					end), 0) as invalid_values,
 		year,
 		data_source
-	from data_warehouse.claim_header
+	from dw_staging.claim_header
     group by data_source, year
 	) a;
 	
