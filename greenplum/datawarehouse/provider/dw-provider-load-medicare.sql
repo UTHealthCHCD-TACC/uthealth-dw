@@ -167,7 +167,7 @@ spec_st2
       from spec_st
   group by 1
     ) 
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -204,7 +204,7 @@ st.state as state,
 s.zip as zip,
 substring(s.zip,1,5) as zip_5
   from spec_st2 s
-  left join dev.provider d
+  left join data_warehouse.provider d
    	on  s.npi = d.provider_id_src 
    	and d.data_source = 'mcrn'
   left join reference_tables.ref_medicare_state_codes st 
@@ -213,9 +213,9 @@ substring(s.zip,1,5) as zip_5
      and s.npi is not null
  ;
  
-vacuum analyze dev.provider;
+vacuum analyze data_warehouse.provider;
 
-select * from dev.provider ;
+select * from data_warehouse.provider ;
 
 
 
@@ -381,7 +381,7 @@ spec_st2
       from spec_st
   group by 1
     ) 
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -418,7 +418,7 @@ st.state as state,
 s.zip as zip,
 substring(s.zip,1,5) as zip_5
   from spec_st2 s
-  left join dev.provider d
+  left join data_warehouse.provider d
    	on  s.npi = d.provider_id_src 
    	and d.data_source = 'mcrt'
   left join reference_tables.ref_medicare_state_codes st 
@@ -427,6 +427,6 @@ substring(s.zip,1,5) as zip_5
      and s.npi is not null
  ;
  
-vacuum analyze dev.provider;
+vacuum analyze data_warehouse.provider;
 
 

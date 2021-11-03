@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------------------
 
 -------ccaeo
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -44,7 +44,7 @@ null as state,
 null as zip,
 null as zip_5
 from truven.ccaeo a
-left join dev.provider c 
+left join data_warehouse.provider c 
 			on c.provider_id_src = a.provid::text 
 			and c.npi = a.npi
 			and data_source = 'truv'
@@ -56,7 +56,7 @@ and a.provid is not null
 
 
 -------ccaef
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -95,7 +95,7 @@ null as state,
 null as zip,
 null as zip_5
 from truven.ccaef a
-left join dev.provider c 
+left join data_warehouse.provider c 
 			on c.provider_id_src = a.provid::text 
 			and c.npi = a.npi
 			and data_source = 'truv'
@@ -107,7 +107,7 @@ and a.provid is not null
 
 
 -------ccaes
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -146,7 +146,7 @@ null as state,
 null as zip,
 null as zip_5
 from truven.ccaes a
-left join dev.provider c 
+left join data_warehouse.provider c 
 			on c.provider_id_src = a.provid::text 
 			and c.npi = a.npi
 			and data_source = 'truv'
@@ -156,7 +156,7 @@ and a.provid is not null
 
 
 -------ccaei ( no npi)
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -195,7 +195,7 @@ null as state,
 null as zip,
 null as zip_5
 from truven.ccaei a
-left join dev.provider c 
+left join data_warehouse.provider c 
 			on c.provider_id_src = a.physid::text 
 			and data_source = 'truv'
 where c.uth_provider_id is null 

@@ -45,7 +45,7 @@ where  rank_prov = 1;
 
 -------------load from cleaned table--------------------------------
 
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -83,12 +83,12 @@ s.lbl_state as state,
 s.lbl_zip as zip,
 s.lbl_zip as zip_5
 from   dev.ranked_medicaid_providers s  
-       left join dev.provider d2 
+       left join data_warehouse.provider d2 
               on d2.provider_id_src = s.base_tpi 
               and d2.data_source = 'mdcd'
 where d2.uth_provider_id is null 
 and s.base_tpi is not null    ;
 
    
-update dev.provider 
+update data_warehouse.provider
 set npi = null where npi = '';
