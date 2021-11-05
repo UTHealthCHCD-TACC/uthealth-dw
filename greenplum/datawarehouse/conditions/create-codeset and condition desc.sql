@@ -22,7 +22,9 @@ select * from conditions.codeset c where cd_value like '%\%\%%'
 
 update conditions.codeset set cd_value = '6820%' where cd_value_raw = '6820xx'
 
-select * from conditions.codeset cd 
+select distinct condition_cd from conditions.codeset cd 
+
+update conditions.condition_desc set logic_version = 'v37'
 
 select * from conditions.condition_desc cd 
 
@@ -136,10 +138,11 @@ where a.condition_cd = b.condition_cd
 
 
 -- end 
+
 select * from conditions.condition_desc cd ;
 
 
-
+---remove dashes for consistency across greenplum
 update conditions.condition_desc set condition_cd = replace(condition_cd,'-','');
 
 update conditions.codeset set condition_cd = replace(condition_cd,'-','');

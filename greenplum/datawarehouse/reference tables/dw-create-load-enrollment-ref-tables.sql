@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  *  wc002  || 10/25/2021 || employee status 
  * ******************************************************************************************************
+ *  wc003  || 11/04/2021 || update bus_cd table
+ * ******************************************************************************************************
  */
 
 -------------------------------------------------------------------------------------------------------
@@ -105,17 +107,26 @@ insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_
 			   ('opt','product','UNK','UNK','')
 			   ;
 				
+select *--distinct year, medadv 
+from truven.ccaea;
+			  
+			  
+--- business code decode table wc003
+drop table if exists reference_tables.ref_bus_cd;
 
---- business code decode table
+create table reference_tables.ref_bus_cd ( data_source char(4), bus_cd char(4), bus_desc text, note text );
 
-create table data_warehouse.ref_bus_cd ( data_source char(4), bus_cd_src varchar, bus_cd char(4), column_name_src varchar, bus_desc varchar );
-
-insert into data_warehouse.ref_bus_cd (data_source, bus_cd_src, bus_cd, column_name_src, bus_desc)
-	   values ('trvm',null,'MCR',null,'Medicare Advantage'),
-	          ('trvc',null,'COM',null,'Commercial'),
-	          ('opt','MCR','MCR','bus','Medicare Advantage'),
-	          ('opt','COM','COM','bus','Commercial'),
-	          ('mdcr',null,'MDCR',null,'Medicare')
+insert into reference_tables.ref_bus_cd (data_source, bus_cd, bus_desc, note)
+	   values ('truv','MS','Medicare Supplemental','from mdcr tables where medadv is null or 0'),
+	          ('truv','COM','Commercial','from ccae tables where medadv is null or 0'),
+	          ('truv','MA','Medicare Advantage','from mdcr or ccae tables where medadv = 1'),
+	          ('mcrt',null,'Medicare',null),
+	          ('mcrn',null,'Medicare',null),
+	          ('optz','COM','Commercial','from mbr_enroll.bus'),
+	          ('optz','MA','Medicare Advantage','from mbr_enroll.bus'),
+	          ('optd','COM','Commercial','from mbr_enroll_r.bus'),
+	          ('optd','MA','Medicare Advantage','from mbr_enroll_r.bus'),
+	          ('mdcd',null,'Medicaid',null) 
 	         ;
  
 ---ref_race
