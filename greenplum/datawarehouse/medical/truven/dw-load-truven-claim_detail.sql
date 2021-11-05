@@ -11,6 +11,10 @@
  * 												--- inpatient tables use extract year from service date for year, outpatient reference dim table, not sure about that - will knows best
  * 												--- need to change data_year to fiscal year, but it shows up multiple places in script referencing other temp tables so i left it in some places
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
+   *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+ * ****************************************************************************************************** 
  * */
 
 vacuum analyze data_warehouse.claim_detail;
@@ -35,7 +39,8 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
-       'ccaeo', a.year,
+       'ccaeo', 
+       dev.fiscal_year_func(a.svcdate),
        a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaeo a
   join data_warehouse.dim_uth_claim_id 
@@ -63,7 +68,8 @@ select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate,
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
-       'mdcro', a.year,
+       'mdcro', 
+       dev.fiscal_year_func(a.svcdate),
        a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a 
   join data_warehouse.dim_uth_claim_id b 
@@ -94,7 +100,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, lpad(drg::int::text,3,'0'), 
-      'ccaes', a.year,
+      'ccaes', 
+      dev.fiscal_year_func(a.svcdate),
       a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a 
   join data_warehouse.dim_uth_claim_id  b 
@@ -125,7 +132,8 @@ select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_mem
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units,  lpad(drg::int::text,3,'0'), 
-      'mdcrs', a.year,
+      'mdcrs', 
+      dev.fiscal_year_func(a.svcdate),
       a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcrs a 
   join data_warehouse.dim_uth_claim_id  b

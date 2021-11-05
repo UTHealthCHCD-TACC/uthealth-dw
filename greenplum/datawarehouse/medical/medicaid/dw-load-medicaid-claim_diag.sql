@@ -19,7 +19,7 @@ from (
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
 		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24, a.dx_poa_25 ]) as dx_poa,
-		        a.year_fy 
+		dev.fiscal_year_func(d.hdr_frm_dos::date)
 		from medicaid.clm_dx a
 		  join medicaid.clm_proc b
 		    on b.icn = a.icn 
@@ -50,7 +50,7 @@ from (
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
 		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24]) as dx_poa,
-		        a.year_fy 
+			dev.fiscal_year_func(d.frm_dos)
 		from medicaid.enc_dx a
 		  join medicaid.enc_proc b
 		    on trim(b.derv_enc) = trim(a.derv_enc)

@@ -21,11 +21,10 @@ distributed by (uth_member_id)
 ;
 
 
-update conditions.condition_desc set logic_version = 'v37'
-
-
 vacuum analyze conditions.member_enrollment_yearly ;
 
+
+---function to create one column in yearly enrollment for each condition 
 create or replace function conditions.cond_columns(_schm text, _tbl text)
 	RETURNS void
 	LANGUAGE plpgsql
@@ -57,64 +56,94 @@ for r_cond_cd
 end 
 $$ EXECUTE ON ANY;
 
-
+---run function 
 select conditions.cond_columns('conditions','member_enrollment_yearly');
 
+---verify
 select * from conditions.member_enrollment_yearly;
 
 
-select * 
-from conditions.condition_desc cd 
-
-select condition_cd, carry_forward, condition_desc , replace(condition_desc,' ','_') as colname
-into dev.wc_cond_desc_temp
-from conditions.condition_desc 
-where diag_flag = '1' and additional_logic_flag = '0'
-and icd_proc_flag is null and drg_flag is null and rev_flag is null and ahfs_flag is null and cpt_hcpcs_flag is null 
-order by condition_cd;
-
-
----add  conditions using colname result above 
-alter table conditions.member_enrollment_yearly add column Trauma_and_Traumatic_Amputation char(1) default '0';
-
-
-select * from conditions.member_enrollment_yearly
-
-
-
-----load 
-select * 
-from conditions.codeset a 
-   join  dev.wc_cond_desc_temp b 
-     on a.condition_cd = b.condition_cd 
-;
-
-
-
+-----*******************************************************************************************************************************************
+--** function to populate diagnosis conditions
+--------------------
+create or replace function conditions.diagnosis_build ()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+as $$ 
+declare
+	r_cd_value text;
+    r_condition_cd text; 
+    r_carry_forward char(1);
+begin
+---drop and rebuild table	
 drop table if exists conditions.diagnosis_work_table;
 
+create table conditions.diagnosis_work_table 
+(
+	data_source char(4),
+	year int2, 
+	uth_member_id bigint, 
+	condition_cd text, 
+	carry_forward char(1)
+)
+with (appendonly=true, orientation=column, compresstype=zlib) 
+distributed by (uth_member_id); 
+
+---loop through codeset 
+for r_cd_value, r_condition_cd, r_carry_forward
+in 
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+ 		 and additional_logic_flag = '0' 
+	where position('%' in a.cd_value) = 0   
+	limit 2
+	loop 
+	    raise notice 'searching for conditions on diag cd: %', r_cd_value;	
+		insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, r_condition_cd, r_carry_forward
+		from data_warehouse.claim_diag d 
+        where d.diag_	cd = r_cd_value
+        ;
+	end loop;
+end
+$$ EXECUTE ON ANY;;
+
+select conditions.diagnosis_build();
+
+
+select distinct bus_cd, data_source from data_warehouse.member_enrollment_yearly mey 
+
+
+
 --diag, no wildcards
+create table conditions.diagnosis_work_table 
+with (appendonly=true, orientation=column, compresstype=zlib) 
+as 
 with cond_cte as 
-( 
+(
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a 
-   join  dev.wc_cond_desc_temp b 
+   join  conditions.condition_desc b
      on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) = 0   
+   and position('%' in a.cd_value) = 0     
 )
 select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
- into conditions.diagnosis_work_table
 from data_warehouse.claim_diag d 
   join cond_cte c 
     on c.cd_value = d.diag_cd 
+distributed by (uth_member_id)
 ;
+
 
 --diag wildcards
 with cond_cte as 
 ( 
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a 
-  join  dev.wc_cond_desc_temp b 
+  join  conditions.condition_desc b 
      on a.condition_cd = b.condition_cd 
    and position('%' in a.cd_value) > 0 
 )
@@ -123,9 +152,28 @@ select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
 from data_warehouse.claim_diag d 
   join cond_cte c 
     on d.diag_cd like c.cd_value
+where condition_cd not in ('TRAU','CA','LBPREG')
 ;
 
-analyze conditions.diagnosis_work_table
+
+	select count(*), a.condition_cd --a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a 
+  join  conditions.condition_desc b 
+     on a.condition_cd = b.condition_cd 
+   and position('%' in a.cd_value) > 0 
+group by a.condition_cd order by a.condition_cd ;
+
+-----------------------------
+vacuum analyze conditions.diagnosis_work_table;
+
+
+select distinct condition_cd from conditions.diagnosis_work_table;
+
+select * 
+from conditions.condition_desc;
+
+
+
 
 ---consolidate diagwork into condition 
 drop table conditions.person_prof ;

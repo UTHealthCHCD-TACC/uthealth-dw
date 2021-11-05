@@ -11,6 +11,10 @@
  *  jw001   || 10/05/2021 || remove substrings to change hcpcs_1st_mdfr_cd's to 2 characters like raw table
  * 													 change from_date_of_service to rev_cntr_dt in hha, hospice, outpatient
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
+   *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+ * ****************************************************************************************************** 
  * */
 
 
@@ -42,7 +46,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  b.clm_drg_cd, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'inpatient_revenue_center', a.clm_line_num,
+	    a.rev_cntr_unit_cnt::int, 
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'inpatient_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.inpatient_revenue_center_k a 
@@ -71,7 +77,9 @@ select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_cl
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'hha_revenue_center', a.clm_line_num,
+	    a.rev_cntr_unit_cnt::int, 
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'hha_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    a.rndrng_physn_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.hha_revenue_center_k a 
@@ -100,7 +108,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, b.clm_fac_type_cd, true, true, null, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'hospice_revenue_center', a.clm_line_num,
+	    a.rev_cntr_unit_cnt::int, 
+      dev.fiscal_year_func(a.clm_thru_dt::date), 
+      'hospice_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    a.rndrng_physn_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.hospice_revenue_center_k a 
@@ -128,7 +138,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'snf_revenue_center', a.clm_line_num,
+	    a.rev_cntr_unit_cnt::int,
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'snf_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.snf_revenue_center_k a 
@@ -157,7 +169,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, b.clm_fac_type_cd, true, true, null, null, null, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'outpatient_revenue_center', a.clm_line_num,
+	    a.rev_cntr_unit_cnt::int, 
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'outpatient_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    a.rndrng_physn_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.outpatient_revenue_center_k a 
@@ -187,7 +201,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, a.line_place_of_srvc_cd, true, true, null, null, null, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
 	    a.line_bene_pmt_amt::numeric, null, a.line_service_deductible::numeric, a.line_coinsrnc_amt::numeric, null, null, null, null, 
-	    a.line_srvc_cnt::numeric, b.year::int2, 'bcarrier_line', a.line_num,
+	    a.line_srvc_cnt::numeric, 
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'bcarrier_line', a.line_num,
 	    a.org_npi_num as bill_provider, null as ref_provider, null as other_provider, 
 	    a.prf_physn_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.bcarrier_line_k a 
@@ -216,7 +232,9 @@ select 'mcrn',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_c
 	    d.month_year_id, a.line_place_of_srvc_cd, true, true, null, null, null, 
 	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd,  null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
 	    a.line_bene_pmt_amt::numeric, null, a.line_service_deductible::numeric, a.line_coinsrnc_amt::numeric, null, null, null, null, 
-	    a.line_srvc_cnt::numeric, b.year::int2, 'dme_line', a.line_num,
+	    a.line_srvc_cnt::numeric,
+      dev.fiscal_year_func(a.clm_thru_dt::date),
+      'dme_line', a.line_num,    	    
 	    a.prvdr_npi as bill_provider, null as ref_provider, null as other_provider, 
 	    null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_national.dme_line_k a

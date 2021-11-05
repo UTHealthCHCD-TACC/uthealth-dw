@@ -7,6 +7,10 @@
  * ******************************************************************************************************
  *  wcc001  || 9/20/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
+  *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+ * ****************************************************************************************************** 
  * */
 
 
@@ -69,7 +73,9 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, a."year", c.standard_price_year, 'medical', a.clmseq,
+       a.units, 
+       dev.fiscal_year_func(a.fst_dt), 
+       c.standard_price_year, 'medical', a.clmseq,
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
        a.service_prov as other_provider, a.prov as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_dod.medical a
@@ -127,7 +133,7 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, a."year", c.standard_price_year, 'medical', a.clmseq,
+       a.units, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq,    
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
        a.service_prov as other_provider, a.prov as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_zip.medical a 
