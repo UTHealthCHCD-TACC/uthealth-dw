@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  *  wcc001  || 9/20/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
 
 
@@ -68,7 +70,9 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, a."year", c.standard_price_year, 'medical', a.clmseq
+       a.units, 
+       dev.fiscal_year_func(a.fst_dt), 
+       c.standard_price_year, 'medical', a.clmseq
 from optum_dod.medical a
 	join dw_staging.optd_uth_claim_id b 
 	   on b.member_id_src = a.member_id_src 
@@ -123,7 +127,7 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, a."year", c.standard_price_year, 'medical', a.clmseq     
+       a.units, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq     
 from optum_zip.medical a 
 	join dw_staging.optz_uth_claim_id b
 	   on b.member_id_src = a.member_id_src

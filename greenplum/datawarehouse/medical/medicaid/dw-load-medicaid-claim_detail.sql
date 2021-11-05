@@ -9,6 +9,8 @@
  * ****************************************************************************************************** 
  *  wc001  || 10/11/2021 || migrate to dw_staging
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
 
 
@@ -95,7 +97,9 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1), 
        null, b.drg, a.clm_dtl_nbr, 
-       a.year_fy, null, d.pat_stat_cd
+       dev.fiscal_year_func(a.from_dos),
+       null, 
+       d.pat_stat_cd
 from medicaid.clm_detail a 
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -142,7 +146,9 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),  
        a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
-       a.year_fy, null, a.enc_stat_cd 
+       dev.fiscal_year_func(a.fdos_dt::date),
+       null, 
+       a.enc_stat_cd 
 from medicaid.enc_det a 
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc 

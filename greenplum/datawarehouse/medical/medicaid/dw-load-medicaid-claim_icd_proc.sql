@@ -21,7 +21,7 @@ from (
 			                  trim(a.proc_icd_cd_20), trim(a.proc_icd_cd_21), trim(a.proc_icd_cd_22), trim(a.proc_icd_cd_23), trim(a.proc_icd_cd_24), trim(a.proc_icd_cd_25) ] )as proc_icd_cd,
 			    unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_icd_pos, 
 				a.proc_icd_qal_1, 
-		        a.year_fy 
+		        dev.fiscal_year_func(d.hdr_frm_dos::date)
 		from medicaid.clm_proc a
 		  join data_warehouse.dim_uth_claim_id c 
 		    on c.claim_id_src = a.icn 
@@ -46,7 +46,7 @@ from (
 			                  trim(a.proc_icd_cd_20), trim(a.proc_icd_cd_21), trim(a.proc_icd_cd_22), trim(a.proc_icd_cd_23), trim(a.proc_icd_cd_24) ] )as proc_icd_cd,
 			    unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]) as proc_icd_pos, 
 				a.proc_icd_qal_1, 
-		        a.year_fy 
+		        dev.fiscal_year_func(d.frm_dos)
 		from medicaid.enc_proc a 
 		  join data_warehouse.dim_uth_claim_id c 
 		    on c.claim_id_src = a.derv_enc 
