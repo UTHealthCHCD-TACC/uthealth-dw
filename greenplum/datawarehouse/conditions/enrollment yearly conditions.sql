@@ -66,17 +66,13 @@ select * from conditions.member_enrollment_yearly;
 -----*******************************************************************************************************************************************
 --** function to populate diagnosis conditions
 --------------------
-create or replace function conditions.diagnosis_build ()
-	RETURNS void
-	LANGUAGE plpgsql
-	VOLATILE
-as $$ 
+do $$ 
 declare
 	r_cd_value text;
     r_condition_cd text; 
     r_carry_forward char(1);
 begin
----drop and rebuild table	
+---drop and rebuild table__-------------------------------*
 drop table if exists conditions.diagnosis_work_table;
 
 create table conditions.diagnosis_work_table 
@@ -85,10 +81,16 @@ create table conditions.diagnosis_work_table
 	year int2, 
 	uth_member_id bigint, 
 	condition_cd text, 
+	cd_type text,
 	carry_forward char(1)
 )
 with (appendonly=true, orientation=column, compresstype=zlib) 
 distributed by (uth_member_id); 
+----------------------------------------------------------*
+
+--ICD10-CM = icd procedure code 
+--ICD-10 = diagnosis codes
+--CPT = cpt/hcpcs
 
 ---loop through codeset 
 for r_cd_value, r_condition_cd, r_carry_forward
@@ -97,45 +99,49 @@ in
 	from conditions.codeset a
 		join  conditions.condition_desc b
  		  on a.condition_cd = b.condition_cd 
- 		 and additional_logic_flag = '0' 
-	where position('%' in a.cd_value) = 0   
-	limit 2
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('ICD-10','ICD-9')
 	loop 
+	
 	    raise notice 'searching for conditions on diag cd: %', r_cd_value;	
+	   
 		insert into conditions.diagnosis_work_table 
-		select d.data_source, d.year, d.uth_member_id, r_condition_cd, r_carry_forward
+		select d.data_source, d.year, d.uth_member_id, r_condition_cd, 'DX', r_carry_forward
 		from data_warehouse.claim_diag d 
-        where d.diag_	cd = r_cd_value
+        where d.diag_cd = r_cd_value
         ;
 	end loop;
-end
-$$ EXECUTE ON ANY;;
+end $$
+;
 
 select conditions.diagnosis_build();
 
 
-select distinct bus_cd, data_source from data_warehouse.member_enrollment_yearly mey 
 
 
 
---diag, no wildcards
-create table conditions.diagnosis_work_table 
-with (appendonly=true, orientation=column, compresstype=zlib) 
-as 
-with cond_cte as 
-(
+--
+
+select * 
+from conditions.condition_desc 
+where additional_logic_flag = '1';
+
+
+select * --distinct c.cd_type 
+from conditions.codeset c 
+where cd_type = 'ICD10-CM'
+
+
 	select a.cd_value, a.condition_cd, b.carry_forward 
-	from conditions.codeset a 
-   join  conditions.condition_desc b
-     on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) = 0     
-)
-select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
-from data_warehouse.claim_diag d 
-  join cond_cte c 
-    on c.cd_value = d.diag_cd 
-distributed by (uth_member_id)
-;
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+ 		 and additional_logic_flag = '0' 
+	where position('%' in a.cd_value) = 0
+
+
+
+
 
 
 --diag wildcards
@@ -173,6 +179,8 @@ select *
 from conditions.condition_desc;
 
 
+
+----------------------------------------------------------------------------------------------------------------
 
 
 ---consolidate diagwork into condition 
