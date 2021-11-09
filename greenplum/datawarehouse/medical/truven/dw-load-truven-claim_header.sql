@@ -10,6 +10,8 @@
  * ******************************************************************************************************
  *  gmunoz  || 10/20/2021 || added fiscal year logic with function dev.fiscal_year_func
  * ******************************************************************************************************
+ *  jw002   || 11/08/2021 || add provider variables, remove old _src variables
+ * ******************************************************************************************************
  * */
 alter table dw_staging.claim_header add column fiscal_year int2;
 
@@ -39,9 +41,9 @@ drop table dev.truven_dim_uth_claim_id;
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, 
-cost_factor_year, to_date_of_service
+data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, 
+total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year, to_date_of_service,
+bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -50,16 +52,14 @@ select distinct on (uth_claim_id) 'truv',
 	a.svcdate,
 	a.facprof,
 	null as uth_admission_id,
-	null as admission_id_src,
 	null as total_charge_amount,
 	sum(a.pay) over (partition by b.uth_claim_id),
 	sum(a.netpay) over (partition by b.uth_claim_id),
-	a.msclmid,
-	a.enrolid,
-	'ccaeo',
 	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
-	a.tsvcdat
+	a.tsvcdat,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaeo a
 join dev.truven_dim_uth_claim_id b
 	--  join data_warehouse.dim_uth_claim_id b
@@ -74,9 +74,10 @@ where a.year = 2019;
 --clm hdr truv mdcr outpatient
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, 
-cost_factor_year, to_date_of_service
+data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id,
+total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+cost_factor_year, to_date_of_service,
+bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -85,16 +86,14 @@ select distinct on (uth_claim_id) 'truv',
 	a.svcdate,
 	a.facprof,
 	null as uth_admission_id,
-	null as admission_id_src,
 	null as total_charge_amount,
 	sum(a.pay) over (partition by b.uth_claim_id),
 	sum(a.netpay) over (partition by b.uth_claim_id),
-	a.msclmid,
-	a.enrolid,
-	'mdcro',
 	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
-	a.tsvcdat
+	a.tsvcdat,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a
 join dev.truven_dim_uth_claim_id b
 	--  join data_warehouse.dim_uth_claim_id b
@@ -111,8 +110,9 @@ from truven.mdcro;
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, cost_factor_year, to_date_of_service
+data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, 
+total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year, to_date_of_service,
+bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -121,16 +121,14 @@ select distinct on (uth_claim_id) 'truv',
 	a.svcdate,
 	a.facprof,
 	null,
-	trunc(a.caseid, 0)::text,
 	null,
 	sum(a.pay) over (partition by b.uth_claim_id),
 	sum(a.netpay) over (partition by b.uth_claim_id),
-	a.msclmid,
-	a.enrolid,
-	'ccaes',
 	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
-	a.tsvcdat
+	a.tsvcdat,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a
 join dev.truven_dim_uth_claim_id b
 	--  join data_warehouse.dim_uth_claim_id b
@@ -142,8 +140,10 @@ join dev.truven_dim_uth_claim_id b
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, admission_id_src,
-total_charge_amount, total_allowed_amount, total_paid_amount, claim_id_src, member_id_src, table_id_src, fiscal_year, cost_factor_year, to_date_of_service
+data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, 
+total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+cost_factor_year, to_date_of_service,
+bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -152,16 +152,14 @@ select distinct on (uth_claim_id) 'truv',
 	a.svcdate,
 	a.facprof,
 	null,
-	trunc(a.caseid, 0)::text,
 	null,
 	sum(a.pay) over (partition by b.uth_claim_id),
 	sum(a.netpay) over (partition by b.uth_claim_id),
-	a.msclmid,
-	a.enrolid,
-	'mdcrs',
 	dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	null as cost_factor_year,
-	a.tsvcdat
+	a.tsvcdat,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcrs a
 join dev.truven_dim_uth_claim_id b
 	--  join data_warehouse.dim_uth_claim_id b
