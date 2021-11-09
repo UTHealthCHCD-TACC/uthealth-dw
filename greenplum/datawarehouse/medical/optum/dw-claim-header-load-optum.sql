@@ -9,6 +9,8 @@
  * ****************************************************************************************************** 
  *  gmunoz  || 10/20/2021 || added fiscal year logic with function dev.fiscal_year_func
  * ****************************************************************************************************** 
+ *  jw002   || 11/08/2021 || add provider variables
+ * ******************************************************************************************************
  * */
 
 
@@ -40,13 +42,12 @@ distributed by (member_id_src);
 
 vacuum analyze dw_staging.optd_uth_claim_id;
 
-
-
 --optd
 insert into dw_staging.claim_header 
 (
 	data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
-	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year,
+	bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )	
 select distinct on(b.uth_claim_id)
 	'optd', 
@@ -63,7 +64,9 @@ select distinct on(b.uth_claim_id)
 	dev.fiscal_year_func(min(a.fst_dt) over(partition by b.uth_claim_id)) as fiscal_year,
 	a.std_cost_yr::int as cost_year,
 	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-	a.std_cost_yr::int as cost_year
+	a.std_cost_yr::int as cost_year,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_dod.medical a
     join dw_staging.optd_uth_claim_id b 
 		on a.member_id_src = b.member_id_src 
@@ -97,7 +100,8 @@ vacuum analyze dw_staging.optz_uth_claim_id;
 insert into dw_staging.claim_header 
 (
 	data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, uth_admission_id, 
-	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year
+	total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year,
+	bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )	
 select distinct on(b.uth_claim_id)
 	'optz', 
@@ -112,7 +116,9 @@ select distinct on(b.uth_claim_id)
 	sum((a.std_cost * c.cost_factor)) over(partition by b.uth_claim_id) as total_allowed_amount, 
 	null as total_paid_amount,
 	dev.fiscal_year_func(min(a.fst_dt) over(partition by b.uth_claim_id)) as fiscal_year,
-	a.std_cost_yr::int as cost_year
+	a.std_cost_yr::int as cost_year,
+	null as bill_provider, null as ref_provider, null as other_provider, 
+	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_zip.medical a
     join dw_staging.optz_uth_claim_id b   
 		on a.patid::text = b.member_id_src 
