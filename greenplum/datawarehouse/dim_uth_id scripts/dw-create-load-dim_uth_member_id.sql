@@ -10,13 +10,18 @@
  * ******************************************************************************************************
  *  wc002  || 8/31/2021 || add claim created ids from medical tables
  * ******************************************************************************************************
+ *  wc003  || 11/09/2021 || merge to single script
+ * ******************************************************************************************************
  */
 
 ------ load dim_uth_member_id------------------------------------------------
 
 
 ------------ /  BEGIN SCRIPT
+--- approx runtime 20min 11/09/21
 
+do $$ 
+begin
 
 -- ***** Optum DoD ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -183,15 +188,11 @@ from cte_distinct_member
 ------   
 
 
-qa_reporting.staging_claim_detail_checks 
-;
-
 
 ---*******************************************************
 --// wcc002 - claim created ids 
 ---*******************************************************
 
-alter table data_warehouse.dim_uth_member_id add column claim_created_id boolean default false;
 
 --Optum DoD claim created wcc002 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id, claim_created_id)
@@ -207,8 +208,6 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
-
-select * from data_warehouse.dim_uth_member_id where claim_created_id is true and year = 2007;
 
 
 --Optum zip claim created wcc002
@@ -265,6 +264,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+end $$
+;
 
 ---*******************************************************
 --//end wcc002
