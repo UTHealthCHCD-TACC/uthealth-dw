@@ -8,18 +8,28 @@
  *  wallingTACC  || 8/23/2021 || updated comments.
  * ****************************************************************************************************** 
  *  wc002        || 10/5/2021 || migrate to dw_staging
- * 
+* ****************************************************************************************************** 
+ *  jw001        || 11/09/2021 || wrap in function
+ * ******************************************************
  * */
 
-drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
+----create function
+CREATE OR REPLACE FUNCTION public.medicare_enrollment()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+AS $$
+	
+	
+BEGIN 
+	
+raise notice 'building medicare_mbsf_abcd_enrollment';
 
 create table dw_staging.medicare_mbsf_abcd_enrollment 
-with(appendonly=true,orientation=column,compresstype=zlib, compresslevel=5)
- as select * from data_warehouse.medicare_mbsf_abcd_enrollment 
- limit 0 
-distributed by (uth_member_id)
+(like data_warehouse.medicare_mbsf_abcd_enrollment including all) 
 ;
 
+raise notice 'medicare_mbsf_abcd_enrollment created';
 
 insert into dw_staging.medicare_mbsf_abcd_enrollment  
 select  b.uth_member_id, 'mcrt' as data_source, "year"::int as "year",
@@ -65,6 +75,8 @@ from medicare_texas.mbsf_abcd_summary  a
     and b.data_source = 'mcrt'
 ;
 
+raise notice 'mcrt loaded';
+
 --medicare national 
 insert into dw_staging.medicare_mbsf_abcd_enrollment
 select  b.uth_member_id, 'mcrn' as data_source, "year"::int as "year",
@@ -109,12 +121,26 @@ from medicare_national.mbsf_abcd_summary  a
      on trim(b.member_id_src) = trim(a.bene_id::text)
     and b.data_source = 'mcrn'
    ;
+   
+  raise notice 'mcrn loaded';
+  raise notice 'medicare_enrollment() done';
+ 
+alter function public.medicare_enrollment() owner to uthealth_dev;
+grant all on function public.medicare_enrollment() to uthealth_dev;
+
+raise notice 'ownership transferred to uthealth_dev';
   
+ end 
+$$
+EXECUTE ON ANY;
+
+-----end build function
+
 
 ---finalize
 vacuum analyze dw_staging.medicare_mbsf_abcd_enrollment;
 
- --validate
+---validate
  select count(*), count(distinct uth_member_id), data_source, year 
  from dw_staging.medicare_mbsf_abcd_enrollment
  group by data_source, year 
