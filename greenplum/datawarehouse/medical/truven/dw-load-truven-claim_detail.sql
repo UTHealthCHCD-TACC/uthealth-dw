@@ -13,6 +13,8 @@
  * ****************************************************************************************************** 
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ****************************************************************************************************** 
+   *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+ * ****************************************************************************************************** 
  * */
 
 vacuum analyze data_warehouse.claim_detail;
@@ -30,16 +32,18 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   admit_date, discharge_date, cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
-								   table_id_src, fiscal_year )		-- data_year ----> fiscal year ~ jw								   								 								   
+								   table_id_src, fiscal_year,
+								   bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)								   								 								   
 select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, null,  
        'ccaeo', 
-       dev.fiscal_year_func(a.svcdate)
+       dev.fiscal_year_func(a.svcdate),
+       a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaeo a
-  join dev.truven_dim_uth_claim_id b -- jw: i'm not sure where this table is or gets made, but curious if it has data_year, which is being inserted into year for DW table
+  join data_warehouse.dim_uth_claim_id 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
    and b.data_source  = 'truv'
@@ -57,16 +61,18 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   admit_date, discharge_date, cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
-								   table_id_src, fiscal_year )								   								 								   
+								   table_id_src, fiscal_year,
+								   bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)								   								 								   
 select 'truv',b.data_year, b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
        null, null, a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob, 
        null, null, null,  trunc(a.qty,0) as units, null,  
        'mdcro', 
-       dev.fiscal_year_func(a.svcdate)
+       dev.fiscal_year_func(a.svcdate),
+       a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a 
-  join dev.truven_dim_uth_claim_id b 
+  join data_warehouse.dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
    and b.data_source  = 'truv'
@@ -87,16 +93,18 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   admit_date, discharge_date, discharge_status, cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
-								   table_id_src, fiscal_year )										   								   								   
+								   table_id_src, fiscal_year,
+								   bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)										   								   								   
 select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units, lpad(drg::int::text,3,'0'), 
       'ccaes', 
-      dev.fiscal_year_func(a.svcdate)
+      dev.fiscal_year_func(a.svcdate),
+      a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a 
-  join dev.truven_dim_uth_claim_id b 
+  join data_warehouse.dim_uth_claim_id  b 
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
    and b.data_source  = 'truv'
@@ -117,16 +125,18 @@ insert into data_warehouse.claim_detail (  data_source, year, uth_claim_id, clai
 								   admit_date, discharge_date, discharge_status, cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, revenue_cd,
 								   charge_amount, allowed_amount, paid_amount, deductible, copay, coins, cob,
 								   bill_type_inst, bill_type_class, bill_type_freq, units, drg_cd,
-								  table_id_src, fiscal_year )										   								   								   
+								  table_id_src, fiscal_year,
+								  bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)										   								   								   
 select 'truv', extract(year from a.svcdate), b.uth_claim_id, a.seqnum, b.uth_member_id, a.svcdate, a.tsvcdat,
        c.month_year_id, substr(a.stdplac::text,1,2), a.ntwkprov::bool, a.paidntwk::bool, 
        a.admdate, a.disdate, lpad(trim(a.dstatus::text),2,'0'), a.proc1, a.proctyp, a.procmod, null as proc_mod_2, lpad(a.revcode::text,4,'0'), 
        null, a.pay, a.netpay, a.deduct, a.copay, a.coins, a.cob,
        null, null, null,  trunc(a.qty,0) as units,  lpad(drg::int::text,3,'0'), 
       'mdcrs', 
-      dev.fiscal_year_func(a.svcdate)
+      dev.fiscal_year_func(a.svcdate),
+      a.provid as bill_provider, null as ref_provider, null as other_provider, null as  perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcrs a 
-  join dev.truven_dim_uth_claim_id b
+  join data_warehouse.dim_uth_claim_id  b
     on b.member_id_src = a.enrolid::text
    and b.claim_id_src = a.msclmid::text
    and b.data_source  = 'truv'
