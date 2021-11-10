@@ -16,9 +16,6 @@
 
 alter table dw_staging.member_enrollment_yearly add column family_id text, add column behavioral_coverage char(1);
 
-select distinct data_source from dw_staging.member_enrollment_monthly ;
-
-
 
 
 do $$
@@ -31,7 +28,10 @@ declare
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
+	col_list text[]:= array['state','zip5','zip3','plan_type','employee_status'];
+	col_list_len int;
 begin
+	col_list_len = array_length(col_list,1);
 	raise notice 'Building enrollment yearly table for %', my_data_source;
     
 	execute 'select exists (select 1 from dw_staging.member_enrollment_yearly where data_source in' || my_data_source || ');'
@@ -123,161 +123,49 @@ drop table if exists dw_staging.temp_member_enrollment_month;
 
 raise notice 'total_enrolled_months updated';
 
-end $$
-;
 -----------------------------------------------------------------------------------------------------------------------
 -----************** logic for yearly rollup of various columns
 -- all logic finds the most common occurence in a given year and assigns that value  28min
 -----------------------------------------------------------------------------------------------------------------------
+	for col_counter in 1.. col_list_len
+	loop
 
-select count(*), data_source 
-from dw_staging.member_enrollment_yearly mey 
-group by data_source ;
-
-select * 
-from dw_staging.member_enrollment_yearly mey where data_source = 'truv' and total_enrolled_months between 1 and 11;
-
-select * from dw_staging.temp_member_enrollment_month
-
-
----states
-select count(*), min(month_year_id) as my, uth_member_id, state, year
- into dev.wc_state_yearly
-from dw_staging.member_enrollment_monthly
-group by uth_member_id, state, year
-;
-
-create table dev.wc_state_yearly_final
-with (appendonly=true, orientation=column)
-as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_state_yearly
-distributed by(uth_member_id);
-
-
-update dw_staging.member_enrollment_yearly a set state = b.state
-from dev.wc_state_yearly_final b
-where a.uth_member_id = b.uth_member_id
-and a.year = b.year
- and b.my_grp = 1;
-
-
-
-drop table dev.wc_state_yearly;
-
-drop table dev.wc_state_yearly_final;
-
----zip3
-select count(*), min(month_year_id) as my, uth_member_id, zip3, year
- into dev.wc_zip3_yearly
-from dw_staging.member_enrollment_monthly
-group by uth_member_id, zip3, year
-;
-
-create table dev.wc_zip3_yearly_final
-with (appendonly=true, orientation=column)
-as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_zip3_yearly
-distributed by(uth_member_id);
+		execute 'create table dw_staging.temp_enrl_' || col_list[col_counter] ||'
+				 with (appendonly=true, orientation=column)
+				 as
+				 select count(*), min(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', year
+				 from dw_staging.member_enrollment_monthly
+				 group by 3, 4, 5;'
+		;
+		
+		execute 'create table dw_staging.final_enrl_' || col_list[col_counter] ||'
+				 with (appendonly=true, orientation=column)
+				 as
+				 select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
+				 from dw_staging.temp_enrl_' || col_list[col_counter] ||'
+				 distributed by(uth_member_id);'
+		;
+		
+		
+		execute 'update dw_staging.member_enrollment_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
+				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
+				 where a.uth_member_id = b.uth_member_id
+				   and a.year = b.year
+				   and b.my_grp = 1;'
+		;
+		
+		execute 'drop table dw_staging.temp_enrl_' || col_list[col_counter] ||';';
+		execute 'drop table dw_staging.final_enrl_' || col_list[col_counter] ||';';
+		raise notice 'updated column %', col_list[col_counter];
+	
+	end loop;
 
 
-update dw_staging.member_enrollment_yearly a set zip3 = b.zip3
-from dev.wc_zip3_yearly_final b
-where a.uth_member_id = b.uth_member_id
-and a.year = b.year
- and b.my_grp = 1;
+end $$;
 
-
-
-
-drop table dev.wc_zip3_yearly;
-
-drop table dev.wc_zip3_yearly_final;
-
-
---- zip5
-select count(*), min(month_year_id) as my, uth_member_id, zip5, year
-into dev.wc_zip5_yearly
-from dw_staging.member_enrollment_monthly
-group by uth_member_id, zip5, year
-;
-
-
-create table dev.wc_ZIP5_yearly_final
-with (appendonly=true, orientation=column)
-as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_ZIP5_yearly
-distributed by(uth_member_id);
-
-update dw_staging.member_enrollment_yearly a set zip5 = b.zip5
-from dev.wc_zip5_yearly_final b
-where a.uth_member_id = b.uth_member_id
-and a.year = b.year
- and b.my_grp = 1;
-
-
-drop table dev.wc_ZIP5_yearly;
-
-drop table dev.wc_ZIP5_yearly_final;
-
-
---- plan type
-select count(*), min(month_year_id) as my, uth_member_id, plan_type, year
- into dev.wc_plan_type_yearly
-from dw_staging.member_enrollment_monthly
-group by uth_member_id, plan_type, year
-;
-
-create table dev.wc_plan_type_yearly_final
-with (appendonly=true, orientation=column)
-as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_plan_type_yearly
-distributed by(uth_member_id);
-
-
-update dw_staging.member_enrollment_yearly a set plan_type = b.plan_type
-from dev.wc_plan_type_yearly_final b
-where a.uth_member_id = b.uth_member_id
-and a.year = b.year
- and b.my_grp = 1;
-
-
-drop table dev.wc_plan_type_yearly;
-
-drop table dev.wc_plan_type_yearly_final;
-
-
----EE status
-select count(*), min(month_year_id) as my, uth_member_id, employee_status, year
- into dev.wc_employee_status_yearly
-from dw_staging.member_enrollment_monthly
-group by uth_member_id, employee_status, year
-;
-
-create table dev.wc_employee_status_yearly_final
-with (appendonly=true, orientation=column)
-as
-select * , row_number() over(partition by uth_member_id,year order by count desc, my desc) as my_grp
-from dev.wc_employee_status_yearly
-distributed by(uth_member_id);
-
-
-update dw_staging.member_enrollment_yearly a set employee_status = b.employee_status
-from dev.wc_employee_status_yearly_final b
-where a.uth_member_id = b.uth_member_id
-and a.year = b.year
- and b.my_grp = 1;
-
-
-drop table dev.wc_employee_status_yearly;
-
-drop table dev.wc_employee_status_yearly_final;
-
-
+--finalize
 vacuum analyze dw_staging.member_enrollment_yearly;
+
 
 ------------------------- END SCRIPT 
 
