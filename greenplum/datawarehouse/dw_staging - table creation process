@@ -1,21 +1,20 @@
 /* ******************************************************************************************************
- *  this script is the first step of the dw_staging portion of the data refresh process. First we will declare which data sources are being updated
- *  in step (1). Then we will drop any existing staging tables in step (2) . Next we will copy data_warehouse tables down to dw_staging (3) but exclude
- *  any data from the data_sources that we specified in step 1. 
- * 	Note that member_enrollment_monthly and claim_detail must be explicitly defined with row_number because logic is used to populate consecutive enrolled
- *  months and claim sequence number respectively, before later dropping row_number and redistributing on uth_member_id. 
- * 
- * 
- * 
+ *  this script is the first step of the dw_staging portion of the data refresh process. It will build tables in dw_staging 
+ *  and prepare to load updated data into them.
+ *  (1) declare which data sources are being updated
+ *  (2) drop any existing staging tables in step 
+ *  (3) copy data_warehouse tables down to dw_staging but exclude data from the data_sources that we specified in step 1. 
+ * 	(4) member_enrollment_monthly and claim_detail must be explicitly defined with row_number because logic is used to 
+ *      populate consecutive enrolled months and claim sequence number respectively. 
+ *  (5) assign table ownership to uthealth_dev so anyone with that role can work on these tables 
  * 
  * */
 
 
-
 do $$
 declare
-   ---(1) change this according to what data is being updated, use two single quotes around each data source i.e.  ''optz''
-  --- my_data_source text := ' (''truv'',''mcrt'',''optz'') ';
+---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
+---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';
 	my_data_source text := ' (''truv'') ';
 begin
 
@@ -25,8 +24,9 @@ raise notice 'Creating dw_staging tables for: %', my_data_source;
 ---(2) drop existing tables
 drop table if exists dw_staging.member_enrollment_monthly;
 drop table if exists dw_staging.member_enrollment_yearly;
-drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
+
 drop table if exists dw_staging.medicaid_program_enrollment;
+drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
 
 drop table if exists dw_staging.claim_header;
 drop table if exists dw_staging.claim_detail;
@@ -41,7 +41,7 @@ raise notice 'existing tables dropped from dw_staging';
 
 --enrollment yearly
 create table dw_staging.member_enrollment_yearly 
-(like data_warehouse.member_enrollment_yearly including all) 
+(like data_warehouse.member_enrollment_yearly including defaults including all) 
 ;
 
 execute 'insert into dw_staging.member_enrollment_yearly 
@@ -53,7 +53,7 @@ raise notice 'enrollment yearly created';
 
 --claim header
 create table dw_staging.claim_header
-(like data_warehouse.claim_header including all) 
+(like data_warehouse.claim_header including defaults including all) 
 ;
 
 execute 'insert into dw_staging.claim_header
@@ -65,7 +65,7 @@ raise notice 'claim header created';
 
 --claim diag
 create table dw_staging.claim_diag
-(like data_warehouse.claim_diag including all) 
+(like data_warehouse.claim_diag including defaults including all)  
 ;
 
 execute 'insert into dw_staging.claim_diag
@@ -77,7 +77,7 @@ raise notice 'claim diag created';
 
 --claim icd proc 
 create table dw_staging.claim_icd_proc
-(like data_warehouse.claim_icd_proc including all) 
+(like data_warehouse.claim_icd_proc including defaults including all) 
 ;
 
 execute 'insert into dw_staging.claim_icd_proc
@@ -89,7 +89,7 @@ raise notice 'claim icd proc created';
 
 --pharmacy claims 
 create table dw_staging.pharmacy_claims 
-(like data_warehouse.pharmacy_claims including all) 
+(like data_warehouse.pharmacy_claims including defaults including all) 
 ;
 
 execute 'insert into dw_staging.pharmacy_claims
@@ -198,6 +198,19 @@ execute 'insert into dw_staging.claim_detail
 
 raise notice 'claim_detail done';
 
+---(5) drop existing tables
+alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
+alter table dw_staging.member_enrollment_yearly owner to uthealth_dev;
+
+alter table dw_staging.medicaid_program_enrollment owner to uthealth_dev;
+alter table dw_staging.medicare_mbsf_abcd_summary owner to uthealth_dev;
+
+alter table dw_staging.claim_header owner to uthealth_dev;
+alter table dw_staging.claim_detail owner to uthealth_dev;
+alter table dw_staging.claim_diag owner to uthealth_dev;
+alter table dw_staging.claim_icd_proc owner to uthealth_dev;
+
+alter table dw_staging.pharmacy_claims owner to uthealth_dev;
 
 raise notice 'dw_staging table creation complete for: %', my_data_source;
 

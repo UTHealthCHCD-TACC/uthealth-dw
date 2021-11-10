@@ -66,12 +66,7 @@ select * from conditions.member_enrollment_yearly;
 -----*******************************************************************************************************************************************
 --** function to populate diagnosis conditions
 --------------------
-do $$ 
-declare
-	r_cd_value text;
-    r_condition_cd text; 
-    r_carry_forward char(1);
-begin
+
 ---drop and rebuild table__-------------------------------*
 drop table if exists conditions.diagnosis_work_table;
 
@@ -92,45 +87,61 @@ distributed by (uth_member_id);
 --ICD-10 = diagnosis codes
 --CPT = cpt/hcpcs
 
----loop through codeset 
-for r_cd_value, r_condition_cd, r_carry_forward
-in 
+--dx exact
+with cond_cte as 
+(
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a
 		join  conditions.condition_desc b
  		  on a.condition_cd = b.condition_cd 
 	where position('%' in a.cd_value) = 0
 	  and a.cd_type in ('ICD-10','ICD-9')
-	loop 
-	
-	    raise notice 'searching for conditions on diag cd: %', r_cd_value;	
-	   
-		insert into conditions.diagnosis_work_table 
-		select d.data_source, d.year, d.uth_member_id, r_condition_cd, 'DX', r_carry_forward
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'DX', carry_forward
 		from data_warehouse.claim_diag d 
-        where d.diag_cd = r_cd_value
+		   join cond_cte cte
+         on d.diag_cd = cte.cd_value
         ;
-	end loop;
-end $$
-;
-
-select conditions.diagnosis_build();
-
-
-
-
-
+       
 --
+do $$
+begin
+       
+       select distinct diag_cd 
+       into dev.wc_all_diagnosis_codes
+       from data_warehouse.claim_diag cd 
+       ;
+      
+      raise notice 'done';
+      
+   end $$;   
+       
+--
+do $$
+begin
+--dx like
+with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) > 0
+	  and a.cd_type in ('ICD-10','ICD-9')
+) 		
+insert into conditions.diagnosis_work_table
+select d.data_source, d.year, d.uth_member_id, c.condition_cd, 'DX', c.carry_forward
+from data_warehouse.claim_diag d 
+  join cond_cte c 
+    on d.diag_cd like c.cd_value
+;      
 
-select * 
-from conditions.condition_desc 
-where additional_logic_flag = '1';
-
-
-select * --distinct c.cd_type 
-from conditions.codeset c 
-where cd_type = 'ICD10-CM'
-
+raise notice 'dx like complete';
+       
+end $$;    
+       
+       
 
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a
