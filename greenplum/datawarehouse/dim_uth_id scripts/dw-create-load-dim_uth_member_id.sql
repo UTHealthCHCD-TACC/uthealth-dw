@@ -267,35 +267,4 @@ from cte_distinct_member
 end $$
 ;
 
----*******************************************************
---//end wcc002
----*******************************************************
-
-----   /// END SCRIPT 
-
-
-/*  Original Table Create
---  !  do not run unless table has to be recreated
-
-
-drop table if exists data_warehouse.dim_uth_member_id;
-
-create table data_warehouse.dim_uth_member_id (
-	uth_member_id bigserial,
-	member_id_src text, 
-	data_source char(4), 
-	unique ( uth_member_id)
-) distributed by (uth_member_id);
-
----
-
-alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq restart with 100000000; 
-                                                                           
-alter sequence data_warehouse.dim_uth_member_id_uth_member_id_seq cache 200;
-
-vacuum analyze data_warehouse.dim_uth_member_id;
-
------end create table *********************************************************************************************
-*/
-
 

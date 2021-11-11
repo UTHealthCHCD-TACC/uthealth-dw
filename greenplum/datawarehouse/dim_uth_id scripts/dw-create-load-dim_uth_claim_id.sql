@@ -16,9 +16,12 @@
 
 ---runtime 11/9/21 - 90minutes
 
+
+
+
 do $$ 
 begin
-
+	
 
 -- ***** Optum dod ***** 
 --8/31/2021 runtime 10m16s
@@ -303,35 +306,14 @@ where c.uth_claim_id is null
 
 raise notice 'medicaid loaded';
 
+analyze data_warehouse.dim_uth_claim_id;
+
+raise notice 'dim_uth_claim_id updates complete'
+
 end $$;
 
 --------------------------------------------------------------------------------------------------------------------------
-vacuum analyze  data_warehouse.dim_uth_claim_id;
-
----- // END SCRIPT 
 
 
-/*  Original Table Create
- * --!do not run unless table has to be recreated
 
-drop table if exists data_warehouse.dim_uth_claim_id;
-
-CREATE TABLE data_warehouse.dim_uth_claim_id (
-	uth_claim_id bigserial NOT NULL,
-	uth_member_id int8 null,
-	data_source bpchar(4) NULL,
-	claim_id_src text NOT NULL,
-	member_id_src text NOT NULL,
-	data_year int4 NOT NULL
-)
-WITH (appendonly=true, orientation=column)
-DISTRIBUTED BY (uth_member_id);
-
-alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_claim_id_uth_claim_id_seq cache 200;
-
-
-analyze data_warehouse.dim_uth_claim_id;
-*/
 

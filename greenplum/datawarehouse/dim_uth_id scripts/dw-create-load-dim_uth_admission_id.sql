@@ -145,27 +145,5 @@ vacuum analyze data_warehouse.dim_uth_admission_id;
 
 
 
-/* Original Table Create
- 
-drop table if exists data_warehouse.dim_uth_admission_id;
-
-create table data_warehouse.dim_uth_admission_id (
-	data_source char(4),
-	year int2,
-	uth_admission_id bigserial,
-	uth_member_id bigint,
-	admission_id_src text,
-	member_id_src text
-) with (appendonly=true, orientation=column)
-distributed by (uth_member_id)
-;
-
-alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_admission_id_uth_admission_id_seq cache 200;
-
-vacuum analyze data_warehouse.dim_uth_admission_id;
-
-**/
 
 

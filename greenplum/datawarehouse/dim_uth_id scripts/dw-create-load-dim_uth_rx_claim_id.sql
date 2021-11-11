@@ -293,31 +293,5 @@ where c.uth_rx_claim_id is null
 ;
 
 
---va
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
-
----//END SCRIPT 
-
-/*  Original Table Create
- * --!do not run unless table has to be recreated
-
-create table data_warehouse.dim_uth_rx_claim_id ( 
-			data_source char(4),	
-			year int2,
-			uth_rx_claim_id bigserial,
-			rx_claim_id_src text, 
-			uth_member_id int8, 			
-			member_id_src text
-) 
-with (appendonly=true, orientation = column)
-distributed by (uth_member_id);
-;
-
-alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq restart with 100000000;
-
-alter sequence data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq cache 200;
-
-
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 
 */

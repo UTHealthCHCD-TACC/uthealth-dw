@@ -16,6 +16,7 @@ declare
 ---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
 ---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';
 	my_data_source text := ' (''truv'') ';
+	med_return boolean;
 begin
 
 raise notice 'Creating dw_staging tables for: %', my_data_source;
@@ -38,6 +39,14 @@ drop table if exists dw_staging.pharmacy_claims;
 raise notice 'existing tables dropped from dw_staging';
 
 --(3) create tables in dw_staging 
+
+
+---these two functions build medicare and medicaid enrollment tables
+perform public.medicare_enrollment();
+
+perform public.medicaid_enrollment();
+
+raise notice 'medicare mbsf and medicaid enrollment built';
 
 --enrollment yearly
 create table dw_staging.member_enrollment_yearly 
