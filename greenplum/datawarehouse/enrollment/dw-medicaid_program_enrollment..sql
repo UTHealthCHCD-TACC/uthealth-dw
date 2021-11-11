@@ -15,7 +15,6 @@ CREATE OR REPLACE FUNCTION public.medicaid_enrollment()
 	VOLATILE
 AS $$
 	
-	
 
 BEGIN 
 
@@ -29,7 +28,9 @@ create table dw_staging.medicaid_program_enrollment
 
 raise notice 'medicaid_program_enrollment created';
 
+
 raise notice 'mdcd enrl load start';     
+
 
 --chip
 insert into dw_staging.medicaid_program_enrollment (year_fy, uth_member_id, elig_date, mco_program_nm)
@@ -40,9 +41,34 @@ from medicaid.chip_uth a
   join reference_tables.medicaid_lu_contract c 
      on trim(a.plan_cd) = trim(c.plan_cd);
 
+
 raise notice 'mdcd chip load complete';     
 
--- mdcd enrl
+    
+   
+alter function public.medicaid_enrollment() owner to uthealth_dev;
+grant all on function public.medicaid_enrollment() to uthealth_dev;
+
+raise notice 'ownership transferred to uthealth_dev';
+
+END 
+$$
+EXECUTE ON ANY;
+
+
+
+/* 
+---validate 
+vacuum analyze data_warehouse.medicaid_program_enrollment;
+
+select distinct year_fy, mco_program_nm from data_warehouse.medicaid_program_enrollment group by year_fy order by year_fy;
+
+*/
+
+
+/*
+
+-- Original table create
 
 raise notice 'mdcd enrl load start';      
    

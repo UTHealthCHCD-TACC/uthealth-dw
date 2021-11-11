@@ -11,10 +11,13 @@
  * ******************************************************************************************************
  *  wc002  || 8/31/2021 || consolidate medicare script
  * ******************************************************************************************************
- * 
+ *  wc003  || 11/09/2021 || run as one script
  * ****************************************************************************************************** */
 
+---runtime 11/9/21 - 90minutes
 
+do $$ 
+begin
 
 
 -- ***** Optum dod ***** 
@@ -33,6 +36,7 @@ where a.patid is not null
 and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
+raise notice 'optd loaded';
 
 ---cleanup optd 
 --11m59s
@@ -66,6 +70,8 @@ where a.patid is not null
 and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
+
+raise notice 'optz loaded';
 
 ---cleanup optz 
 --12m50s
@@ -115,6 +121,7 @@ and c.uth_claim_id is null
 group by 1, 2, 3, 4
 ;
 
+raise notice 'truven com loaded';
 
 --- ***** truven medicare, outpatient *****  
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
@@ -147,6 +154,8 @@ from truven.mdcrs a
 where a.enrolid is not null
 and c.uth_claim_id is null
 group by 1,2,3,4;
+
+raise notice 'truven mdcr* loaded';
 
 
 ---- ***** Medicare Texas***** 
@@ -205,6 +214,8 @@ union
 where c.uth_claim_id is null 
 ;
 
+raise notice 'medicare texas loaded';
+
 ---- ***** Medicare National***** 
 ---- These scripts check bcarrier, dme, hha, hospice, inpatient, outpatient, and snf tables
 ---wc002
@@ -261,6 +272,8 @@ union
 where c.uth_claim_id is null 
 ;
 
+raise notice 'medicare national loaded';
+
 ------------ ***** Medicaid ***** 
 --claims
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src , uth_member_id , data_year)
@@ -287,6 +300,10 @@ from medicaid.enc_proc a
     and c.claim_id_src = a.derv_enc 
 where c.uth_claim_id is null 
 ;
+
+raise notice 'medicaid loaded';
+
+end $$;
 
 --------------------------------------------------------------------------------------------------------------------------
 vacuum analyze  data_warehouse.dim_uth_claim_id;

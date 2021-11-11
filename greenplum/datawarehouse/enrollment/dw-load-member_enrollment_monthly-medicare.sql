@@ -18,62 +18,50 @@
  * ******************************************************************************************************
  *  jw001  || 9/20/2021 || Cut to its own script file from longer file
  *  ******************************************************************************************************
+ *  ******************************************************************************************************
+ *  wc004  || 11/06/2021 || moved table creation to new script. formatting. changed bus_cd mapping
+ *  ******************************************************************************************************
 */
 
 
 ----  // BEGIN SCRIPT 
-
----create working table in dw_staging 
-drop table if exists dw_staging.member_enrollment_monthly cascade ;
-
-create table dw_staging.member_enrollment_monthly  (
-	data_source char(4),
-	year int2, 
-	uth_member_id bigint,
-	month_year_id int4, 
-	consecutive_enrolled_months int4, 
-	gender_cd char(1), 
-	race_cd char(1),
-	age_derived int4, 
-	dob_derived date, 
-	state text, 
-	zip5 char(5), 
-	zip3 char(3), 
-	death_date date, 
-	plan_type text, 
-	bus_cd char(4), 
-	employee_status text, 
-	claim_created_flag boolean default false,
-	rx_coverage int2, 
-	fiscal_year int2,
-	row_id bigserial
-) distributed by (row_id);
-
-                                                                        
-alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
-
-
--------------insert existing records from data warehouse. except for this data source
-insert into dw_staging.member_enrollment_monthly 
-select * 
-from data_warehouse.member_enrollment_monthly 
-where data_source not in ('mcrt','mcrn')
-;
-
 vacuum analyze dw_staging.member_enrollment_monthly;
 
 
 -- *** Medicare  Texas--------------------------------------------------------------------------------------
 insert into dw_staging.member_enrollment_monthly (
-	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5 , zip3,
-	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage, fiscal_year , race_cd     
+	data_source, 
+	year, 
+	month_year_id, 
+	uth_member_id,
+	gender_cd, 
+	state, 
+	zip5, 
+	zip3,
+	age_derived, 
+	dob_derived, 
+	death_date,
+	plan_type, 
+	bus_cd, 
+	rx_coverage, 
+	fiscal_year, 
+	race_cd     
 	)		
-select 'mcrt',b.year_int, b.month_year_id, a.uth_member_id,
-	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
-	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, case when r.race_cd is null then '0' else r.race_cd end
+select 'mcrt',
+	   b.year_int, 
+	   b.month_year_id, 
+	   a.uth_member_id,
+	   c.gender_cd,
+	   case when e.state_cd is null then 'XX' else e.state_cd end, 
+	   m.zip_cd, 
+	   substring(m.zip_cd,1,3),
+	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, 
+	   bene_death_dt::date,
+	   ent.plan_type, 
+	   null as bus, 
+	   ptd.ptd_coverage, 
+	   dev.fiscal_year_func(m.year::int2), 
+	   case when r.race_cd is null then '0' else r.race_cd end
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text
@@ -137,15 +125,38 @@ from medicare_texas.mbsf_abcd_summary m
 
 -- Medicare National --------------------------------------------------------------------------------------
 insert into dw_staging.member_enrollment_monthly (
-	data_source, year, month_year_id, uth_member_id,
-	gender_cd, state, zip5, zip3,
-	age_derived, dob_derived, death_date,
-	plan_type, bus_cd, rx_coverage  ,fiscal_year , race_cd    
-	)	
-select 'mcrn',b.year_int, b.month_year_id, a.uth_member_id,
-	   c.gender_cd,case when e.state_cd is null then 'XX' else e.state_cd end, m.zip_cd, substring(m.zip_cd,1,3),
-	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, bene_death_dt::date,
-	   ent.plan_type, 'MDCR', ptd.ptd_coverage, m.year::int2, case when r.race_cd is null then '0' else r.race_cd end
+	data_source, 
+	year, 
+	month_year_id, 
+	uth_member_id,
+	gender_cd, 
+	state, 
+	zip5, 
+	zip3,
+	age_derived, 
+	dob_derived, 
+	death_date,
+	plan_type, 
+	bus_cd, 
+	rx_coverage, 
+	fiscal_year, 
+	race_cd     
+	)		
+select 'mcrt',
+	   b.year_int, 
+	   b.month_year_id, 
+	   a.uth_member_id,
+	   c.gender_cd,
+	   case when e.state_cd is null then 'XX' else e.state_cd end, 
+	   m.zip_cd, 
+	   substring(m.zip_cd,1,3),
+	   bene_enrollmt_ref_yr::int - extract( year from bene_birth_dt::date),bene_birth_dt::date, 
+	   bene_death_dt::date,
+	   ent.plan_type, 
+	   null as bus, 
+	   ptd.ptd_coverage, 
+	   dev.fiscal_year_func(m.year::int2), 
+	   case when r.race_cd is null then '0' else r.race_cd end
 from medicare_national.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
     on a.member_id_src = m.bene_id::text

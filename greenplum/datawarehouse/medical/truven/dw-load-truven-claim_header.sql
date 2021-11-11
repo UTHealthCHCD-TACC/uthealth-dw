@@ -13,60 +13,67 @@
  *  jw002   || 11/08/2021 || add provider variables, remove old _src variables
  * ******************************************************************************************************
  * */
-alter table dw_staging.claim_header add column fiscal_year int2;
 
---clean up if needed
-delete
-from dw_staging.claim_header
-where data_source = 'truv';
 
 --create copy with matching distribution key
 create table dev.truven_dim_uth_claim_id
-	with (
-			appendonly = true,
-			orientation = column,
-			compresstype = zlib
-			) as
-
-select *
-from data_warehouse.dim_uth_claim_id
-where data_source = 'truv' distributed by (member_id_src);
+with (	appendonly = true, orientation = column,compresstype = zlib) as
+	select *
+	from data_warehouse.dim_uth_claim_id
+	where data_source = 'truv' 
+distributed by (member_id_src);
 
 vacuum analyze dev.truven_dim_uth_claim_id;
 
-drop table dev.truven_dim_uth_claim_id;
 
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven commercial outpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, 
-total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year, to_date_of_service,
-bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+	data_source, 
+	year, 
+	uth_member_id,
+	uth_claim_id, 
+	claim_type, 
+	from_date_of_service,
+	to_date_of_service,
+	uth_admission_id, 
+	total_charge_amount, 
+	total_allowed_amount, 
+	total_paid_amount, 
+	fiscal_year, 
+	cost_factor_year,
+  bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
-select distinct on (uth_claim_id) 'truv',
-	extract(year from a.svcdate),
-	b.uth_claim_id,
-	b.uth_member_id,
-	a.svcdate,
-	a.facprof,
-	null as uth_admission_id,
-	null as total_charge_amount,
-	sum(a.pay) over (partition by b.uth_claim_id),
-	sum(a.netpay) over (partition by b.uth_claim_id),
-	dev.fiscal_year_func(a.svcdate) as fiscal_year,
-	null as cost_factor_year,
-	a.tsvcdat,
-	null as bill_provider, null as ref_provider, null as other_provider, 
-	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
+select distinct on (uth_claim_id) 
+    'truv',
+	  extract(year from a.svcdate),
+    b.uth_member_id,
+    b.uth_claim_id,
+    a.facprof,
+	  a.svcdate,
+	  a.tsvcdat,
+	  null as uth_admission_id,
+	  null as total_charge_amount,
+	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
+	  sum(a.netpay) over (partition by b.uth_claim_id) as paid_amt,
+	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
+	  null as cost_factor_year,
+  	null as bill_provider, null as ref_provider, null as other_provider, 
+	  null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaeo a
-join dev.truven_dim_uth_claim_id b
-	--  join data_warehouse.dim_uth_claim_id b
+join dev.truven_dim_uth_claim_id b   --  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
 	and b.data_source = 'truv'
 	and b.claim_id_src = a.msclmid::text
-where a.year = 2019;
+;
+
+
+select count(distinct msclmid), year from truven.ccaeo group by year order by year;
+
+
+select data_source, year, count(*) from dw_staging.claim_header ch group by 1,2 order by 1,2;
 
 ---------------------------------------------------------------------------------------------------
 -------------------------------- truven medicare outpatient ---------------------------------------
@@ -74,10 +81,20 @@ where a.year = 2019;
 --clm hdr truv mdcr outpatient
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id,
-total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
-cost_factor_year, to_date_of_service,
-bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+	data_source, 
+	year, 
+	uth_member_id,
+	uth_claim_id, 
+	claim_type, 
+	from_date_of_service,
+	to_date_of_service,
+	uth_admission_id, 
+	total_charge_amount, 
+	total_allowed_amount, 
+	total_paid_amount, 
+	fiscal_year, 
+	cost_factor_year,
+  bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -95,24 +112,31 @@ select distinct on (uth_claim_id) 'truv',
 	null as bill_provider, null as ref_provider, null as other_provider, 
 	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a
-join dev.truven_dim_uth_claim_id b
-	--  join data_warehouse.dim_uth_claim_id b
+join dev.truven_dim_uth_claim_id b --  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
 	and b.claim_id_src = a.msclmid::text
 	and b.data_source = 'truv'
-	and a.year between 2015
-		and 2019;
+;
 
-select facprof
-from truven.mdcro;
 
 -------------------------------- truven commercial inpatient--------------------------------------
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type, uth_admission_id, 
-total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, cost_factor_year, to_date_of_service,
-bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+	data_source, 
+	year, 
+	uth_member_id,
+	uth_claim_id, 
+	claim_type, 
+	from_date_of_service,
+	to_date_of_service,
+	uth_admission_id, 
+	total_charge_amount, 
+	total_allowed_amount, 
+	total_paid_amount, 
+	fiscal_year, 
+	cost_factor_year,
+  bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -130,8 +154,7 @@ select distinct on (uth_claim_id) 'truv',
 	null as bill_provider, null as ref_provider, null as other_provider, 
 	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a
-join dev.truven_dim_uth_claim_id b
-	--  join data_warehouse.dim_uth_claim_id b
+join dev.truven_dim_uth_claim_id b--  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
 	and b.claim_id_src = a.msclmid::text
 	and b.data_source = 'truv';
@@ -140,10 +163,20 @@ join dev.truven_dim_uth_claim_id b
 ---------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_header
 (
-data_source, year, uth_claim_id, uth_member_id, from_date_of_service, claim_type,uth_admission_id, 
-total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
-cost_factor_year, to_date_of_service,
-bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+	data_source, 
+	year, 
+	uth_member_id,
+	uth_claim_id, 
+	claim_type, 
+	from_date_of_service,
+	to_date_of_service,
+	uth_admission_id, 
+	total_charge_amount, 
+	total_allowed_amount, 
+	total_paid_amount, 
+	fiscal_year, 
+	cost_factor_year,
+  bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 'truv',
 	extract(year from a.svcdate),
@@ -161,86 +194,10 @@ select distinct on (uth_claim_id) 'truv',
 	null as bill_provider, null as ref_provider, null as other_provider, 
 	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcrs a
-join dev.truven_dim_uth_claim_id b
-	--  join data_warehouse.dim_uth_claim_id b
+join dev.truven_dim_uth_claim_id b	--  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
 	and b.claim_id_src = a.msclmid::text
 	and b.data_source = 'truv';
 
 vacuum analyze dw_staging.claim_header;
 
-select count(*),
-	year --count(distinct uth_claim_id ), table_id_src, year
-from dw_staging.claim_header
-where data_source = 'truv'
-group by year --table_id_src , year
-order by year -- table_id_src , year
-	;
-
----claim load clean
-drop table dev.truven_dim_uth_claim_id;
-
-----this will identify duplicate records from claim header if needed
-drop table dev.wc_temp_truv_hdr;
-
-select uth_claim_id,
-	year
-into dev.wc_temp_truv_hdr
-from (
-	select count(*) as rc,
-		uth_claim_id,
-		year
-	from dw_staging.claim_header
-	where data_source = 'truv'
-	group by uth_claim_id,
-		year
-	) a
-where rc > 1;
-
-drop table quarantine.duplicate_truv_claims
-
-select * -- uth_claim_id, table_id_src , uth_member_id
-	--into quarantine.duplicate_truv_claims
-from dw_staging.claim_header
-where uth_claim_id in (
-		select uth_claim_id
-		from dev.wc_temp_truv_hdr
-		)
-order by uth_claim_id
-
-select *
-from data_warehouse.claim_detail cd
-where uth_claim_id = 15768744356
-
-select count(*),
-	table_id_src
-from quarantine.duplicate_truv_claims
-group by table_id_src
-
-delete
-from dw_staging.claim_header
-where uth_claim_id in (
-		select uth_claim_id
-		from quarantine.duplicate_truv_claims
-		);
-
-delete
-from data_warehouse.claim_detail
-where uth_claim_id in (
-		select uth_claim_id
-		from quarantine.duplicate_truv_claims
-		);
-
-delete
-from data_warehouse.claim_diag
-where uth_claim_id in (
-		select uth_claim_id
-		from quarantine.duplicate_truv_claims
-		);
-
-delete
-from data_warehouse.claim_icd_proc
-where uth_claim_id in (
-		select uth_claim_id
-		from quarantine.duplicate_truv_claims
-		);
