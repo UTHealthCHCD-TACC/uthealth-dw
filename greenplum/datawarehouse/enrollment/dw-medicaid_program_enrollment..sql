@@ -44,32 +44,6 @@ from medicaid.chip_uth a
 
 raise notice 'mdcd chip load complete';     
 
-    
-   
-alter function public.medicaid_enrollment() owner to uthealth_dev;
-grant all on function public.medicaid_enrollment() to uthealth_dev;
-
-raise notice 'ownership transferred to uthealth_dev';
-
-END 
-$$
-EXECUTE ON ANY;
-
-
-
-/* 
----validate 
-vacuum analyze data_warehouse.medicaid_program_enrollment;
-
-select distinct year_fy, mco_program_nm from data_warehouse.medicaid_program_enrollment group by year_fy order by year_fy;
-
-*/
-
-
-/*
-
--- Original table create
-
 raise notice 'mdcd enrl load start';      
    
 insert into dw_staging.medicaid_program_enrollment (
