@@ -27,9 +27,9 @@
 
 
 ----  // BEGIN SCRIPT 
-vacuum analyze dw_staging.member_enrollment_monthly;
+analyze dw_staging.member_enrollment_monthly;
 
-
+select distinct data_source from dw_staging.member_enrollment_monthly;
 
 -- Truven Commercial ----------------------------------------------------------------------------
 -- 11/7/21 runtime 53min
@@ -147,7 +147,8 @@ from truven.mdcrt m
 ;
 ---------------------------------------------------------------------------------------------------
 
-vacuum analyze dw_staging.member_enrollment_monthly;
+select distinct data_source, bus_cd from dw_staging.member_enrollment_monthly;
+
 
 --validate
 select count(*), data_source, year 

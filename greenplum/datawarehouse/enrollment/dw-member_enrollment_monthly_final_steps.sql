@@ -9,11 +9,13 @@
  * ******************************************************************************************************
  *  wc002  || 9/30/2021 || add compression level to final table
  *  ******************************************************************************************************
+ *  wc003  || 11/11/2021 || write as one script
+ *  ******************************************************************************************************
 */
 
 
----- BEGIN SCRIPT -----
-
+do $$ 
+begin
 
 ---- get row id of duplicate rows
 drop table if exists  dev.temp_dupe_enrollment_rows;
@@ -35,7 +37,8 @@ delete from dw_staging.member_enrollment_monthly a
   using dev.temp_dupe_enrollment_rows b 
    where a.row_id = b.row_id 
 ; 
- 	
+
+raise notice 'duplicate records deleted';
 		
 ---**script to build consecutive enrolled months	  10min	
 drop table if exists dev.temp_consec_enrollment;
@@ -63,7 +66,7 @@ from dev.temp_consec_enrollment b
 where a.row_id = b.row_id
 ;
 
-select * from dw_staging.member_enrollment_monthly mem where data_source = 'mcrt' and year = 2020;
+raise notice 'consecutive enrollment populated';
 
 ------------------------------------------------------------
 --**cleanup
@@ -86,17 +89,10 @@ alter table dw_staging.member_enrollment_monthly_new rename to member_enrollment
 --------/
 
 --finalize
-vacuum analyze dw_staging.member_enrollment_monthly;
+analyze dw_staging.member_enrollment_monthly;
+
+alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
+
+end $$;
 
 
-
----validate
-select data_source, year, count(*)
-from dw_staging.member_enrollment_monthly
-group by data_source, year
-order by data_source, year
-;
-
-
-
-----END SCRIPT-------------------------------------------------------

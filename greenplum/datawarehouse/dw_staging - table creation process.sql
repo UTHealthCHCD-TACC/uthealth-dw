@@ -207,12 +207,12 @@ execute 'insert into dw_staging.claim_detail
 
 raise notice 'claim_detail done';
 
----(5) drop existing tables
+---(5) 
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
 alter table dw_staging.member_enrollment_yearly owner to uthealth_dev;
 
 alter table dw_staging.medicaid_program_enrollment owner to uthealth_dev;
-alter table dw_staging.medicare_mbsf_abcd_summary owner to uthealth_dev;
+alter table dw_staging.medicare_mbsf_abcd_enrollment owner to uthealth_dev;
 
 alter table dw_staging.claim_header owner to uthealth_dev;
 alter table dw_staging.claim_detail owner to uthealth_dev;

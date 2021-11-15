@@ -103,25 +103,15 @@ insert into conditions.diagnosis_work_table
 		   join cond_cte cte
          on d.diag_cd = cte.cd_value
         ;
-       
---
-do $$
-begin
-       
-       select distinct diag_cd 
-       into dev.wc_all_diagnosis_codes
-       from data_warehouse.claim_diag cd 
-       ;
-      
-      raise notice 'done';
-      
-   end $$;   
-       
---
-do $$
-begin
---dx like
-with cond_cte as 
+
+
+create table dev.wc_all_diagnosis_codes as 
+select distinct diag_cd 
+from data_warehouse.claim_diag cd 
+;       
+  
+
+ with cond_cte as 
 (
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a
@@ -129,65 +119,95 @@ with cond_cte as
  		  on a.condition_cd = b.condition_cd 
 	where position('%' in a.cd_value) > 0
 	  and a.cd_type in ('ICD-10','ICD-9')
-) 		
-insert into conditions.diagnosis_work_table
-select d.data_source, d.year, d.uth_member_id, c.condition_cd, 'DX', c.carry_forward
-from data_warehouse.claim_diag d 
+) 	
+select d.diag_cd, c.condition_cd, c.carry_forward
+   into conditions.diagnosis_codes_list
+from dev.wc_all_diagnosis_codes d 
   join cond_cte c 
     on d.diag_cd like c.cd_value
 ;      
-
-raise notice 'dx like complete';
        
-end $$;    
+--dx wildcard
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'DX', carry_forward
+		from data_warehouse.claim_diag d 
+		   join conditions.diagnosis_codes_list c
+         on d.diag_cd = c.diag_cd
+        ;
+              
        
-       
-
+---icd proc exact 
+ with cond_cte as 
+(
 	select a.cd_value, a.condition_cd, b.carry_forward 
 	from conditions.codeset a
 		join  conditions.condition_desc b
  		  on a.condition_cd = b.condition_cd 
- 		 and additional_logic_flag = '0' 
 	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('ICD10-CM','ICD9-CM')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'proc', carry_forward
+		from data_warehouse.claim_icd_proc d 
+		   join cond_cte cte
+         on d.proc_cd  = cte.cd_value
+        ;
 
-
-
-
-
-
---diag wildcards
-with cond_cte as 
-( 
+       
+--cpt hcpcs
+ with cond_cte as 
+(
 	select a.cd_value, a.condition_cd, b.carry_forward 
-	from conditions.codeset a 
-  join  conditions.condition_desc b 
-     on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) > 0 
-)
-insert into conditions.diagnosis_work_table
-select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
-from data_warehouse.claim_diag d 
-  join cond_cte c 
-    on d.diag_cd like c.cd_value
-where condition_cd not in ('TRAU','CA','LBPREG')
-;
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('CPT')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'cpt', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.cpt_hcpcs_cd = cte.cd_value
+        ;    
 
-
-	select count(*), a.condition_cd --a.cd_value, a.condition_cd, b.carry_forward 
-	from conditions.codeset a 
-  join  conditions.condition_desc b 
-     on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) > 0 
-group by a.condition_cd order by a.condition_cd ;
-
+--rev
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('REV')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'rev', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.revenue_cd = cte.cd_value
+        ;   
+       
+--drg
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('DRG')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'drg', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.drg_cd = cte.cd_value
+        ;   
+       
+       
 -----------------------------
-vacuum analyze conditions.diagnosis_work_table;
-
-
-select distinct condition_cd from conditions.diagnosis_work_table;
-
-select * 
-from conditions.condition_desc;
+analyze conditions.diagnosis_work_table;
 
 
 
@@ -197,24 +217,20 @@ from conditions.condition_desc;
 ---consolidate diagwork into condition 
 drop table conditions.person_prof ;
 
-select distinct data_source, year, uth_member_id, condition_cd, carry_forward
-into conditions.person_prof 
-from conditions.diagnosis_work_table;
+create table conditions.person_prof 
+with (appendonly=true, orientation=column, compresstype=zlib) as
+	select distinct data_source, year, uth_member_id, condition_cd, carry_forward
+	from conditions.diagnosis_work_table
+distributed by (uth_member_id); 
+
 
 
 analyze conditions.person_prof ;
 
-select distinct condition_cd
+select * 
 from conditions.person_prof 
-where carry_forward = '0'
-;
 
 
-select distinct condition_cd , carry_forward
-from conditions.person_prof 
-;
-
-select * from conditions.member_enrollment_yearly;
 
 --auto_immune_diseases aimm 1 
 with carry_cte as (select min(year) as yr, uth_member_id, data_source 

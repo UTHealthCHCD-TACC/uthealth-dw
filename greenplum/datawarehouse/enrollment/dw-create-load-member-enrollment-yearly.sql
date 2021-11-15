@@ -12,9 +12,9 @@
  * ******************************************************************************************************
  * wc002  || 9/09/2021 || move to dw_staging
  * ******************************************************************************************************
+ * wc003  || 11/11/2021 || run as single script
+ * ******************************************************************************************************
  */
-
-alter table dw_staging.member_enrollment_yearly add column family_id text, add column behavioral_coverage char(1);
 
 
 
@@ -160,12 +160,9 @@ raise notice 'total_enrolled_months updated';
 	
 	end loop;
 
+analyze dw_staging.member_enrollment_yearly;
 
 end $$;
 
---finalize
-vacuum analyze dw_staging.member_enrollment_yearly;
 
-
-------------------------- END SCRIPT 
 
