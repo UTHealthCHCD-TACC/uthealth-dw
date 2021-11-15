@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  *  wcc001  || 10/05/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
 
 
@@ -41,7 +43,8 @@ select 'mcrt', extract(year from a.clm_thru_dt::date) , b.uth_member_id, b.uth_c
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
 		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
-		null, a.year::int2
+		null, 
+		dev.fiscal_year_func(a.clm_thru_dt::date)
 	from medicare_texas.inpatient_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 
@@ -65,7 +68,8 @@ select 'mcrt', extract(year from a.clm_thru_dt::date) , b.uth_member_id, b.uth_c
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
 		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
-		null, a.year::int2
+		null, 
+		dev.fiscal_year_func(a.clm_thru_dt::date)
 	from medicare_texas.outpatient_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 
@@ -87,7 +91,8 @@ select 'mcrt', extract(year from a.clm_thru_dt::date) , b.uth_member_id, b.uth_c
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
 		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
-		null, a.year::int2
+		null, 
+		dev.fiscal_year_func(a.clm_thru_dt::date)
 	from medicare_texas.snf_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 

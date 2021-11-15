@@ -3,7 +3,7 @@
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   data_warehouse.member_enrollment_monthly Column QA ------------------
+--------   dw_staging.member_enrollment_monthly Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -102,7 +102,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -142,7 +142,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -163,7 +163,7 @@ as (
     				a."year", 
     				a.data_source, 
     				b.uth_member_id as dim_id
-    from data_warehouse.member_enrollment_monthly a
+    from dw_staging.member_enrollment_monthly a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.monthly_enrollment_column_checks (
@@ -252,7 +252,7 @@ drop table if exists dev.qa_temp_ids_src;
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
-    from data_warehouse.member_enrollment_monthly a
+    from dw_staging.member_enrollment_monthly a
     join data_warehouse.dim_uth_member_id b 
         on a.uth_member_id = b.uth_member_id
     left outer join dev.qa_temp_ids_src c 
@@ -327,7 +327,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 group by data_source, year
 	) a;
 
@@ -367,7 +367,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 group by data_source, year
 	) a;
 
@@ -410,7 +410,7 @@ drop table if exists dev.qa_temp_all_states;
 with state_table
 as (
 	select a.*, b.state as state_check
-	from data_warehouse.member_enrollment_monthly a
+	from dw_staging.member_enrollment_monthly a
 	left join dev.qa_temp_all_states b on a.state = b.state
 	)
 /*insert into qa_reporting.monthly_enrollment_column_checks (
@@ -482,7 +482,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'mdcd', 'optz', 'mcrt')
     group by data_source, year
 	) a;
@@ -518,7 +518,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('truv', 'optd')
     group by data_source, year
 	) a;
@@ -558,7 +558,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'truv', 'mdcd', 'optz', 'mcrt')
     group by data_source, year
 	) a;
@@ -594,7 +594,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source = 'optd'
     group by data_source, year
 	) a;
@@ -638,7 +638,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -681,7 +681,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -721,7 +721,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'mcrt', 'optd')
     group by data_source, year
 	) a;
@@ -758,7 +758,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('optz', 'mdcd', 'truv')
     group by data_source, year
 	) a;
@@ -799,7 +799,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('optz', 'optd')
     group by data_source, year
 	) a;
@@ -835,7 +835,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('truv')
     group by data_source, year
 	) a;
@@ -872,7 +872,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'mcrt')
     group by data_source, year
 	) a;
@@ -907,7 +907,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mdcd')
     group by data_source, year
 	) a;
@@ -950,7 +950,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	--where data_source in ('mcrn','mcrt')
     group by data_source, year
 	) a;
@@ -991,7 +991,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source = 'truv'
     group by data_source, year
 	) a;
@@ -1026,7 +1026,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'optd', 'mdcd', 'optz', 'mcrt')
     group by data_source, year
 	) a;
@@ -1075,7 +1075,7 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from data_warehouse.member_enrollment_monthly
+    from dw_staging.member_enrollment_monthly
     group by data_source, year
     ) a;	
 	
@@ -1131,7 +1131,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -1171,7 +1171,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
     group by data_source, year
 	) a;
 
@@ -1211,7 +1211,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('mcrn', 'optd', 'mdcd', 'mcrt')
     group by data_source, year
 	) a;
@@ -1247,7 +1247,7 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from data_warehouse.member_enrollment_monthly
+	from dw_staging.member_enrollment_monthly
 	where data_source in ('optz', 'truv')
     group by data_source, year
 	) a;

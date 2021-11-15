@@ -9,9 +9,11 @@
 
 ---***adding conditions to enrollment***
 
+drop table if exists conditions.member_enrollment_yearly;
+
 --copy of table
 create table conditions.member_enrollment_yearly
-with (appendoptimized=false)
+with (appendoptimized=true, orientation=column, compresstype=zlib)
 as
 select * 
 from data_warehouse.member_enrollment_yearly
@@ -19,88 +21,216 @@ distributed by (uth_member_id)
 ;
 
 
-select condition_cd, carry_forward, condition_desc , replace(condition_desc,' ','_') as colname
-into dev.wc_cond_desc_temp
-from conditions.condition_desc 
-where diag_flag = '1' and additional_logic_flag = '0'
-and icd_proc_flag is null and drg_flag is null and rev_flag is null and ahfs_flag is null and cpt_hcpcs_flag is null 
-order by condition_cd;
+vacuum analyze conditions.member_enrollment_yearly ;
 
 
----add  conditions using colname result above 
-alter table conditions.member_enrollment_yearly add column Trauma_and_Traumatic_Amputation char(1) default '0';
+---function to create one column in yearly enrollment for each condition 
+create or replace function conditions.cond_columns(_schm text, _tbl text)
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+as $$ 
+declare
+	r_cond_cd text;
+begin
+	
+for r_cond_cd 
+	 in 
+		select condition_cd 
+		from conditions.condition_desc cd 		
+	loop 	
+		if exists ( select 1 
+	                from information_schema.columns 
+	                where table_schema = _schm
+	               	  and table_name = _tbl
+	                  and column_name = r_cond_cd)
+	        then
+	        raise notice 'column % already exists', r_cond_cd;	
+		else 
+			
+		   execute format ('alter table %s.%s add column %s char(1)', _schm, _tbl, r_cond_cd);
+		   raise notice 'added:  %.% add column % ', _schm, _tbl, r_cond_cd;
+		end if;
+	end loop;
+	
+end 
+$$ EXECUTE ON ANY;
+
+---run function 
+select conditions.cond_columns('conditions','member_enrollment_yearly');
+
+---verify
+select * from conditions.member_enrollment_yearly;
 
 
-select * from conditions.member_enrollment_yearly
+-----*******************************************************************************************************************************************
+--** function to populate diagnosis conditions
+--------------------
 
-
-
-----load 
-select * 
-from conditions.codeset a 
-   join  dev.wc_cond_desc_temp b 
-     on a.condition_cd = b.condition_cd 
-;
-
-
-
+---drop and rebuild table__-------------------------------*
 drop table if exists conditions.diagnosis_work_table;
 
---diag, no wildcards
-with cond_cte as 
-( 
-	select a.cd_value, a.condition_cd, b.carry_forward 
-	from conditions.codeset a 
-   join  dev.wc_cond_desc_temp b 
-     on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) = 0   
+create table conditions.diagnosis_work_table 
+(
+	data_source char(4),
+	year int2, 
+	uth_member_id bigint, 
+	condition_cd text, 
+	cd_type text,
+	carry_forward char(1)
 )
-select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
- into conditions.diagnosis_work_table
-from data_warehouse.claim_diag d 
-  join cond_cte c 
-    on c.cd_value = d.diag_cd 
-;
+with (appendonly=true, orientation=column, compresstype=zlib) 
+distributed by (uth_member_id); 
+----------------------------------------------------------*
 
---diag wildcards
+--ICD10-CM = icd procedure code 
+--ICD-10 = diagnosis codes
+--CPT = cpt/hcpcs
+
+--dx exact
 with cond_cte as 
-( 
+(
 	select a.cd_value, a.condition_cd, b.carry_forward 
-	from conditions.codeset a 
-  join  dev.wc_cond_desc_temp b 
-     on a.condition_cd = b.condition_cd 
-   and position('%' in a.cd_value) > 0 
-)
-insert into conditions.diagnosis_work_table
-select d.data_source, d.year, d.uth_member_id, c.condition_cd, c.carry_forward
-from data_warehouse.claim_diag d 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('ICD-10','ICD-9')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'DX', carry_forward
+		from data_warehouse.claim_diag d 
+		   join cond_cte cte
+         on d.diag_cd = cte.cd_value
+        ;
+
+
+create table dev.wc_all_diagnosis_codes as 
+select distinct diag_cd 
+from data_warehouse.claim_diag cd 
+;       
+  
+
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) > 0
+	  and a.cd_type in ('ICD-10','ICD-9')
+) 	
+select d.diag_cd, c.condition_cd, c.carry_forward
+   into conditions.diagnosis_codes_list
+from dev.wc_all_diagnosis_codes d 
   join cond_cte c 
     on d.diag_cd like c.cd_value
-;
+;      
+       
+--dx wildcard
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'DX', carry_forward
+		from data_warehouse.claim_diag d 
+		   join conditions.diagnosis_codes_list c
+         on d.diag_cd = c.diag_cd
+        ;
+              
+       
+---icd proc exact 
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('ICD10-CM','ICD9-CM')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'proc', carry_forward
+		from data_warehouse.claim_icd_proc d 
+		   join cond_cte cte
+         on d.proc_cd  = cte.cd_value
+        ;
 
-analyze conditions.diagnosis_work_table
+       
+--cpt hcpcs
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('CPT')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'cpt', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.cpt_hcpcs_cd = cte.cd_value
+        ;    
+
+--rev
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('REV')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'rev', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.revenue_cd = cte.cd_value
+        ;   
+       
+--drg
+ with cond_cte as 
+(
+	select a.cd_value, a.condition_cd, b.carry_forward 
+	from conditions.codeset a
+		join  conditions.condition_desc b
+ 		  on a.condition_cd = b.condition_cd 
+	where position('%' in a.cd_value) = 0
+	  and a.cd_type in ('DRG')
+) 		
+insert into conditions.diagnosis_work_table 
+		select d.data_source, d.year, d.uth_member_id, condition_cd, 'drg', carry_forward
+		from data_warehouse.claim_detail d 
+		   join cond_cte cte
+         on d.drg_cd = cte.cd_value
+        ;   
+       
+       
+-----------------------------
+analyze conditions.diagnosis_work_table;
+
+
+
+----------------------------------------------------------------------------------------------------------------
+
 
 ---consolidate diagwork into condition 
 drop table conditions.person_prof ;
 
-select distinct data_source, year, uth_member_id, condition_cd, carry_forward
-into conditions.person_prof 
-from conditions.diagnosis_work_table;
+create table conditions.person_prof 
+with (appendonly=true, orientation=column, compresstype=zlib) as
+	select distinct data_source, year, uth_member_id, condition_cd, carry_forward
+	from conditions.diagnosis_work_table
+distributed by (uth_member_id); 
+
 
 
 analyze conditions.person_prof ;
 
-select distinct condition_cd
+select * 
 from conditions.person_prof 
-where carry_forward = '0'
-;
 
 
-select distinct condition_cd , carry_forward
-from conditions.person_prof 
-;
-
-select * from conditions.member_enrollment_yearly;
 
 --auto_immune_diseases aimm 1 
 with carry_cte as (select min(year) as yr, uth_member_id, data_source 

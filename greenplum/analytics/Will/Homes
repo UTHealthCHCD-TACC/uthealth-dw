@@ -1,0 +1,73 @@
+
+--each baseline and follow up has 314 records in the data dictionary 
+-- 6 control columns 
+--308 columns and 7 days = 44 columns per encounter 
+
+
+
+
+alc13
+alcst13
+benzoname13
+hlsd13
+illtype13
+namebup13
+nameother13
+namepain13
+rotherbenzo13
+rotherbup13
+rothercoc13
+rothercrack13
+rotherfent13
+rothergfbl13
+rotherheroin13
+rotherkush13
+rothermtham13
+rotherother13
+rotherpain13
+rotherpot13
+rotherspdbl13
+rotherstim13
+routebenzo13
+routebup13
+routecocaine13
+routecrack13
+routefent13
+routegfbl13
+routeheroin13
+routekush13
+routemeth13
+routemetother13
+routemtham13
+routeother13
+routepain13
+routepot13
+routesoda13
+routespdbl13
+routestim13
+routhersoda13
+rxstimname13
+rxtype13
+use13
+winest13
+
+
+select *
+from Homes.dbo.HOMESTLFB_Baseline06_T01 
+where record_id = '1'
+
+select * 
+from Homes.dbo.HOMESTLFB_Baseline13to7_T01
+where record_id = '1'
+
+select first_name 
+       ,last_name 
+       ,cif_007_rh --dob
+       ,ssn_rh 
+       ,cif_008a_rh --address1 
+       ,cif_008b_rh --address2
+       ,cif_008c_rh --city 
+       ,cif_008d_rh --zip 
+       ,cif_008e_rh --state
+from homes.dbo.HOMESNewFinal_PAT1 
+where id = '4'

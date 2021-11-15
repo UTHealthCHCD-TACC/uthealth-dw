@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  *  wcc001  || 9/20/2021 || add comment block. migrate to dw_staging load 
  * ****************************************************************************************************** 
+ *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
+ * ****************************************************************************************************** 
  * */
 
 
@@ -32,7 +34,8 @@ insert into dw_staging.claim_diag (
         from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year
 ) 
 select 'optd', extract(year from a.fst_dt) as yr, b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.diag, a.diag_position, a.icd_flag, a.poa, a."year" 
+       a.fst_dt, a.diag, a.diag_position, a.icd_flag, a.poa,
+       dev.fiscal_year_func(a.fst_dt)
 from optum_dod.diagnostic a 
   join dw_staging.optd_uth_claim_id b  
     on a.member_id_src = b.member_id_src
@@ -48,7 +51,8 @@ insert into dw_staging.claim_diag (
         from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year
 ) 
 select 'optz', extract(year from a.fst_dt) as yr, b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.diag, a.diag_position, a.icd_flag, a.poa, a."year" 
+       a.fst_dt, a.diag, a.diag_position, a.icd_flag, a.poa,
+       dev.fiscal_year_func(a.fst_dt)
 from optum_zip.diagnostic a 
   join dw_staging.optz_uth_claim_id b  
     on a.member_id_src = b.member_id_src

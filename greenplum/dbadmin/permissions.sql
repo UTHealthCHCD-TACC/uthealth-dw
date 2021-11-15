@@ -162,6 +162,8 @@ grant uthealth_analyst to uthealth_dev;
 
 grant uthealth_dev to jwozny;
 
+grant uthealth_dev to gmunoz1;
+
 
 --***********************************************************************************************************
 
@@ -185,6 +187,20 @@ grant all on all tables in schema reference_tables to uthealth_dev;
 grant all privileges on all sequences in schema reference_tables to uthealth_dev; 
 alter default privileges in schema reference_tables grant all on tables to uthealth_dev; 
 
+
+
+---conditions (all access)
+grant all on schema conditions to uthealth_dev; 
+grant all on all tables in schema conditions to uthealth_dev; 
+grant all privileges on all sequences in schema conditions to uthealth_dev; 
+alter default privileges in schema conditions grant all on tables to uthealth_dev; 
+
+
+---public (all access)
+grant all on schema public to uthealth_dev; 
+grant all on all tables in schema public to uthealth_dev; 
+grant all privileges on all sequences in schema public to uthealth_dev; 
+alter default privileges in schema public grant all on tables to uthealth_dev; 
 
 
 /*

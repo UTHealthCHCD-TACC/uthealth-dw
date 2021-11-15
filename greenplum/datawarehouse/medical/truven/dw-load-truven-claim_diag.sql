@@ -1,5 +1,14 @@
---- claim diag load for truven
---- jw001 9/24/2021 - need to put claim sequence number in insert and select statements. 
+
+/* ******************************************************************************************************
+ *  claim diag load for truven
+ * ******************************************************************************************************
+*   jw001   || 9/24/2021  || need to put claim sequence number in insert and select statements. 
+ * ******************************************************************************************************
+ *  gmunoz  || 10/29/2021 || added fiscal year logic with function dev.fiscal_year_func
+ * ******************************************************************************************************
+ *  gmunoz  || 11/05/2021 || removed the data_year column in insert on all four inserts
+ * ******************************************************************************************************
+ * */
 
 delete from data_warehouse.claim_diag where data_source = 'truv' and data_year = 2019;
 
@@ -16,12 +25,13 @@ distributed by(member_id_src);
 
 -------------------------------- truven commercial outpatient --------------------------------------
 insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number
-									  ,date, diag_cd, diag_position, icd_type, data_year)  								        						              
+									  ,date, diag_cd, diag_position, icd_type, fiscal_year)  								        						              
 select  'truv', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service 
 	    ,unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd
-		,unnest(array[1,2,3,4]) as dx_pos 
-		,a.dxver, a.year as data_yr  
+		,unnest(array[1,2,3,4]) as dx_pos,
+    a.dxver, 
+    dev.fiscal_year_func(a.svcdate)
 from truven.ccaeo a 
   join dev.wc_truven_claim_detail d 
     on d.member_id_src = a.enrolid::text 
@@ -34,12 +44,12 @@ where a.year = 2019
   
 -------------------------------- truven medicare outpatient -------------------------------------- 
 insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number
-									  ,date, diag_cd, diag_position, icd_type, data_year) 								        						              
+									  ,date, diag_cd, diag_position, icd_type, fiscal_year) 								        						              
 select  'truv', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service 
 	    ,unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd
 		,unnest(array[1,2,3,4]) as dx_pos 
-		,a.dxver , a.year as data_yr 
+		,a.dxver , dev.fiscal_year_func(a.fst_dt)
 from truven.mdcro a 
   join dev.wc_truven_claim_detail d 
     on d.member_id_src = a.enrolid::text 
@@ -53,12 +63,13 @@ from truven.mdcro a
   
  -------------------------------- truven commercial inpatient ------
 insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number
-									  ,date, diag_cd, diag_position, icd_type, data_year)  								        						              
+									  ,date, diag_cd, diag_position, icd_type, fiscal_year)  								        						              
 select  'truv', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service 
 	    ,unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd
-		,unnest(array[1,2,3,4]) as dx_pos 
-		,a.dxver , a.year as data_yr 
+		,unnest(array[1,2,3,4]) as dx_pos,
+    a.dxver, 
+    dev.fiscal_year_func(a.fst_dt)
 from truven.ccaes a 
   join dev.wc_truven_claim_detail d 
     on d.member_id_src = a.enrolid::text 
@@ -71,12 +82,13 @@ from truven.ccaes a
   
 -------------------------------- truven medicare inpatient ------
 insert into data_warehouse.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number
-									  ,date, diag_cd, diag_position, icd_type, data_year)  								        						              
+									  ,date, diag_cd, diag_position, icd_type, fiscal_year)  								        						              
 select  'truv', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service 
 	    ,unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd
 		,unnest(array[1,2,3,4]) as dx_pos 
-		,a.dxver , a.year as data_yr 
+		,a.dxver,
+    dev.fiscal_year_func(a.from_date_of_service)
 from truven.mdcrs a
   join dev.wc_truven_claim_detail d 
     on d.member_id_src = a.enrolid::text 
