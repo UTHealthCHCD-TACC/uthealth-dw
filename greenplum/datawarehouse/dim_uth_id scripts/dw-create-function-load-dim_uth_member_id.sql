@@ -12,16 +12,24 @@
  * ******************************************************************************************************
  *  wc003  || 11/09/2021 || merge to single script
  * ******************************************************************************************************
+ *  jw001  || 11/12/2021 || wrap in function
+ * ******************************************************************************************************
  */
 
 ------ load dim_uth_member_id------------------------------------------------
 
+CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_member_id()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+AS $$
 
------------- /  BEGIN SCRIPT
---- approx runtime 20min 11/09/21
-
-do $$ 
 begin
+	
+------------ /  BEGIN SCRIPT
+	
+raise notice 'begin script';
+raise notice 'load optd begin';
 
 -- ***** Optum DoD ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -37,6 +45,9 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+raise notice 'load optd finished';
+raise notice 'clean optd begin';
+
 ---cleanup optd records that are no longer in raw data 
 delete from data_warehouse.dim_uth_member_id mem 
     using( 
@@ -51,6 +62,8 @@ where mem.uth_member_id = del.uth_member_id
   and mem.claim_created_id is false
 ;
 
+raise notice 'clean optd finished';
+raise notice 'load optz begin';
 
 --- ***** Optum Zip  ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -66,6 +79,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
+raise notice 'load optz finished';
+raise notice 'clean zip begin';
 
 ---cleanup optz records from dim table that are no longer in raw membership table
 delete from data_warehouse.dim_uth_member_id mem 
@@ -81,7 +96,8 @@ where mem.uth_member_id = del.uth_member_id
   and mem.claim_created_id is false
 ;
 
-
+raise notice 'clean zip finished';
+raise notice 'load truven begin';
 
 ---***** Truven ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -100,6 +116,9 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member 
 ;
+
+raise notice 'load truven finished';
+raise notice 'clean truv begin';
 
 ---cleanup truven 
 delete from data_warehouse.dim_uth_member_id mem 
@@ -121,6 +140,8 @@ where a.data_source = 'truv'
 where mem.uth_member_id = del.uth_member_id 
 ;
 
+raise notice 'clean truv finished';
+raise notice 'load mcrt begin';
 
 
 --- ***** Medicare Texas ***** 
@@ -137,7 +158,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
-
+raise notice 'load mcrt finished';
+raise notice 'load mcrn begin';
 
 --- ***** Medicare National ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -153,8 +175,11 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+raise notice 'load mcrn finished';
 
 --- ***** Medicaid ***** 
+
+raise notice 'load mdcd begin';
 
 ---medicaid enrl
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
@@ -170,6 +195,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+raise notice 'load mdcd finished';
+raise notice 'load chip begin';
 
 --medicaid chip
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
@@ -185,6 +212,12 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member
 ;
 
+raise notice 'load chip finished';
+raise notice 'load id finished';
+raise notice 'analyze dim_uth_member_id';
+
+analyze data_warehouse.dim_uth_member_id;
+
 ------   
 
 
@@ -193,6 +226,8 @@ from cte_distinct_member
 --// wcc002 - claim created ids 
 ---*******************************************************
 
+raise notice 'claim created begin';
+raise notice 'claim created optd begin';
 
 --Optum DoD claim created wcc002 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id, claim_created_id)
@@ -208,7 +243,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member 
 ;
 
-
+raise notice 'claim created optd finished';
+raise notice 'claim created optz begin';
 
 --Optum zip claim created wcc002
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id, claim_created_id)
@@ -224,7 +260,8 @@ select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_me
 from cte_distinct_member_optz
 ;
 
-
+raise notice 'claim created optz finished';
+raise notice 'claim created begin truv';
 
 ---Truven Commercial claim created wcc002 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id, claim_created_id)
@@ -243,8 +280,8 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq'), true as claim_created
 from cte_distinct_member 
 ;
-
-
+raise notice 'claim created truv finished';
+raise notice 'claim created begin truv mdcr';
 
 ---Truven Medicare claim created wcc002 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id, claim_created_id)
@@ -263,6 +300,18 @@ where b.member_id_src is null
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq'), true as claim_created
 from cte_distinct_member 
 ;
+
+raise notice 'claim created truv mdcr finished';
+raise notice 'claim created finished';
+raise notice 'analyze dim_uth_member_id';
+
+analyze data_warehouse.dim_uth_member_id;
+
+alter function dw_staging.load_dim_uth_member_id() owner to uthealth_dev;
+grant all on function dw_staging.load_dim_uth_member_id() to uthealth_dev;
+
+raise notice 'ownership transferred to uthealth_dev';
+raise notice 'end script';
 
 end $$
 ;
