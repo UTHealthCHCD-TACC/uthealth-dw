@@ -1,13 +1,8 @@
 -- Asthma Condition v37
 
-
--- rev and DX
--- select distinct cd_type from conditions.diagnosis_work_table dwt where condition_cd = 'ASTH'
-select * from conditions.diagnosis_work_table where condition_cd = 'ASTH';
-
-
--- step 2 (325 secs)
 -- select all the asthma icd codes, 
+SELECT * FROM conditions.codeset;
+
 drop table if exists conditions.asthma_dx_1;
 create table conditions.asthma_dx_1 as
 with asth_dx as (
@@ -16,7 +11,7 @@ select
 from
 	conditions.codeset
 where
-	condition_cd = 'ASTH'
+	condition_cd = 'asth'
 	and cd_type in ('ICD-10', 'ICD-9'))
 select
 	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, year
