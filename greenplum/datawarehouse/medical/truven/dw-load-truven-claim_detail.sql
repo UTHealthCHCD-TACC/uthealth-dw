@@ -264,9 +264,9 @@ select  'truv',
         a.deduct,
         a.coins, 
         a.cob,
-        null as bill_type_inst, 
-        null, 
-        null,  
+        substring(f.billtyp,1,1) as billtypeinst, 
+        substring(f.billtyp,2,1) as billtypeclass, 
+        substring(f.billtyp,3,1) as billtypefreq, 
         trunc(a.qty,0) as units,  
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
@@ -280,6 +280,10 @@ select  'truv',
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
+  left outer join truven.ccaef f 
+    on f.enrolid = a.enrolid 
+   and f.msclmid = a.msclmid 
+   and f.year = a.year
 where a.msclmid is not null
  ;
 
@@ -352,9 +356,9 @@ select  'truv',
         a.deduct,
         a.coins, 
         a.cob,
-        null as bill_type_inst, 
-        null, 
-        null,  
+        null, --substring(f.billtyp,1,1) as billtypeinst, 
+        null, --substring(f.billtyp,2,1) as billtypeclass, 
+        null, --substring(f.billtyp,3,1) as billtypefreq, 
         trunc(a.qty,0) as units,  
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
@@ -368,39 +372,17 @@ from truven.mdcrs a
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
+  --left outer join truven.mdcrf f 
+  --  on f.enrolid = a.enrolid 
+  -- and f.msclmid = a.msclmid 
+  -- and f.year = a.year  
 where a.msclmid is not null
  ;
 
 raise notice 'mdcrs loaded';
 
------ Add billtype from facility tables ----- 
-select enrolid, msclmid, year, max(billtyp) as billtyp 
-into dev.wc_truv_detail_billtyp
-from (
-	select enrolid::text, msclmid::text, year, billtyp 
-	from truven.ccaef 
-	union 
-	select enrolid::text, msclmid::text, year, billtyp 
-	from truven.mdcrf 
-) x
-group by enrolid, msclmid, year
-;
-
-
-update dw_staging.claim_detail 
-set bill_type_inst = substring(billtyp,1,1), bill_type_class = substring(billtyp,2,1), bill_type_freq = substring(billtyp,3,1)
-from dev.wc_truv_detail_billtyp b 
-     where member_id_src = b.enrolid 
-     and claim_id_src = b.msclmid
-     and data_year = b.year 
-;
-
-
-drop table dev.wc_truv_detail_billtyp
-
-raise notice 'billtype updated';
-  
- ---validate
-analyze data_warehouse.claim_detail;
+analyze dw_staging.claim_detail;
 
 end $$;
+
+
