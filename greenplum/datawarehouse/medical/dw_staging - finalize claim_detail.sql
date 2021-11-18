@@ -29,6 +29,8 @@ with (appendonly=true, orientation=column) as
 	where rn > 1
 distributed by (row_id);	
 
+select * from dev.temp_dupe_claim_detail_rows
+
 --remote dupe records so only one per member per month - runtime: 12min
 delete from dw_staging.claim_detail a 
   using dev.temp_dupe_claim_detail_rows b 
@@ -55,7 +57,7 @@ select uth_claim_id,
 distributed by (row_id);
        		     
 	
-vacuum analyze dev.claim_seq_build ;
+analyze dev.claim_seq_build ;
 		
 select count(*) from dev.claim_seq_build;
 
@@ -70,13 +72,13 @@ where a.row_id = b.row_id
 		  
 
 ---finalize
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
 
 --validate, should be 0 
 select count(*) from dw_staging.claim_detail cd where claim_sequence_number is null;
 
 --spot check
-select * from dw_staging.claim_detail cd where data_source = 'mcrt';
+select * from dw_staging.claim_detail cd where data_source = 'truv';
 
 select * from dw_staging.claim_detail cd where uth_claim_id = 26080305188;
 
@@ -101,9 +103,10 @@ alter table dw_staging.claim_detail_temp rename to claim_detail;
 
 alter table dw_staging.claim_detail drop column row_id;
 
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
 
-select * from dw_staging.claim_detail;
+alter table dw_staging.claim_detail  owner to uthealth_dev;
+
 
 ------------------
 

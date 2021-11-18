@@ -3,7 +3,9 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 1/1/2019 || script created
+ *  wallingTACC  || 1/1/2021   || script created
+ * ******************************************************************************************************
+ *  wc001        || 11/18/2021 || modified to all lower case
  * ******************************************************************************************************
  */
 
@@ -142,11 +144,13 @@ where a.condition_cd = b.condition_cd
 select * from conditions.condition_desc cd ;
 
 
----remove dashes for consistency across greenplum
+---remove dashes and convert to lowercase for consistency across greenplum
 update conditions.condition_desc set condition_cd = replace(condition_cd,'-','');
 
 update conditions.codeset set condition_cd = replace(condition_cd,'-','');
 
 
+update conditions.condition_desc set condition_cd = lower(condition_cd);
 
+update conditions.codeset set condition_cd = lower(condition_cd); 
 
