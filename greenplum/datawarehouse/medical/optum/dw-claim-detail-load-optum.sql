@@ -9,8 +9,10 @@
  * ****************************************************************************************************** 
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ****************************************************************************************************** 
-  *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+  * jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
  * ****************************************************************************************************** 
+ *  jwozny  || 11/19/2021 || changed units to alt_units and removed substring on procmod
+ * ***********************************************************************************
  * */
 
 
@@ -51,7 +53,6 @@ distributed by (member_id_src);
 vacuum analyze dw_staging.optd_uth_claim_id;
 
 
-
 --load OPTD to staging claim_detail table
 insert into dw_staging.claim_detail (
 		data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, 
@@ -69,11 +70,11 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null, substring(a.procmod, 1,1), substring(a.procmod, 2,1), a.drg, 
+       a.proc_cd,null, a.procmod, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, 
+       a.alt_units, 
        dev.fiscal_year_func(a.fst_dt), 
        c.standard_price_year, 'medical', a.clmseq,
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
@@ -129,11 +130,11 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null, substring(a.procmod, 1,1), substring(a.procmod, 2,1), a.drg, 
+       a.proc_cd,null,a.procmod, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.units, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq,    
+       a.alt_units, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq,    
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
        a.service_prov as other_provider, a.prov as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_zip.medical a 
