@@ -1,3 +1,4 @@
+
 /*
  *
  *
@@ -94,11 +95,11 @@ select 'year' as test_var,
     '' as notes
 from (
     select sum(case
-                when year between 2007 and 2020
+                when year between 2007 and 2021
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when year not between 2007 and 2020
+                    when year not between 2007 and 2021
                         or year is null
                         then 1
                     end), 0) as invalidvalues,
@@ -406,10 +407,6 @@ from (
 ------------------------------------
 
 
-
-
-
-
 -----------------------------------
 -----network_paid_ind
 ------------------------------------
@@ -420,7 +417,7 @@ from (
 ------------------------------------
 --------admit_date--------------
 ------------------------------------
--- how many records go back pretty far? 
+
 
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
@@ -462,7 +459,7 @@ from (
 --------discharge_date--------------
 ------------------------------------
 
-
+--delete from qa_reporting.claim_detail_column_checks where test_var = 'discharge_date';
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
     validvalues,
@@ -483,12 +480,13 @@ select 'discharge_date' as test_var,
     '' as note
 from (
     select coalesce(sum(case
-                when discharge_date between '2007-01-01' and current_date
+                when (discharge_date between '2007-01-01' and current_date
+                and discharge_date is not null) or discharge_date is null
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
                     when discharge_date not between '2007-01-01' and current_date
-                        or discharge_date is null
+                        and discharge_date is not null
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -585,7 +583,6 @@ from (
 ------------------------------------
 --proc_mod_1
 ------------------------------------
-
  insert into qa_reporting.claim_detail_column_checks (
     test_var,
     validvalues,
@@ -606,12 +603,12 @@ select 'proc_mod_1' as test_var,
     '' as note
 from (
     select sum(case
-                when proc_mod_1 ~ '^[[:alnum:]]{1}$'
+                when proc_mod_1 ~ '^[[:alnum:]]{2}$'
                 and proc_mod_1 is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when (proc_mod_1 !~ '^[[:alnum:]]{1}$'
+                    when (proc_mod_1 !~ '^[[:alnum:]]{2}$'
                     and proc_mod_1 is not null)
                         then 1
                     end), 0) as invalid_values,
@@ -648,12 +645,12 @@ select 'proc_mod_2' as test_var,
     '' as note
 from (
     select sum(case
-                when proc_mod_2 ~ '^[[:alnum:]]{1}$'
+                when proc_mod_2 ~ '^[[:alnum:]]{2}$'
                 and proc_mod_2 is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when (proc_mod_2 !~ '^[[:alnum:]]{1}$'
+                    when (proc_mod_2 !~ '^[[:alnum:]]{2}$'
                     and proc_mod_2 is not null)
                         then 1
                     end), 0) as invalid_values,
@@ -1138,11 +1135,11 @@ from (
                 and drg_cd is not null
                     then 1
                 end),0) as valid_values,
-        coalesce(sum(case
+        sum(case
                     when (drg_cd !~ '^[[:alnum:]]{3,4}$'
                     and drg_cd is not null)
                         then 1
-                    end), 0) as invalid_values,
+                    end) as invalid_values,
         year,
         data_source
     from dw_staging.claim_detail 
@@ -1150,338 +1147,6 @@ from (
 		year
     ) a;  
 
-------------------------------------
---claim_id_src
-------------------------------------
-   
-   
-   /*
-
-drop table if exists dev.qa_claim_header_temp_idsrc;
-   
-select distinct id_src
-into dev.qa_claim_header_temp_idsrc
-from (
-	select clm_id as id_src
-	from medicare_national.dme_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.inpatient_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.hospice_base_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.outpatient_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.hha_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.snf_base_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_national.bcarrier_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.dme_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.inpatient_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.hospice_base_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.outpatient_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.hha_revenue_center_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.snf_base_claims_k
-
-	union all
-
-	select clm_id as id_src
-	from medicare_texas.bcarrier_claims_k
-
-	union all
-
-	select derv_enc as id_src
-	from medicaid.enc_det
-
-	union all
-
-	select icn as id_src
-	from medicaid.clm_detail
-
-	union all
-
-	select clmid as id_src
-	from optum_dod.medical
-
-	union all
-
-	select clmid as id_src
-	from optum_zip.medical
-
-	union all
-
-	select msclmid::text as id_src
-	from truven.ccaeo
-
-	union all
-
-	select msclmid::text as id_src
-	from truven.mdcro
-
-	union all
-
-	select msclmid::text as id_src
-	from truven.mdcrs
-
-	union all
-
-	select msclmid::text as id_src
-	from truven.ccaes
-	) a;
-vacuum analyze dev.qa_claim_header_temp_idsrc;
-*/
-   
-   
-   
-with src_table
-as (
-	select a.*, b.id_src as id_src
-	from data_warehouse.claim_header a
-	left join dev.qa_claim_header_temp_idsrc b on a.claim_id_src = b.id_src
-	)
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'claim_id_src' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when id_src is not null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when id_src is null
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from src_table
-    group by data_source, year
-    ) a;
-
-
-   
-
-------------------------------------
----member_id_src
-------------------------------------
-   
-   
-   
-/*   
-select distinct id_src
-into dev.qa_claim_header_temp_member_idsrc
-from (
-	select bene_id::text as id_src
-	from medicare_national.dme_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.inpatient_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.hospice_base_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.outpatient_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.hha_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.snf_base_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_national.bcarrier_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.dme_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.inpatient_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.hospice_base_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.outpatient_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.hha_revenue_center_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.snf_base_claims_k
-
-	union all
-
-	select bene_id::text as id_src
-	from medicare_texas.bcarrier_claims_k
-
-	union all
-
-	select mem_id::text as id_src
-	from medicaid.enc_proc
-
-	union all
-
-	select pcn::text as id_src
-	from medicaid.clm_proc
-
-	union all
-
-	select patid::text as id_src
-	from optum_dod.medical
-
-	union all
-
-	select patid::text as id_src
-	from optum_zip.medical
-
-	union all
-
-	select enrolid::text as id_src
-	from truven.ccaeo
-
-	union all
-
-	select enrolid::text as id_src
-	from truven.mdcro
-
-	union all
-
-	select enrolid::text as id_src
-	from truven.mdcrs
-
-	union all
-
-	select enrolid::text as id_src
-	from truven.ccaes
-	) a;
-vacuum analyze dev.qa_claim_header_temp_member_idsrc;*/
-
-   
-   
-with ut_id_table
-as (
-    select a.uth_member_id, a."year", a.data_source, a.member_id_src, c.id_src 
-    from data_warehouse.claim_header a
-    left outer join dev.qa_claim_header_temp_member_idsrc c 
-        on a.member_id_src = c.id_src
-    )   
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'member_id_src' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when id_src is not null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when id_src is null
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from ut_id_table
-    group by data_source, year
-    ) a;
-
-   
-   -- claim created flag 
-   
 ------------------------------------
 --table_id_src
 ------------------------------------   
@@ -1573,7 +1238,7 @@ from (
 ------------------------------------   
 --cob_type
 ------------------------------------
-
+/*
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
     validvalues,
@@ -1594,11 +1259,11 @@ select 'cob_type' as test_var,
     '' as note
 from (
     select sum(case
-                when cob_type in ('C', 'A', 'N', 'Y', 'I') or cob_type is null
+                when cob in ('C', 'A', 'N', 'Y', 'I') or cob_type is null
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when cob_type not in ('C', 'A', 'N', 'Y', 'I')
+                    when cob not in ('C', 'A', 'N', 'Y', 'I')
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1607,7 +1272,7 @@ from (
     group by data_source , year
     ) a;
    
-   
+   */
 
 
 -----------------------------------
@@ -1635,11 +1300,11 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2020 or fiscal_year is null
+				when fiscal_year between 2007 and 2021 or fiscal_year is null
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020
+					when fiscal_year not between 2007 and 2021
 						and fiscal_year is not null
 						then 1
 					end), 0) as invalidvalues,
@@ -1654,7 +1319,8 @@ from (
 ------------------------------------   
 --cost_factor_year
 ------------------------------------
-   
+
+delete from qa_reporting.claim_detail_column_checks where test_var = 'cost_factor_year';
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
     validvalues,
@@ -1675,12 +1341,12 @@ select 'cost_factor_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when cost_factor_year between 2007 and 2020
+				when (cost_factor_year between 2007 and 2021 and cost_factor_year is not null) or cost_factor_year is null
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when cost_factor_year not between 2007 and 2020
-						or cost_factor_year is null
+					when cost_factor_year not between 2007 and 2021
+						and cost_factor_year is not null
 						then 1
 					end), 0) as invalidvalues,
 		year,

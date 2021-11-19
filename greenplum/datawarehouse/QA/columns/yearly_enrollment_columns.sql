@@ -578,7 +578,6 @@ from (
 -----------------------------------
 -----bus_cd
 ------------------------------------
-
 insert into qa_reporting.yearly_enrollment_column_checks (
     test_var,
     validvalues,
@@ -598,15 +597,15 @@ select 'bus_cd' as test_var,
     data_source,
     '' as note
 from (
-    select sum(case
-                when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD')
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD')
-                        or bus_cd is null
-                        then 1
-                    end), 0) as invalidvalues,
+	select sum(case
+				when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
+					then 1
+				end) as validvalues,
+		coalesce(sum(case
+					when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
+						or bus_cd is null
+						then 1
+					end), 0) as invalidvalues,
         year,
         data_source
     from dw_staging.member_enrollment_yearly
@@ -1367,11 +1366,11 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2020
+				when fiscal_year between 2007 and 2021
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020
+					when fiscal_year not between 2007 and 2021
 						or fiscal_year is null
 						then 1
 					end), 0) as invalidvalues,
