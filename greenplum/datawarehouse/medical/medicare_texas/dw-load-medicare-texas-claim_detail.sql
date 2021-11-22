@@ -13,6 +13,8 @@
  * ****************************************************************************************************** 
  *  jw002   || 11/03/2021 || add provider variables 
  * ***************************************************************************************************
+ *  jw003   || 11/22/2021 || changed procedure type to case when based on the hcpc_cd 
+ * ***************************************************************************************************
 =======
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ****************************************************************************************************** 
@@ -79,7 +81,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_line_num::numeric, a.rev_cntr_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
-	    a.hcpcs_cd, a.nch_clm_type_cd, a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
+	    a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
 	    a.rev_cntr_unit_cnt::int, 
       dev.fiscal_year_func(a.clm_thru_dt::date),
@@ -111,7 +115,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_line_num::numeric, a.rev_cntr_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, b.clm_fac_type_cd, true, true, null, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
-	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
+	   a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   								 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
 	    a.rev_cntr_unit_cnt::int, 
       dev.fiscal_year_func(a.clm_thru_dt::date),
@@ -141,7 +147,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_line_num::numeric, b.clm_from_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
-	    a.hcpcs_cd, a.nch_clm_type_cd, a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
+	    a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type, 
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
 	    a.rev_cntr_unit_cnt::int,
       dev.fiscal_year_func(a.clm_thru_dt::date),
@@ -172,7 +180,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_line_num::numeric, a.rev_cntr_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, b.clm_fac_type_cd, true, true, null, null, null, 
-	    a.hcpcs_cd, a.nch_clm_type_cd, a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
+	   a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
 	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
 	    a.rev_cntr_unit_cnt::int, 
       dev.fiscal_year_func(a.clm_thru_dt::date),
@@ -204,7 +214,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.line_num::numeric, b.clm_from_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, a.line_place_of_srvc_cd, true, true, null, null, null, 
-	    a.hcpcs_cd, a.nch_clm_type_cd, a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
+	    a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
 	    a.line_bene_pmt_amt::numeric, null, a.line_service_deductible::numeric, a.line_coinsrnc_amt::numeric, null, null, null, null, 
 	    a.line_srvc_cnt::numeric, 
       dev.fiscal_year_func(a.clm_thru_dt::date),
@@ -235,7 +247,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_clai
                                      )								   							   
 select 'mcrt',  extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.line_num::numeric, b.clm_from_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, a.line_place_of_srvc_cd, true, true, null, null, null, 
-	    a.hcpcs_cd, a.nch_clm_type_cd,  a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
+	    a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type, 
+	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, null as reveneue_cd, a.line_alowd_chrg_amt::numeric, null, 
 	    a.line_bene_pmt_amt::numeric, null, a.line_service_deductible::numeric, a.line_coinsrnc_amt::numeric, null, null, null, null, 
 	    a.line_srvc_cnt::numeric,
       dev.fiscal_year_func(a.clm_thru_dt::date),
