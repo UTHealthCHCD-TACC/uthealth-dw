@@ -70,7 +70,7 @@ with asthma_ndc as (
 	from
 		data_warehouse.pharmacy_claims pc
 	inner join 
-conditions.asthma_ndc an on
+(select * from conditions.condition_ndc where condition_cd ='ASTH') an on
 		pc.ndc = an.ndc)
 select
 	uth_member_id,
