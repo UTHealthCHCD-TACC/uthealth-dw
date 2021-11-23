@@ -1,74 +1,26 @@
-/*
-Author | Date | Notes
-
- ---  wcc001 | 8/01/21 | script creation 
- ---  wcc002 | 8/11/21 | add distributed by
- 
- */
 
 
 
-/*
-new variables to be added to table
-retail_or_mail_indicator  bpchar(1) null,
-dispensed_as_written  bpchar(2) null,
-dose bpchar(50)  null,
-strength bpchar(30)  null,
-formulary_ind  bpchar(1) null,
-special_drug_ind bpchar(1) null
-*/
+---redistribute dim table for faster join 
+drop table if exists dw_staging.truven_rx_claim_id;
 
---- truven pharma claims are left joined to redbook, the truven drug ref
-
-
---****************************
---   Truven Commercial
---****************************
-
-drop table if exists dev.dim_uth_rx_truv;
-
-create table dev.dim_uth_rx_truv
-with(appendonly=true, orientation=column)
+create table dw_staging.truven_rx_claim_id
+with(appendonly=true, orientation=column, compresstype=zlib)
 as select *
 from data_warehouse.dim_uth_rx_claim_id
 where data_source = 'truv'
 distributed by (member_id_src)
 ;
 
-vacuum analyze dev.dim_uth_rx_truv;
-
-
-create table dev.truv_mdcrd
-with(appendonly=true, orientation=column)
-as select enrolid::text as member_id_src, *
-from truven.mdcrd
-distributed by (member_id_src)
-;
-
-vacuum analyze dev.truv_mdcrd;
-
-create table dev.truv_ccaed
-with(appendonly=true, orientation=column)
-as select enrolid::text as member_id_src, *
-from truven.ccaed
-distributed by (member_id_src)
-;
-
-vacuum analyze dev.truv_ccaed;
+analyze dw_staging.truven_rx_claim_id;
 
 
 
----work table to load
-drop table if exists dev.wc_truv_rx_load;
 
-create table dev.wc_truv_rx_load
-with(appendonly=true,orientation=column)
-as select * from data_warehouse.pharmacy_claims_new limit 0
-distributed by (uth_member_id);
 
 
 --truven medicare adv
-insert into dev.wc_truv_rx_load (
+insert into dw_staging.pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -119,7 +71,7 @@ select 'truv',
        a.pharmid,
        null, a.pay, a.netpay,
        a.deduct, a.copay, a.coins, a.cob,
-       a.year as fy,
+       dev.fiscal_year_func(a.svcdate) as fiscal_year,
        a.thercls,
        null as ahfs,
        null as first_fill,
@@ -132,8 +84,8 @@ select 'truv',
 			 r.strngth, --new
 			 null, --new
 			 null --new
-from dev.truv_mdcrd a -- truven.mdcrd a
-  join dev.dim_uth_rx_truv b --data_warehouse.dim_uth_rx_claim_id b
+from truven.mdcrd a 
+  join dw_staging.truven_rx_claim_id
      on b.member_id_src = a.member_id_src
     and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c
@@ -150,7 +102,7 @@ from dev.truv_mdcrd a -- truven.mdcrd a
 
 
 ---truv commercial
-insert into dev.wc_truv_rx_load (
+insert into dw_staging.pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -201,7 +153,7 @@ select 'truv',
        a.pharmid,
        null, a.pay, a.netpay,
        a.deduct, a.copay, a.coins, a.cob,
-       a.year as fy,
+       dev.fiscal_year_func(a.svcdate) as fiscal_year,
        a.thercls,
        null as ahfs,
        null as first_fill,
@@ -214,8 +166,8 @@ select 'truv',
 			 r.strngth,--new
 			 null,--new
 			 null --new
-from dev.truv_ccaed a    --truven.ccaed a
-  join dev.dim_uth_rx_truv b   --data_warehouse.dim_uth_rx_claim_id b
+from truven.ccaed a
+  join dw_staging.truven_rx_claim_id b
      on b.member_id_src = a.member_id_src
     and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c
@@ -226,7 +178,7 @@ from dev.truv_ccaed a    --truven.ccaed a
 ;
 
 
-vacuum analyze dev.wc_truv_rx_load;
+analyze dw_staging.pharmacy_claims;
 
 
 

@@ -9,9 +9,21 @@
  * ******************************************************************************************************
  *  wc002  || 9/20/2021 || medicaid added
  * ******************************************************************************************************
+ *  jw001  || 11/12/2021 || wrap in function
  * ****************************************************************************************************** */
 
---//BEGIN SCRIPT
+CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_rx_claim_id()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+AS $$
+
+begin
+	
+	--//BEGIN SCRIPT
+	
+raise notice 'begin script';
+raise notice 'load truven com begin';
 
 ---truven commercial
 with truv_cte as (  
@@ -43,6 +55,8 @@ left join data_warehouse.dim_uth_rx_claim_id c
  and  c.uth_rx_claim_id is null 
 where a.enrolid is not null;
 
+raise notice 'load truven com finished';
+raise notice 'load truven mdcr begin';
 
 --truven medicare
 with truv_cte as (  
@@ -74,17 +88,14 @@ left join data_warehouse.dim_uth_rx_claim_id c
  and  c.uth_rx_claim_id is null 
 where a.enrolid is not null;
 
-
-
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
-
-
+raise notice 'load mdcr finished';
+raise notice 'load mcrt begin';
 
 --medicare texas 
-with uthealth/medicare_national_cte as (  
+with uthealth_medicare_national_cte as (  
     select distinct on (pde_id) 
         year, pde_id, bene_id 
-    from uthealth/medicare_national.pde_file
+    from uthealth.medicare_national.pde_file
     )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -99,7 +110,7 @@ select 'mcrt'
 	   ,a.pde_id
 	   ,b.uth_member_id
 	   ,a.bene_id 
-from uthealth/medicare_national_cte a
+from uthealth_medicare_national_cte a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'mcrt'
    and b.member_id_src = a.bene_id
@@ -111,7 +122,8 @@ where c.uth_rx_claim_id is null
   and a.bene_id is not null
  ;
 
-
+raise notice 'load mcrt finished';
+raise notice 'load mcrn begin';
 
 ---Medicare National
 with medicare_cte as (  
@@ -144,6 +156,8 @@ where c.uth_rx_claim_id is null
   and a.bene_id is not null
  ;
 
+raise notice 'load mcrn finished';
+raise notice 'load optd begin';
 
 --optum dod   4min
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -171,6 +185,8 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where c.uth_rx_claim_id is null 
  ;
 
+raise notice 'load optd finished';
+raise notice 'load optz begin';
 
 --optum zip 4min
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -198,19 +214,12 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where c.uth_rx_claim_id is null 
  ;
 
-
-vacuum analyze data_warehouse.dim_uth_rx_claim_id;
-
-
-
-select data_source, year, count(*) 
-from data_warehouse.dim_uth_rx_claim_id 
-group by data_source , year 
-order by data_source , year 
-;
+raise notice 'load optz finished';
+analyze data_warehouse.dim_uth_rx_claim_id;
 
 
 --*****Medicaid*****  wcc002 
+raise notice 'load mdcd chip begin';
 
 ---chip rx 
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -238,6 +247,8 @@ from medicaid.chip_rx a
 where c.uth_rx_claim_id is null 
 ;
 
+raise notice 'load mdcd chip finished';
+raise notice 'load mdcd ffs begin';
 
 --medicaid ffs rx   
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -265,6 +276,8 @@ from medicaid.ffs_rx a
 where c.uth_rx_claim_id is null 
 ;
 
+raise notice 'load mdcd ffs finished';
+raise notice 'load mdcd mco begin';
 
 --medicaid mco rx   
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -292,6 +305,18 @@ from medicaid.mco_rx a
 where c.uth_rx_claim_id is null 
 ;
 
+raise notice 'load mdcd mco finished';
+
+analyze data_warehouse.dim_uth_rx_claim_id;
+
+alter function dw_staging.load_dim_uth_rx_claim_id() owner to uthealth_dev;
+grant all on function dw_staging.load_dim_uth_rx_claim_id() to uthealth_dev;
+
+raise notice 'ownership transferred to uthealth_dev';
+raise notice 'end script';
+
+end $$
+;
 
 
-*/
+

@@ -68,7 +68,6 @@ from (
 --------year--------------
 ------------------------------------
 
-
 insert into qa_reporting.claim_proc_column_checks (
 	test_var,
 	valid_values,
@@ -89,11 +88,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2020
+				when year between 2007 and 2021
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when year not between 2007 and 2020
+					when year not between 2007 and 2021
 						or year is null
 						then 1
 					end), 0) as invalid_values,
@@ -411,7 +410,6 @@ from (
 -----------------------------------
 -----fiscal_year------------------
 -----------------------------------
-
 insert into qa_reporting.claim_proc_column_checks (
 	test_var,
 	valid_values,
@@ -432,12 +430,12 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when (fiscal_year between 2007 and 2020)
+				when (fiscal_year between 2007 and 2021)
 				                        or fiscal_year is null
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020 
+					when fiscal_year not between 2007 and 2021
 					and fiscal_year is not null
 						then 1
 					end), 0) as invalid_values,

@@ -1,3 +1,4 @@
+
 /*
  *
  *
@@ -89,11 +90,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2020
+				when year between 2007 and 2021
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when year not between 2007 and 2020
+					when year not between 2007 and 2021
 						or year is null
 						then 1
 					end), 0) as invalid_values,
@@ -147,8 +148,6 @@ from (
     ) a;
 
 
-
-
 ---------------------------------   
 -----uth_member_id---------------
 ---------------------------------
@@ -157,7 +156,7 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as src_id
-    from dw_staging.claim_diaga
+    from dw_staging.claim_diag a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.claim_diag_column_checks (
@@ -319,7 +318,6 @@ from (
 
 
 
-delete from qa_reporting.claim_diag_column_checks where test_var = 'diag_position';
 
 ------------------------------------
 --------icd_type--------------------
@@ -385,7 +383,7 @@ select 'poa_src' as test_var,
     '' as notes
 from (
     select sum(case
-                when poa_src in ('0', '1','Y','N','U',) or poa_src is null
+                when poa_src in ('0', '1','Y','N','U') or poa_src is null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
@@ -424,12 +422,12 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2020
+				when fiscal_year between 2007 and 2021
 				or fiscal_year is null
 					then 1
 				end) as valid_values,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020 and fiscal_year is not null
+					when fiscal_year not between 2007 and 2021 and fiscal_year is not null
 						or fiscal_year is null
 						then 1
 					end), 0) as invalid_values,
@@ -438,6 +436,3 @@ from (
 	from dw_staging.claim_diag
 group by data_source, "year" 
 	) a;
-
- select * from   qa_reporting.claim_diag_column_checks
- order by test_var , data_source , year;

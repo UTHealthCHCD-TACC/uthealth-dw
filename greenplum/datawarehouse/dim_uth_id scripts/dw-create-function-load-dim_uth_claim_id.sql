@@ -12,16 +12,23 @@
  *  wc002  || 8/31/2021 || consolidate medicare script
  * ******************************************************************************************************
  *  wc003  || 11/09/2021 || run as one script
- * ****************************************************************************************************** */
+ * ****************************************************************************************************** 
+ *  jw001  || 11/12/2021 || wrap in function
+ * *******************************************************************************************************/
 
 ---runtime 11/9/21 - 90minutes
 
+CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_claim_id()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+AS $$
 
-
-
-do $$ 
 begin
 	
+raise notice 'begin script load_dim_uth_claim_id';
+
+raise notice 'load optd begin';
 
 -- ***** Optum dod ***** 
 --8/31/2021 runtime 10m16s
@@ -40,6 +47,7 @@ and c.uth_claim_id is null
 group by 1, 2, 3, 4;
 
 raise notice 'optd loaded';
+raise notice 'clean optd begin';
 
 ---cleanup optd 
 --11m59s
@@ -56,6 +64,8 @@ where a.data_source = 'optd'
 where clm.uth_claim_id = del.uth_claim_id 
 ;
 
+raise notice 'clean optd finished';
+raise notice 'load optz begin';
 
 -- ***** Optum zip ***** 
 --8/31/2021 runtime 10m16s
@@ -75,6 +85,7 @@ group by 1, 2, 3, 4;
 
 
 raise notice 'optz loaded';
+raise notice 'clean zip begin';
 
 ---cleanup optz 
 --12m50s
@@ -91,6 +102,8 @@ where a.data_source = 'optz'
 where clm.uth_claim_id = del.uth_claim_id 
 ;
 
+raise notice 'clean zip finished';
+raise notice 'load truven begin';
 
 --- ***** truven commercial, outpatient  ***** 
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
@@ -125,6 +138,7 @@ group by 1, 2, 3, 4
 ;
 
 raise notice 'truven com loaded';
+raise notice 'load mcrt begin';
 
 --- ***** truven medicare, outpatient *****  
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
@@ -305,12 +319,19 @@ where c.uth_claim_id is null
 ;
 
 raise notice 'medicaid loaded';
+raise notice 'analyze dim_uth_claim_id';
 
 analyze data_warehouse.dim_uth_claim_id;
 
-raise notice 'dim_uth_claim_id updates complete'
 
-end $$;
+alter function dw_staging.load_dim_uth_claim_id() owner to uthealth_dev;
+grant all on function dw_staging.load_dim_uth_claim_id() to uthealth_dev;
+raise notice 'ownership transferred to uthealth_dev';
+
+raise notice 'dim_uth_claim_id updates complete';
+
+end $$
+;
 
 --------------------------------------------------------------------------------------------------------------------------
 

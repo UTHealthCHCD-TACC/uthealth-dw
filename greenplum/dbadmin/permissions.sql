@@ -168,6 +168,12 @@ grant uthealth_dev to gmunoz1;
 --***********************************************************************************************************
 
 --***Schemas permissions for uthealth_dev***
+
+---data_warehouse (all access)
+grant all on schema data_warehouse to uthealth_dev; 
+grant all on all tables in schema data_warehouse to uthealth_dev; 
+grant all privileges on all sequences in schema data_warehouse to uthealth_dev; 
+alter default privileges in schema data_warehouse grant all on tables to uthealth_dev; 
  
 ---dw_staging (all access)
 grant all on schema dw_staging to uthealth_dev; 
@@ -229,11 +235,7 @@ grant uthealth_admin to wcough;
 
 --Schema permissions for uthealthadmin
 
----data_warehouse (all access)
-grant all on schema data_warehouse to uthealth_admin; 
-grant all on all tables in schema data_warehouse to uthealth_admin; 
-grant all privileges on all sequences in schema data_warehouse to uthealth_admin; 
-alter default privileges in schema data_warehouse grant all on tables to uthealth_admin; 
+
 
 --***raw tables (all access)
 	---medicaid

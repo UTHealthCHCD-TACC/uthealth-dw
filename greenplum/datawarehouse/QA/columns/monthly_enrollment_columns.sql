@@ -199,17 +199,16 @@ from (
     group by data_source, year
     ) a;
 
-
 ------------check 2 in src table
 
 
-drop table if exists dev.qa_temp_ids_src;
+drop table if exists dev.qa_temp_ids_src_2;
 
     select distinct patidsrc
-    into dev.qa_temp_ids_src
+    into dev.qa_temp_ids_src_2
     from (
         select patid::text as patidsrc
-        from optum_zip.mbr_enroll_r
+        from optum_dod.mbr_enroll_r
 
         union all
 
@@ -229,7 +228,7 @@ drop table if exists dev.qa_temp_ids_src;
         union all
 
         select bene_id::text as patidsrc
-        from uthealth/medicare_national.mbsf_abcd_summary
+        from medicare_national.mbsf_abcd_summary
         
         union all
         
@@ -255,7 +254,7 @@ as (
     from dw_staging.member_enrollment_monthly a
     join data_warehouse.dim_uth_member_id b 
         on a.uth_member_id = b.uth_member_id
-    left outer join dev.qa_temp_ids_src c 
+    left outer join dev.qa_temp_ids_src_2 c 
         on b.member_id_src = c.patidsrc
     )    
 insert into qa_reporting.monthly_enrollment_column_checks (
@@ -413,7 +412,7 @@ as (
 	from dw_staging.member_enrollment_monthly a
 	left join dev.qa_temp_all_states b on a.state = b.state
 	)
-/*insert into qa_reporting.monthly_enrollment_column_checks (
+insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
 	validvalues,
 	invalidvalues,
@@ -422,7 +421,7 @@ as (
 	"year",
 	data_source,
 	note
-	)*/
+	)
 select 'state' as test_var,
 	validvalues,
 	invalidvalues,
@@ -804,7 +803,7 @@ from (
     group by data_source, year
 	) a;
 
-/*--------plan_type------truv----
+--------plan_type------truv----
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
 	validvalues,
@@ -814,7 +813,7 @@ insert into qa_reporting.monthly_enrollment_column_checks (
 	"year",
 	data_source,
 	note
-	)*/
+	)
 select 'plan_type' as test_var,
 	validvalues,
 	invalidvalues,
@@ -919,7 +918,6 @@ from (
 
 
 
-
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
 	validvalues,
@@ -940,11 +938,11 @@ select 'bus_cd' as test_var,
 	'' as note
 from (
 	select sum(case
-				when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD')
+				when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD')
+					when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
 						or bus_cd is null
 						then 1
 					end), 0) as invalidvalues,
@@ -955,7 +953,10 @@ from (
     group by data_source, year
 	) a;
 
-
+select bus_cd 
+from dw_staging.member_enrollment_monthly 
+where data_source = 'truv'
+group by bus_cd ;
 -----------------------------------
 -----employee_status
 ------------------------------------
@@ -1043,7 +1044,7 @@ from (
 -----------------------------------
 -----row_identifier
 ------------------------------------
-
+/*
 	
 insert into qa_reporting.monthly_enrollment_column_checks (
     test_var,
@@ -1083,7 +1084,7 @@ from (
 	
 	
 	
-	
+	*/
 	
 	
 	
@@ -1139,7 +1140,7 @@ from (
 -----------------------------------
 -----fiscal_year
 ------------------------------------
-
+delete from qa_reporting.monthly_enrollment_column_checks where test_var = 'fiscal_year'
 
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
@@ -1161,11 +1162,11 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2020
+				when fiscal_year between 2007 and 2021
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2020
+					when fiscal_year not between 2007 and 2021
 						or fiscal_year is null
 						then 1
 					end), 0) as invalidvalues,
@@ -1179,7 +1180,6 @@ from (
 -----------------------------------
 -----race_cd
 ------------------------------------
-
 
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
@@ -1212,46 +1212,13 @@ from (
 		year,
 		data_source
 	from dw_staging.member_enrollment_monthly
-	where data_source in ('mcrn', 'optd', 'mdcd', 'mcrt')
     group by data_source, year
 	) a;
 	
 	
-------optz--------truv----------
-insert into qa_reporting.monthly_enrollment_column_checks (
-	test_var,
-	validvalues,
-	invalidvalues,
-	percent_invalid,
-	pass_threshold,
-	"year",
-	data_source,
-	note
-	)
-select 'race_cd' as test_var,
-	validvalues,
-	invalidvalues,
-	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-	year,
-	data_source,
-	'null is valid value' as note
-from (
-	select sum(case
-				when race_cd is null
-					then 1
-				end) as validvalues,
-		coalesce(sum(case
-					when race_cd is not null
-						then 1
-					end), 0) as invalidvalues,
-		year,
-		data_source
-	from dw_staging.member_enrollment_monthly
-	where data_source in ('optz', 'truv')
-    group by data_source, year
-	) a;
-	
+
+
+
 	-- cleanup
 
 /*
