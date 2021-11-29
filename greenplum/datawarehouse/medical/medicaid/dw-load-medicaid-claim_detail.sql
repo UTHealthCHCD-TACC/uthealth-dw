@@ -12,7 +12,10 @@
  *  jw002  || 11/03/2021 || add provider variables 
 =======
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
- * ****************************************************************************************************** 
+ * ************************************************************************************************************ 
+ *  jw003  || 11/29/2021  || changed discharge status to pat_stat from enc_header for the encounter table
+ * ************************************************************************************************************
+ * 
  * */
 
 
@@ -154,7 +157,7 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
        dev.fiscal_year_func(a.fdos_dt::date),
        null, 
-       a.enc_stat_cd,
+       d.pat_stat,
               null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider, 
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider
 from medicaid.enc_det a 
