@@ -264,9 +264,9 @@ select  'truv',
         a.deduct,
         a.coins, 
         a.cob,
-        substring(f.billtyp,1,1) as billtypeinst, 
-        substring(f.billtyp,2,1) as billtypeclass, 
-        substring(f.billtyp,3,1) as billtypefreq, 
+        null, --substring(f.billtyp,1,1) as billtypeinst,
+        null, --substring(f.billtyp,2,1) as billtypeclass, 
+        null, --substring(f.billtyp,3,1) as billtypefreq, 
         trunc(a.qty,0) as units,  
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
@@ -280,10 +280,10 @@ select  'truv',
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate) 
    and c.year_int = a.year
-  left outer join truven.ccaef f 
-    on f.enrolid = a.enrolid 
-   and f.msclmid = a.msclmid 
-   and f.year = a.year
+  --left outer join truven.ccaef f 
+  --  on f.enrolid = a.enrolid 
+  -- and f.msclmid = a.msclmid 
+  -- and f.year = a.year
 where a.msclmid is not null
  ;
 
@@ -356,7 +356,7 @@ select  'truv',
         a.deduct,
         a.coins, 
         a.cob,
-        null, --substring(f.billtyp,1,1) as billtypeinst, 
+        null, --substring(f.billtyp,1,1) as billtypeinst,
         null, --substring(f.billtyp,2,1) as billtypeclass, 
         null, --substring(f.billtyp,3,1) as billtypefreq, 
         trunc(a.qty,0) as units,  
@@ -384,5 +384,60 @@ raise notice 'mdcrs loaded';
 analyze dw_staging.claim_detail;
 
 end $$;
+
+
+drop table dev.wc_truv_billtype
+
+create table dev.wc_truv_billtype 
+with (appendonly = true, orientation=column, compresstype = zlib) as 
+select distinct * from (
+	select substring(f.billtyp,1,1) as billtypeinst,
+	       substring(f.billtyp,2,1) as billtypeclass, 
+	       substring(f.billtyp,3,1) as billtypefreq, 
+	       c.uth_member_id,
+	       c.uth_claim_id, 
+	       rank() over ( partition by uth_claim_id
+	                           order by seqnum, svcdate
+	                      ) as seq_num
+	from truven.mdcrf f 
+	   join dev.truven_dim_uth_claim_id c
+	     on c.member_id_src = f.member_id_src 
+	    and c.claim_id_src = f.msclmid::text
+	    and c.data_year = f."year" 
+	union 
+	select substring(f.billtyp,1,1) as billtypeinst,
+	       substring(f.billtyp,2,1) as billtypeclass, 
+	       substring(f.billtyp,3,1) as billtypefreq, 
+	       c.uth_member_id,
+	       c.uth_claim_id, 
+	       rank() over ( partition by uth_claim_id
+	                           order by seqnum, svcdate 
+	                      ) as seq_num
+	from truven.ccaef f 
+	   join dev.truven_dim_uth_claim_id c
+	     on c.member_id_src = f.member_id_src 
+	    and c.claim_id_src = f.msclmid::text
+	    and c.data_year = f."year"
+) inr 
+distributed by (uth_member_id)
+;
+
+
+analyze  dev.wc_truv_billtype;
+
+
+
+
+update dw_staging.claim_detail a 
+set bill_type_inst = billtypeinst, bill_type_class = billtypeclass, bill_type_freq = billtypefreq 
+from dev.wc_truv_billtype b 
+where a.uth_member_id = b.uth_member_id 
+  and a.uth_claim_id = b.uth_claim_id 
+  and a.claim_sequence_number = b.seq_num
+  and a.data_source = 'truv'
+;
+
+
+drop table  dev.wc_truv_billtype;
 
 

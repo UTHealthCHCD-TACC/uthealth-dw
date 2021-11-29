@@ -1,6 +1,8 @@
 
 
+do $$
 
+begin 
 ---redistribute dim table for faster join 
 drop table if exists dw_staging.truven_rx_claim_id;
 
@@ -14,7 +16,7 @@ distributed by (member_id_src)
 
 analyze dw_staging.truven_rx_claim_id;
 
-
+raise notice 'dim table';
 
 
 
@@ -75,8 +77,8 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.enrolid || a.ndcnum::text || svcdate::text,
-       a.enrolid::text,
+       a.member_id_src || a.ndcnum::text || svcdate::text,
+       a.member_id_src,
        'mdcrd' as table_id_src,
 			 a.rxmr, --new
 			 coalesce(a.dawind,'00'), --new
@@ -85,9 +87,9 @@ select 'truv',
 			 null, --new
 			 null --new
 from truven.mdcrd a 
-  join dw_staging.truven_rx_claim_id
+  join dw_staging.truven_rx_claim_id b
      on b.member_id_src = a.member_id_src
-    and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+    and b.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
@@ -95,7 +97,7 @@ from truven.mdcrd a
 	  on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-
+raise notice 'mdcrd done';
 
 ------********************************************************************
 --truven commercial
@@ -157,8 +159,8 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.enrolid || a.ndcnum::text || svcdate::text,
-       a.enrolid::text,
+       a.member_id_src || a.ndcnum::text || svcdate::text,
+       a.member_id_src,
        'ccaed' as table_id_src,
 			 a.rxmr,--new
 			 coalesce(a.dawind,'00'),--new
@@ -169,50 +171,21 @@ select 'truv',
 from truven.ccaed a
   join dw_staging.truven_rx_claim_id b
      on b.member_id_src = a.member_id_src
-    and b.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
+    and b.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
   join reference_tables.ref_month_year c
     on c.month_int = extract(month from a.svcdate)
     and c.year_int = extract(year from a.svcdate)
 	left join reference_tables.redbook r -- new
 		 on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
-
+raise notice 'ccaed done';
 
 analyze dw_staging.pharmacy_claims;
 
-
-
-select count(*), year from truven.ccaed group by year order by year;
-
-select count(*), year from dev.wc_truv_com_rx_load group by year order by year;
-
----delete old recs
-delete from data_warehouse.pharmacy_claims where data_source ='truv' and table_id_src = 'ccaed';
-
----insert new optz recs
-insert into data_warehouse.pharmacy_claims_new
-select * from dev.wc_truv_rx_load ;
-
-
-
-vacuum analyze data_warehouse.pharmacy_claims_new;
-
----- validate
-
-select count(*), data_source, year
-from data_warehouse.pharmacy_claims_new
-group by data_source, year
-order by data_source, year
-
-
-----cleanup
-
-drop table if exists dev.wc_truv_com_rx_load;
-
-drop table if exists dev.wc_truv_mdcd_rx_load;
-
-drop table if exists dev.truv_mdcrd;
-
-drop table if exists dev.truv_ccaed;
-
 drop table if exists dev.dim_uth_rx_truv;
+
+raise notice ' done';
+
+end $$;
+
+

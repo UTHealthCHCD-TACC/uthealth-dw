@@ -10,10 +10,10 @@
  * 
 */
 
----confirm all seq nums are populated.  if not then a filler value needs to be inserted, maybe 999?
-select count(*) from dw_staging.claim_detail cd where claim_sequence_number_src is null;
+go $$ 
 
-
+begin 
+	
 ---- get row id of duplicate rows
 drop table if exists  dev.temp_dupe_claim_detail_rows;
 
@@ -29,7 +29,6 @@ with (appendonly=true, orientation=column) as
 	where rn > 1
 distributed by (row_id);	
 
-select * from dev.temp_dupe_claim_detail_rows
 
 --remote dupe records so only one per member per month - runtime: 12min
 delete from dw_staging.claim_detail a 
@@ -59,33 +58,12 @@ distributed by (row_id);
 	
 analyze dev.claim_seq_build ;
 		
-select count(*) from dev.claim_seq_build;
-
-select count(*) from dw_staging.claim_detail;
-
 
 --update claim sequence 58min
 update dw_staging.claim_detail a set claim_sequence_number = rownum       
 from dev.claim_seq_build b 
 where a.row_id = b.row_id
-;
-		  
-
----finalize
-analyze dw_staging.claim_detail;
-
---validate, should be 0 
-select count(*) from dw_staging.claim_detail cd where claim_sequence_number is null;
-
---spot check
-select * from dw_staging.claim_detail cd where data_source = 'truv';
-
-select * from dw_staging.claim_detail cd where uth_claim_id = 26080305188;
-
----cleanup work tables
-drop table if exists dev.claim_seq_build;
-
-drop table if exists dev.temp_dupe_claim_detail_rows;
+;		 
 
 
 ---****redistribute on uth_member_id
@@ -108,8 +86,8 @@ analyze dw_staging.claim_detail;
 alter table dw_staging.claim_detail  owner to uthealth_dev;
 
 
-------------------
-
+end $$
+;
 
 ------------- END SCRIPT 
 

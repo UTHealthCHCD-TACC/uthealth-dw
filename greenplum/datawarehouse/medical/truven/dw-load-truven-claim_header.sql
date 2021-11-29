@@ -17,6 +17,8 @@
  * ******************************************************************************************************
  * */
 
+
+
 do $$ 
 
 begin 
@@ -34,7 +36,7 @@ distributed by (member_id_src);
 
 analyze dev.truven_dim_uth_claim_id;
 
-raise notice 'uth claim table complete'
+raise notice 'uth claim table complete';
 -------------------------------- truven commercial outpatient--------------------------------------
 analyze truven.ccaeo;
 
@@ -78,7 +80,7 @@ join dev.truven_dim_uth_claim_id b   --  join data_warehouse.dim_uth_claim_id b
 	and b.claim_id_src = a.msclmid::text
 ;
 
-
+raise notice 'ccaeo header loaded';
 
 -------------------------------- truven medicare outpatient ---------------------------------------
 analyze truven.mdcro;
@@ -123,6 +125,7 @@ join dev.truven_dim_uth_claim_id b --  join data_warehouse.dim_uth_claim_id b
 	and b.data_source = 'truv'
 ;
 
+raise notice 'mdcro header loaded';
 
 -------------------------------- truven commercial inpatient--------------------------------------
 analyze truven.ccaes;
@@ -166,6 +169,10 @@ join dev.truven_dim_uth_claim_id b--  join data_warehouse.dim_uth_claim_id b
 	and b.claim_id_src = a.msclmid::text
 	and b.data_source = 'truv';
 
+raise notice 'ccaes header loaded';
+
+
+
 -------------------------------- truven medicare advantage inpatient------------------------------
 analyze truven.mdcrs;
 
@@ -207,6 +214,8 @@ join dev.truven_dim_uth_claim_id b	--  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
 	and b.claim_id_src = a.msclmid::text
 	and b.data_source = 'truv';
+
+raise notice 'mdcrs header loaded';
 
 end $$;
 
