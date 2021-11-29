@@ -27,6 +27,8 @@ alter table data_warehouse.member_enrollment_monthly rename to member_enrollment
 alter table data_warehouse.member_enrollment_yearly rename to member_enrollment_yearly_old;
 
 alter table data_warehouse.medicare_mbsf_abcd_enrollment rename to medicare_mbsf_abcd_enrollment_old;
+
+alter table data_warehouse.medicaid_program_enrollment rename to medicaid_program_enrollment_old;
 ----
 
 
@@ -46,48 +48,33 @@ alter table dw_staging.member_enrollment_monthly set schema data_warehouse;
 alter table dw_staging.member_enrollment_yearly set schema data_warehouse;
 
 alter table dw_staging.medicare_mbsf_abcd_enrollment set schema data_warehouse;
+
+alter table dw_staging.medicaid_program_enrollment set schema data_warehouse;
 -----//
 
 
 
 
------||  move old tables down to staging 
-alter table data_warehouse.claim_header_old set schema dw_staging;
+-----||  delete old tables  
+drop table if exists  data_warehouse.claim_header_old;
 
-alter table data_warehouse.claim_detail_old set schema dw_staging;
+drop table if exists data_warehouse.claim_detail_old;
 
-alter table data_warehouse.claim_diag_old set schema dw_staging;
+drop table if exists data_warehouse.claim_diag_old;
 
-alter table data_warehouse.claim_icd_proc_old  set schema dw_staging;
+drop table if exists data_warehouse.claim_icd_proc_old;
 
-alter table data_warehouse.pharmacy_claims_old set schema dw_staging;
+drop table if exists data_warehouse.pharmacy_claims_old;
 
-alter table data_warehouse.member_enrollment_monthly_old set schema dw_staging;
+drop table if exists data_warehouse.member_enrollment_monthly_old;
 
-alter table data_warehouse.member_enrollment_yearly_old set schema dw_staging;
+drop table if exists data_warehouse.member_enrollment_yearly_old;
 
-alter table data_warehouse.medicare_mbsf_abcd_enrollment_old set schema dw_staging;
+drop table if exists data_warehouse.medicare_mbsf_abcd_enrollment_old;
+
+drop table if exists data_warehouse.medicaid_program_enrollment_old
 -----||
 
 
-
-
------// rename _old tables in staging 
-alter table dw_staging.claim_header_old rename to claim_header;
-
-alter table dw_staging.claim_detail_old rename to claim_detail;
-
-alter table dw_staging.claim_diag_old rename to claim_diag;
-
-alter table dw_staging.claim_icd_proc_old rename to claim_icd_proc;
-
-alter table dw_staging.pharmacy_claims_old rename to pharmacy_claims;
-
-alter table dw_staging.member_enrollment_monthly_old rename to member_enrollment_monthly;
-
-alter table dw_staging.member_enrollment_yearly_old rename to member_enrollment_yearly;
-
-alter table dw_staging.medicare_mbsf_abcd_enrollment_old rename to medicare_mbsf_abcd_enrollment;
------//
 
 

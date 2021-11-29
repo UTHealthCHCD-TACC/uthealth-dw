@@ -210,16 +210,26 @@ raise notice 'claim_detail done';
 ---(5) 
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
 alter table dw_staging.member_enrollment_yearly owner to uthealth_dev;
-
 alter table dw_staging.medicaid_program_enrollment owner to uthealth_dev;
 alter table dw_staging.medicare_mbsf_abcd_enrollment owner to uthealth_dev;
-
 alter table dw_staging.claim_header owner to uthealth_dev;
 alter table dw_staging.claim_detail owner to uthealth_dev;
 alter table dw_staging.claim_diag owner to uthealth_dev;
 alter table dw_staging.claim_icd_proc owner to uthealth_dev;
-
 alter table dw_staging.pharmacy_claims owner to uthealth_dev;
+---/(5)
+
+---(6) 
+analyze dw_staging.member_enrollment_monthly;
+analyze dw_staging.member_enrollment_yearly;
+analyze dw_staging.medicaid_program_enrollment;
+analyze dw_staging.medicare_mbsf_abcd_enrollment;
+analyze dw_staging.claim_header;
+analyze dw_staging.claim_detail;
+analyze dw_staging.claim_diag;
+analyze dw_staging.claim_icd_proc;
+analyze dw_staging.pharmacy_claims;
+---/(6)
 
 raise notice 'dw_staging table creation complete for: %', my_data_source;
 

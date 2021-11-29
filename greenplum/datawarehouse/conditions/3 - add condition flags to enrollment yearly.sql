@@ -109,7 +109,7 @@ end $$
 ----validate
 select data_source, 
        year, 
-       count(*) total_enrolled_members, 
+       count(distinct uth_member_id) unique_person_id, 
        sum(aimm) aimm, 
        sum(ami) ami, 
        sum(ca) ca, 
@@ -148,9 +148,145 @@ select data_source,
        sum(trans) trans,
        sum(trau) trau
 from conditions.member_enrollment_yearly 
+where state = 'TX'
+ and data_source = 'optz'
 group by data_source , year 
 order by data_source , year 
 ;
+
+
+---truven TX break down by com vs ms 
+
+---seperate report for count of unique persons 
+
+select * 
+from (
+select data_source, year, 'all' as bus_cd, count(*) as unique_persons ,sum(aimm) aimm, 
+       sum(ami) ami, 
+       sum(ca) ca, 
+       sum(cab) cab,
+       sum(caco) caco,
+       sum(cacv) cacv,
+       sum(cal) cal, 
+       sum(cap) cap, 
+       sum(cfib) cfib, 
+       sum(chf) chf, 
+       sum(ckd) ckd,
+       sum(cliv) cliv,
+       sum(copd) copd,
+       sum(cres) cres, 
+       sum(dep) dep,
+       sum(epi) epi, 
+       sum(fbm) fbm,
+       sum(hemo) hemo,
+       sum(hep) hep,
+       sum(hiv) hiv,
+       sum(hml) hml, 
+       sum(ihd) ihd, 
+       sum(lbp) lbp, 
+       sum(lymp) lymp, 
+       sum(ms) ms, 
+       sum(nicu) nicu, 
+       sum(pain) pain, 
+       sum(park) park,
+       sum(pneu) pneu,
+       sum(ra) ra,
+       sum(scd) scd,
+       sum(scz) scz, 
+       sum(smi) smi,
+       sum(str) str, 
+       sum(tbi) tbi, 
+       sum(trans) trans,
+       sum(trau) trau
+from conditions.member_enrollment_yearly  
+where data_source = 'optz' and state = 'TX' 
+group by data_source, year 
+union 
+select data_source, year, bus_cd , count(*) as unique_persons ,sum(aimm) aimm, 
+       sum(ami) ami, 
+       sum(ca) ca, 
+       sum(cab) cab,
+       sum(caco) caco,
+       sum(cacv) cacv,
+       sum(cal) cal, 
+       sum(cap) cap, 
+       sum(cfib) cfib, 
+       sum(chf) chf, 
+       sum(ckd) ckd,
+       sum(cliv) cliv,
+       sum(copd) copd,
+       sum(cres) cres, 
+       sum(dep) dep,
+       sum(epi) epi, 
+       sum(fbm) fbm,
+       sum(hemo) hemo,
+       sum(hep) hep,
+       sum(hiv) hiv,
+       sum(hml) hml, 
+       sum(ihd) ihd, 
+       sum(lbp) lbp, 
+       sum(lymp) lymp, 
+       sum(ms) ms, 
+       sum(nicu) nicu, 
+       sum(pain) pain, 
+       sum(park) park,
+       sum(pneu) pneu,
+       sum(ra) ra,
+       sum(scd) scd,
+       sum(scz) scz, 
+       sum(smi) smi,
+       sum(str) str, 
+       sum(tbi) tbi, 
+       sum(trans) trans,
+       sum(trau) trau
+from conditions.member_enrollment_yearly  
+where data_source = 'truv' and state = 'TX' 
+group by data_source, year , bus_cd 
+union 
+select data_source, year, 'all', count(*) as unique_persons ,sum(aimm) aimm, 
+       sum(ami) ami, 
+       sum(ca) ca, 
+       sum(cab) cab,
+       sum(caco) caco,
+       sum(cacv) cacv,
+       sum(cal) cal, 
+       sum(cap) cap, 
+       sum(cfib) cfib, 
+       sum(chf) chf, 
+       sum(ckd) ckd,
+       sum(cliv) cliv,
+       sum(copd) copd,
+       sum(cres) cres, 
+       sum(dep) dep,
+       sum(epi) epi, 
+       sum(fbm) fbm,
+       sum(hemo) hemo,
+       sum(hep) hep,
+       sum(hiv) hiv,
+       sum(hml) hml, 
+       sum(ihd) ihd, 
+       sum(lbp) lbp, 
+       sum(lymp) lymp, 
+       sum(ms) ms, 
+       sum(nicu) nicu, 
+       sum(pain) pain, 
+       sum(park) park,
+       sum(pneu) pneu,
+       sum(ra) ra,
+       sum(scd) scd,
+       sum(scz) scz, 
+       sum(smi) smi,
+       sum(str) str, 
+       sum(tbi) tbi, 
+       sum(trans) trans,
+       sum(trau) trau
+from conditions.member_enrollment_yearly  
+where data_source = 'mcrt' and state = 'TX' 
+group by data_source, year 
+) inr 
+order by data_source , year, bus_cd 
+
+
 
 select * 
 from conditions.condition_desc

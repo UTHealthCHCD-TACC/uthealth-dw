@@ -32,6 +32,7 @@ select 'rx_patrep' as table_name, date_part('year', reported_date) as year, coun
 select 'rx_presc' as table_name, date_part('year', rxdate) as year, count(*) as cnt from opt_20210916.rx_presc group by 1, 2 union
 select 'vis' as table_name, date_part('year', visit_start_date) as year, count(*) as cnt from opt_20210916.vis group by 1, 2;
 
+
 select *
 from medicaid.table_counts
 order by 1, 2;

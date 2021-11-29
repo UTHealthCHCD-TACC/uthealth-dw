@@ -18,19 +18,15 @@ CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_rx_claim_id()
 	VOLATILE
 AS $$
 
+
 begin
-	
-	--//BEGIN SCRIPT
+
 	
 raise notice 'begin script';
 raise notice 'load truven com begin';
 
+
 ---truven commercial
-with truv_cte as (  
-   select distinct on ( enrolid || ndcnum::text || svcdate::text)
-   enrolid, ndcnum, svcdate, year 
-   from truven.ccaed 
-   )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
@@ -41,29 +37,27 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 select 'truv'
       ,a.year 
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
-	  ,a.enrolid || ndcnum::text || svcdate::text
+	  ,a.member_id_src || ndcnum::text || svcdate::text
 	  ,b.uth_member_id	  
-      ,a.enrolid 
-from truv_cte a
+      ,a.member_id_src
+from truven.ccaed  a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
+   and b.member_id_src = a.member_id_src
 left join data_warehouse.dim_uth_rx_claim_id c 
   on c.data_source = 'truv'
- and c.member_id_src = a.enrolid::text 
- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
- and  c.uth_rx_claim_id is null 
-where a.enrolid is not null;
+ and c.member_id_src = a.member_id_src
+ and c.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
+where c.uth_rx_claim_id is null 
+  and a.member_id_src is not null 
+;
+
 
 raise notice 'load truven com finished';
 raise notice 'load truven mdcr begin';
 
+
 --truven medicare
-with truv_cte as (  
-   select distinct on ( enrolid || ndcnum::text || svcdate::text)
-   enrolid, ndcnum, svcdate, year 
-   from truven.mdcrd 
-   )
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
@@ -74,19 +68,21 @@ insert into data_warehouse.dim_uth_rx_claim_id (
 select 'truv'
       ,a.year 
 	  ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
-	  ,a.enrolid || ndcnum::text || svcdate::text
+	  ,a.member_id_src || ndcnum::text || svcdate::text
 	  ,b.uth_member_id	  
-      ,a.enrolid 
-from truv_cte a
+      ,a.member_id_src
+from truven.mdcrd  a
   join data_warehouse.dim_uth_member_id b 
     on b.data_source = 'truv'
-   and b.member_id_src = a.enrolid::text 
+   and b.member_id_src = a.member_id_src
 left join data_warehouse.dim_uth_rx_claim_id c 
   on c.data_source = 'truv'
- and c.member_id_src = a.enrolid::text 
- and c.rx_claim_id_src = a.enrolid || ndcnum::text || svcdate::text
- and  c.uth_rx_claim_id is null 
-where a.enrolid is not null;
+ and c.member_id_src = a.member_id_src
+ and c.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
+where c.uth_rx_claim_id is null 
+  and a.member_id_src is not null 
+;
+
 
 raise notice 'load mdcr finished';
 raise notice 'load mcrt begin';

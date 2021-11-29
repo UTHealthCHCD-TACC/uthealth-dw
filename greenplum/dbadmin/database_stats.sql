@@ -57,8 +57,7 @@ select pg_size_pretty(pg_database_size('uthealth'));
  group by 1
 order by 2 desc;
 
-select count(*)
-from truven.ccaea;
+
 --Size by Table
 select
    n.nspname,
@@ -82,24 +81,8 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dev.jw_mehta_allelig')
+SELECT get_ao_distribution('conditions.diagnosis_work_table')
 order by 1;
-
-create table reference_tables.ndc_tier_map_imp2 (like reference_tables.ndc_tier_map_imp)
-WITH (appendonly=true, orientation=column), compresstype=none)
-distributed randomly;
-
-
-select uth_member_id, count(*)
-from dw_qa.dim_uth_claim_id
-group by 1
-order by 2 desc
-limit 10;
-
-select uth_member_id, count(*)
-from dw_qa.claim_detail_diag cdd 
-group by 1
-order by 2 desc;
 
 --Server Settings
 SELECT *
@@ -125,7 +108,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('truven')-- and pgc.relname = 'temp_script_id'
+where pgn.nspname in ('dw_staging')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression
@@ -145,8 +128,8 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname not in ('information_schema', 'dbo', 'pg_aoseg', 'pg_bitmapindex', 'pg_catalog', 'public', 'qa_reporting', 'dev')  
---and b.nspname in ('dw_staging')
+--and b.nspname not in ('information_schema', 'dbo', 'pg_aoseg', 'pg_bitmapindex', 'pg_catalog', 'public', 'qa_reporting', 'dev')  
+and b.nspname in ('dw_staging')
 AND a.oid=c.relid;
 
 --Roles and Members

@@ -41,7 +41,7 @@ UNITS numeric,EXTRACT_YM  char(6),VERSION  char(6),
 ALT_UNITS text, BILL_TYPE text, NDC_UOM text, NDC_QTY text, OP_VISIT_ID text, PROCMOD2 text, PROCMOD3 text, PROCMOD4 text, TOS_EXT text
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/\*/zip5_m2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/\*/zip5_m2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -54,6 +54,9 @@ limit 1000;
 -- Insert
 insert into optum_zip.medical
 select * from ext_medical;
+
+update optum_zip.medical
+set clmid=trim(clmid)
 
 --delete from optum_zip.medical where year=0;
 
@@ -74,7 +77,7 @@ order by 1, 2;
 --Refresh
 delete
 from optum_zip.medical 
-where file >= 'zip5_m2018q1%';
+where file >= 'zip5_m2018q2%';
 
 select file, count(*)
 from optum_zip.medical 
