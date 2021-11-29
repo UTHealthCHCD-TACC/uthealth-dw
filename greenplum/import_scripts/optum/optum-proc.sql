@@ -29,7 +29,7 @@ year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, CLMID char(19), ICD_FLAG char(2), PROC char(7), PROC_POSITION smallint, EXTRACT_YM int, VERSION numeric, FST_DT date
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/\*/zip5_proc2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/\*/zip5_proc2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -63,4 +63,4 @@ order by 1;
 
 delete 
 from optum_zip."procedure"
-where file >= 'zip5_proc2018q1%';
+where file >= 'zip5_proc2018q2%';

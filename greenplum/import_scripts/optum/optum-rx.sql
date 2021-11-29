@@ -36,7 +36,7 @@ patid int8, pat_planid int8,ahfsclss bpchar(8),	avgwhlsl numeric,	brnd_nm bpchar
 	PRESCRIBER_PROV text, PRESCRIPT_ID text
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/*\/zip5_r2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/*\/zip5_r2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -78,7 +78,7 @@ group by 1;
 
 delete
 from optum_zip.rx
-where file > 'zip5_r2020q1.txt.gz';
+where file >= 'zip5_r2020q3.txt.gz';
 
 
 

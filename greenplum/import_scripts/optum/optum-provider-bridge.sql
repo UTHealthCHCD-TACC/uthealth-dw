@@ -22,7 +22,7 @@ CREATE EXTERNAL TABLE ext_provider_bridge (
 PROV_UNIQUE bigint, DEA char(9), NPI char(10), PROV bigint, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/zip5_provider_bridge.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_provider_bridge.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

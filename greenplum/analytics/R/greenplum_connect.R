@@ -3,7 +3,8 @@ library(DBI)
 
 # Connect to a specific postgres database
 con <- dbConnect(RPostgres::Postgres(),
-                 dbname = 'uthealth', 
+                 dbname = 'uthealth',
+                 sslmode='require', 
                  host = 'greenplum01.corral.tacc.utexas.edu', # i.e. 'ec2-54-83-201-96.compute-1.amazonaws.com'
                  port = 5432, # or any other port specified by your DBA
                  user = 'walling',

@@ -27,7 +27,7 @@ CREATE EXTERNAL TABLE ext_mbr_co_enroll (
 PATID bigint, ELIGEFF date, ELIGEND date, GDR_CD char(1), YRDOB smallint, EXTRACT_YM int , VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/zip5_mbr_co_enroll.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_mbr_co_enroll.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

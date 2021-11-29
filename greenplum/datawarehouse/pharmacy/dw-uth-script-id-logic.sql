@@ -15,69 +15,85 @@
  * ******************************************************************************************************
  *  wallingTACC  ||9/7/2021 || Fixed bug with refill_count=null records.  Ignoring first_fill as it is unreliable
  * ******************************************************************************************************
+ *  wallingTACC  ||11/29/2021 || Functionized the script and set to run in dw_staging
+ * ******************************************************************************************************
  * */
 
 --Main Code
 
 --Work on subset of data
-drop table data_warehouse.pharmacy_claims_truv;
-create table data_warehouse.pharmacy_claims_truv(like data_warehouse.pharmacy_claims)
+drop table dw_staging.pharmacy_claims_truv;
+create table dw_staging.pharmacy_claims_truv(like dw_staging.pharmacy_claims)
 with(appendonly=true, orientation=column)
 distributed by (uth_member_id);
 
---truncate data_warehouse.pharmacy_claims_truv;
+--truncate dw_staging.pharmacy_claims_truv;
 
 --Generate random selection
-drop table data_warehouse.pharmacy_claims_uth_member_ids;
-create table data_warehouse.pharmacy_claims_uth_member_ids (uth_member_id int8)
+drop table dw_staging.pharmacy_claims_uth_member_ids;
+create table dw_staging.pharmacy_claims_uth_member_ids (uth_member_id int8)
 with(appendonly=true, orientation=column)
 distributed by (uth_member_id);
 
 --explain
-insert into data_warehouse.pharmacy_claims_uth_member_ids
+insert into dw_staging.pharmacy_claims_uth_member_ids
 select * from 
-  (select distinct uth_member_id from data_warehouse.pharmacy_claims where data_source='truv') table_alias
+  (select distinct uth_member_id from dw_staging.pharmacy_claims where data_source='truv') table_alias
 ORDER BY random()
 limit 10000; --10k random members
 
 -- Insert random records
-insert into data_warehouse.pharmacy_claims_truv
+insert into dw_staging.pharmacy_claims_truv
 select p.*
-from data_warehouse.pharmacy_claims p
-join data_warehouse.pharmacy_claims_uth_member_ids m on p.uth_member_id=m.uth_member_id
+from dw_staging.pharmacy_claims p
+join dw_staging.pharmacy_claims_uth_member_ids m on p.uth_member_id=m.uth_member_id
 where p.data_source='truv';
 
---drop table data_warehouse.pharmacy_claims;
-alter table data_warehouse.pharmacy_claims rename to temp_script_id_truv;
-alter table data_warehouse.pharmacy_claims_truv rename to temp_script_id;
+--drop table dw_staging.pharmacy_claims;
+alter table dw_staging.pharmacy_claims rename to temp_script_id_truv;
+alter table dw_staging.pharmacy_claims_truv rename to temp_script_id;
 
+/**********************************
 --- NON-DEV/PROD Start Here !!!!!!
+***********************************/
 
-update data_warehouse.pharmacy_claims
+CREATE OR REPLACE FUNCTION dw_staging.reset_uth_script_ids()
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE
+AS $$
+	
+
+begin
+	
+raise info '%: setting uth_script_id to null ', clock_timestamp();
+
+update dw_staging.pharmacy_claims
 set uth_script_id = null;
 
--- Create uth_script_ids
---alter table data_warehouse.pharmacy_claims drop column uth_script_id;
---alter table data_warehouse.pharmacy_claims add column uth_script_id int8;
-drop sequence data_warehouse.pharmacy_claims_uth_script_id_seq;
-create sequence data_warehouse.pharmacy_claims_uth_script_id_seq;
-alter sequence data_warehouse.pharmacy_claims_uth_script_id_seq cache 500;
+raise info '%: re-create sequence ', clock_timestamp();
 
---drop table dev.uth_script_ids;
+-- Create uth_script_ids
+--alter table dw_staging.pharmacy_claims drop column uth_script_id;
+--alter table dw_staging.pharmacy_claims add column uth_script_id int8;
+drop sequence dw_staging.pharmacy_claims_uth_script_id_seq;
+create sequence dw_staging.pharmacy_claims_uth_script_id_seq;
+alter sequence dw_staging.pharmacy_claims_uth_script_id_seq cache 500;
+
+raise info '%: create dev.uth_script_ids ', clock_timestamp();
+
 create table dev.uth_script_ids
 with(appendonly=true, orientation=column)
 as
-select nextval('data_warehouse.pharmacy_claims_uth_script_id_seq') as uth_script_id, a.*
+select nextval('dw_staging.pharmacy_claims_uth_script_id_seq') as uth_script_id, a.*
 from (select distinct uth_member_id, ndc, script_id, year, fill_date, refill_count
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where refill_count=0 or refill_count is null-- or first_fill='Y'
 ) a
 distributed by (uth_member_id);
 
--- Verify
-select count(distinct uth_script_id) from dev.uth_script_ids;
-
 --Verify = no rows
+/*
 select * from (
 select uth_member_id, ndc, script_id, fill_date, refill_count, count(*)
 from dev.uth_script_ids
@@ -85,26 +101,19 @@ group by uth_member_id, ndc, script_id, fill_date, refill_count
 having count(*)>1
 ) a
 order by 2,3,4,5;
-
---Update the null and min refill_count records
-
-/*
-select *
-from data_warehouse.pharmacy_claims a
-join dev.uth_script_ids u
-on a.uth_member_id=u.uth_member_id 
-and a.ndc=u.ndc 
-and ((a.script_id is null and u.script_id is null) or (a.script_id=u.script_id)) 
-and a.fill_date=u.fill_date and a.refill_count is not distinct from u.refill_count
-where a.uth_member_id=594282329 and a.ndc='59762374401';
 */
 
-update data_warehouse.pharmacy_claims as a 
+raise info '%: update the null and min refill_count records ', clock_timestamp();
+
+--Update the null and min refill_count records
+update dw_staging.pharmacy_claims as a 
 set uth_script_id=u.uth_script_id
 from dev.uth_script_ids u
 where a.uth_member_id=u.uth_member_id and a.ndc=u.ndc 
 and ((a.script_id is null and u.script_id is null) or (a.script_id=u.script_id)) 
 and a.fill_date=u.fill_date and a.refill_count is not distinct from u.refill_count;
+
+raise info '%: create dev.pharmacy_claims_0 ', clock_timestamp();
 
 --Get just the first/min records
 --drop table dev.pharmacy_claims_0;
@@ -112,24 +121,28 @@ create table dev.pharmacy_claims_0
 with(appendonly=true,orientation=column)
 as
 select distinct uth_script_id, uth_member_id, ndc, script_id, fill_date, refill_count
-from data_warehouse.pharmacy_claims a1
+from dw_staging.pharmacy_claims a1
 where uth_script_id is not null
 and refill_count is not null
 distributed by (uth_member_id);
 
-vacuum analyze data_warehouse.pharmacy_claims;
+raise info '%: vacuum tables ', clock_timestamp();
+
+vacuum analyze dw_staging.pharmacy_claims;
 vacuum analyze dev.pharmacy_claims_0;
 
 --Verify = no rows
 /*
 select uth_member_id, ndc, script_id, fill_date, refill_count, count(distinct uth_script_id) 
-from data_warehouse.pharmacy_claims_0 tsi 
+from dw_staging.pharmacy_claims_0 tsi 
 group by 1, 2, 3, 4, 5
 having count(*) > 1;
 */
 
+raise info '%: update refill_count>0 to match above ', clock_timestamp();
+
 -- Update refill_count>0 to match above
-update data_warehouse.pharmacy_claims b set uth_script_id=a.uth_script_id
+update dw_staging.pharmacy_claims b set uth_script_id=a.uth_script_id
 from dev.pharmacy_claims_0 as a
 where b.refill_count is not null
 and a.uth_member_id=b.uth_member_id and a.ndc=b.ndc 
@@ -137,7 +150,7 @@ and ((a.script_id is null and b.script_id is null) or (a.script_id=b.script_id))
 and b.refill_count>0 
 and a.fill_date = 
 (select max(c.fill_date) 
-from  data_warehouse.pharmacy_claims_0 c 
+from  dev.pharmacy_claims_0 c 
 where c.uth_script_id is not null
 and c.uth_member_id = a.uth_member_id and c.ndc = a.ndc 
 and ((c.script_id is null and a.script_id is null) or (c.script_id=a.script_id)) 
@@ -146,38 +159,22 @@ and c.refill_count <= b.refill_count
 and EXTRACT(DAY FROM age(c.fill_date, b.fill_date)) < 180
 );
 
-/*
-explain 
-select b.uth_member_id, b.ndc, b.fill_date
-from data_warehouse.pharmacy_claims b
-join data_warehouse.pharmacy_claims_0 as a
-on a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and b.refill_count>0
-and ((a.script_id is null and b.script_id is null) or (a.script_id=b.script_id))
-and a.fill_date = (select max(c.fill_date) from  data_warehouse.pharmacy_claims_0 c
-					where c.uth_member_id = a.uth_member_id
-					                         and c.ndc = a.ndc 
-					                         and ((c.script_id is null and a.script_id is null) or (c.script_id=a.script_id))
-					                         and c.fill_date < b.fill_date
-					                        and c.refill_count < b.refill_count
-											and EXTRACT(DAY FROM AGE(c.fill_date, b.fill_date)) < 180
-											)	
-group by 1, 2, 3											
-having count(distinct a.uth_script_id) > 1;
-*/
+raise info '%: create dev.uth_script_ids_no_zero ', clock_timestamp();
 
 -- Now get those with no-0 refill_count
 --drop table dev.uth_script_ids_no_zero;
 create table dev.uth_script_ids_no_zero as
-select nextval('data_warehouse.pharmacy_claims_uth_script_id_seq') as uth_script_id, a.*
+select nextval('dw_staging.pharmacy_claims_uth_script_id_seq') as uth_script_id, a.*
 from (select distinct uth_member_id, ndc, script_id, year, min(fill_date) as fill_date, min(refill_count) as refill_count
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id is null
---where uth_member_id = 537290390 and ndc='00603497528'
 group by 1, 2, 3, 4
 ) a
 distributed by (uth_member_id);
 
-update data_warehouse.pharmacy_claims as a 
+raise info '%: update dw_staging.pharmacy_claims from dev.uth_script_ids_no_zero ', clock_timestamp();
+
+update dw_staging.pharmacy_claims as a 
 set uth_script_id=u.uth_script_id
 from dev.uth_script_ids_no_zero u
 where a.uth_member_id=u.uth_member_id and a.ndc=u.ndc 
@@ -185,7 +182,9 @@ and ((a.script_id is null and u.script_id is null) or (a.script_id=u.script_id))
 and a.fill_date=u.fill_date and a.refill_count=u.refill_count
 and a.uth_script_id is null;
 
-update data_warehouse.pharmacy_claims b set uth_script_id=a.uth_script_id
+raise info '%: final update with closest within 180 days ', clock_timestamp();
+
+update dw_staging.pharmacy_claims b set uth_script_id=a.uth_script_id
 from dev.uth_script_ids_no_zero as a
 where b.uth_script_id is null 
 and a.uth_member_id=b.uth_member_id and a.ndc=b.ndc 
@@ -202,34 +201,44 @@ and c.refill_count <= b.refill_count
 and EXTRACT(DAY FROM age(c.fill_date, b.fill_date)) < 180
 );
 
+raise info '%: drop temp tables ', clock_timestamp();
+
 --Drop temp tables
 drop table dev.uth_script_ids;
 drop table dev.pharmacy_claims_0;
 drop table dev.uth_script_ids_no_zero;
+
+raise info '%: end script ', clock_timestamp();
+
+end 
+$$
+EXECUTE ON ANY;
+
+
 /*
  * SCRATCH
  */
 
 select uth_script_id, count(*)
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 group by 1
 order by 2 desc;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id=459286366;
 
 select uth_script_id, fill_date, days_supply, refill_count, first_fill, script_id
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id = 251565
 order by fill_date;
 
 select uth_member_id, ndc, first_fill, fill_date, refill_count, days_supply
-from data_warehouse.pharmacy_claims tsi 
+from dw_staging.pharmacy_claims tsi 
 where uth_script_id = 374681;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_member_id = 148626256 and ndc='60505025203' and uth_script_id is null;
 
 /* QA
@@ -248,12 +257,12 @@ where uth_member_id = 148626256 and ndc='60505025203' and uth_script_id is null;
 
 -- NULL uth_script_id					                        
 select data_source, count(*)
-from data_warehouse.pharmacy_claims where uth_script_id is null
+from dw_staging.pharmacy_claims where uth_script_id is null
 group by 1
 order by 1;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id is null
 and ndc='00603497528'
 and uth_member_id = 537290390
@@ -261,37 +270,37 @@ order by fill_date;
 
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id = '101075088';
 
 
 SELECT uth_member_id, ndc, fill_date, refill_count, rank() OVER (PARTITION BY uth_member_id, ndc ORDER BY fill_date asc) 
-FROM data_warehouse.pharmacy_claims
+FROM dw_staging.pharmacy_claims
 where ndc='00603497528'
 and uth_member_id = 537290390;
 
 select a.uth_script_id, max(age(a.fill_date, b.fill_date)) as max_age
-from data_warehouse.pharmacy_claims a
-join data_warehouse.pharmacy_claims b on a.uth_script_id = b.uth_script_id 
+from dw_staging.pharmacy_claims a
+join dw_staging.pharmacy_claims b on a.uth_script_id = b.uth_script_id 
 where a.uth_script_id is not null
 group by 1
 order by 2 desc;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id = 2699977596;
 
 ----------------------------------------------------------
 
-drop table data_warehouse.pharmacy_claims_matches;
-create table data_warehouse.pharmacy_claims_matches
+drop table dw_staging.pharmacy_claims_matches;
+create table dw_staging.pharmacy_claims_matches
 as
 select a.uth_member_id, a.rx_claim_id_src as a_rx_claim_id_src, a.refill_count as a_refill_count, b.rx_claim_id_src as b_rx_claim_id_src, b.refill_count as b_refill_count, a.uth_script_id
-from  data_warehouse.pharmacy_claims b
-join data_warehouse.pharmacy_claims a
+from  dw_staging.pharmacy_claims b
+join dw_staging.pharmacy_claims a
 on a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and b.refill_count>0
 and ((a.script_id is null and b.script_id is null) or (a.script_id=b.script_id))
-and a.fill_date = (select max(c.fill_date) from  data_warehouse.pharmacy_claims c
+and a.fill_date = (select max(c.fill_date) from  dw_staging.pharmacy_claims c
 					where c.uth_member_id = a.uth_member_id
 					                         and c.ndc = a.ndc 
 					                         and ((c.script_id is null and a.script_id is null) or (c.script_id=a.script_id))
@@ -299,7 +308,7 @@ and a.fill_date = (select max(c.fill_date) from  data_warehouse.pharmacy_claims 
 --Verify = 0
 select count(*) from (
 select uth_member_id, a_rx_claim_id_src, a_refill_count, b_rx_claim_id_src, b_refill_count, uth_script_id, count() as cnt
-from data_warehouse.pharmacy_claims_matches
+from dw_staging.pharmacy_claims_matches
 group by 1, 2, 3, 4, 5, 6
 having count(*)>1
 order by cnt desc) as a;
@@ -308,11 +317,11 @@ select count(*)
 from dev.uth_script_ids;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id = 153414;
 
 select *
-from data_warehouse.pharmacy_claims pc 
+from dw_staging.pharmacy_claims pc 
 where rx_claim_id_src = '1584244202690970158072016-09-29'
 
 select *
@@ -321,28 +330,28 @@ where enrolid = '1584244202'
 and svcdate = '2016-09-29';
 
 select distinct data_source, first_fill
-from data_warehouse.pharmacy_claims;
+from dw_staging.pharmacy_claims;
 
 --Verify
 select uth_member_id, count(*)
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 group by 1
 order by 2 desc 
 limit 3;
 
 select uth_script_id, ndc, fill_date, refill_count, script_id
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_member_id = 170265538
 order by ndc, fill_date, refill_count;
 
 create table dev.uth_script_id_diff_ndc_same_drug
 as
 select uth_member_id, ndc, script_id, fill_date, refill_count, uth_script_id, generic_name, brand_name
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where script_id='J99JV33FO';
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_member_id = 169998132
 and script_id in ()
 select *
@@ -360,14 +369,14 @@ group by drug_id
 having count(distinct ndc_code) > 1) a;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id is null
 order by uth_member_id, ndc;
 
 create table dev.diff_clmid_rx_same_script_id_truv
 as
 select data_source, uth_member_id, uth_rx_claim_id, rx_claim_id_src, script_id, uth_script_id, ndc, fill_date, refill_count
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id=234637
 order by fill_date, refill_count;
 
@@ -376,7 +385,7 @@ from dev.diff_clmid_rx_same_script_id_truv
 order by fill_date;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where script_id='JJFOVJLLF';
 
 where 
@@ -384,61 +393,61 @@ where script_id = 'JOJVRROVN';
 where member_id_src = '560499874406181' --'30647131404';
 
 select count(*)
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id is null;
 
-create table data_warehouse.pharmacy_claims_null
+create table dw_staging.pharmacy_claims_null
 with(appendonly=true,orientation=column) as
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where uth_script_id is null
 distributed by (member_id_src);
 
 
 select *
-from data_warehouse.pharmacy_claims_null
+from dw_staging.pharmacy_claims_null
 where member_id_src = '1116678402'
 order by rx_claim_id_src;
 
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where member_id_src = '1116678402' and ndc='00228253950'
 order by rx_claim_id_src;
 
 select refill_count, select count(*)
-from data_warehouse.pharmacy_claims_null
+from dw_staging.pharmacy_claims_null
 order by 1;
 
 select days_supply, count(*)
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 group by 1
 order by 1;
 
-create table data_warehouse.pharmacy_claims_null_refill_count
+create table dw_staging.pharmacy_claims_null_refill_count
 with(appendonly=true,orientation=column) 
 as
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where refill_count is null;
 
 select *
-from data_warehouse.pharmacy_claims_null_refill_count
+from dw_staging.pharmacy_claims_null_refill_count
 where uth_member_id = '534171766'
 order by uth_member_id, ndc, fill_date;
 
 select data_source, refill_count, count(*)
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 group by 1, 2
 order by 1, 2;
 
 select count(*)
-from data_warehouse.pharmacy_claims_dupes;
+from dw_staging.pharmacy_claims_dupes;
 
 select count(*)
-from data_warehouse.pharmacy_claims_matches;
+from dw_staging.pharmacy_claims_matches;
 
 select *
-from data_warehouse.pharmacy_claims tsi 
+from dw_staging.pharmacy_claims tsi 
 where rx_claim_id_src in ('306471314044300530142012-06-20', '306471314044300530142012-07-20');
 
 select *
@@ -452,8 +461,8 @@ where enrolid = 1116678402
 order by svcdate;
 
 --Scratch
-drop table data_warehouse.pharmacy_claims_matches; 					                         
-create table data_warehouse.pharmacy_claims_matches
+drop table dw_staging.pharmacy_claims_matches; 					                         
+create table dw_staging.pharmacy_claims_matches
 ( a_id text,
   a_refill_count int,
   b_id text,
@@ -465,10 +474,10 @@ distributed by (uth_script_id);
 
 select b.uth_rx_claim_id, count(*)	
 select a.*
-from data_warehouse.pharmacy_claims b
-join data_warehouse.pharmacy_claims a
+from dw_staging.pharmacy_claims b
+join dw_staging.pharmacy_claims a
 on a.uth_member_id=b.uth_member_id and a.ndc=b.ndc and a.refill_count=0 and b.refill_count>0
-and a.fill_date = (select max(c.fill_date) from  data_warehouse.pharmacy_claims c
+and a.fill_date = (select max(c.fill_date) from  dw_staging.pharmacy_claims c
 					where c.uth_member_id = a.uth_member_id
 					                         and c.ndc = a.ndc 
 					                         and c.refill_count = 0 
@@ -479,40 +488,40 @@ having count(*) > 1;
 
 					                         
 select data_source, uth_member_id, member_id_src, uth_script_id, script_id, ndc, refill_count, fill_date
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 order by data_source, uth_script_id, ndc, fill_date, refill_count;
 
 -- Scratch 
 
 select uth_member_id, count(distinct member_id_src), count(*)
-from data_warehouse.pharmacy_claims pc 
+from dw_staging.pharmacy_claims pc 
 group by 1
 order by 3 desc;
 
 select uth_member_id, count(distinct member_id_src), count(*)
-from data_warehouse.dim_uth_rx_claim_id
+from dw_staging.dim_uth_rx_claim_id
 group by 1
 order by 3 desc;
 
 select uth_member_id, count(*)
-from data_warehouse.dim_uth_rx_claim_id
+from dw_staging.dim_uth_rx_claim_id
 group by 1
 order by 2 desc;
 
-insert into data_warehouse.pharmacy_claims
+insert into dw_staging.pharmacy_claims
 select *
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where data_source='truv';
 
-select distinct data_source from data_warehouse.pharmacy_claims;
+select distinct data_source from dw_staging.pharmacy_claims;
 
-select count(*) from data_warehouse.pharmacy_claims;
+select count(*) from dw_staging.pharmacy_claims;
 
-select ndc, fill_date, refill_count from data_warehouse.pharmacy_claims order by fill_date;
+select ndc, fill_date, refill_count from dw_staging.pharmacy_claims order by fill_date;
 
 select distinct on (a.ndc, a.fill_date) a.ndc, a.fill_date, a.refill_count, b.ndc, b.fill_date, b.refill_count 
-from data_warehouse.pharmacy_claims a
-left outer join data_warehouse.pharmacy_claims b on a.uth_member_id = b.uth_member_id and a.ndc = b.ndc and a.fill_date <= b.fill_date and a.refill_count = 0 and b.refill_count > 0
+from dw_staging.pharmacy_claims a
+left outer join dw_staging.pharmacy_claims b on a.uth_member_id = b.uth_member_id and a.ndc = b.ndc and a.fill_date <= b.fill_date and a.refill_count = 0 and b.refill_count > 0
 order by a.ndc, a.fill_date, b.fill_date;
 
 /*
@@ -525,33 +534,33 @@ drop table dev.wc_script_first_id
 select uth_rx_claim_id, uth_member_id, ndc, fill_date,
        right(ndc,5) || right(uth_member_id::text,5) || month_year_id::text || lpad(extract(day from fill_date)::text,2,'0') as script_id
    into dev.wc_script_first_id
-from data_warehouse.pharmacy_claims
+from dw_staging.pharmacy_claims
 where refill_count = 0
 
 
 --update initial script_id where refill=0
 ---15min
-update data_warehouse.pharmacy_claims a set script_id = b.script_id 
+update dw_staging.pharmacy_claims a set script_id = b.script_id 
 from dev.wc_script_first_id b 
 where a.uth_member_id = b.uth_member_id 
   and a.uth_rx_claim_id = b.uth_rx_claim_id 
 ;
 
 
-select * from data_warehouse.pharmacy_claims pc where refill_count = 0 and script_id is null and ndc is not null;
+select * from dw_staging.pharmacy_claims pc where refill_count = 0 and script_id is null and ndc is not null;
 
 drop table dev.wc_script_first_id 
 
 ----update script id for refills beyond initial
  
- update data_warehouse.pharmacy_claims a set script_id = b.script_id 
- from data_warehouse.pharmacy_claims b 
+ update dw_staging.pharmacy_claims a set script_id = b.script_id 
+ from dw_staging.pharmacy_claims b 
  where b.uth_member_id = a.uth_member_id 
     and b.ndc = a.ndc 
     and b.refill_count = 0 
     and a.refill_count <> 0 
     and b.fill_date = ( select max(c.fill_date) 
-                       from data_warehouse.pharmacy_claims c 
+                       from dw_staging.pharmacy_claims c 
                        where c.uth_member_id = a.uth_member_id
                          and c.ndc = a.ndc 
                          and c.refill_count = 0 
@@ -560,15 +569,15 @@ drop table dev.wc_script_first_id
 
 
 
-update data_warehouse.pharmacy_claims a set script_id = b.script_id 
-from data_warehouse.pharmacy_claims b 
+update dw_staging.pharmacy_claims a set script_id = b.script_id 
+from dw_staging.pharmacy_claims b 
 where a.uth_member_id in ( 361583100, 130463626, 502108669) 
     and b.uth_member_id = a.uth_member_id 
     and b.ndc = a.ndc 
     and b.refill_count = 0 
     and a.refill_count <> 0 
     and b.fill_date = ( select max(c.fill_date) 
-                       from data_warehouse.pharmacy_claims c 
+                       from dw_staging.pharmacy_claims c 
                        where c.uth_member_id = a.uth_member_id 
                          and c.ndc = a.ndc 
                          and c.refill_count = 0 
@@ -585,7 +594,7 @@ drop table dev.wc_temp_rx
 
 select * 
 into dev.wc_temp_rx 
-from data_warehouse.pharmacy_claims pc where uth_member_id in (361583100, 130463626, 502108669 ) ;
+from dw_staging.pharmacy_claims pc where uth_member_id in (361583100, 130463626, 502108669 ) ;
 
   
 select * 
@@ -620,7 +629,7 @@ drop table dev.wc_pharm_claims;
 
 select * 
 into dev.wc_pharm_claims
-from data_warehouse.pharmacy_claims 
+from dw_staging.pharmacy_claims 
 where data_year between 2016 and 2018 
 and data_source in ('truv')
 ;

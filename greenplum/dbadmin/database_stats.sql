@@ -108,7 +108,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('dev')-- and pgc.relname = 'temp_script_id'
+where pgn.nspname in ('dw_staging')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression
@@ -128,8 +128,8 @@ FROM pg_class a, pg_namespace b
 ,(SELECT relid,columnstore,compresstype 
   FROM pg_appendonly) c
 WHERE b.oid=a.relnamespace
-and b.nspname not in ('information_schema', 'dbo', 'pg_aoseg', 'pg_bitmapindex', 'pg_catalog', 'public', 'qa_reporting', 'dev')  
---and b.nspname in ('dw_staging')
+--and b.nspname not in ('information_schema', 'dbo', 'pg_aoseg', 'pg_bitmapindex', 'pg_catalog', 'public', 'qa_reporting', 'dev')  
+and b.nspname in ('dw_staging')
 AND a.oid=c.relid;
 
 --Roles and Members

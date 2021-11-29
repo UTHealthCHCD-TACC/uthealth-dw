@@ -33,7 +33,7 @@ LABCLMID char(19), LOINC_CD char(7), LOW_NRML numeric, PROC_CD char(7), RSLT_NBR
 source char(2), TST_DESC char(30), TST_NBR char(10), EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/\*/zip5_lr2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/\*/zip5_lr2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -67,4 +67,4 @@ order by 1;
 
 delete
 from optum_zip.lab_result
-where file >= 'zip5_lr2020q2';
+where file >= 'zip5_lr2020q3';

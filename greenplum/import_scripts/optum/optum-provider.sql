@@ -24,7 +24,7 @@ PROV_UNIQUE bigint, BED_SZ_RANGE text, CRED_TYPE text, GRP_PRACTICE int, HOSP_AF
 TAXONOMY1 text, TAXONOMY2 text, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/zip5_provider.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_provider.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

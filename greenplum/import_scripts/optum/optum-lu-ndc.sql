@@ -28,7 +28,7 @@ DRG_STRGTH_VOL_NBR numeric,DRG_STRGTH_VOL_UNIT_DESC varchar(100),GNRC_IND varcha
 NDC varchar(100),NDC_DRG_ROW_EFF_DT date,NDC_DRG_ROW_END_DT date,USC_ID varchar(100),USC_MED_DESC varchar(100)
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/lu_ndc.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/lu_ndc.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

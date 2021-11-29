@@ -26,7 +26,7 @@ GDR_CD char(1), GROUP_NBR char(20),
 HEALTH_EXCH char(1), LIS_DUAL char(1), PRODUCT char(5), YRDOB smallint, ZIPCODE_5 text, EXTRACT_YM int , VERSION numeric, FAMILY_ID numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/zip5_mbr_enroll.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_mbr_enroll.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 

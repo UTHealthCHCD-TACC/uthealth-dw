@@ -1,11 +1,16 @@
 library(PivotalR)
 
 conn.id <- db.connect(conn.pkg = "RPostgreSQL",
-                       dbname = 'uthealth', 
+                       dbname = 'dbname=uthealth', 
                        host = 'greenplum01.corral.tacc.utexas.edu',
                        port = 5432,
                        user = 'walling',
                        password = 'mUniop91*')
+
+install.packages('RPostgreSQL')
+install.packages('PivotalR')
+
+base::list(sslmode="require", connect_timeout="10")
 
 drv <- dbDriver( "PostgreSQL" )
 db <- 'myDatabase'  
