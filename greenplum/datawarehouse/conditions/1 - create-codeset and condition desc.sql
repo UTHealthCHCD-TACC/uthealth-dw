@@ -16,17 +16,16 @@
 ---codes used to identify conditions, dx, proc, rev code etc
 drop table conditions.codeset 
 
-create table conditions.codeset ( log_seq int2, condition_cd text, cd_type text,  cd_value_raw text, cd_value text );
+create table conditions.codeset ( log_seq int2, condition_cd text, cd_type text,  cd_value_raw text, cd_value text , logic_version text);
 
 update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x','%')
 
-select * from conditions.codeset c where cd_value like '%\%\%%'
-
-update conditions.codeset set cd_value = '6820%' where cd_value_raw = '6820xx'
+--replaces xx --> %% to %
+update conditions.codeset set cd_value = substring(cd_value, 0,  position('%' in cd_value)+1) where cd_value like '%\%\%%'
 
 select distinct condition_cd from conditions.codeset cd 
 
-update conditions.condition_desc set logic_version = 'v37'
+update conditions.condition_desc set logic_version = 'v40'
 
 select * from conditions.condition_desc cd 
 
@@ -48,11 +47,26 @@ create table conditions.condition_desc ( condition_cd text, condition_desc text,
                                       
 select * from conditions.condition_desc order by condition_cd;
 
+
+update conditions.condition_desc set type_desc = case  
+ when type_cd = 'C' then 'Chronic' 
+ when type_cd = 'P' then 'Persistent' 
+ when type_cd = 'T' then 'Catastrophic'
+ when type_cd = 'E' then 'Episodic'
+ when type_cd = 'A' then 'Acute'
+ when type_cd = 'G' then 'Congenital'
+ when type_cd = 'D' then 'Disabled'
+ when type_cd = 'PR' then 'Procedure'
+ when type_cd = 'H' then 'Historic'
+	else type_cd
+ end;
+
+
 update conditions.condition_desc set carry_forward = '1' where carry_forward = 'Y';
 
 update conditions.condition_desc set carry_forward = '0' where carry_forward = 'N';
 
-alter table conditions.condition_desc add column logic_version text default 'v36';
+alter table conditions.condition_desc add column logic_version text default 'v40';
 
 alter table conditions.condition_desc add column additional_logic_flag char(1) default '0';
 
