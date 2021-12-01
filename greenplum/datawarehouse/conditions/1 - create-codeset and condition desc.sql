@@ -22,6 +22,8 @@ update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x
 
 --replaces xx --> %% to %
 update conditions.codeset set cd_value = substring(cd_value, 0,  position('%' in cd_value)+1) where cd_value like '%\%\%%'
+--asthma in source has incorrect values; they are identified by a negative log_seq
+delete from conditions.codeset where log_seq<0
 
 select distinct condition_cd from conditions.codeset cd 
 
