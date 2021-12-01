@@ -1,10 +1,9 @@
--- Asthma Condition v37
+-- Asthma Condition v40
 
 -- select all the asthma icd codes, 
-SELECT * FROM conditions.codeset;
 
-drop table if exists conditions.asthma_dx_1;
-create table conditions.asthma_dx_1 as
+drop table if exists conditions.xl_condition_asthma_dx_1;
+create table conditions.xl_condition_asthma_dx_1  as
 with asth_dx as (
 select
 	*
@@ -18,15 +17,12 @@ select
 from
 	data_warehouse.claim_diag cdx
 inner join asth_dx on
-	diag_cd = asth_dx.cd_value;
-
-
-select * from conditions.asthma_dx_1
-order by uth_member_id,  year;
+	diag_cd = asth_dx.cd_value
+distributed by(uth_member_id);
 
 -- if ed or ip with asthma as primary they qualify for that year
-drop table if exists conditions.asthma_dx_2;
-create table conditions.asthma_dx_2 as
+drop table if exists conditions.xl_condition_asthma_dx_2;
+create table conditions.xl_condition_asthma_dx_2 as
 select
 	ch.uth_member_id ,
 	ch.uth_claim_id,
@@ -49,7 +45,7 @@ select
 	end as ip_qualifier,
 	0 as rx_qualifier
 from
-	conditions.asthma_dx_1 ap
+	conditions.xl_condition_asthma_dx_1 ap
 inner join data_warehouse.claim_header ch on
 	ch.uth_member_id = ap.uth_member_id
 	and ch.uth_claim_id = ap.uth_claim_id
@@ -60,7 +56,7 @@ inner join data_warehouse.claim_detail cd on
 
 insert
 	into
-	conditions.asthma_dx_2
+	conditions.xl_condition_asthma_dx_2
 with asthma_ndc as (
 	select
 		uth_member_id,
@@ -70,7 +66,7 @@ with asthma_ndc as (
 	from
 		data_warehouse.pharmacy_claims pc
 	inner join 
-(select * from conditions.condition_ndc where condition_cd ='ASTH') an on
+(select * from conditions.condition_ndc where condition_cd ='asth') an on
 		pc.ndc = an.ndc)
 select
 	uth_member_id,
@@ -87,11 +83,8 @@ select
 from
 	asthma_ndc ;
 
-
-select * from conditions.asthma_dx_2 ad  order by uth_member_id, year;
-
-drop table if exists conditions.asthma_dx_3;
-create table conditions.asthma_dx_3 as (
+drop table if exists conditions.xl_condition_asthma_dx_3;
+create table conditions.xl_condition_asthma_dx_3 as (
 with claim_agg as (
 select
 	uth_member_id,
@@ -102,7 +95,7 @@ select
 	max(ip_qualifier) ip_qualifier,
 	max(rx_qualifier) rx_qualifier
 from
-	conditions.asthma_dx_2
+	conditions.xl_condition_asthma_dx_2
 group by
 	uth_member_id,
 	uth_claim_id,
@@ -123,15 +116,15 @@ distributed by (uth_member_id);
 
 
 --mem_range is to fill in years that the member did not have a asthma dx or rx; this allows the across two years
---if a patient had four claims over two years they qualify
-drop table if exists conditions.asthma_dx_4;
-create table conditions.asthma_dx_4 as 
+--if a patient had four claims over two years they qualify 
+drop table if exists conditions.xl_condition_asthma_dx_4;
+create table conditions.xl_condition_asthma_dx_4 as 
 with mem_range as (
 select
 	uth_member_id,
 	generate_series(min(year), max(year), 1) as year_range
 from
-	conditions.asthma_dx_3
+	conditions.xl_condition_asthma_dx_3
 group by
 	uth_member_id)
 select
@@ -145,7 +138,7 @@ order by year_range rows between 1 preceding and current row) ip_ed_prof_qualifi
 	coalesce(rx_qualifier, 0) as rx_qualifier
 from
 	mem_range
-left outer join conditions.asthma_dx_3 ad3 on
+left outer join conditions.xl_condition_asthma_dx_3 ad3 on
 	mem_range.year_range = ad3.year
 	and mem_range.uth_member_id = ad3.uth_member_id
 order by
@@ -153,6 +146,8 @@ order by
 	year_range
 distributed by (uth_member_id);
 
+drop table if exists conditions.xl_condition_asthma_dx_5;
+create table conditions.xl_condition_asthma_dx_5 as 
 with asthma_qualified  as (select
 	*,
 	case when ed_qualifier = 1 then 1
@@ -162,7 +157,7 @@ with asthma_qualified  as (select
 	else 0
 	end as asthma_qualified
 from
-	conditions.asthma_dx_4
+	conditions.xl_condition_asthma_dx_4
 where 	case when ed_qualifier = 1 then 1
 	when  ip_qualifier = 1 then 1
 	when rx_qualifier >= 4 then 1
@@ -173,4 +168,5 @@ order by
 	uth_member_id,
 	year_range)
 select uth_member_id, min(year_range) as initial_asthma_year from asthma_qualified group by uth_member_id
-order by uth_member_id;
+order by uth_member_id
+distributed by (uth_member_id);

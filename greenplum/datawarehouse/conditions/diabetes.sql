@@ -1,16 +1,8 @@
--- Diabetes Condition v37
-
--- ndc table for diabetes drugs
-drop table if exists dev.conditions_diabetes_ndc;
-create table dev.conditions_diabetes_ndc as 
-select distinct ndc from data_warehouse.pharmacy_claims pc
-where ahfs_class like '6820%';
-
+-- Diabetes Condition v40
 
 -- select all the diabetes icd codes, 
-
-drop table if exists dev.conditions_diabetes_1;
-create table dev.conditions_diabetes_1 
+drop table if exists conditions.xl_condition_diabetes_1;
+create table conditions.xl_condition_diabetes_1 
 (
 	uth_member_id int8 NULL,
 	uth_claim_id int8 NULL,
@@ -21,7 +13,7 @@ create table dev.conditions_diabetes_1
 with (appendonly=true, orientation=column, compresstype=zlib) 
 distributed by (uth_member_id); 
 
-insert into dev.conditions_diabetes_1
+insert into conditions.xl_condition_diabetes_1
 with diab_dx as (
 select
 	*
@@ -38,7 +30,7 @@ from
 inner join diab_dx on
 	diag_cd = diab_dx.cd_value;
 
-insert into dev.conditions_diabetes_1
+insert into conditions.xl_condition_diabetes_1
 with diab_dx as (
 select
 	*
@@ -57,8 +49,8 @@ inner join diab_dx on
 
 
 -- if ed or ip with asthma as primary they qualify for that year
-drop table if exists dev.conditions_diabetes_2;
-create table dev.conditions_diabetes_2 as
+drop table if exists conditions.xl_condition_diabetes_2;
+create table conditions.xl_condition_diabetes_2 as
 select
 	ch.uth_member_id ,
 	ch.uth_claim_id,
@@ -81,7 +73,7 @@ select
 	end as ip_qualifier,
 	0 as rx_qualifier
 from
-	dev.conditions_diabetes_1 ap
+	conditions.xl_condition_diabetes_1 ap
 inner join data_warehouse.claim_header ch on
 	ch.uth_member_id = ap.uth_member_id
 	and ch.uth_claim_id = ap.uth_claim_id
@@ -94,7 +86,7 @@ inner join data_warehouse.claim_detail cd on
 -- add diabetes meds
 insert
 	into
-	dev.conditions_diabetes_2
+	conditions.xl_condition_diabetes_2
 with db_ndc as (
 	select
 		uth_member_id,
@@ -104,7 +96,7 @@ with db_ndc as (
 	from
 		data_warehouse.pharmacy_claims pc
 	inner join 
- dev.conditions_diabetes_ndc an on
+ (select ndc from conditions.condition_ndc where condition_cd = 'db') an on
 		pc.ndc = an.ndc)
 select
 	uth_member_id,
@@ -123,8 +115,8 @@ from
 
 
 
-drop table if exists dev.conditions_diabetes_3;
-create table dev.conditions_diabetes_3 as (
+drop table if exists conditions.xl_condition_diabetes_3;
+create table conditions.xl_condition_diabetes_3 as (
 with claim_agg as (
 select
 	uth_member_id,
@@ -135,7 +127,7 @@ select
 	max(ip_qualifier) ip_qualifier,
 	max(rx_qualifier) rx_qualifier
 from
-	dev.conditions_diabetes_2
+	conditions.xl_condition_diabetes_2
 group by
 	uth_member_id,
 	uth_claim_id,
@@ -157,7 +149,7 @@ distributed by (uth_member_id);
 with diabetes_qualified as (select
 	*
 from
-	dev.conditions_diabetes_3
+	conditions.xl_condition_diabetes_3
 where 	
 	case when ed_qualifier = 1 then 1
 	when  ip_qualifier = 1 then 1
