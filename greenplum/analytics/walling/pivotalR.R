@@ -1,11 +1,11 @@
 library(PivotalR)
 
 conn.id <- db.connect(conn.pkg = "RPostgreSQL",
-                       dbname = 'dbname=uthealth', 
+                       dbname = 'dbname=uthealth sslmode=require', 
                        host = 'greenplum01.corral.tacc.utexas.edu',
                        port = 5432,
                        user = 'walling',
-                       password = 'mUniop91*')
+                       password = '<password>')
 
 install.packages('RPostgreSQL')
 install.packages('PivotalR')

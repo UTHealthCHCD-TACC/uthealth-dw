@@ -126,10 +126,8 @@ where uth_script_id is not null
 and refill_count is not null
 distributed by (uth_member_id);
 
-raise info '%: vacuum tables ', clock_timestamp();
-
-vacuum analyze dw_staging.pharmacy_claims;
-vacuum analyze dev.pharmacy_claims_0;
+--vacuum analyze dw_staging.pharmacy_claims;
+--vacuum analyze dev.pharmacy_claims_0;
 
 --Verify = no rows
 /*

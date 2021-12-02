@@ -11,14 +11,29 @@
 select *
 from pg_stat_activity
 where state='active'
-and usename='walling';
+and usename='gmunoz1';
+
+select *
+from session_state.session_level_memory_consumption
+
+SELECT * FROM gp_toolkit.gp_bloat_diag;
+
+
+--Permissions
+SELECT 
+  nspname,         -- schema name
+  defaclobjtype,   -- object type
+  defaclacl        -- default access privileges
+FROM pg_default_acl a 
+JOIN pg_namespace b ON a.defaclnamespace=b.oid
+where nspname in ()
 
 select *
 from gp_toolkit.gp_skew_coefficients;
 
 where skcrelname like 'wc%';
 
-select pg_terminate_backend(31587);
+select pg_terminate_backend(276630);
 
 
 select *
@@ -81,8 +96,16 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('conditions.diagnosis_work_table')
+SELECT get_ao_distribution('dev.jw_replicated_id_table')
 order by 1;
+
+select count(*)
+from dev.jw_replicated_id_table;
+
+SELECT gp_segment_id, count(*)
+FROM dev.jw_replicated_id_table 
+GROUP BY gp_segment_id
+ORDER BY gp_segment_id;
 
 --Server Settings
 SELECT *

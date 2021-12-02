@@ -8,7 +8,7 @@ con <- dbConnect(RPostgres::Postgres(),
                  host = 'greenplum01.corral.tacc.utexas.edu', # i.e. 'ec2-54-83-201-96.compute-1.amazonaws.com'
                  port = 5432, # or any other port specified by your DBA
                  user = 'walling',
-                 password = 'mUniop91*') # DON'T COMMIT PW TO GIT!!!!!
+                 password = '<password>') # DON'T COMMIT PW TO GIT!!!!!
 
 dbListTables(con)
 
