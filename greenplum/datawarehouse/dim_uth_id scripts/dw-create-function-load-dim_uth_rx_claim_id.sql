@@ -217,6 +217,8 @@ analyze data_warehouse.dim_uth_rx_claim_id;
 --*****Medicaid*****  wcc002 
 raise notice 'load mdcd chip begin';
 
+delete from data_warehouse.dim_uth_rx_claim_id where data_source = 'mdcd';
+
 ---chip rx 
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
@@ -243,8 +245,15 @@ from medicaid.chip_rx a
 where c.uth_rx_claim_id is null 
 ;
 
+
+select count(distinct pcn || ndc || replace(rx_fill_dt::text, '-','')), year_fy from medicaid.chip_rx group by year_fy ;
+
+select count(uth_rx_claim_id), year  from data_warehouse.dim_uth_rx_claim_id where data_source = 'mdcd' group by year;
+
 raise notice 'load mdcd chip finished';
 raise notice 'load mdcd ffs begin';
+
+
 
 --medicaid ffs rx   
 insert into data_warehouse.dim_uth_rx_claim_id (

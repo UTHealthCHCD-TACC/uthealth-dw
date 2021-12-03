@@ -16,30 +16,6 @@
  * */
 
 
---------------- BEGIN SCRIPT -------
-
----create copy of data warehouse table in dw_staging 
-drop table if exists dw_staging.claim_detail;
-
-create table dw_staging.claim_detail 
-with (appendonly=true, orientation=column) as 
-select data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, 
-       from_date_of_service, to_date_of_service, month_year_id, place_of_service, 
-       network_ind, network_paid_ind, 
-       admit_date, discharge_date, discharge_status,
-       cpt_hcpcs as cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, drg_cd, 
-       revenue_cd, charge_amount, allowed_amount, paid_amount, 
-       copay, deductible, coins, cob, 
-       bill_type_inst, bill_type_class, bill_type_freq, 
-       units, fiscal_year, cost_factor_year, table_id_src, claim_sequence_number_src 
-from data_warehouse.claim_detail 
-where data_source not in ('optd','optz')
-distributed by (uth_member_id) 
-;
-
-vacuum analyze dw_staging.claim_detail;
-
-
 --------------***** Optum DoD ***** 
 
 ---uth claims for optd only distributed by member id 
@@ -50,7 +26,7 @@ with(appendonly=true,orientation=column)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.optd_uth_claim_id;
+analyze dw_staging.optd_uth_claim_id;
 
 
 --load OPTD to staging claim_detail table
@@ -70,11 +46,11 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null, a.procmod, null as proc_mod_2, a.drg, 
+       a.proc_cd,null, substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.alt_units, 
+       a.alt_units::int, 
        dev.fiscal_year_func(a.fst_dt), 
        c.standard_price_year, 'medical', a.clmseq,
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
@@ -109,7 +85,7 @@ with(appendonly=true,orientation=column)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.optz_uth_claim_id;
+analyze dw_staging.optz_uth_claim_id;
 
 
 
@@ -130,11 +106,11 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null,a.procmod, null as proc_mod_2, a.drg, 
+       a.proc_cd,null,substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
-       a.alt_units, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq,    
+       a.alt_units::int4, dev.fiscal_year_func(a.fst_dt), c.standard_price_year, 'medical', a.clmseq,    
        a.bill_prov as bill_provider, a.refer_prov as ref_provider, 
        a.service_prov as other_provider, a.prov as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_zip.medical a 
@@ -152,10 +128,15 @@ from optum_zip.medical a
 ;
 
 --va 
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
 
 
 ---cleanup
-drop table if exists dw_staging.optd_uth_claim_id;  drop table if exists dw_staging.optz_uth_claim_id;
+drop table if exists dw_staging.optd_uth_claim_id;  
+drop table if exists dw_staging.optz_uth_claim_id;
 
 --------------- END SCRIPT -------
+
+select count(*), data_source, year 
+from dw_staging.claim_detail cd 
+group by 2,3 order by 2,3;

@@ -19,9 +19,11 @@ create table dw_staging.pharmacy_claims
 with (appendonly=true, orientation=column, compresstype=zlib) as 
 	select * 
 	from data_warehouse.pharmacy_claims 
-	where data_source not in ('optd','optz')
+	--where data_source not in ('optd','optz')
 distributed by (uth_member_id)
 ;
+
+analyze dw_staging.pharmacy_claims;
 
 ---******************************************************************************************************************
 ------ ***** Optum DoD - optd *****
@@ -36,7 +38,7 @@ select * from data_warehouse.dim_uth_rx_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
 
-vacuum analyze dw_staging.optd_uth_rx_claim;
+analyze dw_staging.optd_uth_rx_claim;
 
 
 --optd  9m
@@ -134,7 +136,7 @@ select * from data_warehouse.dim_uth_rx_claim_id where data_source = 'optz'
 distributed by (member_id_src);
 
 
-vacuum analyze dw_staging.optz_uth_rx_claim;
+analyze dw_staging.optz_uth_rx_claim;
 
 
 --optz  9m
@@ -218,7 +220,7 @@ from optum_zip.rx a
  ;
 
 ---va
-vacuum analyze dw_staging.pharmacy_claims;
+analyze dw_staging.pharmacy_claims;
 
 
 --validate 
@@ -231,4 +233,4 @@ order by data_source, year;
 drop table if exists dw_staging.optz_uth_rx_claim;
 drop table if exists dw_staging.optd_uth_rx_claim;
 
---------------- BEGIN SCRIPT -------
+
