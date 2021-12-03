@@ -93,7 +93,7 @@ where
 		and bill_type_class = '1'
 		and (bill_type_freq = '1'
 			or bill_type_freq = '4'))
-	and data_source in ('optd', 'optz')
+--	and data_source in ('optd', 'optz')
 	and year between 2015 and 2021)
 insert into dev.gm_dw_ip_window_step_1 
 select data_source, uth_member_id, uth_claim_id, min(from_date_of_service) as admit_date,
@@ -102,34 +102,9 @@ max(to_date_of_service) to_date_of_service, discharge_status, bill_type from opt
 group by data_source, uth_member_id, uth_claim_id ,discharge_status ,bill_type;
 
 
-with truv as (select
-	data_source,
-	uth_member_id,
-	uth_claim_id ,
-	claim_sequence_number,
-	from_date_of_service,
-	to_date_of_service,
-	admit_date,
-	discharge_date,
-	discharge_status,
-	concat(bill_type_inst, bill_type_class, bill_type_freq) as bill_type
-from
-	data_warehouse.claim_detail ch
-where
-	(bill_type_inst = '1'
-	and bill_type_class = '1'
-	and (bill_type_freq = '1' or bill_type_freq = '4'))
-	and data_source = 'truv'
-	and year between 2015 and 2021)
-insert into dev.gm_dw_ip_window_step_1 
-select data_source, uth_member_id, uth_claim_id, min(from_date_of_service) as admit_date,
-max(to_date_of_service) discharge_date, min(from_date_of_service) as from_date_of_service,
-max(to_date_of_service) to_date_of_service, discharge_status, bill_type from truv
-group by data_source, uth_member_id, uth_claim_id ,discharge_status ,bill_type;
-
-
 delete from dev.gm_dw_ip_window_step_1 where to_date_of_service is null;
 
+--11 minutes? 43,573,765
 insert into dev.gm_dw_ip_window_step_2(
 	data_source,
 	uth_member_id,
@@ -141,7 +116,7 @@ insert into dev.gm_dw_ip_window_step_2(
 	pat_group)
 with all_inp as (
 select
-	distinct data_source,
+	data_source,
 	uth_member_id,
 	uth_claim_id,
 	min(admit_date) as admit_date,

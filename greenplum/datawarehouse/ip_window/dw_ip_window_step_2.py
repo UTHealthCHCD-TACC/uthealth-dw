@@ -111,6 +111,7 @@ if __name__ =='__main__':
     cur.execute(f'''select distinct data_source, pat_group  
                 from {source_table} order by data_source, pat_group;''')
     results = cur.fetchall()
+    print(results)
     cur.close()
     
     try:

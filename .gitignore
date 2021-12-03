@@ -1,2 +1,3 @@
 
 greenplum/datawarehouse/provider/Create_uth_provider_id_optd.sql
+greenplum/datawarehouse/ip_window/dw_ip_window.csv
