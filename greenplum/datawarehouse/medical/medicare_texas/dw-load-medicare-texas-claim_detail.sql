@@ -21,24 +21,9 @@
  * */
 
 
---------------- BEGIN SCRIPT -------
+do $$ 
 
-/*
- * run this step in medicare national first 
- * 
----create copy of data warehouse table in dw_staging 
-drop table if exists dw_staging.claim_detail;
-
-create table dw_staging.claim_detail 
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select *
-from data_warehouse.claim_detail 
-where data_source not in ('mcrt','mcrt')
-distributed by (uth_member_id) 
-;
-
-vacuum analyze dw_staging.claim_detail;
-*/
+begin 
 
 ----inpatient
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
@@ -70,25 +55,27 @@ from medicare_texas.inpatient_revenue_center_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+raise notice 'inpatient';
 
 --hha
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
-                                      cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, drg_cd, revenue_cd, charge_amount, allowed_amount, 
-                                      paid_amount, copay, deductible, coins, cob, bill_type_inst, bill_type_class, bill_type_freq, 
-                                      units, fiscal_year, table_id_src, claim_sequence_number_src,
+                                      cpt_hcpcs_cd, procedure_type, 
+                                      proc_mod_1, proc_mod_2, drg_cd, revenue_cd, charge_amount, allowed_amount, 
+                                      paid_amount, copay, deductible, coins, cob, 
+                                      bill_type_inst, bill_type_class, bill_type_freq, 
+                                      units, 
+                                      fiscal_year, table_id_src, claim_sequence_number_src,
                                       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
-                                     )								   							   
+                                     )	                                                                         
 select 'mcrt', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_line_num::numeric, a.rev_cntr_dt::date, a.clm_thru_dt::date,
 	    d.month_year_id, b.clm_fac_type_cd, true, true, b.clm_admsn_dt::date, b.nch_bene_dschrg_dt::date, b.ptnt_dschrg_stus_cd, 
 	    a.hcpcs_cd, case when substring(hcpcs_cd,1,1) ~ '[0-9]' then 'CPT'
 	   									 when substring(hcpcs_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
 	    a.hcpcs_1st_mdfr_cd, a.hcpcs_2nd_mdfr_cd, null, a.rev_cntr, a.rev_cntr_ncvrd_chrg_amt::numeric, null, 
-	    null, null, null, null, null,  substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
-	    a.rev_cntr_unit_cnt::int, 
-      dev.fiscal_year_func(a.clm_thru_dt::date),
-      'hha_revenue_center', a.clm_line_num,
-	    a.rev_cntr_unit_cnt::int, b.year::int2, 'hha_revenue_center', a.clm_line_num,
+	    null, null, null, null, null,  
+	    substring(b.clm_fac_type_cd,1,1),  substring(b.clm_srvc_clsfctn_type_cd,1,1),  substring(b.clm_freq_cd,1,1), 
+	    a.rev_cntr_unit_cnt::int, dev.fiscal_year_func(a.clm_thru_dt::date), 'hha_revenue_center', a.clm_line_num,
 	    null as bill_provider, null as ref_provider, null as other_provider, 
 	    a.rndrng_physn_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicare_texas.hha_revenue_center_k a 
@@ -103,6 +90,8 @@ from medicare_texas.hha_revenue_center_k a
     on d.month_int = extract(month from b.clm_from_dt::date)
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
+
+raise notice 'hha';
 
 
 --hospice
@@ -137,6 +126,8 @@ from medicare_texas.hospice_revenue_center_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
+raise notice 'hospice';
+
 --snf
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
@@ -168,6 +159,8 @@ from medicare_texas.snf_revenue_center_k a
     on d.month_int = extract(month from b.clm_from_dt::date)
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
+
+raise notice 'snf';
 
 ---////
 ---outpatient
@@ -203,6 +196,7 @@ from medicare_texas.outpatient_revenue_center_k a
 ;
 
 
+raise notice 'outpatient';
 
 --bcarrier 
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
@@ -237,6 +231,8 @@ from medicare_texas.bcarrier_line_k a
 ;
 
 
+raise notice 'bcarrier';
+
 --dme
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
@@ -269,16 +265,13 @@ from medicare_texas.dme_line_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
+raise notice 'dme';
 
 ---finalize 
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
 
+raise notice 'done';
 
-select data_source, year, count(*) 
-from dw_staging.claim_detail 
-group by data_source , "year" 
-order by data_source , year 
-; 
+end $$
+;
 
-
------- END SCRIPT 

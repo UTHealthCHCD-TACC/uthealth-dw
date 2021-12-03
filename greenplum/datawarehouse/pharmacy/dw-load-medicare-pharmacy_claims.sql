@@ -183,7 +183,17 @@ from medicare_national.pde_file a
  ;
 
 
-vacuum analyze dw_staging.pharmacy_claims;
+select count(*), year  
+from  dw_staging.claim_detail
+group by 2 order by 2;
+
+select count(*), year  
+from  data_warehouse.claim_header
+group by 2 order by 2;
+
+select count(*) from dw_staging.pharmacy_claims ;
+
+analyze dw_staging.pharmacy_claims;
 
 ---validate
 select count(*), data_source, year

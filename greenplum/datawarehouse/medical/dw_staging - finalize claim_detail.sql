@@ -10,7 +10,7 @@
  * 
 */
 
-go $$ 
+do $$ 
 
 begin 
 	
@@ -29,6 +29,7 @@ with (appendonly=true, orientation=column) as
 	where rn > 1
 distributed by (row_id);	
 
+raise notice 'dupe working table';
 
 --remote dupe records so only one per member per month - runtime: 12min
 delete from dw_staging.claim_detail a 
@@ -36,6 +37,10 @@ delete from dw_staging.claim_detail a
    where a.row_id = b.row_id 
 ; 
 
+raise notice 'dupes removed';
+
+end $$ 
+;
 
 
 ---update claim sequence  
@@ -58,6 +63,7 @@ distributed by (row_id);
 	
 analyze dev.claim_seq_build ;
 		
+raise notice 'clm seq working table';
 
 --update claim sequence 58min
 update dw_staging.claim_detail a set claim_sequence_number = rownum       
@@ -65,6 +71,7 @@ from dev.claim_seq_build b
 where a.row_id = b.row_id
 ;		 
 
+raise notice 'clm seq updated';
 
 ---****redistribute on uth_member_id
 
@@ -73,6 +80,8 @@ with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) a
 select * from dw_staging.claim_detail 
 distributed by (uth_member_id)
 ;
+
+raise notice 'redistributing claim detail';
 
 ---replace 
 drop table dw_staging.claim_detail;
@@ -85,6 +94,7 @@ analyze dw_staging.claim_detail;
 
 alter table dw_staging.claim_detail  owner to uthealth_dev;
 
+raise notice 'done';
 
 end $$
 ;
