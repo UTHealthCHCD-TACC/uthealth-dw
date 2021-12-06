@@ -189,11 +189,9 @@ if __name__ == '__main__':
     icd_9_cm_csv_slice_dict = {'cd_value':slice(1),'code_description':slice(2,3)}
     icd_10_cm_txt_slice_dict = {'cd_value':slice(6,13),'code_description':slice(16,76)}
 
-
     icd_9_pcs_txt_slice_dict = {'cd_value':slice(0,4),'code_description':slice(5,None)}
     icd_9_pcs_csv_slice_dict = {'cd_value':slice(1),'code_description':slice(2,3)}
     icd_10_pcs_txt_slice_dict = {'cd_value':slice(6,13),'code_description':slice(16,76)}
-
 
     cpt_txt_slice_dict = {'cd_value':slice(0,5),'code_description':slice(6,None)}
     grep_pattern = "^\w{5}\t"
