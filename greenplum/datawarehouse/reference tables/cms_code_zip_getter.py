@@ -48,21 +48,6 @@ zip_icd_pcs_file_urls = {
 'ICD9_2005': 'https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/Downloads/v23_icd9.zip'
 }
 
-#icd 9-pcs is with icd 9 cm codes; does not allow for programmatic access via requests
-zip_cpt_file_urls = {
-'CPT_HCPCS_2022': 'https://www.cms.gov/apps/ama/license.asp?file=/files/zip/list-codes-effective-january-1-2022-published-november-19-2021.zip',
-'CPT_HCPCS_2021': 'https://www.cms.gov/apps/ama/license.asp?file=/files/zip/list-codes-effective-january-1-2021-issued-december-1-2020.zip',
-'CPT_HCPCS_2020': 'https://www.cms.gov/apps/ama/license.asp?file=/files/zip/list-codes-effective-january-1-2020-published-december-2-2019',
-'CPT_HCPCS_2019': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2019-DHS-Addendum.zip',
-'CPT_HCPCS_2018': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2018-DHS-Addendum.zip',
-'CPT_HCPCS_2017': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2017-DHS-Addendum.zip',
-'CPT_HCPCS_2016': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2016-DHS-Addendum.zip',
-'CPT_HCPCS_2015': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2015-DHS-Addendum.zip',
-'CPT_HCPCS_2014': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2014-DHS-Addendum.zip',
-'CPT_HCPCS_2013': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2013-Addendum.zip',
-'CPT_HCPCS_2012': 'https://www.cms.gov/apps/ama/license.asp?file=/Medicare/Fraud-and-Abuse/PhysicianSelfReferral/Downloads/2012Addendum.zip',
-}
-
 
 def zip_outputter(output_dir, dir_name, url):
     zip_output_dir = os.path.join(output_dir, dir_name)
@@ -94,10 +79,3 @@ if __name__ == '__main__':
 
     for year, url in zip_icd_pcs_file_urls.items():
         zip_outputter(output_dir, year, url)
-
-    output_dir = 'cpt_hcpcs_zip'
-    for year, url in zip_cpt_file_urls.items():
-        if os.path.exists(os.path.join(output_dir, year)):
-            print('File previosuly  made')
-        else: 
-            os.mkdir(os.path.join(output_dir, year))

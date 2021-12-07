@@ -153,37 +153,7 @@ if __name__ == '__main__':
     'cd_year': 2006},
     {'file_path': 'icd_pcs_zip\\ICD9_2005\\I9SG_DESC.txt',
     'cd_type': 'ICD9-PCS',
-    'cd_year': 2005},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2022\\Section 508 Version Compliant of 2022_DHS_Code_List_Addendum_10_28_21.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2022},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2020\\508-compliant-version-of-2020dhsaddendum.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2020},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2019\\2019dhsaddendum.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2019},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2018\\2018dhsaddendum_10_24_17final.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2018},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2017\\2017dhsaddendum_final_10_26_16.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2017},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2016\\2016DHSAddendum_10-16-15.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2016},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2015\\2015DHSAddendum_10-30-14.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2015},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2014\\2014DHSAddendum.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2014},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2013\\Copy of 2013Addendum.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2013},
-    {'file_path': 'cpt_hcpcs_zip\\CPT_HCPCS_2012\\2012AddendumwCorrections.txt',
-    'cd_type': 'CPT-HCPCS',
-    'cd_year': 2012}]
+    'cd_year': 2005}]
     
     icd_9_cm_txt_slice_dict = {'cd_value':slice(0,5),'code_description':slice(6,None)}
     icd_9_cm_csv_slice_dict = {'cd_value':slice(1),'code_description':slice(2,3)}
@@ -193,8 +163,6 @@ if __name__ == '__main__':
     icd_9_pcs_csv_slice_dict = {'cd_value':slice(1),'code_description':slice(2,3)}
     icd_10_pcs_txt_slice_dict = {'cd_value':slice(6,13),'code_description':slice(16,76)}
 
-    cpt_txt_slice_dict = {'cd_value':slice(0,5),'code_description':slice(6,None)}
-    grep_pattern = "^\w{5}\t"
 
     for file_dict in code_files:
         file_dict['constant_dict'] = {'cd_year': file_dict['cd_year'], 'cd_type':file_dict['cd_type']}
@@ -217,10 +185,6 @@ if __name__ == '__main__':
                 file_dict['slice_dict'] = icd_9_pcs_csv_slice_dict
             else:
                 file_dict['slice_dict'] = icd_9_pcs_txt_slice_dict
-                
-        elif file_dict['cd_type'] == 'CPT-HCPCS':
-            file_dict['slice_dict'] = cpt_txt_slice_dict
-            file_dict['grep_pattern'] = "^\w{5}\t"
 
         total_codes = []
 

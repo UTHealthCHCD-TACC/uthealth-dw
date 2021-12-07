@@ -21,12 +21,21 @@ def create_cms_code_tables(cursor):
     distributed randomly;
     """)
 
-def create_cms_icd_code_tables(cursor):
+def create_cms_icd_cm_code_table(cursor):
     cursor.execute("""
-    drop table if exists reference_tables.ref_cms_icd_codes;
-    create table reference_tables.ref_cms_icd_codes (like reference_tables.ref_cms_codes);
+    drop table if exists reference_tables.ref_cms_icd_cm_codes;
+    create table reference_tables.ref_cms_icd_cm_codes (like reference_tables.ref_cms_codes);
+    insert into reference_tables.ref_cms_icd_cm_codes select * from 
+                      reference_tables.ref_cms_codes where cd_type in ('ICD10-CM', 'ICD9-CM');
     """)
 
+def create_cms_icd_pcs_code_table(cursor):
+    cursor.execute("""
+    drop table if exists reference_tables.ref_cms_icd_pcs_codes;
+    create table reference_tables.ref_cms_icd_pcs_codes (like reference_tables.ref_cms_codes);
+    insert into reference_tables.ref_cms_icd_pcs_codes select * from 
+                      reference_tables.ref_cms_codes where cd_type in ('ICD10-PCS', 'ICD9-PCS');
+    """)
 
 
 file_df = pd.read_csv('./cms_codes.csv')
@@ -42,6 +51,5 @@ with con.cursor() as cursor:
     cursor.execute('set search_path to reference_tables, public')
     cursor.copy_from(f, 'ref_cms_codes', sep='\t', columns=('cd_type','cd_value','initial_year', 'last_year','code_description'))
 
-    create_cms_icd_code_tables(cursor)
-    cursor.execute("""insert into reference_tables.ref_cms_icd_codes select * from 
-                      reference_tables.ref_cms_codes where cd_type in ('ICD10-CM', 'ICD9-CM');""")
+    create_cms_icd_cm_code_table(cursor)
+    create_cms_icd_pcs_code_table(cursor)
