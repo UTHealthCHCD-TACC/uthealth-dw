@@ -325,7 +325,7 @@ where c.uth_claim_id is null
 raise notice 'medicaid loaded';
 raise notice 'analyze dim_uth_claim_id';
 
-analyze data_warehouse.dim_uth_claim_id;
+vacuum full analyze data_warehouse.dim_uth_claim_id;
 
 
 alter function dw_staging.load_dim_uth_claim_id() owner to uthealth_dev;
