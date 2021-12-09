@@ -14,8 +14,8 @@
 do $$
 declare
 ---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
----example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';
-	my_data_source text := ' (''truv'') ';
+---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';  //   := ' (''truv'') ';
+	my_data_source text ' (''mdcd'',''optd'',''optz'') ';
 	med_return boolean;
 begin
 

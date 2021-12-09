@@ -1,22 +1,21 @@
 CREATE OR REPLACE VIEW qa_reporting.enrollment_raw_counts
 as
-
-
-
---enrollment
-	select count(distinct patid) , 'optd' as data_source
+select * 
+from 
+(
+	select count(distinct patid) , 'optd' as data_source, 'raw table' as src
 	from optum_dod.mbr_enroll_r 
 union 
-	select count(distinct patid), 'optz' 
+	select count(distinct patid), 'optz' , 'raw table' as src
 	from optum_zip.mbr_enroll 
 union 
-	select count(distinct bene_id), 'mcrt' 
-	from uthealth/medicare_national.mbsf_abcd_summary 
+	select count(distinct bene_id), 'mcrt' , 'raw table' as src
+	from medicare_texas.mbsf_abcd_summary 
 union 
-	select count(distinct bene_id), 'mcrn'
+	select count(distinct bene_id), 'mcrn', 'raw table' as src
 	from medicare_national.mbsf_abcd_summary 
 union 
-    select count(distinct client_nbr), 'mdcd' 
+    select count(distinct client_nbr), 'mdcd' , 'raw table' as src
         from 
         (
 	        select client_nbr from medicaid.enrl 
@@ -24,23 +23,21 @@ union
 	        select client_nbr from medicaid.chip_uth 
         ) inrx 
 union 
-	select count(distinct enrolid), 'truv'
+	select count(distinct enrolid), 'truv', 'raw table' as src
 	from 
 		(
 		select enrolid from truven.ccaet 
 		union all 
 		select enrolid from truven.mdcrt 
 	    ) inr 
-;
-
-
-select count(distinct uth_member_id), data_source 
+union 
+select count(distinct uth_member_id), data_source , 'dim table' as src
 from data_warehouse.dim_uth_member_id 
 group by data_source  order by data_source 
-;
+) inr ;
 
-select * from data_warehouse.member_enrollment_yearly mey 
 
+alter view qa_reporting.enrollment_raw_counts owner to uthealth_analyst;
 
 
 select count(distinct uth_member_id) 

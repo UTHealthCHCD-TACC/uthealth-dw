@@ -22,19 +22,9 @@
 
 --------------- BEGIN SCRIPT -------
 
----create copy of data warehouse table in dw_staging 
-drop table if exists dw_staging.claim_detail;
+do $$ 
 
-create table dw_staging.claim_detail 
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select *
-from data_warehouse.claim_detail 
-where data_source not in ('mcrn','mcrt')
-distributed by (uth_member_id) 
-;
-
-vacuum analyze dw_staging.claim_detail;
-
+begin 
 
 ----inpatient
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
@@ -68,6 +58,7 @@ from medicare_national.inpatient_revenue_center_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+raise notice 'inpatient';
 
 --hha
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
@@ -99,6 +90,7 @@ from medicare_national.hha_revenue_center_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
+raise notice 'hha';
 
 --hospice
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
@@ -132,6 +124,8 @@ from medicare_national.hospice_revenue_center_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
+raise notice 'hospice';
+
 --snf
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
@@ -164,7 +158,9 @@ from medicare_national.snf_revenue_center_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
----////
+raise notice 'snf';
+
+
 ---outpatient
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
@@ -197,6 +193,7 @@ from medicare_national.outpatient_revenue_center_k a
 	   and d.year_int = extract(year from b.clm_from_dt::date) 
 ;
 
+raise notice 'outpatient';
 
 
 --bcarrier 
@@ -232,6 +229,9 @@ from medicare_national.bcarrier_line_k a
 ;
 
 
+raise notice 'bcarrier';
+
+
 --dme
 insert into dw_staging.claim_detail ( data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, from_date_of_service, to_date_of_service,
                                       month_year_id, place_of_service, network_ind, network_paid_ind, admit_date, discharge_date, discharge_status, 
@@ -264,16 +264,13 @@ from medicare_national.dme_line_k a
    and d.year_int = extract(year from b.clm_from_dt::date)
 ;
 
+raise notice 'dme';
 
 ---finalize 
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
 
+raise notice 'done';
 
-select data_source, year, count(*) 
-from dw_staging.claim_detail 
-group by data_source , "year" 
-order by data_source , year 
-; 
+end $$
+;
 
-
------- END SCRIPT 

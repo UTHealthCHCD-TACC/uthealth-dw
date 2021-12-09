@@ -14,6 +14,8 @@
  *  wc003  || 11/09/2021 || run as one script
  * ****************************************************************************************************** 
  *  jw001  || 11/12/2021 || wrap in function
+ * ****************************************************************************************************** 
+ *  wc004  || 12/07/2021 || add data source to medicaid
  * *******************************************************************************************************/
 
 ---runtime 11/9/21 - 90minutes
@@ -298,6 +300,7 @@ select 'mdcd', a.icn, a.pcn, b.uth_member_id, a.year_fy
 from medicaid.clm_proc a
   join data_warehouse.dim_uth_member_id b  
     on b.member_id_src = a.pcn  
+   and b.data_source = 'mdcd'
   left outer join data_warehouse.dim_uth_claim_id c
     on c.member_id_src = a.pcn 
    and c.claim_id_src = a.icn
@@ -312,6 +315,7 @@ select 'mdcd', a.derv_enc, trim(a.mem_id), b.uth_member_id, a.year_fy
 from medicaid.enc_proc a   
    join data_warehouse.dim_uth_member_id b 
      on b.member_id_src = trim(a.mem_id)    
+    and b.data_source = 'mdcd'
    left outer join data_warehouse.dim_uth_claim_id c
      on c.member_id_src = a.mem_id
     and c.claim_id_src = a.derv_enc 
@@ -321,7 +325,7 @@ where c.uth_claim_id is null
 raise notice 'medicaid loaded';
 raise notice 'analyze dim_uth_claim_id';
 
-analyze data_warehouse.dim_uth_claim_id;
+vacuum full analyze data_warehouse.dim_uth_claim_id;
 
 
 alter function dw_staging.load_dim_uth_claim_id() owner to uthealth_dev;

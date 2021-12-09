@@ -24,11 +24,9 @@ select  'truv',
 		 a.dxver, 
 		 dev.fiscal_year_func(a.svcdate)
 from truven.ccaef a
-   join dev.truven_dim_uth_claim_id b 
-     on b.member_id_src = a.enrolid::text
-    and b.claim_id_src = a.msclmid::text
-    and b.data_source  = 'truv'
-    and b.data_year = a.year
+   join data_warehouse.dim_uth_claim_id b  
+      on a.member_id_src = b.member_id_src 
+     and b.claim_id_src = a.msclmid::text 
 ;
 
  
@@ -56,11 +54,12 @@ select  'truv',
 		 a.dxver, 
 		 dev.fiscal_year_func(a.svcdate)
 from truven.mdcrf a
-   join dev.truven_dim_uth_claim_id b 
-     on b.member_id_src = a.enrolid::text
-    and b.claim_id_src = a.msclmid::text
-    and b.data_source  = 'truv'
-    and b.data_year = a.year
+   join data_warehouse.dim_uth_claim_id b  
+      on a.member_id_src = b.member_id_src 
+     and b.claim_id_src = a.msclmid::text 
 ;
+
+
+
 
 

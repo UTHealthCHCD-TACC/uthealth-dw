@@ -21,64 +21,8 @@
 
 
 ----  // BEGIN SCRIPT 
-
----create working table in dw_staging 
-drop table if exists dw_staging.claim_detail;
-
-create table dw_staging.claim_detail (
-	data_source bpchar(4),
-	"year" int2,
-	uth_member_id int8,
-	uth_claim_id numeric,
-	claim_sequence_number int4,
-	from_date_of_service date,
-	to_date_of_service date,
-	month_year_id int4,
-	place_of_service text,
-	network_ind bool,
-	network_paid_ind bool,
-	admit_date date,
-	discharge_date date,
-	discharge_status bpchar(2),
-	cpt_hcpcs_cd text,
-	procedure_type text,
-	proc_mod_1 bpchar(2),
-	proc_mod_2 bpchar(2),
-	drg_cd text,
-	revenue_cd bpchar(4),
-	charge_amount numeric(13,2),
-	allowed_amount numeric(13,2),
-	paid_amount numeric(13,2),
-	copay numeric(13,2),
-	deductible numeric(13,2),
-	coins numeric(13,2),
-	cob numeric(13,2),
-	bill_type_inst bpchar(1),
-	bill_type_class bpchar(1),
-	bill_type_freq bpchar(1),
-	units int4,
-	fiscal_year int2,
-	cost_factor_year int2,
-	table_id_src text,
-	claim_sequence_number_src text,
-	row_id bigserial
-	) 
-with(appendonly=true,orientation=column, compresstype=zlib, compresslevel=5)
-distributed by (row_id);
-;
-
-alter sequence dw_staging.claim_detail_row_id_seq cache 200;
-
-
-
--------------insert existing records from data warehouse. except for this data source
-insert into dw_staging.claim_detail 
-select * from data_warehouse.claim_detail 
-where data_source not in ('mdcd')
-;
-
-vacuum analyze dw_staging.claim_detail;
-
+do $$
+begin 
 
 ---claim
 insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id, 
@@ -90,8 +34,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd,  claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status,
-                                      bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+                                     fiscal_year, cost_factor_year, discharge_status
+                                     -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                          
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id, 
        a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos), 
@@ -108,9 +52,7 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        null, b.drg, a.clm_dtl_nbr, 
        dev.fiscal_year_func(a.from_dos),
        null, 
-       d.pat_stat_cd,
-       null as bill_provider, a.ref_prov_npi as ref_provider, null as other_provider, 
-       a.perf_prov_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
+       d.pat_stat_cd
 from medicaid.clm_detail a 
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -123,14 +65,9 @@ from medicaid.clm_detail a
      and d.year_fy = b.year_fy 
 ;     
 
+raise notice 'clm detail done %', clock_timestamp();
 
-select * 
-from dw_staging.claim_detail cd 
-where data_source = 'mdcd' 
-  and year = 2019;
 
-where year_fy = 2019
-;
 
 
 
@@ -144,8 +81,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd, claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status,
-                                     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+                                     fiscal_year, cost_factor_year, discharge_status
+                                    -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                      
 select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id, 
        a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
@@ -162,9 +99,13 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
        dev.fiscal_year_func(a.fdos_dt::date),
        null, 
+<<<<<<< Updated upstream
        d.pat_stat,
               null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider, 
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider
+=======
+       d.pat_stat
+>>>>>>> Stashed changes
 from medicaid.enc_det a 
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc 
@@ -177,16 +118,21 @@ from medicaid.enc_det a
      and d.year_fy = b.year_fy 
 ;   
 
+raise notice 'enc det done %', clock_timestamp();
 
 ---finalize 12min
-vacuum analyze dw_staging.claim_detail;
+analyze dw_staging.claim_detail;
+
+raise notice 'done %', clock_timestamp();
+
+end $$
+;
 
 ---validate
-select count(*), fiscal_year 
+select count(*), data_source, year  
 from dw_staging.claim_detail
-where data_source = 'mdcd'
-group by fiscal_year 
-order by fiscal_year 
+group by 2,3 
+order by 2 ,3
 ;
 
 ----------------- END SCRIPT 
