@@ -1,13 +1,28 @@
+from datetime import datetime
+import io
+import sys
 import numpy as np
 import pandas as pd
-import pyodbc
-from datetime import datetime
-
+import psycopg2
+import psycopg2.extras
+sys.path.append('H:/helpers/')
+from helpers.get_db_info import get_dsn
+from helpers.db_utils import io_copy_from
 
 transfer_discharge_cds = ['02', '05', '65', '82', '85', '88', '93', '94','30']
 
 def transfer_dt_adjuster(df):
-    #adjusts one day for transfer codes and creates the transfer adjusted discharge date
+    '''
+    Parameters
+    ----------
+    df: pandas dataframe with acute inpatient discharge dates
+    
+    Returns
+    -------
+    df: pandas dateframe
+
+        returns dataframe with adjusted transfer dates
+    '''
     df.loc[:, 'transfer_cd'] = False
     df.loc[df['discharge_status'].isin(transfer_discharge_cds), 'transfer_cd']=True
     df.loc[:, 'transfer_adj_discharge_date'] = None
@@ -19,6 +34,27 @@ def transfer_dt_adjuster(df):
     return df
 
 def enc_identifier(df, is_sorted=False, drop_intermediate_cols=False):
+    '''
+
+    Parameters
+    ----------
+    df : pandas dataframe
+        with the patient id, admit_date and discharge date
+    is_sorted : Booleen, optional
+        Dataframe must be sorted for operation to work correctly,
+        if sorted is false, the sort in function is bipassed
+    drop_intermediate_cols : Boolean, optional
+        Deletes intermediate calculated columns if true
+
+    Returns
+    -------
+    df : pandas dataframe
+        adds columns that determine encounters time period. 
+        The encounter time period is between by 'enc_admit_date' and
+        'enc_discharge_date'
+    
+    '''
+    
     if not is_sorted:
         df = df.sort_values(['uth_member_id', 'admit_date', 'discharge_date'], 
                             ascending=[1,1,0])
@@ -38,12 +74,43 @@ def enc_identifier(df, is_sorted=False, drop_intermediate_cols=False):
     return df
 
 def admit_id_output(df):
+    '''
+    
+    Parameters
+    ----------
+    df: pandas dataframe 
+        Must contain the encounter id and admit date
+    
+    
+    Returns
+    -------
+    admit_id_series: pandas series
+    The series is a unique identifier for the admit
+    
+    '''
     admit_id_series = (df['uth_member_id'].astype('str')+'-'+
                        df['enc_id'].astype('str').str.zfill(3)+'-'+
                       (df['admit_date'].dt.year).astype('str'))
     return admit_id_series
 
 def encounter_row_counter(df):
+    '''
+
+    Parameters
+    ----------
+    df : pandas dataframe
+        df with uth_member_id, enc_id as index
+
+    Returns
+    -------
+    df : pandas data frame
+        returns altered df that has a row count for each encounter
+        
+    This is used to make the function admit_encounter_status more efficient, 
+    identifying the encounters that only have one status.
+    
+
+    '''
     if 'enc_row_count' in df.columns:
         print('previously calculated; drop column to repeat')
         return df
@@ -54,6 +121,19 @@ def encounter_row_counter(df):
         return df
     
 def admit_encounter_status(df):
+    '''
+
+    Parameters
+    ----------
+    df : pandas dataframe
+        dataframe has the encounter_row_count, and discharge status
+
+    Returns
+    -------
+    enc_statuses : pandas dataframe
+        dataframe that contains the encounter's discharge status
+
+    '''
     #those that only have one row will have the status of that row as the encounter status
     clm_segment_1 = df.loc[df['enc_row_count']==1, ['discharge_status']]
     clm_segment_1['enc_discharge_status'] = clm_segment_1.loc[:, 'discharge_status']
@@ -103,34 +183,32 @@ def admit_encounter_status(df):
     return enc_statuses
 
 if __name__ =='__main__':
-    source_table = 'dev.gm_dw_ip_window_step_2'
-    output_csv = './dw_ip_window.csv'
+    schema = 'dev'
+    source_table = 'gm_dw_ip_window_step_2'
+    output_table = 'gm_dw_ip_admit'
     
-    con = pyodbc.connect('DSN=PostgreSQL35W')
-    cur = con.cursor()
-    cur.execute(f'''select distinct data_source, pat_group  
-                from {source_table} order by data_source, pat_group;''')
-    results = cur.fetchall()
-    print(results)
-    cur.close()
+    con = psycopg2.connect(get_dsn())
+    con.autocommit = True
+    
+    with con.cursor() as cursor:
+        cur = con.cursor()
+        cur.execute(f'''select distinct data_source, pat_group  
+                    from {schema}.{source_table} order by data_source, pat_group;''')
+        results = cur.fetchall()
+        print(results)
     
     try:
-        #creates new file when true, appends to file when false
-        reset = True
         for pat_group in results:
             print(pat_group)
-            start = datetime.now()
-            sql_string = f'''select * from {source_table} where
+            sql_string = f'''select * from {schema}.{source_table} where
                              data_source = '{pat_group[0]}' and
                              pat_group = {pat_group[1]} ;''';
             clm_df = pd.read_sql(sql_string, con=con, 
                                  parse_dates=['admit_date', 'discharge_date'])
-            end = datetime.now()
-            time_to_read = end-start
-            print(f'''time to read: {time_to_read}''')
+
             clm_df = clm_df.sort_values(['uth_member_id', 'admit_date', 'discharge_date'], ascending=[1,1,0])
             
-            #remove this later
+            #fills null discharge statuses...
             clm_df['discharge_status'] = clm_df['discharge_status'].fillna('NA')
             
             clm_df = transfer_dt_adjuster(clm_df)
@@ -147,15 +225,16 @@ if __name__ =='__main__':
                                                              admit_id=('admit_id','first'),
                                                              data_source=('data_source','first'))
             print(final_ip_group.shape[0])
-            if reset:
-                final_ip_group.to_csv(output_csv)
-                reset = False
-            else:
-                final_ip_group.to_csv(output_csv, mode='a', header=False)
+            
+            #set in column order for load
+            final_ip_group = final_ip_group.reset_index()
+            final_ip_group = final_ip_group[['data_source','uth_member_id','enc_id','admit_date',
+                                             'discharge_date','enc_discharge_status','admit_id']]
+            final_ip_group.loc[:, 'insert_ts'] = datetime.now()
+            io_copy_from(con, final_ip_group, schema, output_table)
                 
     except:
         raise
     finally:
         con.close()
 
-# \copy dev.gm_dw_ip_admit(uth_member_id, enc_id, admit_date, discharge_date, enc_discharge_status, admit_id, data_source) from 'H:\Notebooks\IP_Windows\optum_dw_ip_window.csv' delimiter ',' csv header;
