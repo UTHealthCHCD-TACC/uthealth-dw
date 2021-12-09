@@ -1,7 +1,7 @@
 
 greenplum/datawarehouse/provider/Create_uth_provider_id_optd.sql
 greenplum/datawarehouse/ip_window/dw_ip_window.csv
-greenplum/datawarehouse/reference\ tables/cms_codes.csv
-greenplum/datawarehouse/reference\ tables/icd_cm_zip/
-greenplum/datawarehouse/reference\ tables/icd_pcs_zip/
-greenplum/datawarehouse/reference\ tables/cpt_hcpcs_zip/
+greenplum/datawarehouse/reference\ tables/cms_icd_codes/cms_codes.csv
+greenplum/datawarehouse/reference\ tables/cms_icd_codes/icd_cm_zip/
+greenplum/datawarehouse/reference\ tables/cms_icd_codes/icd_pcs_zip/
+greenplum/datawarehouse/reference\ tables/fda_ndc/fda_ndc_output/
