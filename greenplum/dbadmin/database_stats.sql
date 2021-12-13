@@ -96,7 +96,7 @@ select
   from gp_distribution_policy;
 
 --Greenplum Distribution of a table
-SELECT get_ao_distribution('dev.jw_replicated_id_table')
+SELECT get_ao_distribution('optum_zip.confinement')
 order by 1;
 
 select count(*)
@@ -131,7 +131,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('dw_staging')-- and pgc.relname = 'temp_script_id'
+where pgn.nspname in ('optum_zip')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression

@@ -1,10 +1,10 @@
 /* 
 ******************************************************************************************************
- *  This script loads optum_dod/zip.procedure table
+ *  This script loads optum_zip/zip.procedure table
  *  refresh table is provided in most recent quarters 
  *
  * data should be staged in a parent folder with the year matching the filename year, a manual step
- * Examples: staging/optum_dod_refresh/2018/dod_proc2018q1.txt.gz, staging/optum_dod_refresh/2019/dod_proc2019q1.txt.gz
+ * Examples: staging/optum_zip_refresh/2018/zip5_proc2018q1.txt.gz, staging/optum_zip_refresh/2019/zip5_proc2019q1.txt.gz
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
@@ -13,8 +13,8 @@
  */
 
 /* Original Create
-drop table optum_dod.procedure;
-create table optum_dod.procedure (
+drop table optum_zip.procedure;
+create table optum_zip.procedure (
 year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, CLMID char(19), ICD_FLAG char(2), PROC char(7), PROC_POSITION smallint, EXTRACT_YM int, VERSION numeric, FST_DT date
 
@@ -29,7 +29,7 @@ year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, CLMID char(19), ICD_FLAG char(2), PROC char(7), PROC_POSITION smallint, EXTRACT_YM int, VERSION numeric, FST_DT date
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_dod/\*/dod_proc2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/\*/zip5_proc2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -40,7 +40,7 @@ from ext_procedure
 limit 1000;
 */
 -- Insert
-insert into optum_dod.procedure (
+insert into optum_zip.procedure (
 year, file,
 PATID, PAT_PLANID, CLMID, ICD_FLAG, PROC, PROC_POSITION, EXTRACT_YM, VERSION, FST_DT, member_id_src
 )
@@ -49,36 +49,36 @@ PATID, PAT_PLANID, CLMID, ICD_FLAG, PROC, PROC_POSITION, EXTRACT_YM, VERSION, FS
 from ext_procedure;
 
 -- Fix distribution key
-create table optum_dod.procedure_new
+create table optum_zip.procedure_new
 WITH (appendonly=true, orientation=column, compresstype=zlib)
 as 
 select year, file,
 PATID, PAT_PLANID, CLMID, ICD_FLAG, PROC, PROC_POSITION, EXTRACT_YM, VERSION, FST_DT, patid::text as member_id_src
-from optum_dod.procedure
+from optum_zip.procedure
 distributed by (member_id_src);
 
-drop table optum_dod.procedure;
-ALTER TABLE optum_dod.procedure_new RENAME TO procedure;
+drop table optum_zip.procedure;
+ALTER TABLE optum_zip.procedure_new RENAME TO procedure;
 
 
 -- Analyze
-analyze optum_dod.procedure;
+analyze optum_zip.procedure;
 
 -- Year & Quarter
 select distinct extract(quarter from FST_DT)
 from ext_procedure;
 
 -- Verify
-select count(*), min(year), max(year), count(distinct year) from optum_dod.procedure;
+select count(*), min(year), max(year), count(distinct year) from optum_zip.procedure;
 
 --Refresh
 
 select file, count(*)
-from optum_dod."procedure"
-where file >= 'dod_proc2018q1%'
+from optum_zip."procedure"
+where file >= 'zip5_proc2018q1%'
 group by 1
 order by 1;
 
 delete 
-from optum_dod."procedure"
-where file >= 'dod_proc2018q2%';
+from optum_zip."procedure"
+where file >= 'zip5_proc2018q2%';

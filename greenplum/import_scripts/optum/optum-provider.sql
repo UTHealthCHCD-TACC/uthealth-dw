@@ -1,5 +1,5 @@
 /* ******************************************************************************************************
- *  This script loads optum_dod/zip.provider table
+ *  This script loads optum_zip/zip.provider table
  *  refresh table is provided as a full replacement
  * ******************************************************************************************************
  *  Author || Date      || Notes
@@ -9,8 +9,8 @@
  */
 
 /* Original Create
-drop table optum_dod.provider;
-create table optum_dod.provider (
+drop table optum_zip.provider;
+create table optum_zip.provider (
 PROV_UNIQUE bigint, BED_SZ_RANGE text, CRED_TYPE text, GRP_PRACTICE int, HOSP_AFFIL int, PROV_STATE text, PROV_TYPE text, PROVCAT text, 
 TAXONOMY1 text, TAXONOMY2 text, EXTRACT_YM int, VERSION numeric
 )
@@ -24,7 +24,7 @@ PROV_UNIQUE bigint, BED_SZ_RANGE text, CRED_TYPE text, GRP_PRACTICE int, HOSP_AF
 TAXONOMY1 text, TAXONOMY2 text, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_dod/dod_provider.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/zip5_provider.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -34,14 +34,14 @@ from ext_provider
 limit 1000;
 
 -- Insert
-insert into optum_dod.provider
+insert into optum_zip.provider
 select * from ext_provider;
 
 -- Analyze
-analyze optum_dod.provider;
+analyze optum_zip.provider;
 
 --Verify
-select count(*) from optum_dod.provider;
+select count(*) from optum_zip.provider;
 
 --Refresh
-truncate table optum_dod.provider;
+truncate table optum_zip.provider;
