@@ -1,13 +1,11 @@
 from datetime import datetime
-import io
-import sys
 import numpy as np
 import pandas as pd
 import psycopg2
 import psycopg2.extras
-sys.path.append('H:/helpers/')
-from helpers.get_db_info import get_dsn
-from helpers.db_utils import io_copy_from
+import sys
+sys.path.append('H:/uth_helpers/')
+from uth_helpers.db_utils import get_dsn, io_copy_from
 
 transfer_discharge_cds = ['02', '05', '65', '82', '85', '88', '93', '94','30']
 

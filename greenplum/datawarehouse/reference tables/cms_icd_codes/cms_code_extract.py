@@ -200,4 +200,4 @@ if __name__ == '__main__':
         total_codes_df = total_codes_df.groupby(['cd_type', 'cd_value']).agg(initial_year=('cd_year','min'),
                                                                                     last_year=('cd_year','max'), 
                                                                                     code_description=('code_description', 'first'))
-        total_codes_df.to_csv('./cms_code_output/cms_codes.csv')
+        total_codes_df.to_csv('./cms_codes.csv')
