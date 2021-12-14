@@ -26,8 +26,8 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed BY (patid);
 */
 
-drop external table ext_rx;
-CREATE EXTERNAL TABLE ext_rx (
+drop external table ext_rx_optum_zip;
+CREATE EXTERNAL TABLE ext_rx_optum_zip (
 year smallint, file varchar,
 patid int8, pat_planid int8,ahfsclss bpchar(8),	avgwhlsl numeric,	brnd_nm bpchar(30),	charge numeric,	chk_dt date, clmid bpchar(19),
 	copay numeric, daw bpchar(1),days_sup int2,	dea bpchar(9),	deduct numeric(8,2),	dispfee numeric,fill_dt date,form_ind bpchar(1),form_typ bpchar(2),
@@ -61,7 +61,7 @@ patid, pat_planid,ahfsclss,	avgwhlsl,	brnd_nm,	charge,	chk_dt, clmid,
 	fst_fill,gnrc_ind,gnrc_nm,mail_ind,ndc,npi,pharm,prc_typ,quantity,
 	rfl_nbr,spclt_ind,specclss,std_cost,std_cost_yr,strength,extract_ym,version,
 	PRESCRIBER_PROV, PRESCRIPT_ID, patid::text
-from ext_rx;
+from ext_rx_optum_zip;
 
 -- 318 secs: DEPRECATED
 --update optum_zip.rx set year=date_part('year', fill_dt);

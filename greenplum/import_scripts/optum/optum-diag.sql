@@ -23,8 +23,8 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (patid);
 */
 
-drop external table ext_diagnostic;
-CREATE EXTERNAL TABLE ext_diagnostic (
+drop external table ext_diagnostic_optum_zip;
+CREATE EXTERNAL TABLE ext_diagnostic_optum_zip (
 year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, CLMID char(19), DIAG char(7), DIAG_POSITION smallint, ICD_FLAG char(2), LOC_CD char(1), POA char(50), EXTRACT_YM int, VERSION numeric, FST_DT date
 ) 
@@ -47,7 +47,7 @@ ICD_FLAG, LOC_CD, POA, EXTRACT_YM, VERSION, FST_DT, member_id_src)
 select year, file, 
 PATID, PAT_PLANID, trim(CLMID), DIAG, DIAG_POSITION, 
 ICD_FLAG, LOC_CD, POA, EXTRACT_YM, VERSION, FST_DT, patid::text
-from ext_diagnostic;
+from ext_diagnostic_optum_zip;
 
 
 -- Fix Distribution

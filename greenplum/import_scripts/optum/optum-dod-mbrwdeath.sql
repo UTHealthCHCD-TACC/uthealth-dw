@@ -19,8 +19,8 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (member_id_src);
 */
 
-drop external table ext_mbrwdeath;
-CREATE EXTERNAL TABLE ext_mbrwdeath (
+drop external table ext_mbrwdeath_optum_zip;
+CREATE EXTERNAL TABLE ext_mbrwdeath_optum_zip (
 PatID bigint, Death_ym int, Extract_ym int, VERSION numeric, Mbr_Match_Type int
 ) 
 LOCATION ( 
@@ -30,7 +30,7 @@ FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_mbrwdeath
+from ext_mbrwdeath_optum_zip
 limit 1000;
 
 -- Insert
@@ -43,7 +43,7 @@ select ex.PatID
       ,ex.version
       ,ex.mbr_match_type
       ,ex.patid::text
-from ext_mbrwdeath ex;
+from ext_mbrwdeath_optum_zip ex;
 
 -- Fix distribution key
 create table optum_zip.mbrwdeath_new

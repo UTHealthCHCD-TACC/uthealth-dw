@@ -29,8 +29,8 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (patid);
 */
 
-drop external table ext_medical;
-CREATE EXTERNAL TABLE ext_medical (
+drop external table ext_medical_optum_zip;
+CREATE EXTERNAL TABLE ext_medical_optum_zip (
 year smallint, file varchar,
 PATID bigint,PAT_PLANID bigint,ADMIT_CHAN char(16),ADMIT_TYPE char(1),BILL_PROV numeric,CHARGE numeric,
 CLMID char(19),CLMSEQ char(5),COB char(5),COINS numeric,CONF_ID char(21),COPAY numeric,DEDUCT numeric,
@@ -47,10 +47,13 @@ FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_medical
+from ext_medical_optum_zip
 where year=2019
 limit 1000;
 
+select distinct file 
+from optum_zip.medical
+order by 1;
 
 -- Insert
 insert into optum_zip.medical (
@@ -70,10 +73,7 @@ PAID_STATUS,POS,PROC_CD,
 PROCMOD,PROV,PROV_PAR,PROVCAT,REFER_PROV,RVNU_CD,SERVICE_PROV,STD_COST,STD_COST_YR,TOS_CD,
 UNITS,EXTRACT_YM,VERSION,
 ALT_UNITS, BILL_TYPE, NDC_UOM, NDC_QTY, OP_VISIT_ID, PROCMOD2, PROCMOD3, PROCMOD4, TOS_EXT, patid::text
-from ext_medical;
-
-insert into optum_zip.medical
-select * from ext_medical;
+from ext_medical_optum_zip;
 
 -- Fix Distribution
 create table optum_zip.medical_new
@@ -110,7 +110,8 @@ order by 1, 2;
 --Refresh
 delete
 from optum_zip.medical 
-where file >= 'zip5_m2018q2%';
+where file like 'dod%';
+where file >= 'dod_m2018q2%';
 
 select file, count(*)
 from optum_zip.medical 

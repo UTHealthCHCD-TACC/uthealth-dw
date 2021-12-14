@@ -1,6 +1,8 @@
 -- Generate Query
 select 'select '''||tablename||''' as table_name, year, count(*) as cnt from '||schemaname||'.'||tablename||' group by 1, 2 union'
-from pg_tables where schemaname in ('optum_zip')
+
+select 'select '''||tablename||''' as table_name, count(*) as cnt from '||schemaname||'.'||tablename||' where file like ''zip%'' group by 1 union'
+from pg_tables where schemaname in ('optum_dod')
 order by schemaname, tablename;
 
 --Get Stats

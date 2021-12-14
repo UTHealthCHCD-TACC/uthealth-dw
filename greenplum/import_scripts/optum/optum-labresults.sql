@@ -25,8 +25,8 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (patid);
 */
 
-drop external table ext_labresult;
-CREATE EXTERNAL TABLE ext_labresult (
+drop external table ext_labresult_optum_zip;
+CREATE EXTERNAL TABLE ext_labresult_optum_zip (
 year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, ABNL_CD char(2), ANLYTSEQ char(2), FST_DT date, HI_NRML numeric, 
 LABCLMID char(19), LOINC_CD char(7), LOW_NRML numeric, PROC_CD char(7), RSLT_NBR numeric, RSLT_TXT char(18), RSLT_UNIT_NM char(18), 
@@ -40,7 +40,7 @@ FORMAT 'CSV' ( HEADER DELIMITER '|' );
 -- Test
 /*
 select *
-from ext_labresult
+from ext_labresult_optum_zip
 limit 1000;
 */
 -- Insert
@@ -55,7 +55,7 @@ year, file,
 PATID, PAT_PLANID, ABNL_CD, ANLYTSEQ, FST_DT, HI_NRML, 
 LABCLMID, LOINC_CD, LOW_NRML, PROC_CD, RSLT_NBR, RSLT_TXT, RSLT_UNIT_NM, 
 source, TST_DESC, TST_NBR, EXTRACT_YM, version, patid::text
-from ext_labresult;
+from ext_labresult_optum_zip;
 
 -- Fix distribution
 create table optum_zip.lab_result_new

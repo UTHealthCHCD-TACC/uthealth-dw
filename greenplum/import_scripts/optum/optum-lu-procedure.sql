@@ -18,8 +18,8 @@ WITH (appendonly=true, orientation=column)
 distributed randomly;
 */
  
-drop external table ext_lu_procedure;
-CREATE EXTERNAL TABLE ext_lu_procedure (
+drop external table ext_lu_procedure_optum_zip;
+CREATE EXTERNAL TABLE ext_lu_procedure_optum_zip (
 CATEGORY_DTL_CD varchar(100), CATEGORY_DTL_CODE_DESC varchar(100), CATEGORY_GENL_CD varchar(100), CATEGORY_GENL_CODE_DESC varchar(100), 
 PROC_CD varchar(100), PROC_DESC varchar(100), PROC_END_DATE date, PROC_TYP_CD varchar(100)
 ) 
@@ -30,12 +30,12 @@ FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_lu_procedure
+from ext_lu_procedure_optum_zip
 limit 1000;
 
 -- Insert
 insert into optum_zip.lu_procedure
-select * from ext_lu_procedure;
+select * from ext_lu_procedure_optum_zip;
 
 -- Analyze
 analyze optum_zip.lu_procedure;

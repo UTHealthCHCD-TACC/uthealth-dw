@@ -18,8 +18,8 @@ WITH (appendonly=true, orientation=column)
 distributed randomly;
 */
 
-drop external table ext_lu_diagnosis;
-CREATE EXTERNAL TABLE ext_lu_diagnosis (
+drop external table ext_lu_diagnosis_optum_zip;
+CREATE EXTERNAL TABLE ext_lu_diagnosis_optum_zip (
 DIAG_CD varchar(100),DIAG_DESC varchar(100),DIAG_FST3_CD varchar(100),DIAG_FST3_DESC varchar(100),DIAG_FST4_CD varchar(100),
 DIAG_FST4_DESC varchar(100),GDR_SPEC_CD varchar(100),MDC_CD_DESC varchar(100),MDC_CODE varchar(100),ICD_VER_CD varchar(100)
 ) 
@@ -30,12 +30,12 @@ FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_lu_diagnosis
+from ext_lu_diagnosis_optum_zip
 limit 1000;
 
 -- Insert
 insert into optum_zip.lu_diagnosis
-select * from ext_lu_diagnosis;
+select * from ext_lu_diagnosis_optum_zip;
 
 -- Analyze
 analyze optum_zip.lu_diagnosis;
