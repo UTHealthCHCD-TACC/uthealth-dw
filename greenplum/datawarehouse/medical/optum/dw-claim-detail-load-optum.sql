@@ -29,7 +29,7 @@ distributed by (member_id_src);
 analyze dw_staging.optd_uth_claim_id;
 
 
---load OPTD to staging claim_detail table
+--load OPTD to staging claim_detail table 43mins  12/14/21
 insert into dw_staging.claim_detail (
 		data_source, year, uth_member_id, uth_claim_id, claim_sequence_number, 
        from_date_of_service, to_date_of_service, month_year_id, place_of_service, 
@@ -131,9 +131,6 @@ from optum_zip.medical a
 analyze dw_staging.claim_detail;
 
 
----cleanup
-drop table if exists dw_staging.optd_uth_claim_id;  
-drop table if exists dw_staging.optz_uth_claim_id;
 
 --------------- END SCRIPT -------
 

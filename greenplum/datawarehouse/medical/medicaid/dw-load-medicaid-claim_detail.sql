@@ -10,12 +10,12 @@
  *  wc001  || 10/11/2021 || migrate to dw_staging
  * ****************************************************************************************************** 
  *  jw002  || 11/03/2021 || add provider variables 
-=======
+ * 
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ************************************************************************************************************ 
  *  jw003  || 11/29/2021  || changed discharge status to pat_stat from enc_header for the encounter table + added logic for procedure_type
  * ************************************************************************************************************
- * 
+ *  
  * */
 
 
@@ -34,8 +34,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd,  claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status
-                                     -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+                                     fiscal_year, cost_factor_year, discharge_status,
+                                     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                          
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id, 
        a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos), 
@@ -50,9 +50,9 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1), 
        null, b.drg, a.clm_dtl_nbr, 
-       dev.fiscal_year_func(a.from_dos),
-       null, 
-       d.pat_stat_cd
+       dev.fiscal_year_func(a.from_dos),   null, d.pat_stat_cd,
+       null as bill_provider, a.ref_prov_npi as ref_provider, null as other_provider, 
+       a.perf_prov_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from medicaid.clm_detail a 
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -81,8 +81,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd, claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status
-                                    -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
+                                     fiscal_year, cost_factor_year, discharge_status,
+                                     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                      
 select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id, 
        a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
@@ -97,15 +97,9 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        null, null, null, null, 
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),  
        a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
-       dev.fiscal_year_func(a.fdos_dt::date),
-       null, 
-<<<<<<< Updated upstream
-       d.pat_stat,
-              null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider, 
+       dev.fiscal_year_func(a.fdos_dt::date), null, d.pat_stat,
+       null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider, 
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider
-=======
-       d.pat_stat
->>>>>>> Stashed changes
 from medicaid.enc_det a 
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc 
