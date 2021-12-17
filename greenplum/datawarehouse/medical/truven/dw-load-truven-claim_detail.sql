@@ -15,6 +15,8 @@
  * ****************************************************************************************************** 
    *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
  * ****************************************************************************************************** 
+ *    jwozny  || 12/17/2021 || added drg code for i tables
+ * ****************************************************************************************************** 
  * */
 
 do $$ 
@@ -255,7 +257,7 @@ select  'truv',
         a.proctyp, 
         a.procmod, 
         null as proc_mod_2, 
-        null as drg,
+        a.drg as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -347,7 +349,7 @@ select  'truv',
         a.proctyp, 
         a.procmod, 
         null as proc_mod_2, 
-        null as drg,
+        a.drg as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 

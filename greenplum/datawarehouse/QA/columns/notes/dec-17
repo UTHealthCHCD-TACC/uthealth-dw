@@ -1,0 +1,120 @@
+
+--------------------------------QA----------------------12-17-2021
+/*
+  for all truven sources, some ids are not found - need to load into dim again? 
+  
+  optum to date of service issue 
+  3 digit cpt codes in medicaid 
+ * 
+ * 
+ * 
+ * 
+ * many from date of service missing in medicare - hsould that ever be null? 
+ * 
+ * 
+ * 
+ * 
+ */
+
+
+
+
+
+
+
+
+
+-----------------------discharge_status mdcd ---------------
+
+select discharge_status 
+from dw_staging.claim_detail
+where  discharge_status !~ '^\d{2}$' 
+and discharge_status is not null
+and discharge_status not in ('', ' ')
+and data_source = 'mdcd'
+;
+
+
+select discharge_status 
+into dev.mdcd_discharge_del
+from dw_staging.claim_detail
+where  discharge_status !~ '^\d{2}$' 
+and discharge_status is not null
+and discharge_status not in ('', ' ')
+and data_source = 'mdcd'
+group by discharge_status 
+;
+
+select * from dev.mdcd_discharge_del;
+/*
+
+|discharge_status|
+|----------------|
+|HH              |
+|3O              |
+|5               |
+|B3              |
+|D9              |
+|2               |
+|OO              |
+|T1              |
+|C1              |
+|1               |
+|D1              |
+|D2              |
+|0               |
+|SL              |
+|3               |
+|OP              |
+|XU              |
+|9               |
+|DA              |
+|7               |
+|6               |
+*/
+
+
+
+
+----------------optum failing to date of service---------------
+
+select * from dw_staging.claim_detail 
+where to_date_of_service not between '2007-01-01' and current_date
+and data_source = 'optz';
+
+
+
+select * from dw_staging.claim_detail 
+where to_date_of_service not between '2007-01-01' and current_date
+and to_date_of_service is not null
+and data_source = 'optz';
+
+
+select claim_id_src from data_warehouse.dim_uth_claim_id where uth_claim_id = '34725698104'; --38JRNFRVLO
+
+select * from optum_zip.medical where clmid = '38JRNFRVLO';
+
+/*
+
+|from_date_of_service|to_date_of_service|
+|--------------------|------------------|
+|2013-06-18          |9999-12-31        |
+|2013-01-19          |2103-01-19        |
+|2013-05-23          |9999-12-31        |
+|2013-06-11          |2023-06-11        |
+|2016-11-21          |2106-11-21        |
+|2013-04-23          |2103-04-23        |
+|2013-10-05          |9999-12-31        |
+|2013-04-23          |2103-04-23        |
+|2013-11-28          |9999-12-31        |
+|2013-11-28          |9999-12-31        |
+|2013-12-13          |9999-12-31        |
+|2013-04-09          |2043-04-09        |
+|2016-11-14          |2106-11-20        |
+|2013-03-03          |9999-12-31        |
+|2013-10-23          |9999-12-31        |
+|2015-01-08          |2105-01-08        |
+|2013-03-08          |2031-03-08        |
+
+*/
+

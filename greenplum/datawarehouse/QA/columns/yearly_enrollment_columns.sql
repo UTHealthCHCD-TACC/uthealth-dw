@@ -92,11 +92,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2020
+				when year between 2007 and 2021
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when year not between 2007 and 2020
+					when year not between 2007 and 2021
 						or year is null
 						then 1
 					end), 0) as invalidvalues,

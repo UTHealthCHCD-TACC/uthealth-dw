@@ -92,11 +92,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2020
+				when year between 2007 and 2021
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when year not between 2007 and 2020
+					when year not between 2007 and 2021
 						or year is null
 						then 1
 					end), 0) as invalidvalues,
@@ -132,11 +132,11 @@ select 'month_year_id' as test_var,
 	'' as note
 from (
 	select sum(case
-				when month_year_id between 200701 and 202012
+				when month_year_id between 200701 and 202112
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when month_year_id not between 200701 and 202012
+					when month_year_id not between 200701 and 202112
 						or month_year_id is null
 						then 1
 					end), 0) as invalidvalues,
@@ -292,6 +292,8 @@ group by data_source, year
 
 
 
+   delete from qa_reporting.monthly_enrollment_column_checks where test_var = 'consecutive_enrolled_months';
+   
 ------------------------------------
 --------consecutive enrolled months---------change max range to # of years times 12 when new year added -----
 ------------------------------------
@@ -316,11 +318,11 @@ select 'consecutive_enrolled_months' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when consecutive_enrolled_months between 0 and 156
+				when consecutive_enrolled_months between 0 and 180
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when consecutive_enrolled_months not between 0 and 156
+					when consecutive_enrolled_months not between 0 and 180
 						or consecutive_enrolled_months is null
 						then 1
 					end), 0) as invalidvalues,
@@ -1140,7 +1142,7 @@ from (
 -----------------------------------
 -----fiscal_year
 ------------------------------------
-delete from qa_reporting.monthly_enrollment_column_checks where test_var = 'fiscal_year'
+
 
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
@@ -1202,11 +1204,12 @@ select 'race_cd' as test_var,
 from (
 	select sum(case
 				when race_cd::int between 0 and 6
+				or race_cd is null 
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
 					when race_cd::int not between 0 and 6
-						or race_cd is null
+						and race_cd is not null
 						then 1
 					end), 0) as invalidvalues,
 		year,

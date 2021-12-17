@@ -11,6 +11,8 @@
  * ******************************************************************************************************
  *  jwozny  || 11/08/2021 || added provider variables 
  * ******************************************************************************************************
+ *  jwozny  || 12/17/2021 || changed claim_type value to 'F' or 'P' based on which raw dataset is being loaded
+ * ******************************************************************************************************
  * */
 
 --------------- BEGIN SCRIPT -------
@@ -32,7 +34,7 @@ vacuum analyze dw_staging.claim_header;
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)							        						        
-select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
+select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
       	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
       	a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 
@@ -51,7 +53,7 @@ from medicare_national.inpatient_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
@@ -72,7 +74,7 @@ from medicare_national.outpatient_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.nch_clm_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date,
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'P', a.clm_from_dt::date, a.clm_thru_dt::date,
         null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, 
           dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
           a.carr_clm_blg_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.cpo_org_npi_num as other_provider, 
@@ -92,7 +94,7 @@ from medicare_national.bcarrier_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.nch_clm_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date,
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'P', a.clm_from_dt::date, a.clm_thru_dt::date,
         null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric,
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         null as bill_provider, a.rfr_physn_npi ref_provider, null as other_provider, 
@@ -111,7 +113,7 @@ from medicare_national.dme_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
@@ -132,7 +134,7 @@ from medicare_national.hha_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
@@ -152,7 +154,7 @@ from medicare_national.hospice_base_claims_k a
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, a.clm_fac_type_cd, a.clm_from_dt::date, a.clm_thru_dt::date, 
+select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
         null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 

@@ -180,11 +180,12 @@ select 'claim_sequence_number' as test_var,
 from (
     select sum(case
                 when claim_sequence_number between 0 and 700
+                or claim_sequence_number is null
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when claim_sequence_number not between 0 and 700
-                        or claim_sequence_number is null
+                    when claim_sequence_number not between 0 and 1000
+                        and claim_sequence_number is not null
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -349,11 +350,11 @@ select 'month_year_id' as test_var,
     '' as note
 from (
     select sum(case
-                when month_year_id between 200701 and 202012
+                when month_year_id between 200701 and 202112
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when month_year_id not between 200701 and 202012
+                    when month_year_id not between 200701 and 202112
                         or month_year_id is null
                         then 1
                     end), 0) as invalidvalues,
@@ -436,7 +437,7 @@ select 'admit_date' as test_var,
     ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
     year,
     data_source,
-    '' as note
+    'FYI medicaid values for admit will include enourmous amount of crazy dates' as note
 from (
     select coalesce(sum(case
                 when (admit_date between '2007-01-01' and current_date
@@ -564,12 +565,12 @@ select 'procedure_type' as test_var,
     '' as note
 from (
     select sum(case
-                when procedure_type ~ '^\d{2}$'
+                when procedure_type in ('CPT','HCPCS')
                 and procedure_type is not null
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when procedure_type !~ '^\d{2}$'
+                    when procedure_type not in ('CPT','HCPCS')
                     and procedure_type is not null            
                         then 1
                     end), 0) as invalid_values,
@@ -605,11 +606,13 @@ from (
     select sum(case
                 when proc_mod_1 ~ '^[[:alnum:]]{2}$'
                 and proc_mod_1 is not null
+                or proc_mod_1 in ('',' ')
                     then 1
                 end) as valid_values,
         coalesce(sum(case
                     when (proc_mod_1 !~ '^[[:alnum:]]{2}$'
-                    and proc_mod_1 is not null)
+                    and proc_mod_1 is not null
+                    and proc_mod_1 not in ('',' '))
                         then 1
                     end), 0) as invalid_values,
         year,
@@ -647,11 +650,13 @@ from (
     select sum(case
                 when proc_mod_2 ~ '^[[:alnum:]]{2}$'
                 and proc_mod_2 is not null
+                or proc_mod_2 is null
+                or proc_mod_2 in ('', ' ')
                     then 1
                 end) as valid_values,
         coalesce(sum(case
                     when (proc_mod_2 !~ '^[[:alnum:]]{2}$'
-                    and proc_mod_2 is not null)
+                    and proc_mod_2 is not null and proc_mod_2 not in ('',' '))
                         then 1
                     end), 0) as invalid_values,
         year,
@@ -1002,6 +1007,8 @@ from (
                 end) as validvalues,
         coalesce(sum(case
                     when bill_type_inst !~ '^\d{1}$'
+                    and bill_type_inst is not null
+                    and bill_type_inst not in ('', ' ')
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1040,7 +1047,9 @@ from (
                     or bill_type_class is null then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when bill_type_class !~ '^\d{1}$' and bill_type_class is not null
+                    when bill_type_class !~ '^\d{1}$' 
+                    and bill_type_class is not null
+                    and bill_type_class  not in ('', ' ')
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1082,6 +1091,8 @@ from (
                 end) as validvalues,
         coalesce(sum(case
                     when bill_type_freq !~ '^[a-zA-Z0-9]{1}$'
+                    and bill_type_freq is not null
+                    and bill_type_freq  not in ('', ' ')
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1123,9 +1134,9 @@ from (
     )
 select 'drg_cd' as test_var,
     valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
+    coalesce(invalid_values,0),
+    coalesce(invalid_values / (valid_values + invalid_values)::numeric,0) as percent_invalid,
+    (coalesce((invalid_values / (valid_values + invalid_values)::numeric),0) < 0.01) as pass_threshold,
     year,
     data_source,
     '' as note
@@ -1137,7 +1148,8 @@ from (
                 end),0) as valid_values,
         sum(case
                     when (drg_cd !~ '^[[:alnum:]]{3,4}$'
-                    and drg_cd is not null)
+                    and drg_cd is not null
+                    and drg_cd not in ('', ' '))
                         then 1
                     end) as invalid_values,
         year,
@@ -1171,15 +1183,19 @@ select 'table_id_src' as test_var,
     '' as note
 from (
     select sum(case
-                when table_id_src in ('dme_claims_k', 'inpatient_revenue_center_k', 'hospice_base_claims_k', 'outpatient_revenue_center_k', 
-'hha_revenue_center_k', 'snf_base_claims_k', 'bcarrier_claims_k', 'hospice_base_claims_k', 'enc_det', 
-'clm_detail', 'medical', 'medical', 'ccaeo', 'mdcro', 'mdcrs', 'ccaes')
+                when table_id_src in (
+'dme_claims', 'inpatient_revenue_center', 'hospice_base_claims', 'outpatient_revenue_center', 
+'hha_revenue_center', 'snf_base_claims',  'snf_revenue_center', 'bcarrier_claims',  'bcarrier_line',
+'hospice_base_claims', 'hospice_revenue_center','enc_det', 'clm_detail', 
+'medical','ccaeo', 'mdcro', 'mdcrs', 'ccaes') or table_id_src is null
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when table_id_src not in ('dme_claims_k', 'inpatient_revenue_center_k', 'hospice_base_claims_k', 'outpatient_revenue_center_k', 
-'hha_revenue_center_k', 'snf_base_claims_k', 'bcarrier_claims_k', 'hospice_base_claims_k', 'enc_det', 
-'clm_detail', 'medical', 'medical', 'ccaeo', 'mdcro', 'mdcrs', 'ccaes')
+                    when table_id_src not in (
+'dme_claims', 'inpatient_revenue_center', 'hospice_base_claims', 'outpatient_revenue_center', 
+'hha_revenue_center', 'snf_base_claims',  'snf_revenue_center', 'bcarrier_claims',  'bcarrier_line',
+'hospice_base_claims', 'hospice_revenue_center','enc_det', 'clm_detail', 
+'medical','ccaeo', 'mdcro', 'mdcrs', 'ccaes') and table_id_src is not null 
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1188,7 +1204,7 @@ from (
     group by data_source , year
     ) a;
 
-   
+   delete from qa_reporting.claim_detail_column_checks where test_var = 'table_id_src';
    
    
    
@@ -1386,6 +1402,7 @@ from (
         coalesce(sum(case
                     when discharge_status !~ '^\d{2}$' 
                     and discharge_status is not null
+                    and discharge_status not in ('', ' ')
                         then 1
                     end), 0) as invalidvalues,
         year,

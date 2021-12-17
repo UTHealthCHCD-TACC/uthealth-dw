@@ -561,3 +561,40 @@ from (
     group by data_source, year
 	) a;
 	
+/*
+-----------------------------------
+-----bill_provider
+------------------------------------
+   
+insert into qa_reporting.claim_detail_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'place_of_service' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select  coalesce(sum(case
+                when place_of_service ~ '^\d{1,2}$'
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when place_of_service !~ '^\d{1,2}$'
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.claim_detail 
+    group by data_source, year
+    ) a;

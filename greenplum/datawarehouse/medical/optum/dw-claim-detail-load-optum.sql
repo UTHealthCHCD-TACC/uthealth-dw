@@ -13,6 +13,7 @@
  * ****************************************************************************************************** 
  *  jwozny  || 11/19/2021 || changed units to alt_units and removed substring on procmod
  * ***********************************************************************************
+ *  jwozny  || 12/17/2021 || added  logic for procedure type 
  * */
 
 
@@ -46,7 +47,9 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null, substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
+       a.proc_cd,case when substring(proc_cd,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(proc_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	   		substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 
@@ -106,7 +109,9 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
        a.fst_dt, a.lst_dt, get_my_from_date(a.fst_dt) as month_year, a.pos, 
        null, null, 
        d.admit_date, d.disch_date, lpad(trim(d.dstatus),2,'0'), 
-       a.proc_cd,null,substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
+       a.proc_cd, case when substring(proc_cd,1,1) ~ '[0-9]' then 'CPT'
+	   		when substring(proc_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+	   	 substring(a.procmod,1,2) as proc_mod_1, null as proc_mod_2, a.drg, 
        a.rvnu_cd, (a.charge * c.cost_factor) as charge_amount, (a.std_cost * c.cost_factor) as allowed_amount, null as paid_amount,
        a.copay, a.deduct, a.coins, null, 
        substring(a.bill_type,1,1), substring(a.bill_type,2,1), substring(a.bill_type,3,1), 

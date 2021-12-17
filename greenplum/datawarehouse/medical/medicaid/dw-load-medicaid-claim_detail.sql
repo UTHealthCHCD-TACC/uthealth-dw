@@ -15,6 +15,7 @@
  * ************************************************************************************************************ 
  *  jw003  || 11/29/2021  || changed discharge status to pat_stat from enc_header for the encounter table + added logic for procedure_type
  * ************************************************************************************************************
+ *  jwozny || 12/17/2021  || added table_id_src values
  * 
  * */
 
@@ -34,7 +35,7 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd,  claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status
+                                     fiscal_year, cost_factor_year, discharge_status, table_id_src 
                                      -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                          
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id, 
@@ -52,7 +53,7 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        null, b.drg, a.clm_dtl_nbr, 
        dev.fiscal_year_func(a.from_dos),
        null, 
-       d.pat_stat_cd
+       d.pat_stat_cd, 'clm_detail' as table_id_src
 from medicaid.clm_detail a 
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -81,7 +82,7 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      copay, deductible, coins, cob, 
                                      bill_type_inst, bill_type_class, bill_type_freq, 
                                      units, drg_cd, claim_sequence_number_src, 
-                                     fiscal_year, cost_factor_year, discharge_status
+                                     fiscal_year, cost_factor_year, discharge_status, table_id_src 
                                     -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
                                      )                                      
 select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id, 
@@ -104,7 +105,7 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
               null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider, 
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider
 =======
-       d.pat_stat
+       d.pat_stat, 'enc_det' as table_id_src
 >>>>>>> Stashed changes
 from medicaid.enc_det a 
 	join medicaid.enc_proc b
