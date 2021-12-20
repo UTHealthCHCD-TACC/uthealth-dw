@@ -24,7 +24,7 @@
 
 
 ----  // BEGIN SCRIPT 
-vacuum analyze dw_staging.member_enrollment_monthly;
+analyze dw_staging.member_enrollment_monthly;
 
 --- ***** Medicaid *****
 insert into dw_staging.member_enrollment_monthly (
@@ -73,6 +73,7 @@ from medicaid.enrl  a
      on r.race_cd_src = a.race 
     and r.data_source = 'mdcd'
 ;
+
 
 ---medicaid chip
 insert into dw_staging.member_enrollment_monthly(

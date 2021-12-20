@@ -29,7 +29,7 @@
 ----  // BEGIN SCRIPT 
 analyze dw_staging.member_enrollment_monthly;
 
-select distinct data_source from dw_staging.member_enrollment_monthly;
+select count(*), data_source from dw_staging.member_enrollment_monthly group by data_source;
 
 -- Truven Commercial ----------------------------------------------------------------------------
 -- 11/7/21 runtime 53min
@@ -67,7 +67,7 @@ select 'truv',
        case when m.medadv = '1' then 'MA' else 'COM' end as bus_cd, 
        eestatu, 
        m.rx, 
-       dev.fiscal_year_func(b.start_of_month), 
+       b.fy_ut,
        '0' as race,
        m.efamid::text, 
        m.mhsacovg
@@ -126,7 +126,7 @@ select
        case when m.medadv = '1' then 'MA' else 'MS' end as bus_cd, 
        eestatu, 
        m.rx, 
-       dev.fiscal_year_func(b.start_of_month), 
+       b.fy_ut,
        '0' as race,
        m.efamid::text, 
        m.mhsacovg
@@ -146,8 +146,6 @@ from truven.mdcrt m
   and d.plan_type_src::int = m.plantyp
 ;
 ---------------------------------------------------------------------------------------------------
-
-select distinct data_source, bus_cd from dw_staging.member_enrollment_monthly;
 
 
 --validate
