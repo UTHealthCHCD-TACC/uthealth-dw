@@ -1,6 +1,17 @@
+from datetime import datetime
+import psycopg2
+import sys
+sys.path.append("H:/uth_helpers/")
+from uth_helpers.db_utils import get_dsn
+from uth_helpers.sql_logger import db_logger, std_out_logger, pipeline_runner
 
+log_name = 'dev.gm_dw_ip_log'
 
--- create tables 
+@std_out_logger
+@db_logger(log_name)
+def ip_acute_create_tables(cursor, **kwargs):
+    '''Drops and creates tables'''
+    cursor.execute("""
 drop table if exists dev.gm_dw_ip_window_step_1;
 create table dev.gm_dw_ip_window_step_1  (
 data_source bpchar(4),
@@ -29,6 +40,7 @@ pat_group int,
 insert_ts timestamp(0) DEFAULT LOCALTIMESTAMP
 )
 with (appendonly=true,orientation=column) distributed by (uth_member_id) ;
+
 
 DROP TABLE if exists dev.gm_dw_ip_admit;
 CREATE UNLOGGED TABLE dev.gm_dw_ip_admit (
@@ -70,12 +82,16 @@ WITH (
 	compresstype=zlib
 )
 DISTRIBUTED BY (admit_id);
+    """)
+    return cursor.rowcount
 
--- below query inserted 9,947,107 values  when the null discharge status were removed
--- when nulls were not removed 15,639,863 values inserted
--- and the data from optum_dod.medical had 10,102,872
 
-with optum as (select
+@std_out_logger
+@db_logger(log_name)
+def ip_acute_insert_step_1(cursor, start_year, end_year, **kwargs):
+    '''insert acute data claims'''
+    cursor.execute("""
+with ip_data as (select
 	data_source,
 	uth_member_id,
 	uth_claim_id ,
@@ -93,17 +109,34 @@ where
 		and bill_type_class = '1'
 		and (bill_type_freq = '1'
 			or bill_type_freq = '4'))
-	and year between 2015 and 2021)
+	and year between %s and %s)
 insert into dev.gm_dw_ip_window_step_1 
-select data_source, uth_member_id, uth_claim_id, min(from_date_of_service) as admit_date,
-max(to_date_of_service) discharge_date, min(from_date_of_service) as from_date_of_service,
-max(to_date_of_service) to_date_of_service, discharge_status, bill_type from optum
-group by data_source, uth_member_id, uth_claim_id ,discharge_status ,bill_type;
+select
+data_source, 
+    uth_member_id, 
+    uth_claim_id,
+    min(from_date_of_service) as admit_date,
+    max(to_date_of_service) discharge_date, 
+    min(from_date_of_service) as from_date_of_service,
+    max(to_date_of_service) to_date_of_service, 
+    discharge_status,
+    bill_type from ip_data
+group by data_source, uth_member_id, uth_claim_id ,discharge_status ,bill_type;""",
+    (start_year, end_year))
+    return cursor.rowcount
 
 
-delete from dev.gm_dw_ip_window_step_1 where to_date_of_service is null;
+@std_out_logger
+@db_logger(log_name)
+def ip_acute_delete_step_1(cursor, start_year, end_year, **kwargs):
+    cursor.execute('delete from dev.gm_dw_ip_window_step_1 where to_date_of_service is null;')
+    return cursor.rowcount
 
---11 minutes? 43,573,765
+
+@std_out_logger
+@db_logger(log_name)
+def ip_acute_insert_step_2(cursor, **kwargs):
+    cursor.execute('''
 insert into dev.gm_dw_ip_window_step_2(
 	data_source,
 	uth_member_id,
@@ -146,4 +179,22 @@ from
 join dev.gm_dw_ip_window_step_1 ac on
 	ip.uth_member_id = ac.uth_member_id and ip.uth_claim_id = ac.uth_claim_id
 where
-	ac.admit_date between ip.admit_date and ip.discharge_date;
+	ac.admit_date between ip.admit_date and ip.discharge_date;''')
+    return cursor.rowcount
+
+
+if __name__ == '__main__':
+
+
+    acute_ip_pipeline = [
+        ip_acute_create_tables,
+        ip_acute_insert_step_1,
+        ip_acute_delete_step_1,
+        ip_acute_insert_step_2]
+
+    variable_dict = {'start_year':2015, 
+                     'end_year':2021}
+
+    sequence_description = 'IP Acute Admit'
+
+    pipeline_runner(acute_ip_pipeline, sequence_description, variable_dict)
