@@ -21,8 +21,6 @@ select count(*), count(distinct icn)
 from medicaid.clm_proc; 
 
 
-delete from dw_staging.claim_header where data_source = 'mdcd';
-
 -----------claims
 with cte_pos as ( select max(pos) as pos, icn  
                   from medicaid.clm_detail 
@@ -93,7 +91,7 @@ join medicaid.enc_proc p
 
 
 
-vacuum analyze dw_staging.claim_header;
+analyze dw_staging.claim_header;
 
 
 select data_source, fiscal_year , count(*), count(distinct uth_claim_id)

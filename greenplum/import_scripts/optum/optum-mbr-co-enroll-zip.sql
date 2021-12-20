@@ -27,7 +27,7 @@ CREATE EXTERNAL TABLE ext_mbr_co_enroll (
 PATID bigint, ELIGEFF date, ELIGEND date, GDR_CD char(1), YRDOB smallint, EXTRACT_YM int , VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_mbr_co_enroll.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/zip5_mbr_co_enroll.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -37,8 +37,24 @@ from ext_mbr_co_enroll
 limit 1000;
 
 -- Insert
-insert into optum_zip.mbr_co_enroll
-select * from ext_mbr_co_enroll;
+insert into optum_zip.mbr_co_enroll (
+PATID, ELIGEFF, ELIGEND, GDR_CD, YRDOB, EXTRACT_YM, version, member_id_src
+)
+select 
+PATID, ELIGEFF, ELIGEND, GDR_CD, YRDOB, EXTRACT_YM, version, patid::text as member_id_src
+from ext_mbr_co_enroll;
+
+--Fix Distribution
+create table optum_zip.mbr_co_enroll_new
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as
+select
+PATID, ELIGEFF, ELIGEND, GDR_CD, YRDOB, EXTRACT_YM, version, patid::text as member_id_src
+from optum_zip.mbr_co_enroll
+distributed by (member_id_src);
+
+drop table optum_zip.mbr_co_enroll;
+alter table optum_zip.mbr_co_enroll_new rename to mbr_co_enroll;
 
 -- Analyze
 analyze optum_zip.mbr_co_enroll;

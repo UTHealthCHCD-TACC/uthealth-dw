@@ -2,6 +2,10 @@ import requests
 import zipfile
 import io
 import os
+import sys
+sys.path.append('H:/uth_helpers/')
+from uth_helpers import helpers
+
 
 zip_icd_cm_file_urls = {
 'ICD10_2022':'https://www.cms.gov/files/zip/2022-code-descriptions-tabular-order.zip',
@@ -73,9 +77,10 @@ if __name__ == '__main__':
     output_dir = 'icd_cm_zip'
 
     for year, url in zip_icd_cm_file_urls.items():
-        zip_outputter(output_dir, year, url)
+        helpers.url_zip_outputter(output_dir, url, year)
 
     output_dir = 'icd_pcs_zip'
 
     for year, url in zip_icd_pcs_file_urls.items():
-        zip_outputter(output_dir, year, url)
+        helpers.url_zip_outputter(output_dir, url, year)
+

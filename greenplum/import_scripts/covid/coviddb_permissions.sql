@@ -1,13 +1,13 @@
 REVOKE connect FROM PUBLIC;
 
 CREATE ROLE zena21 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
-grant covid_analyst to zena21;
+grant covid_analyst to ctruong;
 
 /*
  * Project Specific Roles
  */
 create role g823676;
-grant g823429 to johnjero;
+grant g823066 to ctruong;
 revoke g823429 from mdiaz1;
 
 create schema g823429;

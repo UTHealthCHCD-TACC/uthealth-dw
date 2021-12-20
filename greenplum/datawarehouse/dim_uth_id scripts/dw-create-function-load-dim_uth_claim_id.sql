@@ -34,77 +34,54 @@ raise notice 'load optd begin';
 
 -- ***** Optum dod ***** 
 --8/31/2021 runtime 10m16s
-insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'optd', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_dod.medical a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'optd'
-   and b.member_id_src = a.patid::text 
-  left join data_warehouse.dim_uth_claim_id c
-        on  b.data_source = c.data_source
-          and a.clmid::text = c.claim_id_src 
-          and a.patid::text = c.member_id_src 
-where a.patid is not null
-and c.uth_claim_id is null
-group by 1, 2, 3, 4;
-
-raise notice 'optd loaded';
-raise notice 'clean optd begin';
-
----cleanup optd 
---11m59s
-delete from data_warehouse.dim_uth_claim_id clm
-    using( 
-select a.uth_claim_id
-from data_warehouse.dim_uth_claim_id a 
-   left outer join optum_dod.medical b 
-     on a.member_id_src = b.patid::text 
-    and a.claim_id_src = b.clmid::text 
-where a.data_source = 'optd' 
-  and b.clmid is null 
- )  del 
-where clm.uth_claim_id = del.uth_claim_id 
+insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)          
+with cte_distinct_claim as 
+    (
+		select  distinct 'optd' as v_data_source, a.clmid::text as v_claim_id_src, a.member_id_src as v_member_id_src, 
+		                 b.uth_member_id as v_uth_member_id, a."year" as v_data_year
+		from optum_dod.medical a
+		  join data_warehouse.dim_uth_member_id b 
+		    on b.data_source = 'optd'
+		   and b.member_id_src = a.member_id_src 
+     ) 
+select v_data_source, v_claim_id_src, v_member_id_src, v_uth_member_id, v_data_year 
+from cte_distinct_claim cdc
+  left outer join data_warehouse.dim_uth_claim_id c
+    on c.data_source = v_data_source
+   and c.claim_id_src = v_claim_id_src
+   and c.member_id_src = v_member_id_src
+   and c.data_year = v_data_year 
+where c.uth_claim_id is null
 ;
 
-raise notice 'clean optd finished';
-raise notice 'load optz begin';
+raise notice 'optd loaded';
 
 -- ***** Optum zip ***** 
 --8/31/2021 runtime 10m16s
 insert into data_warehouse.dim_uth_claim_id (data_source, claim_id_src, member_id_src, uth_member_id, data_year)                                              
-select  'optz', a.clmid::text, a.patid::text, b.uth_member_id, min(trunc(a.year,0))
-from optum_zip.medical a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'optz'
-   and b.member_id_src = a.patid::text 
-  left join data_warehouse.dim_uth_claim_id c
-        on  b.data_source = c.data_source
-          and a.clmid::text = c.claim_id_src 
-          and a.patid::text = c.member_id_src
-where a.patid is not null
-and c.uth_claim_id is null
-group by 1, 2, 3, 4;
+with cte_distinct_claim as 
+    (
+		select  distinct 'optz' as v_data_source, a.clmid::text as v_claim_id_src, a.member_id_src as v_member_id_src, 
+		                 b.uth_member_id as v_uth_member_id, a."year" as v_data_year
+		from optum_zip.medical a
+		  join data_warehouse.dim_uth_member_id b 
+		    on b.data_source = 'optz'
+		   and b.member_id_src = a.member_id_src 
+     ) 
+select v_data_source, v_claim_id_src, v_member_id_src, v_uth_member_id, v_data_year 
+from cte_distinct_claim cdc
+  left outer join data_warehouse.dim_uth_claim_id c
+    on c.data_source = v_data_source
+   and c.claim_id_src = v_claim_id_src
+   and c.member_id_src = v_member_id_src
+   and c.data_year = v_data_year 
+where c.uth_claim_id is null
+;
 
 
 raise notice 'optz loaded';
-raise notice 'clean zip begin';
 
----cleanup optz 
---12m50s
-delete from data_warehouse.dim_uth_claim_id clm
-    using( 
-select a.uth_claim_id
-from data_warehouse.dim_uth_claim_id a 
-   left outer join optum_zip.medical b 
-     on a.member_id_src = b.patid::text 
-    and a.claim_id_src = b.clmid::text 
-where a.data_source = 'optz' 
-  and b.clmid is null 
- )  del 
-where clm.uth_claim_id = del.uth_claim_id 
-;
 
-raise notice 'clean zip finished';
 raise notice 'load truven begin';
 
 --- ***** truven commercial, outpatient  ***** 

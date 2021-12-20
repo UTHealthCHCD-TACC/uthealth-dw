@@ -27,7 +27,7 @@ GDR_CD char(1), GROUP_NBR varchar,
 HEALTH_EXCH char(1), LIS_DUAL char(1), PRODUCT varchar, RACE varchar, STATE char(2), YRDOB smallint, EXTRACT_YM int , VERSION numeric 
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/OPTUM_NEW/ZIP_july212021/zip5_mbr_enroll_r.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/zip5_mbr_enroll_r.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -37,8 +37,29 @@ from ext_mbr_enroll_r
 limit 1000;
 
 -- Insert
-insert into optum_zip.mbr_enroll_r
-select * from ext_mbr_enroll_r;
+insert into optum_zip.mbr_enroll_r (
+PATID, PAT_PLANID, ASO, BUS, CDHP, ELIGEFF, ELIGEND, FAMILY_ID, 
+GDR_CD, GROUP_NBR, 
+HEALTH_EXCH, LIS_DUAL, PRODUCT, RACE, STATE, YRDOB, EXTRACT_YM, VERSION, member_id_src
+)
+select PATID, PAT_PLANID, ASO, BUS, CDHP, ELIGEFF, ELIGEND, FAMILY_ID, 
+GDR_CD, GROUP_NBR, 
+HEALTH_EXCH, LIS_DUAL, PRODUCT, RACE, STATE, YRDOB, EXTRACT_YM, VERSION, patid::text as member_id_src
+from ext_mbr_enroll_r;
+
+-- Fix distribution key
+create table optum_zip.mbr_enroll_r_new
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as 
+select PATID, PAT_PLANID, ASO, BUS, CDHP, ELIGEFF, ELIGEND, FAMILY_ID, 
+GDR_CD, GROUP_NBR, 
+HEALTH_EXCH, LIS_DUAL, PRODUCT, RACE, STATE, YRDOB, EXTRACT_YM, VERSION, patid::text as member_id_src
+from optum_zip.mbr_enroll_r
+distributed by (member_id_src);
+
+drop table optum_zip.mbr_enroll_r;
+ALTER TABLE optum_zip.mbr_enroll_r_new RENAME TO mbr_enroll_r;
+
 
 -- Analyze
 analyze optum_zip.mbr_enroll;

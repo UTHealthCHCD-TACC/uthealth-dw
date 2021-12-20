@@ -36,8 +36,8 @@ LOS|POS|PROC1|PROC2|PROC3|PROC4|PROC5|
 PROV|STD_COST|STD_COST_YR|TOS_CD|EXTRACT_YM|VERSION|
 ICU_IND|ICU_SURG_IND|MAJ_SURG_IND|MATERNITY_IND|NEWBORN_IND|TOS_EXT
  */
-drop external table ext_confinement;
-CREATE EXTERNAL TABLE ext_confinement (
+drop external table ext_confinement_optum_zip;
+CREATE EXTERNAL TABLE ext_confinement_optum_zip (
 year int, filename text,
 PATID bigint, PAT_PLANID bigint, ADMIT_DATE date, CHARGE numeric, COINS numeric, CONF_ID char(21), COPAY numeric, DEDUCT numeric, 
 DIAG1 char(7), DIAG2 char(7), DIAG3 char(7), DIAG4 char(7), DIAG5 char(7), DISCH_DATE date, DRG char(5), DSTATUS char(2), ICD_FLAG char(2), IPSTATUS char(1),
@@ -46,19 +46,26 @@ PROV numeric, STD_COST numeric, STD_COST_YR smallint, TOS_CD char(13), EXTRACT_Y
 ICU_IND text, ICU_SURG_IND text, MAJ_SURG_IND text, MATERNITY_IND text, NEWBORN_IND text, TOS text
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/\*/zip5_c2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/\*/zip5_c2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 
 select *
-from ext_confinement
+from ext_confinement_optum_zip
 limit 1000;
 
 -- Insert
-insert into optum_zip.confinement (year, file, PATID, PAT_PLANID, ADMIT_DATE, CHARGE, COINS, CONF_ID, COPAY, DEDUCT,DIAG1, DIAG2, DIAG3, DIAG4, DIAG5, DISCH_DATE, DRG, DSTATUS, ICD_FLAG, IPSTATUS,LOS, POS, PROC1, PROC2, PROC3, PROC4, PROC5,PROV, STD_COST, STD_COST_YR, TOS_CD, EXTRACT_YM, VERSION,ICU_IND, ICU_SURG_IND, MAJ_SURG_IND, MATERNITY_IND, NEWBORN_IND, TOS)
-select * from ext_confinement;
+insert into optum_zip.confinement (year, file, PATID, PAT_PLANID, ADMIT_DATE, CHARGE, COINS, CONF_ID, COPAY, DEDUCT,
+DIAG1, DIAG2, DIAG3, DIAG4, DIAG5, DISCH_DATE, DRG, DSTATUS, ICD_FLAG, IPSTATUS,LOS, POS, 
+PROC1, PROC2, PROC3, PROC4, PROC5,PROV, STD_COST, STD_COST_YR, TOS_CD, 
+EXTRACT_YM, VERSION,ICU_IND, ICU_SURG_IND, MAJ_SURG_IND, MATERNITY_IND, NEWBORN_IND, TOS, member_id_src)
+select year, filename, PATID, PAT_PLANID, ADMIT_DATE, CHARGE, COINS, CONF_ID, COPAY, DEDUCT,
+DIAG1, DIAG2, DIAG3, DIAG4, DIAG5, DISCH_DATE, DRG, DSTATUS, ICD_FLAG, IPSTATUS,LOS, POS, 
+PROC1, PROC2, PROC3, PROC4, PROC5,PROV, STD_COST, STD_COST_YR, TOS_CD, 
+EXTRACT_YM, VERSION,ICU_IND, ICU_SURG_IND, MAJ_SURG_IND, MATERNITY_IND, NEWBORN_IND, TOS, patid::text 
+from ext_confinement_optum_zip;
 
 -- Analyze
 analyze optum_zip.confinement;

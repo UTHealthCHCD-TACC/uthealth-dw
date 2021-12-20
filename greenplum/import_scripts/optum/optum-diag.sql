@@ -23,13 +23,13 @@ WITH (appendonly=true, orientation=column, compresstype=zlib)
 distributed by (patid);
 */
 
-drop external table ext_diagnostic;
-CREATE EXTERNAL TABLE ext_diagnostic (
-year smallint, filename varchar,
+drop external table ext_diagnostic_optum_zip;
+CREATE EXTERNAL TABLE ext_diagnostic_optum_zip (
+year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, CLMID char(19), DIAG char(7), DIAG_POSITION smallint, ICD_FLAG char(2), LOC_CD char(1), POA char(50), EXTRACT_YM int, VERSION numeric, FST_DT date
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/\*/zip5_diag2*.txt.gz#transform=add_parentname_filename_vertbar'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/\*/zip5_diag2*.txt.gz#transform=add_parentname_filename_vertbar'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
@@ -40,8 +40,22 @@ from ext_diagnostic
 limit 1000;
 */
 -- Insert
-insert into optum_zip.diagnostic
-select * from ext_diagnostic;
+insert into optum_zip.diagnostic (
+year, file, 
+PATID, PAT_PLANID, CLMID, DIAG, DIAG_POSITION, 
+ICD_FLAG, LOC_CD, POA, EXTRACT_YM, VERSION, FST_DT, member_id_src)
+select year, file, 
+PATID, PAT_PLANID, trim(CLMID), DIAG, DIAG_POSITION, 
+ICD_FLAG, LOC_CD, POA, EXTRACT_YM, VERSION, FST_DT, patid::text
+from ext_diagnostic_optum_zip;
+
+
+-- Fix Distribution
+create table optum_zip.diagnostic_new
+WITH (appendonly=true, orientation=column, compresstype=zlib)
+as select PATID, PAT_PLANID, trim(CLMID), DIAG, DIAG_POSITION, 
+ICD_FLAG, LOC_CD, POA, EXTRACT_YM, VERSION, FST_DT
+from optum_zip.diagnostic;
 
 -- 318 secs
 update optum_zip.diagnostic set year=date_part('year', FST_DT) where year=0;

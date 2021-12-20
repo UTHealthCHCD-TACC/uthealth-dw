@@ -14,7 +14,9 @@
  * ******************************************************************************************************
  *  jw001  || 11/12/2021 || wrap in function
  * ******************************************************************************************************
- */
+ *  wc004  || 12/12/2021 || remove claim created logic, consolidate medicaid, remove old record cleanup logic 
+ * ****************************************************************************************************** 
+ **/
 
 ------ load dim_uth_member_id------------------------------------------------
 
@@ -29,75 +31,41 @@ begin
 ------------ /  BEGIN SCRIPT
 	
 raise notice 'begin script';
-raise notice 'load optd begin';
 
 -- ***** Optum DoD ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct patid as v_member_id, 'optd' as v_raw_data
-	from optum_dod.mbr_enroll_r 
+	select distinct a.member_id_src as v_member_id, 'optd' as v_data_source
+	from optum_dod.mbr_enroll_r a 
 	 left outer join data_warehouse.dim_uth_member_id b 
-	              on b.data_source = 'optd'
-	             and b.member_id_src = patid::text
-	where b.member_id_src is null 	
+              on b.data_source = 'optd'
+             and b.member_id_src = a.member_id_src 
+	where b.uth_member_id is null 
 )
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+select v_member_id, v_data_source, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member 
 ;
 
 raise notice 'load optd finished';
-raise notice 'clean optd begin';
 
----cleanup optd records that are no longer in raw data 
-delete from data_warehouse.dim_uth_member_id mem 
-    using( 
-select a.uth_member_id
-from data_warehouse.dim_uth_member_id a 
-   left outer join optum_dod.mbr_enroll_r b 
-     on a.member_id_src = b.patid::text 
-where a.data_source = 'optd' 
-  and b.patid is null 
- )  del 
-where mem.uth_member_id = del.uth_member_id 
-  and mem.claim_created_id is false
-;
-
-raise notice 'clean optd finished';
-raise notice 'load optz begin';
 
 --- ***** Optum Zip  ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct patid as v_member_id, 'optz' as v_raw_data
-	from optum_zip.mbr_enroll
+	select distinct a.member_id_src as v_member_id, 'optz' as v_data_source
+	from optum_zip.mbr_enroll a
 	 left outer join data_warehouse.dim_uth_member_id b 
               on b.data_source = 'optz'
-             and b.member_id_src = patid::text
-	where b.member_id_src is null 
+             and b.member_id_src = a.member_id_src 
+	where b.uth_member_id is null 
 )
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
+select v_member_id, v_data_source, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member 
 ;
 
+
 raise notice 'load optz finished';
-raise notice 'clean zip begin';
 
----cleanup optz records from dim table that are no longer in raw membership table
-delete from data_warehouse.dim_uth_member_id mem 
-    using( 
-select a.uth_member_id
-from data_warehouse.dim_uth_member_id a 
-   left outer join optum_zip.mbr_enroll b 
-     on a.member_id_src = b.patid::text 
-where a.data_source = 'optz' 
-  and b.patid is null 
- )  del 
-where mem.uth_member_id = del.uth_member_id 
-  and mem.claim_created_id is false
-;
-
-raise notice 'clean zip finished';
-raise notice 'load truven begin';
 
 ---***** Truven ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
@@ -118,29 +86,6 @@ from cte_distinct_member
 ;
 
 raise notice 'load truven finished';
-raise notice 'clean truv begin';
-
----cleanup truven 
-delete from data_warehouse.dim_uth_member_id mem 
-    using(     
-  with cte_truv as (   
-       select distinct enrolid::text as mem_id 
-             from ( select enrolid from truven.ccaet 
-                      union 
-                    select enrolid from truven.mdcrt 
-                  ) inr 
-               ) 
-select a.uth_member_id
-from data_warehouse.dim_uth_member_id a 
-   left outer join cte_truv b 
-     on a.member_id_src = b.mem_id  
-where a.data_source = 'truv' 
-  and b.mem_id is null 
- )  del 
-where mem.uth_member_id = del.uth_member_id 
-;
-
-raise notice 'clean truv finished';
 raise notice 'load mcrt begin';
 
 
@@ -185,7 +130,13 @@ raise notice 'load mdcd begin';
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
 with cte_distinct_member as ( 
    select distinct client_nbr as v_member_id, 'mdcd' as v_raw_data 
-   from medicaid.enrl  
+   from ( 
+   			select client_nbr 
+	   		from medicaid.enrl  
+	   	union
+	   		select client_nbr
+   			from medicaid.chip_uth
+         ) inr 
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mdcd' 
      and member_id_src = client_nbr 
@@ -194,34 +145,23 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member
 ;
+
 
 raise notice 'load mdcd finished';
-raise notice 'load chip begin';
-
---medicaid chip
-insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
-with cte_distinct_member as ( 
-   select distinct client_nbr as v_member_id, 'mdcd' as v_raw_data 
-   from medicaid.chip_uth
-    left outer join data_warehouse.dim_uth_member_id 
-      on data_source = 'mdcd' 
-     and member_id_src = client_nbr 
-    where member_id_src is null 
-) 
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
-from cte_distinct_member
-;
-
-raise notice 'load chip finished';
-raise notice 'load id finished';
-raise notice 'analyze dim_uth_member_id';
 
 analyze data_warehouse.dim_uth_member_id;
 
-------   
+raise notice 'load uth_member_id function complete';
+
+end $$
+;
+
+--run when recreating function 
+alter function dw_staging.load_dim_uth_member_id() owner to uthealth_dev;
+grant all on function dw_staging.load_dim_uth_member_id() to uthealth_dev;
 
 
-
+/*
 ---*******************************************************
 --// wcc002 - claim created ids 
 ---*******************************************************
@@ -315,5 +255,5 @@ raise notice 'end script';
 
 end $$
 ;
-
+*/
 

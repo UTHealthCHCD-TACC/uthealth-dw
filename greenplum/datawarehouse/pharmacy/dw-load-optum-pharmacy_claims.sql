@@ -13,17 +13,9 @@
  * */
 
 --------------- BEGIN SCRIPT -------
+do $$
 
---create staging table from pharmacy claims 
-create table dw_staging.pharmacy_claims 
-with (appendonly=true, orientation=column, compresstype=zlib) as 
-	select * 
-	from data_warehouse.pharmacy_claims 
-	--where data_source not in ('optd','optz')
-distributed by (uth_member_id)
-;
-
-analyze dw_staging.pharmacy_claims;
+begin
 
 ---******************************************************************************************************************
 ------ ***** Optum DoD - optd *****
@@ -222,6 +214,7 @@ from optum_zip.rx a
 ---va
 analyze dw_staging.pharmacy_claims;
 
+end $$;
 
 --validate 
 select data_source, year, count(*) 

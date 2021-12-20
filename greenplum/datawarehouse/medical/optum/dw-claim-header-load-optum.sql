@@ -16,17 +16,6 @@
 
 --------------- BEGIN SCRIPT -------
 
----create a copy of production data warehouse table 
-create table dw_staging.claim_header 
-with (appendonly=true, orientation=column) as 
-select *
-from data_warehouse.claim_header ch 
-where data_source not in ('optd','optz')
-distributed by (uth_member_id) 
-;
-
-vacuum analyze dw_staging.claim_header; 
-
 --------------------------------------------------------------------------------------------------
 --- ** OPTD **
 --------------------------------------------------------------------------------------------------
@@ -40,7 +29,7 @@ with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optd'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.optd_uth_claim_id;
+analyze dw_staging.optd_uth_claim_id;
 
 --optd
 insert into dw_staging.claim_header 
@@ -63,14 +52,13 @@ select distinct on(b.uth_claim_id)
 	null as total_paid_amount,
 	dev.fiscal_year_func(min(a.fst_dt) over(partition by b.uth_claim_id)) as fiscal_year,
 	a.std_cost_yr::int as cost_year,
-	max(a.lst_dt) over(partition by b.uth_claim_id) as to_date_of_service
-	a.std_cost_yr::int as cost_year,
 	null as bill_provider, null as ref_provider, null as other_provider, 
 	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_dod.medical a
     join dw_staging.optd_uth_claim_id b 
 		on a.member_id_src = b.member_id_src 
 		and a.clmid = b.claim_id_src
+		and a."year" = b.data_year
 	join reference_tables.ref_optum_cost_factor c
 		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
 		and c.standard_price_year = a.std_cost_yr::int
@@ -94,7 +82,7 @@ with(appendonly=true,orientation=column,compresstype=zlib)
 as select * from data_warehouse.dim_uth_claim_id where data_source = 'optz'
 distributed by (member_id_src);
 
-vacuum analyze dw_staging.optz_uth_claim_id;
+analyze dw_staging.optz_uth_claim_id;
 
 ---optum zip insert 
 insert into dw_staging.claim_header 
@@ -121,7 +109,7 @@ select distinct on(b.uth_claim_id)
 	null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from optum_zip.medical a
     join dw_staging.optz_uth_claim_id b   
-		on a.patid::text = b.member_id_src 
+		on a.member_id_src = b.member_id_src 
 		and a.clmid = b.claim_id_src
 	join reference_tables.ref_optum_cost_factor c 
 	    on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1)) 
@@ -133,7 +121,10 @@ from optum_zip.medical a
      ;
     
   ---va 
- vacuum analyze dw_staging.claim_header ;
+analyze dw_staging.claim_header ;
     
 
 --------------- END SCRIPT -------
+select count(*), data_source, year 
+from dw_staging.claim_header ch 
+group by 2,3 order by 2,3;

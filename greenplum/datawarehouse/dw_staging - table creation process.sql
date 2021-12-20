@@ -15,7 +15,7 @@ do $$
 declare
 ---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
 ---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';  //   := ' (''truv'') ';
-	my_data_source text ' (''mdcd'',''optd'',''optz'') ';
+	my_data_source text := ' (''mdcd'',''optd'',''optz'') ';
 	med_return boolean;
 begin
 
@@ -72,6 +72,7 @@ execute 'insert into dw_staging.claim_header
 ;
 raise notice 'claim header created';
 
+
 --claim diag
 create table dw_staging.claim_diag
 (like data_warehouse.claim_diag including defaults including all)  
@@ -83,6 +84,8 @@ execute 'insert into dw_staging.claim_diag
 		where data_source not in ' || my_data_source || ';'
 ;
 raise notice 'claim diag created';
+
+
 
 --claim icd proc 
 create table dw_staging.claim_icd_proc
@@ -108,6 +111,7 @@ execute 'insert into dw_staging.pharmacy_claims
 ;
 
 raise notice 'pharmacy claims created';
+
 
 
 --(4)
@@ -189,7 +193,13 @@ create table dw_staging.claim_detail (
 	cost_factor_year int2,
 	table_id_src text,
 	claim_sequence_number_src text,
-	row_id bigserial
+	row_id bigserial,
+	bill_provider text, 
+	ref_provider text, 
+	other_provider text,
+	perf_rn_provider text, 
+	perf_at_provider text, 
+	perf_op_provider text
 	) 
 with(appendonly=true,orientation=column, compresstype=zlib)
 distributed by (row_id)
@@ -206,6 +216,7 @@ execute 'insert into dw_staging.claim_detail
 ;
 
 raise notice 'claim_detail done';
+
 
 ---(5) 
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;

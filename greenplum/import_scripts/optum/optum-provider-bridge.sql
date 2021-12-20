@@ -18,22 +18,22 @@ distributed randomly;
 */
 
 drop external table ext_provider_bridge;
-CREATE EXTERNAL TABLE ext_provider_bridge (
+CREATE EXTERNAL TABLE ext_provider_bridge_optum_zip (
 PROV_UNIQUE bigint, DEA char(9), NPI char(10), PROV bigint, EXTRACT_YM int, VERSION numeric
 ) 
 LOCATION ( 
-'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum/zip5_provider_bridge.txt.gz'
+'gpfdist://greenplum01.corral.tacc.utexas.edu:8081/uthealth/optum_zip/zip5_provider_bridge.txt.gz'
 )
 FORMAT 'CSV' ( HEADER DELIMITER '|' );
 
 -- Test
 select *
-from ext_provider_bridge
+from ext_provider_bridge_optum_zip
 limit 1000;
 
 -- Insert
 insert into optum_zip.provider_bridge
-select * from ext_provider_bridge;
+select * from ext_provider_bridge_optum_zip;
 
 -- Analyze
 analyze optum_zip.provider_bridge;

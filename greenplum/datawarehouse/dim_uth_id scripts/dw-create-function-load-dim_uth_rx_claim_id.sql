@@ -155,60 +155,78 @@ where c.uth_rx_claim_id is null
 raise notice 'load mcrn finished';
 raise notice 'load optd begin';
 
---optum dod   4min
+
+--optum dod   12min
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
-			,uth_rx_claim_id
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src ) 	
-select 'optd'
-      ,a.year 
-      ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
-      ,a.clmid
-      ,b.uth_member_id
-      ,a.patid::text 
-from optum_dod.rx a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'optd'
-   and b.member_id_src = a.patid::text
+with cte_distinct_rx as
+     (
+	select distinct 
+	          'optd' as v_data_source
+		      ,a.year as v_data_year 
+		      ,a.clmid as v_rx_claim_id_src
+		      ,b.uth_member_id as v_uth_member_id
+		      ,a.member_id_src as v_member_id_src
+	from optum_dod.rx a
+      join data_warehouse.dim_uth_member_id b 
+		    on b.data_source = 'optd'
+		   and b.member_id_src = a.member_id_src 
+	  )
+select v_data_source, 
+       v_data_year, 
+       v_rx_claim_id_src, 
+       v_uth_member_id, 
+       v_member_id_src
+from cte_distinct_rx a 
 left join data_warehouse.dim_uth_rx_claim_id c 
-  on c.data_source = 'optd'
- and c.member_id_src = a.patid::text
- and c.rx_claim_id_src = a.clmid
- and c."year" = a."year" 
+  on c.data_source = v_data_source
+ and c.member_id_src = v_member_id_src
+ and c.rx_claim_id_src = v_rx_claim_id_src
+ and c."year" = v_data_year
 where c.uth_rx_claim_id is null 
  ;
 
 raise notice 'load optd finished';
 raise notice 'load optz begin';
 
---optum zip 4min
+--optum zip 
 insert into data_warehouse.dim_uth_rx_claim_id (
 			 data_source
 			,year 
-			,uth_rx_claim_id
 			,rx_claim_id_src
 			,uth_member_id
 			,member_id_src ) 	
-select 'optz'
-      ,a.year 
-      ,nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq')
-      ,a.clmid
-      ,b.uth_member_id
-      ,a.patid::text 
-from optum_zip.rx a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'optz'
-   and b.member_id_src = a.patid::text
+with cte_distinct_rx as
+     (
+	select distinct 
+	          'optz' as v_data_source
+		      ,a.year as v_data_year 
+		      ,a.clmid as v_rx_claim_id_src
+		      ,b.uth_member_id as v_uth_member_id
+		      ,a.member_id_src as v_member_id_src
+	from optum_zip.rx a
+      join data_warehouse.dim_uth_member_id b 
+		    on b.data_source = 'optz'
+		   and b.member_id_src = a.member_id_src 
+	  )
+select v_data_source, 
+       v_data_year, 
+       v_rx_claim_id_src, 
+       v_uth_member_id, 
+       v_member_id_src
+from cte_distinct_rx a 
 left join data_warehouse.dim_uth_rx_claim_id c 
-  on c.data_source = 'optz'
- and c.member_id_src = a.patid::text
- and c.rx_claim_id_src = a.clmid
- and c.year = a.year 
+  on c.data_source = v_data_source
+ and c.member_id_src = v_member_id_src
+ and c.rx_claim_id_src = v_rx_claim_id_src
+ and c."year" = v_data_year
 where c.uth_rx_claim_id is null 
  ;
+
 
 raise notice 'load optz finished';
 analyze data_warehouse.dim_uth_rx_claim_id;
@@ -216,8 +234,6 @@ analyze data_warehouse.dim_uth_rx_claim_id;
 
 --*****Medicaid*****  wcc002 
 raise notice 'load mdcd chip begin';
-
-delete from data_warehouse.dim_uth_rx_claim_id where data_source = 'mdcd';
 
 ---chip rx 
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -245,10 +261,6 @@ from medicaid.chip_rx a
 where c.uth_rx_claim_id is null 
 ;
 
-
-select count(distinct pcn || ndc || replace(rx_fill_dt::text, '-','')), year_fy from medicaid.chip_rx group by year_fy ;
-
-select count(uth_rx_claim_id), year  from data_warehouse.dim_uth_rx_claim_id where data_source = 'mdcd' group by year;
 
 raise notice 'load mdcd chip finished';
 raise notice 'load mdcd ffs begin';
