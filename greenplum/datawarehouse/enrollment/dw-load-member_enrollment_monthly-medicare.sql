@@ -25,7 +25,7 @@
 
 
 ----  // BEGIN SCRIPT 
-vacuum analyze dw_staging.member_enrollment_monthly;
+
 
 
 -- *** Medicare  Texas--------------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ insert into dw_staging.member_enrollment_monthly (
 	fiscal_year, 
 	race_cd     
 	)		
-select 'mcrt',
+select 'mcrn',
 	   b.year_int, 
 	   b.month_year_id, 
 	   a.uth_member_id,
@@ -217,3 +217,5 @@ from medicare_national.mbsf_abcd_summary m
 
 
 ----/END SCRIPT
+
+
