@@ -8,6 +8,8 @@
  * ******************************************************************************************************
  *  gmunoz  || 11/05/2021 || removed the data_year column in insert on all four inserts
  * ******************************************************************************************************
+ *  jwozny  || 1/03/2022  || removed icd_type, year, fiscal_year 
+ * ******************************************************************************************************
  * */
 
 
@@ -26,28 +28,23 @@ analyze dev.truven_detail_lines;
 
 -------------------------------- truven commercial outpatient --------------------------------------
 insert into dw_staging.claim_diag ( data_source, 
-                                    year, 
                                     uth_member_id, 
                                     uth_claim_id, 
                                     claim_sequence_number,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    icd_type, 
-                                    poa_src,
-                                    fiscal_year )  								        						              
+                                    poa_src
+                                     )  								        						              
 select  'truv', 
-         extract(year from a.svcdate) as yr,
          b.uth_member_id, 
          b.uth_claim_id, 
          b.claim_sequence_number,
 		 a.svcdate,
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
-         a.dxver, 
-         null,
-         dev.fiscal_year_func(a.svcdate)
-from truven.ccaeo a 
+         null
+   from truven.ccaeo a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
     and b.claim_id_src = a.msclmid::text
@@ -60,27 +57,22 @@ select count(*) from dw_staging.claim_diag cd where data_source = 'truv';
   
 -------------------------------- truven medicare outpatient -------------------------------------- 
 insert into dw_staging.claim_diag ( data_source, 
-                                    year, 
                                     uth_member_id, 
                                     uth_claim_id, 
                                     claim_sequence_number,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    icd_type, 
-                                    poa_src,
-                                    fiscal_year )  								        						              
+                                    poa_src
+)  								        						              
 select  'truv', 
-         extract(year from a.svcdate) as yr,
          b.uth_member_id, 
          b.uth_claim_id, 
          b.claim_sequence_number,
 		 a.svcdate,
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
-         a.dxver, 
-         null,
-         dev.fiscal_year_func(a.svcdate)
+         null
 from truven.mdcro a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -93,28 +85,23 @@ from truven.mdcro a
   
  -------------------------------- truven commercial inpatient ------
 insert into dw_staging.claim_diag ( data_source, 
-                                    year, 
                                     uth_member_id, 
                                     uth_claim_id, 
                                     claim_sequence_number,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    icd_type, 
-                                    poa_src,
-                                    fiscal_year )  								        						              
+                                    poa_src
+                                    )  								        						              
 select  'truv', 
-         extract(year from a.svcdate) as yr,
          b.uth_member_id, 
          b.uth_claim_id, 
          b.claim_sequence_number,
 		 a.svcdate,
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
-         a.dxver, 
-         null,
-         dev.fiscal_year_func(a.svcdate)
-from truven.ccaes a 
+         null
+   from truven.ccaes a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
     and b.claim_id_src = a.msclmid::text
@@ -124,27 +111,22 @@ from truven.ccaes a
   
 -------------------------------- truven medicare inpatient ------
 insert into dw_staging.claim_diag ( data_source, 
-                                    year, 
                                     uth_member_id, 
                                     uth_claim_id, 
                                     claim_sequence_number,
                                     from_date_of_service,
                                     diag_cd, 
-                                    diag_position, 
-                                    icd_type, 
-                                    poa_src,
-                                    fiscal_year )  								        						              
+                                    diag_position,
+                                    poa_src
+                                    )  								        						              
 select  'truv', 
-         extract(year from a.svcdate) as yr,
          b.uth_member_id, 
          b.uth_claim_id, 
          b.claim_sequence_number,
 		 a.svcdate,
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
-         a.dxver, 
-         null,
-         dev.fiscal_year_func(a.svcdate)
+         null
 from truven.mdcrs a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src

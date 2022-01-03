@@ -9,6 +9,8 @@
  * ****************************************************************************************************** 
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ****************************************************************************************************** 
+ *  jwozny  || 1/02/2022  || removed icd type, year, fiscal_year
+ * ******************************************************************************************************
  * */
 
 
@@ -33,15 +35,15 @@ delete from dw_staging.claim_diag where data_source = 'mcrn';
 
 
 -- Outpatient DX codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null, dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.outpatient_revenue_center_k a 
      join medicare_national.outpatient_base_claims_k b
         on a.bene_id = b.bene_id 
@@ -59,14 +61,14 @@ from medicare_national.outpatient_revenue_center_k a
 
 
 -- Bcarrier DX codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.bcarrier_claims_k a
      join medicare_national.bcarrier_line_k b 
         on a.bene_id = b.bene_id 
@@ -84,14 +86,14 @@ from medicare_national.bcarrier_claims_k a
 
 
 -- DME DX codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.dme_claims_k  a
      join medicare_national.dme_line_k b 
         on a.bene_id = b.bene_id 
@@ -107,15 +109,15 @@ from medicare_national.dme_claims_k  a
 ;
 
 -- Insert Inpatient DX codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 									 									  
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 									 									  
 select  'mcrn', d."year", d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.inpatient_revenue_center_k a 
      join medicare_national.inpatient_base_claims_k b 
         on a.bene_id = b.bene_id 
@@ -132,15 +134,15 @@ from medicare_national.inpatient_revenue_center_k a
 
 
 -- HHA DX Codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.hha_revenue_center_k a 
      join medicare_national.hha_base_claims_k b 
          on a.bene_id = b.bene_id 
@@ -157,15 +159,15 @@ from medicare_national.hha_revenue_center_k a
 
    
 -- Hospice DX Codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)
+		,null
 from medicare_national.hospice_revenue_center_k a 
      join medicare_national.hospice_base_claims_k b 
          on a.bene_id = b.bene_id 
@@ -182,15 +184,15 @@ from medicare_national.hospice_revenue_center_k a
 
 
 -- SNF DX Codes
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, icd_type, poa_src, fiscal_year) 														  									  								  
-select  'mcrn', d.year, d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
+insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
+								   from_date_of_service, diag_cd, diag_position, poa_src) 														  									  								  
+select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
 		,d.from_date_of_service
 	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
 							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
 						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
 		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null, null,  dev.fiscal_year_func(d.from_date_of_service)		
+		,null		
 from medicare_national.snf_revenue_center_k a 
     join medicare_national.snf_base_claims_k b 
        on a.clm_id = b.clm_id 
