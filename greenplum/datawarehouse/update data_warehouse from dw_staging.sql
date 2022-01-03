@@ -55,24 +55,24 @@ alter table dw_staging.medicaid_program_enrollment set schema data_warehouse;
 
 
 
------||  delete old tables  
-drop table if exists  data_warehouse.claim_header_old;
+-----||  move old tables  
+alter table  data_warehouse.claim_header_old set schema dw_staging;
 
-drop table if exists data_warehouse.claim_detail_old;
+alter table  data_warehouse.claim_detail_old set schema dw_staging;
 
-drop table if exists data_warehouse.claim_diag_old;
+alter table  data_warehouse.claim_diag_old set schema dw_staging;
 
-drop table if exists data_warehouse.claim_icd_proc_old;
+alter table data_warehouse.claim_icd_proc_old set schema dw_staging;
 
-drop table if exists data_warehouse.pharmacy_claims_old;
+alter table  data_warehouse.pharmacy_claims_old set schema dw_staging;
 
-drop table if exists data_warehouse.member_enrollment_monthly_old;
+alter table  data_warehouse.member_enrollment_monthly_old set schema dw_staging;
 
-drop table if exists data_warehouse.member_enrollment_yearly_old;
+alter table  data_warehouse.member_enrollment_yearly_old set schema dw_staging;
 
-drop table if exists data_warehouse.medicare_mbsf_abcd_enrollment_old;
+alter table  data_warehouse.medicare_mbsf_abcd_enrollment_old set schema dw_staging;
 
-drop table if exists data_warehouse.medicaid_program_enrollment_old
+alter table data_warehouse.medicaid_program_enrollment_old set schema dw_staging;
 -----||
 
 

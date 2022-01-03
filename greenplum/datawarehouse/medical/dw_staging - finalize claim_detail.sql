@@ -81,6 +81,10 @@ select * from dw_staging.claim_detail
 distributed by (uth_member_id)
 ;
 
+analyze dw_staging.claim_detail_temp;
+
+select count(*), data_source from dw_staging.claim_detail_temp cdt group by data_source ;
+
 raise notice 'redistributing claim detail';
 
 ---replace 
@@ -100,4 +104,12 @@ end $$
 ;
 
 ------------- END SCRIPT 
+
+select * 
+from ( 
+select count(*) cnt, row_id 
+from dw_staging.claim_detail 
+group by row_id 
+) inr where cnt > 1 
+;
 
