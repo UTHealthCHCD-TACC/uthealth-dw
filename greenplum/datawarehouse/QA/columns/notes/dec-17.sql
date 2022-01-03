@@ -1,45 +1,42 @@
 
---------------------------------QA----------------------12-17-2021
+--------------------------------QA----------------------12-17-2021-----------------------
 /*
- * 
- * Monthly Enrollment - All good 
- * Diag - Okay 
- * Yearly - Ok - no data in there at moment 
- * Proc - Claim 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
-  for all truven sources, some ids are not found - need to load into dim again? 
-  
-  optum to date of service issue 
-  3 digit cpt codes in medicaid 
- * 
- * 
- * 
- * 
- * many from date of service missing in medicare - hsould that ever be null? 
- * 
- * 
- * 
- * 
- */
----------------------diag-----------------
---some truven ids not found
--- only 2021 fails 
 
+1) Many CPT codes in medicaid raw data are actually revenue codes
+2) There are digits mixed up in optum to date of service in 2014-2016
+3) There are medicare claims with null revenue center date (most have revenue code 0001
+4) optum discharge status as NA -> should be changed to null
+4) There are many, many admit and discharge dates in medicaid that are incorrect
+5) Several strange discharge status codes for medicaid
+6) truven claim sequence number actually means sequence in entire table - which is why numbers are huge
+
+
+1) For all truven sources, some ids are not found - need to load into dim again? 
+  
+ */
+
+------------------------------------------------------------
+---------------------diag-----------------
+------------------------------------------------------------
+
+--some truven ids not found
+
+------------------------------------------------------------
 ---------------------proc-----------------
+------------------------------------------------------------
+
 --claim_sequence_number - truven fails - original variable actually means record number in whole raw table for year
 
+------------------------------------------------------------
 --------------------claim header-----------------
+------------------------------------------------------------
+
 --- claim_type wrong source var for claim_type - updated in script
 
 
-
+------------------------------------------------------------
+------------------------claim detail------------------------
+------------------------------------------------------------
 
 -----------------------discharge_status mdcd ---------------
 
@@ -90,7 +87,7 @@ select * from dev.mdcd_discharge_del;
 |6               |
 */
 
--------------------------optum--------------------------------------
+-------------------------optum-----discharge status---------------------------------
 
 select discharge_status 
 from dw_staging.claim_detail
@@ -205,12 +202,15 @@ select * from optum_zip.medical where clmid = '38JRNFRVLO';
 
 ---------------------------cpt cpdes mdcd-------------------------------
 
+--it turns out they are revenue codes
+
+
 select * from dw_staging.claim_detail 
 where data_source = 'mdcd'
 and cpt_hcpcs_cd !~ '^[[:alnum:]]{5,7}$' and cpt_hcpcs_cd is not null 
 and cpt_hcpcs_cd not in ('',' ');
-/*
 
+/*
 |cpt_hcpcs_cd|
 |------------|
 |762         |
@@ -231,10 +231,36 @@ and cpt_hcpcs_cd not in ('',' ');
 */
 
 
+
+select count(*) from medicaid.clm_detail 
+where proc_cd ~ '^\d{3}$'
+and proc_cd = rev_cd ;
+
+--99,110,165
+
+select count(*) from medicaid.clm_detail 
+where proc_cd ~ '^\d{3}$'
+and sub_proc_cd ~ '^\d{5}$'
+and proc_cd = rev_cd ;
+
+--16,251,325
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
-------mcr from date of service---------
----- sometimes rev center is null in 
---if rev center data is null but base claim is not null should we take baseclaim?----------------------------------
+---------------------------mcrt/mcrn from date of service---------
+------- revenue center date is null on several institutional claims
+------if rev center data is null but base claim is not null should we take baseclaim?-------
 outpatient_revenue_center
 hha_revenue_center
 hospice_revenue_center
@@ -263,45 +289,12 @@ group by rev_cntr
 *
 */
 
-select * from dw_staging.claim_detail 
-where from_date_of_service not between '2007-01-01' and current_date
-and from_date_of_service is not null
-and data_source = 'mcrn';
-
-select count(*) from dw_staging.claim_detail 
-where from_date_of_service is null
-and data_source = 'mcrn';   -----64264457
-
-
-select * from dw_staging.claim_detail 
-where from_date_of_service is null
-and data_source = 'mcrn';   -----64264457
-
-select table_id_src from dw_staging.claim_detail 
-where from_date_of_service is null
-and data_source = 'mcrn'
-group by table_id_src ;   -----64264457
 
 select r.clm_thru_dt, r.rev_cntr_dt, b.clm_from_dt, b.clm_thru_dt 
 from medicare_national.hha_revenue_center_k  r 
 join medicare_national.hha_base_claims_k b on r.bene_id = b.bene_id and r.clm_id = b.clm_id 
 where rev_cntr_dt is null
 and b.clm_from_dt is null;
-
-
-
-
-
-
------procedure type mcr---------
------fixed 
-
-
-
-
-
-
-
 
 
 

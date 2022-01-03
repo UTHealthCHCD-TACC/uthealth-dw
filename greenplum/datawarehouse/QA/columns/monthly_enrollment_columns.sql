@@ -919,7 +919,6 @@ from (
 ------------------------------------
 
 
-
 insert into qa_reporting.monthly_enrollment_column_checks (
 	test_var,
 	validvalues,
@@ -941,17 +940,17 @@ select 'bus_cd' as test_var,
 from (
 	select sum(case
 				when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
+				or (bus_cd is null and data_source in ('mcrt','mcrn','mdcd'))
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
 					when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
-						or bus_cd is null
+						and bus_cd is not null 
 						then 1
 					end), 0) as invalidvalues,
 		year,
 		data_source
 	from dw_staging.member_enrollment_monthly
-	--where data_source in ('mcrn','mcrt')
     group by data_source, year
 	) a;
 

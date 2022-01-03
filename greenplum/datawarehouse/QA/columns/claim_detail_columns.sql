@@ -349,10 +349,10 @@ select 'month_year_id' as test_var,
     data_source,
     '' as note
 from (
-    select sum(case
+    select coalesce (sum(case
                 when month_year_id between 200701 and 202112
                     then 1
-                end) as validvalues,
+                end),0) as validvalues,
         coalesce(sum(case
                     when month_year_id not between 200701 and 202112
                         or month_year_id is null
@@ -1295,7 +1295,6 @@ from (
 -----fiscal_year
 ------------------------------------
 
-
 insert into qa_reporting.claim_detail_column_checks (
     test_var,
     validvalues,
@@ -1315,10 +1314,10 @@ select 'fiscal_year' as test_var,
 	data_source,
 	'' as note
 from (
-	select sum(case
+	select coalesce (sum(case
 				when fiscal_year between 2007 and 2021 or fiscal_year is null
 					then 1
-				end) as validvalues,
+				end),0) as validvalues,
 		coalesce(sum(case
 					when fiscal_year not between 2007 and 2021
 						and fiscal_year is not null
