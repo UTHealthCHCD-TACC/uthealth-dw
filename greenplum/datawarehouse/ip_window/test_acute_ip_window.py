@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Tue Nov  9 15:30:07 2021
 
@@ -6,13 +5,13 @@ Created on Tue Nov  9 15:30:07 2021
 """
 import pandas as pd
 import unittest
-import dw_acute_ip_window as iw
+import dw_ip_window_step_2 as iw
 
 
 class MyTest(unittest.TestCase):
     
     def setUp(self):
-        self.df = pd.read_csv('unit_test_ip_window_data.csv',
+        self.df = pd.read_csv('test_ip_window_data.csv',
                               dtype={'discharge_status':'str'}, 
                               parse_dates=['admit_date','discharge_date'])
         self.df['discharge_status'].fillna('NA', inplace=True)
