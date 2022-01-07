@@ -2,12 +2,13 @@
 --------------------------------QA----------------------12-17-2021-----------------------
 /*
 
-1) Many CPT codes in medicaid raw data are actually revenue codes
+FIXED 1/4/2022 1) Many CPT codes in medicaid raw data are actually revenue codes
 2) There are digits mixed up in optum to date of service in 2014-2016
 3) There are medicare claims with null revenue center date (most have revenue code 0001
-4) optum discharge status as NA -> should be changed to null
+FIXED 1/4/2022 4) optum discharge status as NA -> should be changed to null
 4) There are many, many admit and discharge dates in medicaid that are incorrect
-5) Several strange discharge status codes for medicaid
+Leave for now 1/4/2022 5) Several strange discharge status codes for medicaid
+			There are not that many values 
 6) truven claim sequence number actually means sequence in entire table - which is why numbers are huge
 
 
@@ -31,6 +32,7 @@
 --------------------claim header-----------------
 ------------------------------------------------------------
 
+--- FIXED 1/4/2022
 --- claim_type wrong source var for claim_type - updated in script
 
 
@@ -39,6 +41,9 @@
 ------------------------------------------------------------
 
 -----------------------discharge_status mdcd ---------------
+
+-- Leave be for now 1/4/2022
+-- 19270
 
 select discharge_status 
 from dw_staging.claim_detail
@@ -87,7 +92,13 @@ select * from dev.mdcd_discharge_del;
 |6               |
 */
 
+
 -------------------------optum-----discharge status---------------------------------
+
+--- FIXED 1/4/2022
+
+--13823022 values 
+
 
 select discharge_status 
 from dw_staging.claim_detail
@@ -158,11 +169,7 @@ and admit_date not between '2000-01-01' and '2021-12-31';
 
 ----------------optum failing to date of service---------------
 
-select * from dw_staging.claim_detail 
-where to_date_of_service not between '2007-01-01' and current_date
-and data_source = 'optz';
-
-
+--- many fail just because of null 
 
 select * from dw_staging.claim_detail 
 where to_date_of_service not between '2007-01-01' and current_date
@@ -170,7 +177,7 @@ and to_date_of_service is not null
 and data_source = 'optz';
 
 
-select claim_id_src from data_warehouse.dim_uth_claim_id where uth_claim_id = '34725698104'; --38JRNFRVLO
+--select claim_id_src from data_warehouse.dim_uth_claim_id where uth_claim_id = '34725698104'; --38JRNFRVLO
 
 select * from optum_zip.medical where clmid = '38JRNFRVLO';
 
@@ -200,9 +207,13 @@ select * from optum_zip.medical where clmid = '38JRNFRVLO';
 
 */
 
+
 ---------------------------cpt cpdes mdcd-------------------------------
 
+--- FIXED 1/4/2022
 --it turns out they are revenue codes
+--it is only a problem in medicaid.clm_detail
+--added logic to load script 1/4/2022
 
 
 select * from dw_staging.claim_detail 
@@ -247,10 +258,27 @@ and proc_cd = rev_cd ;
 
 
 
+select * from medicaid.clm_detail 
+where proc_cd ~ '^\d{3}$'
+and proc_cd = rev_cd ;
 
+/*
 
+|proc_cd|sub_proc_cd|
+|-------|-----------|
+|260    |96375      |
+|510    |99214      |
+|272    |272        |
+|510    |99214      |
+|942    |99406      |
+|272    |272        |
+|710    |710        |
+|258    |258        |
+|360    |29824      |
+|250    |250        |
+|370    |370        |
 
-
+*/
 
 
 

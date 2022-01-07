@@ -22,7 +22,7 @@ select * from
 	(        select  'truv', 
 	         b.uth_member_id, 
 	         b.uth_claim_id, 
-	         a.seqnum, 
+	         null as claim_sequence_number, 
 	         a.svcdate ,
 	         unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
 			 unnest(array[1,2,3,4,5,6]) as proc_pos
@@ -49,7 +49,7 @@ select * from
 	(  select  'truv', 
          b.uth_member_id, 
          b.uth_claim_id, 
-         a.seqnum, 
+         null as claim_sequence_number, 
          a.svcdate ,
          unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
 		 unnest(array[1,2,3,4,5,6]) as proc_pos

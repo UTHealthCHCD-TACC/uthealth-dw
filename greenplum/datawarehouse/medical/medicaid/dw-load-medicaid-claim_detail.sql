@@ -5,18 +5,20 @@
  *  Author || Date      || Notes
  * ******************************************************************************************************
  * ******************************************************************************************************
- *  jw001  || 9/27/2021 || add discharge status
+ *  jwozny  || 9/27/2021 || add discharge status
  * ******************************************************************************************************
  *  wc001  || 10/11/2021 || migrate to dw_staging
  * ******************************************************************************************************
- *  jw002  || 11/03/2021 || add provider variables
- *
+ *  jwozny  || 11/03/2021 || add provider variables
+ * ********************************************************************************************************
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ************************************************************************************************************
- *  jw003  || 11/29/2021  || changed discharge status to pat_stat from enc_header for the encounter table + added logic for procedure_type
+ *  jwozny  || 11/29/2021  || changed discharge status to pat_stat from enc_header for the encounter table + added logic for procedure_type
  * ************************************************************************************************************
  *  jwozny || 12/17/2021  || added table_id_src values
- *
+ * ***********************************************************************************
+ *  jwozny || 01/04/2022  || added case when to logic for cpt_hcpcs_cd to fix bad proc_cd values (they were revenue codes) in raw data. only a problem in clm_detail
+ * **********************************************************************************************
 */
 
 
@@ -40,9 +42,19 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      )
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id,
        a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos),
-       true, true, case when d.adm_dt = '' then null else d.adm_dt::date end , case when d.dis_dt = '' then null else d.dis_dt::date end, a.proc_cd,
-        case when substring(proc_cd,1,1) ~ '[0-9]' then 'CPT'
-	   	     when substring(proc_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+       true, true, case when d.adm_dt = '' then null else d.adm_dt::date end , case when d.dis_dt = '' then null else d.dis_dt::date end, 
+       case when a.proc_cd  ~ '[a-zA-Z0-9]{5}$' 
+          	  then a.proc_cd 
+					when a.proc_cd = a.rev_cd and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$'
+							then a.sub_proc_cd 
+					when a.proc_cd = a.rev_cd 
+							then null 
+														end as cpt_hcpcs_cd,
+        case when substring(proc_cd,1,1) ~ '[0-9]' 
+        			then 'CPT'
+	   	     when substring(proc_cd,1,1) ~ '[a-zA-Z]' 
+	   	     		then 'HCPCS' else null 
+	   	     									end as procedure_type,
 	   proc_mod_1, proc_mod_2,
        case when isdigit(rev_cd) is false then null
             when length(rev_cd) > 4 then null

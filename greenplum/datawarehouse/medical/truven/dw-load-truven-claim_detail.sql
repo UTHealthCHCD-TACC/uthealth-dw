@@ -15,7 +15,7 @@
  * ****************************************************************************************************** 
    *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
  * ****************************************************************************************************** 
- *    jwozny  || 12/17/2021 || added drg code for i tables
+ *    jwozny  || 12/17/2021 || added drg code for i tables 
  * ****************************************************************************************************** 
  *    jwozny  || 12/23/2021 || added cte to get rid of duplicates in bottom bill type update script
  * ****************************************************************************************************** 
@@ -82,7 +82,13 @@ select  'truv',
         null, 
         null, 
         a.proc1 as cpt_hcpcs, 
-        a.proctyp, 
+			 	case
+			 		when substring(a.proc1, 1, 1) ~ '[0-9]'
+			 			then 'CPT'
+			 		when substring(a.proc1, 1, 1) ~ '[a-zA-Z]'
+			 			then 'HCPCS'
+			 		else null
+			 		end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
         null as drg,
@@ -263,7 +269,7 @@ select  'truv',
 	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        a.drg as drg,
+        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -357,7 +363,7 @@ select  'truv',
 	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        a.drg as drg,
+        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
