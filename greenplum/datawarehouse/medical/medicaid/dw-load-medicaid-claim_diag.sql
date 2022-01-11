@@ -1,4 +1,14 @@
-
+/* ******************************************************************************************************
+ * Loads dw_staging.claim_diag with medicaid data
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc001  || 1/01/2021 || script created 
+ * ******************************************************************************************************
+ *  wallingTACC || 8/23/2021 || updated comments.
+ * ******************************************************************************************************
+ *  wcough	    || 1/07/2022 || add icd_version back to table
+ * ****************************************************************************************************** */
 
 
 
@@ -6,7 +16,7 @@ analyze dw_staging.claim_diag;
 
 
 insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-                                       from_date_of_service, diag_cd, diag_position, poa_src)
+                                       from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
 		select 'mdcd', c.uth_member_id, c.uth_claim_id, 1 as seq, 
@@ -19,7 +29,11 @@ from (
 		 	    unnest(array[a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
-		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24, a.dx_poa_25 ]) as dx_poa
+		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24, a.dx_poa_25 ]) as dx_poa,
+		       		        unnest(array[a.prim_dx_qal, a.dx_cd_qual_1, a.dx_cd_qual_2, a.dx_cd_qual_3, a.dx_cd_qual_4, a.dx_cd_qual_5, a.dx_cd_qual_6,
+		                     a.dx_cd_qual_7, a.dx_cd_qual_8, a.dx_cd_qual_9, a.dx_cd_qual_10, a.dx_cd_qual_11, a.dx_cd_qual_12, a.dx_cd_qual_13,
+		                     a.dx_cd_qual_14, a.dx_cd_qual_15, a.dx_cd_qual_16, a.dx_cd_qual_17, a.dx_cd_qual_18, a.dx_cd_qual_19,
+		                     a.dx_cd_qual_20, a.dx_cd_qual_21, a.dx_cd_qual_22, a.dx_cd_qual_23, a.dx_cd_qual_24, a.dx_cd_qual_25 ]) as icd_ver
 		from medicaid.clm_dx a
 		  join medicaid.clm_proc b
 		    on b.icn = a.icn 
@@ -36,7 +50,7 @@ from (
 
 
 insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-                                       from_date_of_service, diag_cd, diag_position, poa_src)
+                                       from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
 		select 'mdcd', c.uth_member_id, c.uth_claim_id, 1 as seq, 
@@ -49,7 +63,11 @@ from (
 		 	    unnest(array[a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
-		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24]) as dx_poa
+		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24]) as dx_poa,
+		        unnest(array[a.prim_dx_qal, a.dx_cd_qal_1, a.dx_cd_qal_2, a.dx_cd_qal_3, a.dx_cd_qal_4, a.dx_cd_qal_5, a.dx_cd_qal_6,
+		                     a.dx_cd_qal_7, a.dx_cd_qal_8, a.dx_cd_qal_9, a.dx_cd_qal_10, a.dx_cd_qal_11, a.dx_cd_qal_12, a.dx_cd_qal_13,
+		                     a.dx_cd_qal_14, a.dx_cd_qal_15, a.dx_cd_qal_16, a.dx_cd_qal_17, a.dx_cd_qal_18, a.dx_cd_qal_19,
+		                     a.dx_cd_qal_20, a.dx_cd_qal_21, a.dx_cd_qal_22, a.dx_cd_qal_23, a.dx_cd_qal_24 ]) as icd_ver
 		from medicaid.enc_dx a
 		  join medicaid.enc_proc b
 		    on trim(b.derv_enc) = trim(a.derv_enc)
@@ -63,3 +81,4 @@ from (
 		    and d.year_fy = b.year_fy		   		    
 ) inr where dx_cd <> ''
  ;
+

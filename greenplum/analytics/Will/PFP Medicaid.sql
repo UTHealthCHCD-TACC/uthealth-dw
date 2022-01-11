@@ -105,7 +105,7 @@ select p.pcn, h.icn, e.sex, substring(e.dob,5,2) || substring(e.dob,7,2) || subs
        case  when trim(dx_cd_24) = '' then '' else ';' || trim(dx_cd_24) end ||
        case  when trim(dx_cd_25) = '' then '' else ';' || trim(dx_cd_25) end 
        as dx_array
-   into dev.wc_pfp_clm1920_hdr
+   into dev.wc_pfp_clm1819_hdr
 from medicaid.clm_header h 
   join medicaid.clm_proc p  
     on h.icn = p.icn 
@@ -117,11 +117,11 @@ from medicaid.clm_header h
     on e.client_nbr = p.pcn 
   left outer join medicaid.admit_clm f 
       on f.clm_id = h.icn 
-where h.year_fy between 2019 and 2020
+where h.year_fy between 2018 and 2019
 ;
 
 
-drop table if exists dev.wc_pfp_clm1920_dtl;
+drop table if exists dev.wc_pfp_clm1819_dtl;
 
 ---*******
 --- clm_detail fields
@@ -132,9 +132,9 @@ select icn,
        case when min(trim(rev_cd) ) = '' then 'F' else 'P' end as rev_cd,
        string_agg(case when length(trim(rev_cd)) < 5 then null else lpad(trim(rev_cd),4,'0') end,';') as revs, 
        string_agg(case when trim(d.proc_cd) ='' then null else trim(d.proc_cd) end ,';') as cpt_hcpcs_array
-   into dev.wc_pfp_clm1920_dtl
+   into dev.wc_pfp_clm1819_dtl
 from medicaid.clm_detail d
-where year_fy between 2019 and 2020
+where year_fy between 2018 and 2019
 group by icn
 ;
 
@@ -152,7 +152,7 @@ with cte_enc_enrl as (
 	where a.year_fy between 2017 and 2020
 	group by client_nbr	
  )
- insert  into dev.wc_pfp_clm1920_hdr 
+ insert  into dev.wc_pfp_clm1819_hdr 
 select p.mem_id , h.derv_enc , e.sex, substring(e.dob,5,2) || substring(e.dob,7,2) || substring(e.dob,1,4) as dob, e.dob_date, e.enrl_start, e.enrl_end,
        trim(h.pat_stat ) as DischargeStatus, f.admit_id ,
        case when trim(p.bill) = '' then '' else lpad(trim(p.bill),4,'0') end as TypeOfBill,
@@ -255,13 +255,13 @@ from medicaid.enc_header h
     on e.client_nbr = trim(p.mem_id) 
   left outer join medicaid.admit_clm f 
     on f.clm_id = h.derv_enc 
-where h.year_fy between 2019 and 2020
+where h.year_fy between 2018 and 2019
 ;
 
 
 
 
-insert  into dev.wc_pfp_clm1920_dtl
+insert  into dev.wc_pfp_clm1819_dtl
 select derv_enc , 
        min( lpad(trim(d.pos),2,'0') ) as pos, 
        min(d.proc_cd) as proc, 
@@ -269,14 +269,15 @@ select derv_enc ,
        string_agg(case when length(trim(rev_cd)) < 5 then null else lpad(trim(rev_cd),4,'0') end,';') as revs, 
        string_agg(case when trim(d.proc_cd) ='' then null else trim(d.proc_cd) end ,';') as cpt_hcpcs_array
 from medicaid.enc_det  d
-where year_fy between 2019 and 2020
+where year_fy between 2018 and 2019
 group by derv_enc 
 ;
 
-
-select count(*), count(distinct icn) , year_fy 
-from dev.wc_pfp_clm1617_hdr;
+analyze dev.wc_pfp_clm1819_dtl;
 
 select count(*), count(distinct icn) 
-from dev.wc_pfp_clm1617_dtl;
+from dev.wc_pfp_clm1819_hdr;
+
+select count(*), count(distinct icn) 
+from dev.wc_pfp_clm1819_dtl;
 

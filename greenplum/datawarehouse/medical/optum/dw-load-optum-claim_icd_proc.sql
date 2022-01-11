@@ -21,10 +21,10 @@
 --------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_icd_proc (
 		data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-        from_date_of_service, proc_cd, proc_position
+        from_date_of_service, proc_cd, proc_position, icd_version 
 ) 
 select 'optd',  b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.proc, a.proc_position
+       a.fst_dt, a.proc, a.proc_position, case when trim(icd_flag) = '10' then '0' else '9' end as icd_ver
 from optum_dod."procedure" a 
   join dw_staging.optd_uth_claim_id b  
     on a.patid::text = b.member_id_src
@@ -39,10 +39,10 @@ from optum_dod."procedure" a
 --------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_icd_proc (
 		data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-        from_date_of_service, proc_cd, proc_position
+        from_date_of_service, proc_cd, proc_position, icd_version 
 ) 
 select 'optz',  b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.proc, a.proc_position
+       a.fst_dt, a.proc, a.proc_position, case when trim(icd_flag) = '10' then '0' else '9' end as icd_ver
 from optum_zip."procedure" a 
   join dw_staging.optz_uth_claim_id b  
     on a.patid::text = b.member_id_src

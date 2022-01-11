@@ -7,10 +7,10 @@ select
 '' as PatientName,
 '' as MedicalRecordNumber,
 pcn as PatientId,
-case when 2020 - substring(dob,5,4)::int = 0 
+case when 2019 - substring(dob,5,4)::int = 0 
      then ( make_date( substring(admitdate,5,4)::int, substring(admitdate,1,2)::int, substring(admitdate,3,2)::int ) ) - dob_date
      else null end as AgeInDays,
-2020 - substring(dob,5,4)::int  as AgeInYears,
+2019 - substring(dob,5,4)::int  as AgeInYears,
 Sex,
 dob as BirthDate,
 '' as BirthWeight,
@@ -197,11 +197,11 @@ case
 '' as ItemSiteOfService,
 '' as AdmitFromResidentialNursingFacililty,
 '' as TaxonomyCode
-into dev.wc_pfp_1920_agegroup1
-from dev.wc_pfp_clm1920_hdr h 
-   join dev.wc_pfp_clm1920_dtl d 
+into dev.wc_pfp_1819_agegroup7
+from dev.wc_pfp_clm1819_hdr h 
+   join dev.wc_pfp_clm1819_dtl d 
      on h.icn = d.icn 
- where 2020 - substring(dob,5,4)::int between 0 and 19 ---
+ where 2019 - substring(dob,5,4)::int >= 75 --between 65 and 74 -- between 0 and 19 ---
 order by patientid,  AdmitDate
 ;
 

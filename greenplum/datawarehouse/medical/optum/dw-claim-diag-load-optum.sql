@@ -20,10 +20,10 @@
 --------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_diag (
 		data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-        from_date_of_service, diag_cd, diag_position, poa_src
+        from_date_of_service, diag_cd, diag_position, poa_src, icd_version 
 ) 
 select 'optd', b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.diag, a.diag_position,  a.poa
+       a.fst_dt, a.diag, a.diag_position,  a.poa, case when trim(icd_flag) = '10' then '0' else '9' end as icd_ver
 from optum_dod.diagnostic a 
   join dw_staging.optd_uth_claim_id b  
     on a.member_id_src = b.member_id_src
@@ -31,15 +31,17 @@ from optum_dod.diagnostic a
 ;
 
 
+select count(*), data_source from dw_staging.claim_diag cd group by 2;
+
 --------------------------------------------------------------------------------------------------
 --- ** OPTZ **
 --------------------------------------------------------------------------------------------------
 insert into dw_staging.claim_diag (
 		data_source, uth_member_id, uth_claim_id, claim_sequence_number, 
-        from_date_of_service, diag_cd, diag_position, poa_src
+        from_date_of_service, diag_cd, diag_position, poa_src, icd_version 
 ) 
 select 'optz',  b.uth_member_id, b.uth_claim_id, 1 as clmseq, 
-       a.fst_dt, a.diag, a.diag_position,  a.poa
+       a.fst_dt, a.diag, a.diag_position,  a.poa, case when trim(icd_flag) = '10' then '0' else '9' end as icd_ver
 from optum_zip.diagnostic a 
   join dw_staging.optz_uth_claim_id b  
     on a.member_id_src = b.member_id_src
