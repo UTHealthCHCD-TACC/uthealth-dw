@@ -20,28 +20,15 @@
 
 do $$
 declare
-    ---change this according to what data is being updated, use two single quotes around each data source i.e.  ''optz''
-    --- my_data_source text := ' (''truv'',''mcrt'',''optz'') ';
-	my_data_source text := ' (''truv'') ';
-	yearly_records_check boolean := false;
 	month_counter integer := 1;
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
 	col_list text[]:= array['state','zip5','zip3','plan_type','employee_status'];
-	col_list_len int;
+	col_list_len int = array_length(col_list,1);
 begin
-	col_list_len = array_length(col_list,1);
-	raise notice 'Building enrollment yearly table for %', my_data_source;
-    
-	execute 'select exists (select 1 from dw_staging.member_enrollment_yearly where data_source in' || my_data_source || ');'
-	into yearly_records_check;
-	raise notice 'check %', yearly_records_check;
-	if yearly_records_check = true then 
-		raise notice 'Records exists for % , deleting...', my_data_source;
-		execute 'delete from dw_staging.member_enrollment_yearly where data_source in ' || my_data_source || ';';
-		raise notice '...done';
-	end if;
+
+
 
 --insert recs from monthly  14min
 execute 'insert into dw_staging.member_enrollment_yearly (
@@ -74,11 +61,10 @@ select distinct on( data_source, year, uth_member_id )
 	   race_cd,
 	   family_id,
 	   behavioral_coverage
-from dw_staging.member_enrollment_monthly 
-where data_source in ' || my_data_source || ';'
+from dw_staging.member_enrollment_monthly;'
 ;
 
-raise notice 'Records inserted into enrollment yearly for %', my_data_source;
+raise notice 'Records inserted into enrollment yearly';
 
 
 --Create temp join table to populate month flags 6min
@@ -89,9 +75,10 @@ with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, year, month_year_id, month_year_id % year as month
 from dw_staging.member_enrollment_monthly
-where data_source in ' || my_data_source || '
 distributed by(uth_member_id);'
 ;
+
+analyze dw_staging.temp_member_enrollment_month;
 
 
 --Add month flags
@@ -110,7 +97,7 @@ distributed by(uth_member_id);'
 	array_counter = month_counter + 1;
 	end loop;
 
-
+end $$;
 
 --Calculate total_enrolled_months
 update dw_staging.member_enrollment_yearly
@@ -122,6 +109,7 @@ set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+
 drop table if exists dw_staging.temp_member_enrollment_month;
 
 raise notice 'total_enrolled_months updated';
+
 
 -----------------------------------------------------------------------------------------------------------------------
 -----************** logic for yearly rollup of various columns

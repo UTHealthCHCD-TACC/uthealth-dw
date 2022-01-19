@@ -25,7 +25,7 @@
 
 
 ----  // BEGIN SCRIPT 
-vacuum analyze dw_staging.member_enrollment_monthly;
+
 
 
 -- *** Medicare  Texas--------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ select 'mcrt',
 	   ent.plan_type, 
 	   null as bus, 
 	   ptd.ptd_coverage, 
-	   dev.fiscal_year_func(m.year::int2), 
+	   b.fy_ut, 
 	   case when r.race_cd is null then '0' else r.race_cd end
 from medicare_texas.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
@@ -142,7 +142,7 @@ insert into dw_staging.member_enrollment_monthly (
 	fiscal_year, 
 	race_cd     
 	)		
-select 'mcrt',
+select 'mcrn',
 	   b.year_int, 
 	   b.month_year_id, 
 	   a.uth_member_id,
@@ -155,7 +155,7 @@ select 'mcrt',
 	   ent.plan_type, 
 	   null as bus, 
 	   ptd.ptd_coverage, 
-	   dev.fiscal_year_func(m.year::int2), 
+	   b.fy_ut,
 	   case when r.race_cd is null then '0' else r.race_cd end
 from medicare_national.mbsf_abcd_summary m
   join data_warehouse.dim_uth_member_id a
@@ -217,3 +217,5 @@ from medicare_national.mbsf_abcd_summary m
 
 
 ----/END SCRIPT
+
+

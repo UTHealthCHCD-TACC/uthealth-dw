@@ -13,7 +13,7 @@ where
 	condition_cd = 'asth'
 	and cd_type in ('ICD-10', 'ICD-9'))
 select
-	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, year
+	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, extract(year from from_date_of_service) as year
 from
 	data_warehouse.claim_diag cdx
 inner join asth_dx on

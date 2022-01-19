@@ -7,8 +7,16 @@
  * ******************************************************************************************************
  *  wc001  || 9/29/2021 || script creation - pointed at dev schema for testing
  * ****************************************************************************************************** 
+ *  wc002  || 12/9/2021 || modify to do end script
+ * ****************************************************************************************************** 
  * */
 
+
+do $$
+
+begin 
+	
+drop table if exists dev.medicaid_dim_uth_rx_id ;
 
 
 create table dev.medicaid_dim_uth_rx_id 
@@ -18,7 +26,7 @@ from data_warehouse.dim_uth_rx_claim_id
 where data_source = 'mdcd'
 distributed by (member_id_src);
 
-
+analyze dev.medicaid_dim_uth_rx_id;
 
 ---chip 
 insert into dw_staging.pharmacy_claims (data_source, year, uth_rx_claim_id, uth_member_id,  
@@ -33,6 +41,7 @@ from medicaid.chip_rx a
   join dev.medicaid_dim_uth_rx_id  b  
      on a.pcn = b.member_id_src 
     and pcn || ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
+    and data_source = 'mdcd'
 ;
 
 
@@ -49,7 +58,9 @@ from medicaid.ffs_rx a
   join dev.medicaid_dim_uth_rx_id  b  
      on a.pcn = b.member_id_src 
     and pcn || ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
+    and data_source = 'mdcd'
 ;
+
 
 
 ---mco 
@@ -65,13 +76,17 @@ from medicaid.mco_rx a
    join dev.medicaid_dim_uth_rx_id  b 
       on a.pcn = b.member_id_src 
      and pcn || a.ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
+     and b.data_source = 'mdcd'
 ;   
 
 
 ----finalize 
 drop table if exists dev.medicaid_dim_uth_rx_id;
 
-vacuum analyze dw_staging.pharmacy_claims;
+analyze dw_staging.pharmacy_claims;
+
+end $$
+;
 
 ---validate
 select data_source, year, count(*) 

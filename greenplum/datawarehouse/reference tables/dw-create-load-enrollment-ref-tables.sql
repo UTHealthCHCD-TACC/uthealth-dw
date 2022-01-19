@@ -147,11 +147,23 @@ insert into reference_tables.ref_race values  ('mcrn','1','1','White'),
 											  ('mcrt','5','5','Hispanic'), 
 											  ('mcrt','6','6','North American Native'), 
 											  ('mcrt','0','0','Unknown'), 
-											  ('optd','W','0','White'), 
-											  ('optd','B','0','Black'), 
-											  ('optd','H','0','Hispanic'), 
-											  ('optd','A','0','Asian'), 
-											  ('optd','0','0','Unknown');
+											  ('optd','W','1','White'), 
+											  ('optd','B','2','Black'), 
+											  ('optd','H','5','Hispanic'), 
+											  ('optd','A','4','Asian'), 
+											  ('optd','0','0','Unknown'),
+											  ('mdcd','1','1','White'),
+											  ('mdcd','2','2','Black'),
+											  ('mdcd','3','5','Hispanic'), 
+											  ('mdcd','4','6','North American Native'),
+											  ('mdcd','5','4','Asian'), 
+											  ('mdcd','6','0','Unknown'), 
+											  ('optz',null,'0','Unknown'), 
+											  ('optd',null,'0','Unknown'), 
+											  ('mcrt',null,'0','Unknown'), 
+											  ('mcrn',null,'0','Unknown'), 
+											  ('mdcd',null,'0','Unknown'), 
+											  ('truv',null,'0','Unknown');
 											 
 											 
 											 

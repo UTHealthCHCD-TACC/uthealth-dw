@@ -1,6 +1,6 @@
 
 /* ******************************************************************************************************
- *  load claim detail for optum zip and optum dod 
+ *  load claim detail for truven
  * ******************************************************************************************************
  *  Author || Date       || Notes
  * ******************************************************************************************************
@@ -14,6 +14,10 @@
  *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
  * ****************************************************************************************************** 
    *  jwozny  || 11/05/2021 || added provider variables - note: need to add columns 
+ * ****************************************************************************************************** 
+ *    jwozny  || 12/17/2021 || added drg code for i tables 
+ * ****************************************************************************************************** 
+ *    jwozny  || 12/23/2021 || added cte to get rid of duplicates in bottom bill type update script
  * ****************************************************************************************************** 
  * */
 
@@ -78,7 +82,13 @@ select  'truv',
         null, 
         null, 
         a.proc1 as cpt_hcpcs, 
-        a.proctyp, 
+			 	case
+			 		when substring(a.proc1, 1, 1) ~ '[0-9]'
+			 			then 'CPT'
+			 		when substring(a.proc1, 1, 1) ~ '[a-zA-Z]'
+			 			then 'HCPCS'
+			 		else null
+			 		end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
         null as drg,
@@ -164,7 +174,9 @@ select  'truv',
         null, 
         null, 
         a.proc1 as cpt_hcpcs, 
-        a.proctyp, 
+        case when substring(proc1,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(proc1,1,1) ~ '[a-zA-Z]' then 'HCPCS' 
+	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
         null as drg,
@@ -252,10 +264,12 @@ select  'truv',
         a.disdate, 
         lpad(trim(a.dstatus::text),2,'0'),
         a.proc1 as cpt_hcpcs, 
-        a.proctyp, 
+        case when substring(proc1,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(proc1,1,1) ~ '[a-zA-Z]' then 'HCPCS' 
+	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        null as drg,
+        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -344,10 +358,12 @@ select  'truv',
         a.disdate, 
         lpad(trim(a.dstatus::text),2,'0'),
         a.proc1 as cpt_hcpcs, 
-        a.proctyp, 
+        case when substring(proc1,1,1) ~ '[0-9]' then 'CPT'
+	   									 when substring(proc1,1,1) ~ '[a-zA-Z]' then 'HCPCS' 
+	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        null as drg,
+        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -425,17 +441,23 @@ distributed by (uth_member_id)
 
 analyze  dev.wc_truv_billtype;
 
-
-
-
+with wc_truv_billtype as ( ---- joe: added cte to get rid of duplicates
+		select max(billtypeinst) as billtypeinst,
+		 max(billtypeclass) as billtypeclass,
+		 max(billtypefreq) as billtypefreq,
+		uth_member_id, uth_claim_id, seq_num
+		from dev.wc_truv_billtype a
+		group by uth_member_id, uth_claim_id, seq_num
+)
 update dw_staging.claim_detail a 
 set bill_type_inst = billtypeinst, bill_type_class = billtypeclass, bill_type_freq = billtypefreq 
-from dev.wc_truv_billtype b 
+from wc_truv_billtype b 
 where a.uth_member_id = b.uth_member_id 
   and a.uth_claim_id = b.uth_claim_id 
   and a.claim_sequence_number = b.seq_num
   and a.data_source = 'truv'
 ;
+
 
 
 drop table  dev.wc_truv_billtype;

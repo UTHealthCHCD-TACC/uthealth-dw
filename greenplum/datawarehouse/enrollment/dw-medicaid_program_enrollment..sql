@@ -20,7 +20,8 @@ BEGIN
 
 --- create table in dw_staging
 	
-	raise notice 'building medicaid_program_enrollment';
+raise notice 'building medicaid_program_enrollment';
+
 
 create table dw_staging.medicaid_program_enrollment 
 (like data_warehouse.medicaid_program_enrollment including all) 
@@ -38,6 +39,7 @@ select a.year_fy, b.uth_member_id, a.elig_month, c.mco_program_nm
 from medicaid.chip_uth a
   join data_warehouse.dim_uth_member_id b 
      on b.member_id_src = a.client_nbr
+    and b.data_source = 'mdcd'
   join reference_tables.medicaid_lu_contract c 
      on trim(a.plan_cd) = trim(c.plan_cd);
 
@@ -90,6 +92,7 @@ a.pure_rate
 from medicaid.enrl a
   join data_warehouse.dim_uth_member_id b 
      on b.member_id_src = a.client_nbr
+    and data_source = 'mdcd'
   join reference_tables.medicaid_lu_contract c 
      on trim(a.base_plan) = trim(c.plan_cd);
     

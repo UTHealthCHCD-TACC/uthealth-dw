@@ -92,11 +92,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2020
+				when year between 2007 and 2021
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when year not between 2007 and 2020
+					when year not between 2007 and 2021
 						or year is null
 						then 1
 					end), 0) as invalidvalues,
@@ -589,28 +589,29 @@ insert into qa_reporting.yearly_enrollment_column_checks (
     note
     )
 select 'bus_cd' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
 from (
 	select sum(case
 				when bus_cd in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
+				or (bus_cd is null and data_source in ('mcrt','mcrn','mdcd'))
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
 					when bus_cd not in ('COM', 'MDCR', 'MCR', 'MCD','MA','MS')
-						or bus_cd is null
+						and bus_cd is not null 
 						then 1
 					end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.member_enrollment_yearly
+		year,
+		data_source
+	from dw_staging.member_enrollment_yearly 
     group by data_source, year
-    ) a;
+	) a;
 
 
 

@@ -24,7 +24,7 @@ where
 	and cd_type in ('ICD-10', 'ICD-9') 
 	and position('%' in cd_value) = 0)
 select
-	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, year
+	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, extract(year from from_date_of_service)
 from
 	data_warehouse.claim_diag cdx
 inner join diab_dx on
@@ -41,14 +41,14 @@ where
 	and cd_type in ('ICD-10', 'ICD-9') 
     and position('%' in cd_value) > 0)
 select
-	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, year
+	cdx.uth_member_id, cdx.uth_claim_id , cdx.diag_position, cdx.claim_sequence_number, extract(year from from_date_of_service)
 from
 	data_warehouse.claim_diag cdx
 inner join diab_dx on
 	diag_cd like diab_dx.cd_value;
 
 
--- if ed or ip with asthma as primary they qualify for that year
+-- if ed or ip with diabetes as primary they qualify for that year
 drop table if exists conditions.xl_condition_diabetes_2;
 create table conditions.xl_condition_diabetes_2 as
 select

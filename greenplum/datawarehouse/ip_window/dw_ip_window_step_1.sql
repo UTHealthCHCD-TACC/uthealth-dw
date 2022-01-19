@@ -93,7 +93,6 @@ where
 		and bill_type_class = '1'
 		and (bill_type_freq = '1'
 			or bill_type_freq = '4'))
---	and data_source in ('optd', 'optz')
 	and year between 2015 and 2021)
 insert into dev.gm_dw_ip_window_step_1 
 select data_source, uth_member_id, uth_claim_id, min(from_date_of_service) as admit_date,
