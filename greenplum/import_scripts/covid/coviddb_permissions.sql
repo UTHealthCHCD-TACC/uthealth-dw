@@ -7,8 +7,8 @@ grant covid_analyst to ctruong;
  * Project Specific Roles
  */
 create role g823676;
-grant g823066 to ctruong;
-revoke g823429 from mdiaz1;
+grant g823429 to zena21;
+revoke g823429 from zena21;
 
 create schema g823429;
 grant all on schema g823429 to group g823429;

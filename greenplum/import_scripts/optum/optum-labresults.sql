@@ -19,10 +19,10 @@ create table optum_zip.lab_result (
 year smallint, file varchar,
 PATID bigint, PAT_PLANID bigint, ABNL_CD char(2), ANLYTSEQ char(2), FST_DT date, HI_NRML numeric, 
 LABCLMID char(19), LOINC_CD char(7), LOW_NRML numeric, PROC_CD char(7), RSLT_NBR numeric, RSLT_TXT char(18), RSLT_UNIT_NM char(18), 
-source char(2), TST_DESC char(30), TST_NBR char(10), EXTRACT_YM int, VERSION numeric
+source char(2), TST_DESC char(30), TST_NBR char(10), EXTRACT_YM int, VERSION numeric, member_id_src text
 ) 
 WITH (appendonly=true, orientation=column, compresstype=zlib)
-distributed by (patid);
+distributed by (member_id_src);
 */
 
 drop external table ext_labresult_optum_zip;
@@ -89,6 +89,7 @@ from optum_zip.lab_result
 where file >= 'zip5_lr2020q3'
 group by 1
 order by 1;
+
 
 delete
 from optum_zip.lab_result

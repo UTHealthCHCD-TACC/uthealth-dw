@@ -18,6 +18,7 @@ from session_state.session_level_memory_consumption
 
 SELECT * FROM gp_toolkit.gp_bloat_diag;
 
+select version();
 
 --Permissions
 SELECT 
@@ -35,18 +36,28 @@ where skcrelname like 'wc%';
 
 select pg_terminate_backend(276630);
 
-
+--General Settings
 select *
 from pg_settings
 where name like '%max%';
 
 select ceil((200 + 3 + 15 + 5) / 16)
 
+-- GIS
 SELECT * 
 FROM pg_extension;
 
+show search_path;
+
+ALTER DATABASE uthealth SET search_path=public,gis;
 
 select dbo.pg_kill_connection(119596)
+
+create extension postgis schema gis
+CREATE EXTENSION postgis_tiger_geocoder schema gis;
+
+create extension pgrouting schema gis 
+
 
 select *
 from pg_stat_ssl;
