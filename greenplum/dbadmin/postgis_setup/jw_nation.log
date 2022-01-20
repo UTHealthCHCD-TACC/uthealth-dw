@@ -1,0 +1,98 @@
+DROP SCHEMA
+CREATE SCHEMA
+Archive:  tl_2019_us_state.zip
+ extracting: /gisdata/temp/tl_2019_us_state.cpg  
+  inflating: /gisdata/temp/tl_2019_us_state.dbf  
+  inflating: /gisdata/temp/tl_2019_us_state.prj  
+  inflating: /gisdata/temp/tl_2019_us_state.shp  
+  inflating: /gisdata/temp/tl_2019_us_state.shp.ea.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_state.shp.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_state.shx  
+CREATE TABLE
+SET
+SET
+BEGIN
+CREATE TABLE
+ALTER TABLE
+                        addgeometrycolumn                         
+------------------------------------------------------------------
+ tiger_staging.state.the_geom SRID:4269 TYPE:MULTIPOLYGON DIMS:2 
+(1 row)
+
+COPY 56
+COMMIT
+ANALYZE
+ loader_load_staged_data 
+-------------------------
+                      56
+(1 row)
+
+CREATE INDEX
+VACUUM
+DROP SCHEMA
+CREATE SCHEMA
+Archive:  tl_2019_us_county.zip
+ extracting: /gisdata/temp/tl_2019_us_county.cpg  
+  inflating: /gisdata/temp/tl_2019_us_county.dbf  
+  inflating: /gisdata/temp/tl_2019_us_county.prj  
+  inflating: /gisdata/temp/tl_2019_us_county.shp  
+  inflating: /gisdata/temp/tl_2019_us_county.shp.ea.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_county.shp.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_county.shx  
+CREATE TABLE
+SET
+SET
+BEGIN
+CREATE TABLE
+ALTER TABLE
+                         addgeometrycolumn                         
+-------------------------------------------------------------------
+ tiger_staging.county.the_geom SRID:4269 TYPE:MULTIPOLYGON DIMS:2 
+(1 row)
+
+COPY 3233
+COMMIT
+ANALYZE
+ loader_load_staged_data 
+-------------------------
+                    3233
+(1 row)
+
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+VACUUM
+INSERT 0 3233
+VACUUM
+DROP SCHEMA
+CREATE SCHEMA
+Archive:  tl_2019_us_zcta510.zip
+ extracting: /gisdata/temp/tl_2019_us_zcta510.cpg  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.dbf  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.prj  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.shp  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.shp.ea.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.shp.iso.xml  
+  inflating: /gisdata/temp/tl_2019_us_zcta510.shx  
+CREATE TABLE
+SET
+SET
+BEGIN
+CREATE TABLE
+ALTER TABLE
+                         addgeometrycolumn                          
+--------------------------------------------------------------------
+ tiger_staging.zcta510.the_geom SRID:4269 TYPE:MULTIPOLYGON DIMS:2 
+(1 row)
+
+COPY 33144
+COMMIT
+ANALYZE
+CREATE TABLE
+ loader_load_staged_data 
+-------------------------
+                   33144
+(1 row)
+
+INSERT 0 34065
+CREATE INDEX
