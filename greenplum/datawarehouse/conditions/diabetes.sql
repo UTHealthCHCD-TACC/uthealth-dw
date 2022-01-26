@@ -146,6 +146,8 @@ group by
 	year)
 distributed by (uth_member_id);
 
+drop table if exists conditions.xl_condition_diabetes_output;
+create table conditions.xl_condition_diabetes_output as 
 with diabetes_qualified as (select
 	*
 from

@@ -146,8 +146,8 @@ order by
 	year_range
 distributed by (uth_member_id);
 
-drop table if exists conditions.xl_condition_asthma_dx_5;
-create table conditions.xl_condition_asthma_dx_5 as 
+drop table if exists conditions.xl_condition_asthma_dx_output;
+create table conditions.xl_condition_asthma_dx_output as 
 with asthma_qualified  as (select
 	*,
 	case when ed_qualifier = 1 then 1
