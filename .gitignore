@@ -7,3 +7,4 @@ greenplum/datawarehouse/reference\ tables/cms_icd_codes/icd_pcs_zip/
 greenplum/datawarehouse/reference\ tables/fda_ndc/fda_ndc_output/
 .vscode/settings.json
 *.pyc
+.ipynb_checkpoints
