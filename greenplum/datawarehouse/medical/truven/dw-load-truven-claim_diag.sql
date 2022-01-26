@@ -13,6 +13,7 @@
  * */
 
 
+
 create table dev.truven_detail_lines 
 with (appendonly=true, orientation=column, compresstype=zlib) as 
 select a.uth_claim_id, a.uth_member_id, a.claim_sequence_number_src, a.claim_sequence_number, b.member_id_src, b.claim_id_src
@@ -34,7 +35,8 @@ insert into dw_staging.claim_diag ( data_source,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    poa_src
+                                    poa_src,
+                                    icd_version 
                                      )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -43,13 +45,16 @@ select  'truv',
 		 a.svcdate,
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
-         null
+         null,
+         a.dxver 
    from truven.ccaeo a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
     and b.claim_id_src = a.msclmid::text
     and b.claim_sequence_number_src = a.seqnum::text
 ;
+
+
 
 
 select count(*) from dw_staging.claim_diag cd where data_source = 'truv';
@@ -63,7 +68,8 @@ insert into dw_staging.claim_diag ( data_source,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    poa_src
+                                    poa_src, 
+                                    icd_version 
 )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -72,7 +78,8 @@ select  'truv',
 		 a.svcdate,
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
-         null
+         null,
+         a.dxver 
 from truven.mdcro a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -91,7 +98,8 @@ insert into dw_staging.claim_diag ( data_source,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position, 
-                                    poa_src
+                                    poa_src,
+                                    icd_version 
                                     )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -100,7 +108,8 @@ select  'truv',
 		 a.svcdate,
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
-         null
+         null,
+         a.dxver 
    from truven.ccaes a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -117,7 +126,8 @@ insert into dw_staging.claim_diag ( data_source,
                                     from_date_of_service,
                                     diag_cd, 
                                     diag_position,
-                                    poa_src
+                                    poa_src,
+                                    icd_version 
                                     )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -126,7 +136,8 @@ select  'truv',
 		 a.svcdate,
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
-         null
+         null,
+         a.dxver 
 from truven.mdcrs a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -143,3 +154,4 @@ delete from dw_staging.claim_diag cd where diag_cd is null;
     
 analyze dw_staging.claim_diag;
 
+drop table if exists dev.truven_detail_lines ;

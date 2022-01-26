@@ -170,3 +170,7 @@ update conditions.condition_desc set condition_cd = lower(condition_cd);
 
 update conditions.codeset set condition_cd = lower(condition_cd); 
 
+
+create table reference_tables.condition_desc as table conditions.condition_desc ; 
+
+

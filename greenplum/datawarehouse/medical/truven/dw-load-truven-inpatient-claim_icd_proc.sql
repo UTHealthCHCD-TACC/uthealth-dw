@@ -16,7 +16,8 @@ insert into dw_staging.claim_icd_proc ( data_source,
 									    claim_sequence_number,
 										from_date_of_service,
 										proc_cd,
-										proc_position
+										proc_position,
+										icd_version 
 									   )								
 select * from 
 	(        select  'truv', 
@@ -25,7 +26,8 @@ select * from
 	         null as claim_sequence_number, 
 	         a.svcdate ,
 	         unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
-			 unnest(array[1,2,3,4,5,6]) as proc_pos
+			 unnest(array[1,2,3,4,5,6]) as proc_pos,
+			 a.dxver
 	from truven.ccaef a
 	   join data_warehouse.dim_uth_claim_id b  
 	      on a.member_id_src = b.member_id_src 
@@ -43,7 +45,8 @@ insert into dw_staging.claim_icd_proc ( data_source,
 									    claim_sequence_number,
 										from_date_of_service,
 										proc_cd,
-										proc_position
+										proc_position,
+										icd_version 
 									   )									   
 select * from 
 	(  select  'truv', 
@@ -52,7 +55,8 @@ select * from
          null as claim_sequence_number, 
          a.svcdate ,
          unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
-		 unnest(array[1,2,3,4,5,6]) as proc_pos
+		 unnest(array[1,2,3,4,5,6]) as proc_pos,
+		 a.dxver
 from truven.mdcrf a
    join data_warehouse.dim_uth_claim_id b  
       on a.member_id_src = b.member_id_src 

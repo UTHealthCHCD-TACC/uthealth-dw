@@ -18,7 +18,8 @@
 insert into dw_staging.claim_icd_proc( data_source,  uth_member_id, uth_claim_id, claim_sequence_number, 
                                        from_date_of_service, 
                                        proc_cd, 
-                                       proc_position 
+                                       proc_position,
+                                       icd_version 
                                       )
 select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq, 
 		clm_from_dt::date as clm_date,
@@ -26,7 +27,8 @@ select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq,
 					 icd_prcdr_cd9,icd_prcdr_cd10,icd_prcdr_cd11,icd_prcdr_cd12,icd_prcdr_cd13,icd_prcdr_cd14,icd_prcdr_cd15,icd_prcdr_cd16,icd_prcdr_cd17,
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
-		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position
+		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
+		null
 	from medicare_national.inpatient_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 
@@ -40,7 +42,8 @@ select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq,
 insert into dw_staging.claim_icd_proc( data_source,  uth_member_id, uth_claim_id, claim_sequence_number, 
                                        from_date_of_service, 
                                        proc_cd, 
-                                       proc_position 
+                                       proc_position , 
+                                       icd_version 
                                       )
 select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq, 
 		clm_from_dt::date as clm_date,
@@ -48,7 +51,8 @@ select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq,
 					 icd_prcdr_cd9,icd_prcdr_cd10,icd_prcdr_cd11,icd_prcdr_cd12,icd_prcdr_cd13,icd_prcdr_cd14,icd_prcdr_cd15,icd_prcdr_cd16,icd_prcdr_cd17,
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
-		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position
+		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
+		null
 	from medicare_national.outpatient_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 
@@ -60,7 +64,8 @@ select 'mcrn',  b.uth_member_id, b.uth_claim_id, 1 as seq,
 insert into dw_staging.claim_icd_proc( data_source,  uth_member_id, uth_claim_id, claim_sequence_number, 
                                        from_date_of_service, 
                                        proc_cd, 
-                                       proc_position 
+                                       proc_position,
+                                       icd_version 
                                       )
 select 'mcrn', b.uth_member_id, b.uth_claim_id, 1 as seq, 
 		clm_from_dt::date as clm_date,
@@ -68,7 +73,8 @@ select 'mcrn', b.uth_member_id, b.uth_claim_id, 1 as seq,
 					 icd_prcdr_cd9,icd_prcdr_cd10,icd_prcdr_cd11,icd_prcdr_cd12,icd_prcdr_cd13,icd_prcdr_cd14,icd_prcdr_cd15,icd_prcdr_cd16,icd_prcdr_cd17,
 					 icd_prcdr_cd18,icd_prcdr_cd19,icd_prcdr_cd20,icd_prcdr_cd21,icd_prcdr_cd22,icd_prcdr_cd23,icd_prcdr_cd24,icd_prcdr_cd25]) 
 		as proc,
-		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position
+		unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as proc_position,
+		null
 	from medicare_national.snf_base_claims_k a
 	  join data_warehouse.dim_uth_claim_id b  
 	    on b.member_id_src = a.bene_id 
