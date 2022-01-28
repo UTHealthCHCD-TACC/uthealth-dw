@@ -32,6 +32,19 @@ distributed by (uth_member_id);
 analyze conditions.person_profile_work_table ;
 
 
+select * 
+from conditions.person_profile_work_table ppwt 
+
+insert into conditions.person_profile_work_table (data_source, year, uth_member_id, cd_value, cd_type, condition_cd, carry_forward )
+select d.data_source, extract( year from d.from_date_of_service), d.uth_member_id, d.diag_cd, c.cd_type , c.condition_cd, b.carry_forward 
+		from data_warehouse.claim_diag d
+		  join conditions.codeset c 
+		   on position('%' in c.cd_value) = 0
+		  and c.cd_type in ('ICD-10','ICD-9')
+		  and c.cd_value = d.diag_cd 
+	     join  conditions.condition_desc b
+ 		  on c.condition_cd = b.condition_cd 
+		;
 --ICD10-CM = icd procedure code 
 --ICD-10 = diagnosis codes
 --CPT = cpt/hcpcs
@@ -93,7 +106,7 @@ begin
 	  and a.cd_type in ('ICD-10','ICD-9')
 ) 	
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, d.diag_cd, 'DX', c.condition_cd, c.carry_forward
+		select d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, d.diag_cd, 'DX', c.condition_cd, c.carry_forward
 from data_warehouse.claim_diag d 
   join cond_cte c 
     on d.diag_cd = c.cd_value
@@ -134,13 +147,12 @@ from dev.wc_all_diagnosis_codes d
        
 
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, condition_cd, 'DX', carry_forward
+		select  d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, d.diag_cd, 'DX', c.condition_cd, c.carry_forward
 		from data_warehouse.claim_diag d 
 		   join conditions.diagnosis_codes_list c
          on d.diag_cd = c.diag_cd
         ;
-              
-       
+
 ---icd proc
  with cond_cte as 
 (
@@ -152,7 +164,7 @@ insert into conditions.person_profile_work_table
 	  and a.cd_type in ('ICD10-CM','ICD9-CM')
 ) 		
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, condition_cd, 'proc', carry_forward
+		select d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, cd_value, 'proc', cte.condition_cd, cte.carry_forward
 		from data_warehouse.claim_icd_proc d 
 		   join cond_cte cte
          on d.proc_cd  = cte.cd_value
@@ -170,7 +182,7 @@ insert into conditions.person_profile_work_table
 	  and a.cd_type in ('CPT')
 ) 		
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, condition_cd, 'cpt', carry_forward
+		select d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, cd_value, 'cpt', cte.condition_cd, cte.carry_forward
 		from data_warehouse.claim_detail d 
 		   join cond_cte cte
          on d.cpt_hcpcs_cd = cte.cd_value
@@ -187,7 +199,7 @@ insert into conditions.person_profile_work_table
 	  and a.cd_type in ('REV')
 ) 		
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, condition_cd, 'rev', carry_forward
+		select d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, cd_value, 'rev', cte.condition_cd, cte.carry_forward
 		from data_warehouse.claim_detail d 
 		   join cond_cte cte
          on d.revenue_cd = cte.cd_value
@@ -204,7 +216,7 @@ insert into conditions.person_profile_work_table
 	  and a.cd_type in ('DRG')
 ) 		
 insert into conditions.person_profile_work_table 
-		select d.data_source, d.year, d.uth_member_id, condition_cd, 'drg', carry_forward
+		select d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, cd_value, 'drg', cte.condition_cd, cte.carry_forward
 		from data_warehouse.claim_detail d 
 		   join cond_cte cte
          on d.drg_cd = cte.cd_value

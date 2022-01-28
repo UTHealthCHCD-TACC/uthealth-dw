@@ -1,4 +1,4 @@
-drop table if exists dev.wc_pfp_test1;
+
 
 select 
 '' as NationalProviderIdentifier,
@@ -197,11 +197,11 @@ case
 '' as ItemSiteOfService,
 '' as AdmitFromResidentialNursingFacililty,
 '' as TaxonomyCode
-into dev.wc_pfp_1819_agegroup7
+--into dev.wc_pfp_1819_agegroup7
 from dev.wc_pfp_clm1819_hdr h 
    join dev.wc_pfp_clm1819_dtl d 
      on h.icn = d.icn 
- where 2019 - substring(dob,5,4)::int >= 75 --between 65 and 74 -- between 0 and 19 ---
+ where 2019 - substring(dob,5,4)::int between 35 and 44
 order by patientid,  AdmitDate
 ;
 
@@ -214,6 +214,3 @@ order by patientid,  AdmitDate
 --       		when age >= 75 then '7'
 
 
-select count(*) , ageinyears  
-from dev.wc_pfp_test1
-group by ageinyears ;
