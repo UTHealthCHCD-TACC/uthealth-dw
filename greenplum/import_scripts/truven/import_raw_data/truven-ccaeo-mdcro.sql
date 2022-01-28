@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and MDCR into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -25,6 +25,12 @@ SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,EFAMID,ENROLID,REVCODE,SVCDATE,DOBYR,
 AGE,CAP_SVC,COB,COINS,COPAY,DEDUCT,DX3,DX4,EMPZIP,FACHDID,FACPROF,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,
 PLANTYP,PROCGRP,PROCMOD,PROVID,QTY, SVCSCAT,TSVCDAT,UNITS,MDC,REGION,STDPLAC,STDPROV,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
+
+v4 fields: Moved MEDADV to end
+SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,EFAMID,ENROLID,REVCODE,SVCDATE,DOBYR,YEAR,
+AGE,CAP_SVC,COB,COINS,COPAY,DEDUCT,DX3,DX4,EMPZIP,FACHDID,FACPROF,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,
+PLANTYP,PROCGRP,PROCMOD,PROVID,QTY, SVCSCAT,TSVCDAT,UNITS,MDC,REGION,STDPLAC,STDPROV,DATATYP,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY,MEDADV
 
 */
 
@@ -97,8 +103,11 @@ CREATE TABLE truven.mdcro (
 )
 DISTRIBUTED RANDOMLY;
 
+--New Columns
+alter table truven.mdcro add column medadv int2;
+
 /*
- * V3
+ * V4
  */
 drop external table ext_mdcro;
 CREATE EXTERNAL TABLE ext_mdcro (
@@ -147,7 +156,6 @@ CREATE EXTERNAL TABLE ext_mdcro (
 	stdplac numeric,
 	stdprov numeric,
 	datatyp numeric,
-	medadv int2,
 	agegrp int2,
 	eeclass int2,
 	eestatu int2,
@@ -159,7 +167,8 @@ CREATE EXTERNAL TABLE ext_mdcro (
 	rx int2,
 	sex int2,
 	hlthplan int2,
-	indstry bpchar(5)
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
 'gpfdist://greenplum01:8081/uthealth/truven/MDCRO*'
@@ -170,7 +179,7 @@ select *
 from ext_mdcro
 limit 1000;
 
---alter table truven.mdcro add column medadv int2;
+--Load New
 
 insert into truven.mdcro (SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,EFAMID,ENROLID,REVCODE,SVCDATE,DOBYR,YEAR,
 AGE,CAP_SVC,COB,COINS,COPAY,DEDUCT,DX3,DX4,EMPZIP,FACHDID,FACPROF,MHSACOVG,MSCLMID,NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,
@@ -182,23 +191,16 @@ PLANTYP,PROCGRP,PROCMOD,PROVID,QTY, SVCSCAT,TSVCDAT,UNITS,MDC,REGION,STDPLAC,STD
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 from ext_mdcro;
 
--- Verify
 
-select count(*) from truven.ccaes;
-select count(*) from truven.ccaes_distinct;
-
--- Fix storage options
-create table truven.mdcro_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcro where year=2019)
-distributed randomly;
+-- Truncate and Refresh
 
 delete from truven.mdcro where YEAR>=2020;
 
-drop table truven.mdcro;
-alter table truven.mdcro_distinct rename to mdcro;
 
 -- Query
 
-select count(*), min(year), max(year) from truven.mdcro;
+select year, count(*)
+from truven.mdcro
+group by 1
+order by 1;
 

@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and mdcr into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -34,7 +34,9 @@ SEQNUM,VERSION,EFAMID,ENROLID,NDCNUM,SVCDATE,DOBYR,YEAR,AGE,AWP,CAP_SVC,COB,COIN
 EMPZIP,GENERID,INGCOST,METQTY,MHSACOVG,NETPAY,NTWKPROV,PAIDNTWK,PAY,PDDATE,PHARMID,PLANTYP,QTY,REFILL,RXMR,SALETAX,
 THERCLS,DAWIND,DEACLAS,GENIND,MAINTIN,THERGRP,REGION,
 DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,SEX,HLTHPLAN,INDSTRY 
-*/
+
+v4 fields: Moved MEDADV to end
+**/
 
 create table truven.mdcrd (like truven.mdcrd)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
@@ -102,7 +104,7 @@ CREATE TABLE truven.mdcrd (
 DISTRIBUTED RANDOMLY;
 
 /*
- * V3
+ * V4
  */
 
  alter table truven.mdcrd add column medadv int2;
@@ -152,9 +154,8 @@ CREATE EXTERNAL TABLE ext_mdcrd (
 	thergrp bpchar(5) ,
 	region int2 ,
 	
-	
 	datatyp numeric ,
-	medadv int2, 
+	 
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -165,7 +166,8 @@ CREATE EXTERNAL TABLE ext_mdcrd (
 	phyflag int2 ,
 	sex int2 ,
 	hlthplan int2 ,
-	indstry bpchar(5) 
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
 'gpfdist://greenplum01:8081/uthealth/truven/MDCRD*'
@@ -191,16 +193,8 @@ from ext_mdcrd;
 
 select count(*), min(year), max(year)  from truven.mdcrd;
 
-
-
--- Fix storage options
-create table truven.mdcrd_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcrd where year=2019)
-distributed randomly;
+-- Truncate and Reload
 
 delete from truven.mdcrd where year>=2020;
 
-drop table truven.mdcrd;
-alter table truven.mdcrd_new rename to mdcrd;
 

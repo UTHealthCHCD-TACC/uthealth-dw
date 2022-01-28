@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and MDCR into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -72,14 +72,20 @@ SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
 EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
-
+v6 Moved MEDADV to end
+SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
+CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
+NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
+SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
+EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,AGEGRP,
+EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY,MEDADV
 
 */
 
-create table truven.ccaes (like truven.ccaes)
+create table truven.mdcrs (like truven.mdcrs)
 WITH (appendonly=true, orientation=column, compresstype=zlib);
 
-CREATE TABLE truven.ccaes (
+CREATE TABLE truven.mdcrs (
 	seqnum numeric NULL,
 	version int2 NULL,
 	dx1 bpchar(10) NULL,
@@ -156,11 +162,11 @@ CREATE TABLE truven.ccaes (
 DISTRIBUTED RANDOMLY;
 
 /*
- * V5
+ * V6
  */
 
-drop external table ext_ccaes;
-CREATE EXTERNAL TABLE ext_ccaes (
+drop external table ext_mdcrs;
+CREATE EXTERNAL TABLE ext_mdcrs (
 	seqnum numeric ,
 	version int2 ,
 	dx1 bpchar(10) ,
@@ -217,7 +223,6 @@ CREATE EXTERNAL TABLE ext_ccaes (
 	plantyp numeric ,
 	region int2 ,
 	datatyp numeric ,
-	medadv int2,
 	agegrp int2 ,
 	
 	eeclass int2 ,
@@ -230,20 +235,21 @@ CREATE EXTERNAL TABLE ext_ccaes (
 	rx int2 ,
 	sex int2 ,
 	hlthplan int2 ,
-	indstry bpchar(5)
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/CCAES*'
+'gpfdist://greenplum01:8081/uthealth/truven/MDCRS*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
-from ext_ccaes
+from ext_mdcrs
 limit 1000;
 
---alter table truven.ccaes add column medadv int2;
+--alter table truven.mdcrs add column medadv int2;
 
-insert into truven.ccaes (SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
+insert into truven.mdcrs (SEQNUM,VERSION,DX1,DX2,DXVER,PROC1,PROCTYP,CASEID,DISDATE,DOBYR,YEAR,ADMDATE,AGE,
 CAP_SVC,COB,COINS,COPAY,DEDUCT,DRG,DX3,DX4,FACHDID,FACPROF,MHSACOVG,MSCLMID,
 NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
 SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
@@ -255,23 +261,17 @@ NETPAY,NPI,NTWKPROV,PAIDNTWK,PAY,PDDATE,PDX,PPROC,PROCMOD,PROVID,QTY,REVCODE,
 SVCDATE,SVCSCAT,TSVCDAT,UNITS,ADMTYP,MDC,DSTATUS,STDPLAC,STDPROV,
 EFAMID,ENROLID,EMPZIP,PLANTYP,REGION,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_ccaes;
+from ext_mdcrs;
 
 -- Verify
 
-select count(*), min(year), max(year) from truven.ccaes;
+select count(*), min(year), max(year) from truven.mdcrs;
 
 select date('2017');
 
 
--- Fix storage options
-create table truven.ccaes_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.ccaes where year=2019)
-distributed randomly;
+-- Truncate and Replace
 
-delete from truven.ccaes where year>=2020;
+delete from truven.mdcrs where year>=2020;
 
-drop table truven.ccaes;
-alter table truven.ccaes_new rename to ccaes;
 

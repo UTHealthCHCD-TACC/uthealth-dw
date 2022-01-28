@@ -1,6 +1,6 @@
 -- State
 select distinct egeoloc
-from truven.ccaet;
+from truven.mdcrt;
 
 -- Need lookup table for Truven state codes
 drop external table truven_state_codes;
@@ -23,7 +23,7 @@ select *
 from truven.state_codes_ref;
 
 select r.state, abbr, count(*)
-from truven.ccaet c
+from truven.mdcrt c
 join truven.state_codes_ref r on c.egeoloc=r.truven_code
 group by 1, 2
 order by 2;
