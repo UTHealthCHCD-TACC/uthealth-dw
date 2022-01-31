@@ -18,6 +18,14 @@
  * ****************************************************************************************************** 
  **/
 
+select dw_staging.load_dim_uth_member_id();
+
+select count(*), data_source
+from data_warehouse.dim_uth_member_id 
+group by data_source
+order by data_source 
+;
+
 ------ load dim_uth_member_id------------------------------------------------
 
 CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_member_id()

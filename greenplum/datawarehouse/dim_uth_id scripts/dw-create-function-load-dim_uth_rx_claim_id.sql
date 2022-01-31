@@ -12,6 +12,16 @@
  *  jw001  || 11/12/2021 || wrap in function
  * ****************************************************************************************************** */
 
+select dw_staging.load_dim_uth_rx_claim_id();
+
+select count(*), data_source
+from data_warehouse.dim_uth_rx_claim_id 
+group by data_source
+order by data_source 
+;
+
+
+
 CREATE OR REPLACE FUNCTION dw_staging.load_dim_uth_rx_claim_id()
 	RETURNS void
 	LANGUAGE plpgsql

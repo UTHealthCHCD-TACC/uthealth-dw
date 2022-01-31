@@ -8,14 +8,20 @@
  *      populate consecutive enrolled months and claim sequence number respectively. 
  *  (5) assign table ownership to uthealth_dev so anyone with that role can work on these tables 
  * 
- * */
+ * 
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ *  wc004  || 01/26/2022 || add partitions. add _old tables to drop list
+ *  ******************************************************************************************************
+*/
 
 
 do $$
 declare
 ---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
 ---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';  //   := ' (''truv'') ';
-	my_data_source text := ' (''mdcd'',''optd'',''optz'') ';
+	my_data_source text := ' (''truv'') ';
 	med_return boolean;
 begin
 
@@ -24,19 +30,28 @@ raise notice 'Creating dw_staging tables for: %', my_data_source;
 
 ---(2) drop existing tables
 drop table if exists dw_staging.member_enrollment_monthly;
+drop table if exists dw_staging.member_enrollment_monthly_old;
 drop table if exists dw_staging.member_enrollment_yearly;
+drop table if exists dw_staging.member_enrollment_yearly_old;
 
 drop table if exists dw_staging.medicaid_program_enrollment;
+drop table if exists dw_staging.medicaid_program_enrollment_old;
 drop table if exists dw_staging.medicare_mbsf_abcd_enrollment;
+drop table if exists dw_staging.medicare_mbsf_abcd_enrollment_old;
 
 drop table if exists dw_staging.claim_header;
+drop table if exists dw_staging.claim_header_old;
 drop table if exists dw_staging.claim_detail;
+drop table if exists dw_staging.claim_detail_old;
 drop table if exists dw_staging.claim_diag;
+drop table if exists dw_staging.claim_diag_old;
 drop table if exists dw_staging.claim_icd_proc;
+drop table if exists dw_staging.claim_icd_proc_old;
 
 drop table if exists dw_staging.pharmacy_claims;
+drop table if exists dw_staging.pharmacy_claims_old;
 
-raise notice 'existing tables dropped from dw_staging';
+raise notice 'existing tables dropped from dw_staging.';
 
 --(3) create tables in dw_staging 
 
@@ -50,7 +65,22 @@ raise notice 'medicare mbsf and medicaid enrollment built';
 
 --enrollment yearly
 create table dw_staging.member_enrollment_yearly 
-(like data_warehouse.member_enrollment_yearly including defaults including all) 
+(like data_warehouse.member_enrollment_yearly including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
 
 execute 'insert into dw_staging.member_enrollment_yearly 
@@ -62,8 +92,24 @@ raise notice 'enrollment yearly created';
 
 --claim header
 create table dw_staging.claim_header
-(like data_warehouse.claim_header including defaults including all) 
-;
+(like data_warehouse.claim_header including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+; 
+
 
 execute 'insert into dw_staging.claim_header
 		select * 
@@ -75,8 +121,24 @@ raise notice 'claim header created';
 
 --claim diag
 create table dw_staging.claim_diag
-(like data_warehouse.claim_diag including defaults including all)  
+(like data_warehouse.claim_diag including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
+
 
 execute 'insert into dw_staging.claim_diag
 		select * 
@@ -89,8 +151,24 @@ raise notice 'claim diag created';
 
 --claim icd proc 
 create table dw_staging.claim_icd_proc
-(like data_warehouse.claim_icd_proc including defaults including all) 
+(like data_warehouse.claim_icd_proc including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
+
 
 execute 'insert into dw_staging.claim_icd_proc
 		select * 
@@ -101,7 +179,22 @@ raise notice 'claim icd proc created';
 
 --pharmacy claims 
 create table dw_staging.pharmacy_claims 
-(like data_warehouse.pharmacy_claims including defaults including all) 
+(like data_warehouse.pharmacy_claims including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
 
 execute 'insert into dw_staging.pharmacy_claims
@@ -111,8 +204,6 @@ execute 'insert into dw_staging.pharmacy_claims
 ;
 
 raise notice 'pharmacy claims created';
-
-
 
 --(4)
 ---enrollment monthly - adding row_number sequence
@@ -193,13 +284,13 @@ create table dw_staging.claim_detail (
 	cost_factor_year int2,
 	table_id_src text,
 	claim_sequence_number_src text,
-	row_id bigserial,
 	bill_provider text, 
 	ref_provider text, 
 	other_provider text,
 	perf_rn_provider text, 
 	perf_at_provider text, 
-	perf_op_provider text
+	perf_op_provider text,
+	row_id bigserial
 	) 
 with(appendonly=true,orientation=column, compresstype=zlib)
 distributed by (row_id)

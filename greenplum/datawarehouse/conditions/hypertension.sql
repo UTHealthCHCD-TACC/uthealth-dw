@@ -12,6 +12,7 @@ with htn_dx as (select
 		dcl.condition_cd = 'htn')
 select
 	uth_member_id,
+	data_source,
 	uth_claim_id,
 	min(diag_position) diag_position,
 	min(extract(year from from_date_of_service)) year_of_service
@@ -21,20 +22,34 @@ inner join  htn_dx
 on
 	cd.diag_cd = htn_dx.diag_cd
 group by
-	uth_member_id,
+	data_source, uth_member_id,
 	uth_claim_id;
 
-create table conditions.xl_condition_htn_dx_output as 
+--insert 
+insert into conditions.person_prof
 with qual_years as (select
+	data_source,
 	uth_member_id,
 	year_of_service,
 	count(*)
 from
 	conditions.xl_condition_htn_dx_1
 group by
+	data_source,
 	uth_member_id,
 	year_of_service
 having
 	count(*) >= 3)
-select uth_member_id, min(year_of_service) as initial_htn_year from qual_years
-group by uth_member_id;
+select data_source, 
+       min(year_of_service) as initial_htn_year,
+       uth_member_id,
+       'htn' as condition_cd, 
+       '1' as carry_forward
+from qual_years
+group by uth_member_id, data_source ;
+
+
+--data_source, year, uth_member_id, condition_cd, carry_forward
+select * from conditions.condition_desc
+where additional_logic_flag = '1'
+;

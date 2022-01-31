@@ -195,6 +195,7 @@ insert into conditions.person_profile_work_table
 	from conditions.codeset a
 		join  conditions.condition_desc b
  		  on a.condition_cd = b.condition_cd 
+		 and b.additional_logic_flag = '0'
 	where position('%' in a.cd_value) = 0
 	  and a.cd_type in ('REV')
 ) 		
