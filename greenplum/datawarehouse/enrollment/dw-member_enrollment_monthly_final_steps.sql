@@ -11,6 +11,8 @@
  *  ******************************************************************************************************
  *  wc003  || 11/11/2021 || write as one script
  *  ******************************************************************************************************
+ *  wc004  || 01/26/2022 || add partitions
+ *  ******************************************************************************************************
 */
 
 
@@ -81,6 +83,14 @@ with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) a
 select * 
 from dw_staging.member_enrollment_monthly 
 distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
 
 drop table if exists dw_staging.member_enrollment_monthly;

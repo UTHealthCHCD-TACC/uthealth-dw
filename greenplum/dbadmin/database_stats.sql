@@ -18,6 +18,7 @@ from session_state.session_level_memory_consumption
 
 SELECT * FROM gp_toolkit.gp_bloat_diag;
 
+select version();
 
 --Permissions
 SELECT 
@@ -35,18 +36,28 @@ where skcrelname like 'wc%';
 
 select pg_terminate_backend(276630);
 
-
+--General Settings
 select *
 from pg_settings
 where name like '%max%';
 
 select ceil((200 + 3 + 15 + 5) / 16)
 
+-- GIS
 SELECT * 
 FROM pg_extension;
 
+show search_path;
+
+ALTER DATABASE uthealth SET search_path=public,gis;
 
 select dbo.pg_kill_connection(119596)
+
+create extension postgis schema gis
+CREATE EXTENSION postgis_tiger_geocoder schema gis;
+
+create extension pgrouting schema gis 
+
 
 select *
 from pg_stat_ssl;
@@ -131,7 +142,7 @@ from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('optum_zip')-- and pgc.relname = 'temp_script_id'
+where pgn.nspname in ('data_warehouse')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
 
 --Compression
@@ -209,7 +220,13 @@ ORDER BY 1;
 
 select pg_relation_size('dw_qa.claim_detail');
 
+--Last Commit time
+show track_commit_timestamp;
+
+
 --Vacuum Analyze Status
+create or replace view qa_reporting.data_warehouse_last_vacuumed
+as
 SELECT pn.nspname
               ,pc.relname
               ,pslo.staactionname
@@ -219,12 +236,12 @@ FROM pg_stat_last_operation pslo
 RIGHT OUTER JOIN pg_class pc
 ON pc.oid = pslo.objid 
 AND pslo.staactionname 
-IN ('VACUUM','ANALYZE')
+IN ('VACUUM')
 INNER JOIN pg_namespace pn
 ON pn.oid = pc.relnamespace
 WHERE pc.relkind IN ('r','s')
 AND pc.relstorage IN ('h', 'a', 'c')
-and nspname in ('optum_dod', 'optum_zip')
+and nspname in ('data_warehouse')
 order by 1, 2, 3;
 
 analyze data_warehouse.member_enrollment_yearly;

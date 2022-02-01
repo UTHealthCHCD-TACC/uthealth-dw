@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and mdcr into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -46,6 +46,7 @@ POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,
 PROC2,PROC3,PROC4,PROC5,PROC6,PROVID,SVCDATE,TSVCDAT,MDC,DSTATUS,REGION,STDPLAC,STDPROV,DATATYP,MEDADV,AGEGRP,
 EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
+v5 fields: Moved MEDADV to end
 */
 
 drop table truven.mdcrf;
@@ -134,7 +135,7 @@ add column 	poadx9 bpchar(1);
 alter table truven.mdcrf add column medadv int2;
  
 /*
- * V4
+ * V5
  */
 
 drop external table ext_mdcrf;
@@ -200,7 +201,6 @@ CREATE EXTERNAL TABLE ext_mdcrf (
 	stdplac numeric ,
 	stdprov numeric ,
 	datatyp numeric ,
-	medadv int2,
 	agegrp int2 ,
 	
 	eeclass int2 ,
@@ -213,7 +213,8 @@ CREATE EXTERNAL TABLE ext_mdcrf (
 	rx int2 ,
 	sex int2 ,
 	hlthplan int2 ,
-	indstry bpchar(5) 
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
 'gpfdist://greenplum01:8081/uthealth/truven/MDCRF*'
@@ -242,15 +243,8 @@ from ext_mdcrf;
 select count(*), min(year), max(year) from truven.mdcrf;
 
 
--- Fix storage options
-create table truven.mdcrf_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcrf where year=2019)
-distributed randomly;
+-- Truncate and Reload
 
 delete from truven.mdcrf where year>=2020;
-
-drop table truven.mdcrf;
-alter table truven.mdcrf_new rename to mdcrf;
 
 

@@ -10,6 +10,11 @@
  *  wallingTACC  || 8/23/2021 || updated comments.
  * ****************************************************************************************************** */
 
+
+do $$
+
+begin 
+
 --- ***** Optum Zip *****
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'optz', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.conf_id, a.patid::text 
@@ -25,6 +30,8 @@ where a.conf_id is not null
 and a.patid is not null 
 and c.uth_admission_id is null 
 ;
+
+raise notice 'optz';
 
 --- ***** Optum DoD *****
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
@@ -42,7 +49,7 @@ and a.patid is not null
 and c.uth_admission_id is null 
 ;
 
-
+raise notice 'optd';
 
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
@@ -62,6 +69,7 @@ where a.caseid is not null
   and c.uth_admission_id is null 
 ;
 
+raise notice 'truv ccaef';
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select distinct on (caseid, enrolid, year) 
@@ -79,6 +87,8 @@ where a.caseid is not null
   and c.uth_admission_id is null  
 ;
 
+raise notice 'truv ccaei';
+
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select distinct on (caseid, enrolid, year) 
  'truv', a.year, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.caseid::text, a.enrolid::text 
@@ -94,6 +104,8 @@ where a.caseid is not null
   and a.enrolid is not null 
   and c.uth_admission_id is null 
 ;
+
+raise notice 'truv mdcrf';
 
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select distinct on (caseid, enrolid, year) 
@@ -112,10 +124,12 @@ where a.caseid is not null
 ;
 
 
+raise notice 'truv mdcri';
+
 --medicare texas
 insert into data_warehouse.dim_uth_admission_id (data_source, year, uth_admission_id, uth_member_id, admission_id_src, member_id_src )
 select 'mcrt' , a.year::int2, nextval('data_warehouse.dim_uth_admission_id_uth_admission_id_seq'), b.uth_member_id, a.admit_id , a.pers_id 
-from uthealth/medicare_national.admit a
+from medicare_texas.admit a
   join data_warehouse.dim_uth_member_id b 
     on data_source = 'mcrt'
    and b.member_id_src = a.pers_id 
@@ -126,24 +140,9 @@ from uthealth/medicare_national.admit a
 where c.uth_admission_id is null 
 ;
 
+raise notice 'mcrt';
 
-select * from uthealth/medicare_national.admit;
-
-select * from uthealth/medicare_national.admit_clm;
-
-
-update data_warehouse.claim_header a set admission_id_src = admit_id 
-from uthealth/medicare_national.admit_clm b 
- where a.member_id_src = b.pers_id 
-   and a.claim_id_src = b.clm_id 
-   and a.data_source = 'mcrt'
-   and a."year" = b."year"::int2
+end $$
 ;
-
----va 
-vacuum analyze data_warehouse.dim_uth_admission_id;
-
-
-
 
 

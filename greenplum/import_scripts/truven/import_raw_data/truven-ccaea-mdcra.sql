@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and mdcr into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -54,6 +54,7 @@ PLNTYP1,PLNTYP2,PLNTYP3,PLNTYP4,PLNTYP5,PLNTYP6,PLNTYP7,PLNTYP8,PLNTYP9,PLNTYP10
 MEDADV1,MEDADV2,MEDADV3,MEDADV4,MEDADV5,MEDADV6,MEDADV7,MEDADV8,MEDADV9,MEDADV10,MEDADV11,MEDADV12
 ,EECLASS,EESTATU,EGEOLOC,EMPZIP,INDSTRY,MHSACOVG,REGION,MSWGTKEY
 
+V4 fields: Moved MEDADV1-12 to end
 */
 
 drop table truven.mdcra;
@@ -96,7 +97,7 @@ DISTRIBUTED RANDOMLY;
 
 
 /*
- * V3
+ * add columns
  */
 alter table truven.mdcra 
 add column medadv1 numeric null,add column medadv2 numeric null,add column medadv3 numeric null,
@@ -104,6 +105,9 @@ add column medadv4 numeric null,add column medadv5 numeric null,add column medad
 add column medadv7 numeric null,add column medadv8 numeric null,add column medadv9 numeric null,
 add column medadv10 numeric null,add column medadv11 numeric null,add column medadv12 numeric null;
 
+/*
+ * V4
+ */
 drop external table ext_mdcra;
 CREATE EXTERNAL TABLE ext_mdcra (
 	seqnum numeric ,
@@ -126,7 +130,7 @@ CREATE EXTERNAL TABLE ext_mdcra (
 	enrind1 numeric ,enrind2 numeric ,enrind3 numeric ,enrind4 numeric ,enrind5 numeric ,enrind6 numeric ,enrind7 numeric ,enrind8 numeric ,enrind9 numeric ,enrind10 numeric ,enrind11 numeric ,enrind12 numeric ,
 	memday1 numeric ,memday2 numeric ,memday3 numeric ,memday4 numeric ,memday5 numeric ,memday6 numeric ,memday7 numeric ,memday8 numeric ,memday9 numeric ,memday10 numeric ,memday11 numeric ,memday12 numeric ,
 	plntyp1 numeric ,plntyp2 numeric ,plntyp3 numeric ,plntyp4 numeric ,plntyp5 numeric ,plntyp6 numeric ,plntyp7 numeric ,plntyp8 numeric ,plntyp9 numeric ,plntyp10 numeric ,plntyp11 numeric ,plntyp12 numeric ,
-	medadv1 numeric ,medadv2 numeric  ,medadv3 numeric ,medadv4 numeric ,medadv5 numeric ,medadv6 numeric ,medadv7 numeric ,medadv8 numeric ,medadv9 numeric ,medadv10 numeric ,medadv11 numeric ,medadv12 numeric ,
+	
 	
 	eeclass int2 ,
 	eestatu int2 ,
@@ -135,7 +139,8 @@ CREATE EXTERNAL TABLE ext_mdcra (
 	indstry bpchar(5) ,
 	mhsacovg bpchar(5) ,
 	region int2 ,
-	mswgtkey numeric 
+	mswgtkey numeric,
+	medadv1 numeric ,medadv2 numeric  ,medadv3 numeric ,medadv4 numeric ,medadv5 numeric ,medadv6 numeric ,medadv7 numeric ,medadv8 numeric ,medadv9 numeric ,medadv10 numeric ,medadv11 numeric ,medadv12 numeric
 ) 
 LOCATION ( 
 'gpfdist://greenplum01:8081/uthealth/truven/MDCRA*'
@@ -167,17 +172,9 @@ from ext_mdcra;
 select count(*), min(year), max(year)  from truven.mdcra;
 select count(*) from truven.mdcra;
 
--- Fix storage options
-create table truven.mdcra_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcra where year=2019)
-distributed randomly;
+-- Truncate and Reoload
 
 delete from truven.mdcra where year>=2020;
 
---drop table truven.mdcra;
-alter table truven.mdcra_new rename to mdcra;
-
-delete from truven.mdcra where year=2016;
 
 

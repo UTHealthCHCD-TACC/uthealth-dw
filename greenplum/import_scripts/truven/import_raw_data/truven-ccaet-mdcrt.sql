@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and MDCR into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 /*
@@ -21,13 +21,17 @@ v3 fields: (Added MEDADV)
 SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
 DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
 
+v4 fields: (Moved MEDADV to end)
+SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
+DATATYP,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY,MEDADV
+
 */
 
 /*
  * V1
  */
-drop table truven.ccaet;
-CREATE TABLE truven.ccaet (
+drop table truven.mdcrt;
+CREATE TABLE truven.mdcrt (
 	seqnum numeric NULL,
 	version int2 NULL,
 	efamid numeric NULL,
@@ -62,10 +66,10 @@ DISTRIBUTED RANDOMLY;
 /*
  * V3
  */
-alter table truven.ccaet add column medadv int2;
+alter table truven.mdcrt add column medadv int2;
 
-drop external table ext_ccaet;
-CREATE EXTERNAL TABLE ext_ccaet (
+drop external table ext_mdcrt;
+CREATE EXTERNAL TABLE ext_mdcrt (
 	seqnum numeric ,
 	version int2 ,
 	efamid numeric ,
@@ -82,7 +86,6 @@ CREATE EXTERNAL TABLE ext_ccaet (
 	region int2 ,
 	
 	datatyp numeric ,
-	medadv int2,
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -92,43 +95,37 @@ CREATE EXTERNAL TABLE ext_ccaet (
 	rx int2 ,
 	sex int2 ,
 	hlthplan int2 ,
-	indstry bpchar(5) 
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
-'gpfdist://greenplum01:8081/uthealth/truven/CCAET*'
+'gpfdist://greenplum01:8081/uthealth/truven/MDCRT*'
 )
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
+/*
 select min(dtstart), max(dtstart)
-from ext_ccaet;
+
+select *
+from ext_mdcrt
 limit 1000;
 
-insert into truven.ccaet (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
+*/
+
+insert into truven.mdcrt (SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
 DATATYP,MEDADV, AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY)
 select SEQNUM,VERSION,EFAMID,ENROLID,DTEND,DTSTART,EMPZIP,MEMDAYS,MHSACOVG,PLANTYP,YEAR,AGE,DOBYR,REGION,
 DATATYP,MEDADV,AGEGRP,EECLASS,EESTATU,EGEOLOC,EMPREL,PHYFLAG,RX,SEX,HLTHPLAN,INDSTRY
-from ext_ccaet;
+from ext_mdcrt;
 
 
 -- Verify
 
 select count(*), min(year), max(year)
-from truven.ccaet;
+from truven.mdcrt;
 
 
 
--- Fix storage options
-create table truven.ccaet_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.ccaet where year=2019)
-distributed randomly;
+-- Truncate and Reload
 
-delete from truven.ccaet where year>=2020;
-
---drop table truven.ccaet;
---alter table truven.ccaet_new rename to ccaet;
-
-select distinct empzip
-from truven.ccaet;
-
-delete from truven.ccae
+delete from truven.mdcrt where year>=2020;

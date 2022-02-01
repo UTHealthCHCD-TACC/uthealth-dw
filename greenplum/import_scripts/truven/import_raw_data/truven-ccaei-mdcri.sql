@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and mdcr into single script.  find/replace to switch between the two as fields are equal
  * ******************************************************************************************************
  */
 
@@ -55,6 +55,8 @@ DX1,DX2,DX3,DX4,DX5,DX6,DX7,DX8,DX9,DX10,DX11,DX12,DX13,DX14,DX15,
 POAPDX,POADX1,POADX2,POADX3,POADX4,POADX5,POADX6,POADX7,POADX8,POADX9,POADX10,POADX11,POADX12,POADX13,POADX14,POADX15,
 PROC1,PROC2,PROC3,PROC4,PROC5,PROC6,PROC7,PROC8,PROC9,PROC10,PROC11,PROC12,PROC13,PROC14,PROC15,MEDADV
 AGEGRP,EECLASS,EESTATU,EGEOLOC,EIDFLAG,EMPREL,ENRFLAG,PHYFLAG,RX,SEX,STATE,HLTHPLAN,INDSTRY
+
+v5 fields: Moved MEDADV to end
 
 */
 
@@ -122,6 +124,7 @@ CREATE TABLE truven.mdcri (
 )
 DISTRIBUTED RANDOMLY;
 
+-- New Columns
 alter TABLE truven.mdcri
 add column poapdx bpchar(1),
 add column poadx1 bpchar(1),
@@ -142,7 +145,7 @@ add column poadx15 bpchar(1);
 
 
 /*
- * V4
+ * v5
  */
 
 drop external table ext_mdcri;
@@ -193,7 +196,6 @@ CREATE EXTERNAL TABLE ext_mdcri (
 	proc1 bpchar(10) ,proc2 bpchar(10) ,proc3 bpchar(10) ,proc4 bpchar(10) ,proc5 bpchar(10) ,proc6 bpchar(10) ,proc7 bpchar(10) ,proc8 bpchar(10) ,
 	proc9 bpchar(10) ,proc10 bpchar(10) ,proc11 bpchar(10) ,proc12 bpchar(10) ,proc13 bpchar(10) ,proc14 bpchar(10) ,proc15 bpchar(10) ,
 	
-	medadv int2,
 	agegrp int2 ,
 	eeclass int2 ,
 	eestatu int2 ,
@@ -206,7 +208,8 @@ CREATE EXTERNAL TABLE ext_mdcri (
 	sex int2 ,
 	state int2 ,
 	hlthplan int2 ,
-	indstry bpchar(5) 
+	indstry bpchar(5),
+	medadv int2
 ) 
 LOCATION ( 
 'gpfdist://greenplum01:8081/uthealth/truven/MDCRI*'
@@ -244,14 +247,6 @@ select count(*), min(year), max(year) from truven.mdcri;
 
 select count(*), min(year), max(year) from truven.mdcri_distinct;
 
--- Fix storage options
-create table truven.mdcri_2019
-WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.mdcri where year=2019)
-distributed randomly;
-
+-- Truncate and Reload
 delete from truven.mdcri where year>=2020;
-
-drop table truven.mdcri;
-alter table truven.mdcri_new rename to mdcri;
 

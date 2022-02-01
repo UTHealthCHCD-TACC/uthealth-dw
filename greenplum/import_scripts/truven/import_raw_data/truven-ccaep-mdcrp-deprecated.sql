@@ -3,7 +3,7 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wallingTACC  || 10/27/2021 || Merging CCAE and MDCR into single script.  find/replace to switch between the two as fields are equal
+ *  wallingTACC  || 10/27/2021 || Merging mdcr and MDCR into single script.  find/replace to switch between the two as fields are equal
  * wallingTACC  || 10/27/2021 || P files no longer sent.
  * ******************************************************************************************************
  */
@@ -14,12 +14,12 @@ v1 Fields:
 AGEGRP,DATATYP,EECLASS,EESTATU,EGEOLOC,EMPREL,ENRFLAG,HLTHPLAN,INDSTRY,MHSACOVG,PHYFLAG,PLANKEY,PLANTYP,POPDATE,REGION,RX,SEX,VERSION,WGTKEY,YEAR,POPCNT
 
 
-v2 Fields: Currently missing a ccaep151 file
+v2 Fields: Currently missing a mdcrp151 file
 
 */
 
-drop table truven.ccaep;
-CREATE TABLE truven.ccaep (
+drop table truven.mdcrp;
+CREATE TABLE truven.mdcrp (
 	agegrp int2 null,
 	datatyp numeric null,
 	eeclass int2 null,
@@ -45,8 +45,8 @@ CREATE TABLE truven.ccaep (
 )
 DISTRIBUTED RANDOMLY;
 
-drop external table ext_ccaep_v1;
-CREATE EXTERNAL TABLE ext_ccaep_v1 (
+drop external table ext_mdcrp_v1;
+CREATE EXTERNAL TABLE ext_mdcrp_v1 (
 	agegrp int2 ,
 	datatyp numeric ,
 	eeclass int2 ,
@@ -75,30 +75,30 @@ LOCATION (
 FORMAT 'CSV' ( HEADER DELIMITER ',' );
 
 select *
-from ext_ccaep_v1
+from ext_mdcrp_v1
 limit 1000;
 
---truncate table truven.ccaep;
+--truncate table truven.mdcrp;
 
-insert into truven.ccaep (AGEGRP,DATATYP,EECLASS,EESTATU,EGEOLOC,EMPREL,ENRFLAG,HLTHPLAN,INDSTRY,MHSACOVG,PHYFLAG,PLANKEY,PLANTYP,POPDATE,REGION,RX,SEX,VERSION,WGTKEY,YEAR,POPCNT)
+insert into truven.mdcrp (AGEGRP,DATATYP,EECLASS,EESTATU,EGEOLOC,EMPREL,ENRFLAG,HLTHPLAN,INDSTRY,MHSACOVG,PHYFLAG,PLANKEY,PLANTYP,POPDATE,REGION,RX,SEX,VERSION,WGTKEY,YEAR,POPCNT)
 select AGEGRP,DATATYP,EECLASS,EESTATU,EGEOLOC,EMPREL,ENRFLAG,HLTHPLAN,INDSTRY,MHSACOVG,PHYFLAG,PLANKEY,PLANTYP,POPDATE,REGION,RX,SEX,VERSION,WGTKEY,YEAR,POPCNT
-from ext_ccaep_v1;
+from ext_mdcrp_v1;
 
 
 -- Verify
 
-select count(*) from truven.ccaep;
+select count(*) from truven.mdcrp;
 
 -- Fix storage options
-create table truven.ccaep_2019
+create table truven.mdcrp_2019
 WITH (appendonly=true, orientation=column, compresstype=zlib)
-as (select * from truven.ccaep where year=2019)
+as (select * from truven.mdcrp where year=2019)
 distributed randomly;
 
-delete from truven.ccaep where year=2019;
+delete from truven.mdcrp where year=2019;
 
-drop table truven.ccaep;
-alter table truven.ccaep_new rename to ccaep;
+drop table truven.mdcrp;
+alter table truven.mdcrp_new rename to mdcrp;
 
 
 

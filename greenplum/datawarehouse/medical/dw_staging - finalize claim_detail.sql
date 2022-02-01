@@ -7,7 +7,8 @@
  * ******************************************************************************************************
  *  wc001  || 10/12/2021 || script created 
  * ******************************************************************************************************
- * 
+ *  wc004  || 01/26/2022 || add partitions
+ *  ****************************************************************************************************** 
 */
 
 do $$ 
@@ -79,6 +80,14 @@ create table dw_staging.claim_detail_temp
 with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
 select * from dw_staging.claim_detail 
 distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
 ;
 
 analyze dw_staging.claim_detail_temp;
