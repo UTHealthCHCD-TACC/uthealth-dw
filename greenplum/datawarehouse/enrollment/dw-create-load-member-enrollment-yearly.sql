@@ -110,6 +110,17 @@ drop table if exists dw_staging.temp_member_enrollment_month;
 
 raise notice 'total_enrolled_months updated';
 
+--fort worth rodeo 
+
+do $$
+declare
+	month_counter integer := 1;
+	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
+	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
+	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
+	col_list text[]:= array['state','zip5','zip3','plan_type','employee_status'];
+	col_list_len int = array_length(col_list,1);
+begin
 
 -----------------------------------------------------------------------------------------------------------------------
 -----************** logic for yearly rollup of various columns

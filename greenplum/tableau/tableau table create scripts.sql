@@ -80,7 +80,7 @@ select a.data_source, a."year" , a.uth_member_id , a.total_enrolled_months , a.g
       a.db, a.del, a.dem, a.dep, a.epi, a.fbm, a.hemo, a.hep, a.hip, a.hiv, a.hml, a.htn, a.ihd, a.knee, a.lb, a.lbp, a.lbpreg, a.lbw,
       a.lymp, a.ms, a.nicu, a.opi, a.pain, a.park, a.pneu, a.preg, a.ra, a.scd, a.scz, a.slb, a.smi, a.spf, a.str, a.tbi, a.tob, a.trans, a.trau
 from conditions.member_enrollment_yearly a 
-where a.year between 2019 and 2020
+where a.year between 2017 and 2020
   and a.data_source in ('optz', 'truv','mcrt','mcrn')
 distributed by (uth_member_id)
 ;

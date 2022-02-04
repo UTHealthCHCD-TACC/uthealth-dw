@@ -36,7 +36,7 @@ distributed by (member_id_src);
 
 analyze dev.truven_dim_uth_claim_id;
 
-raise notice 'uth claim table complete';
+raise notice 'uth claim id table built';
 -------------------------------- truven commercial outpatient--------------------------------------
 analyze truven.ccaeo;
 

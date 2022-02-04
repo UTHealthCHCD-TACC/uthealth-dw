@@ -73,7 +73,7 @@ for r_cond_cd
 		if r_carry = '0' then 
 			
 			execute   'update conditions.member_enrollment_yearly a set ' || condition_column || ' =1 
-					   from conditions.person_prof b 
+					   from conditions.person_profile_stage b 
 	   				   where a.uth_member_id = b.uth_member_id 
 	     				 and a.year = b.year 
 	    				 and a.data_source = b.data_source
@@ -83,7 +83,7 @@ for r_cond_cd
 		else 
 		
 			execute 'with carry_cte as (select min(year) as yr, uth_member_id, data_source 
-			                from conditions.person_prof 
+			                from conditions.person_profile_stage 
 			                where condition_cd = ''' || condition_column || '''
 			                group by uth_member_id , data_source 
 			                )

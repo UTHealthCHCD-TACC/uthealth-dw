@@ -182,7 +182,7 @@ raise notice 'ccaed done';
 
 analyze dw_staging.pharmacy_claims;
 
-drop table if exists dev.dim_uth_rx_truv;
+drop table if exists dw_staging.truven_rx_claim_id;
 
 raise notice ' done';
 
