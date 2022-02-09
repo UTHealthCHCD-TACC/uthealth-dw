@@ -46,9 +46,50 @@ create table conditions.condition_desc ( condition_cd text, condition_desc text,
                                        );
 
   
+insert into conditions.condition_desc (condition_cd, condition_desc, type_cd) values
+('ami','Acute Myocardial Infarction','A'),
+('hep','Hepatitis','A'),
+('pneu','Pneumonia','A'),
+('str','Stroke','A'),
+('tob','Tobacco Use','A'),
+('aimm','Auto Immune Disease','C'),
+('asth','Asthma','C'),
+('chf','Chronic Heart Failure','C'),
+('ckd','Chronic Kidney','C'),
+('cliv','Chronic Liver','C'),
+('copd','Chronic Obstructive Pulmonary Disease','C'),
+('dem','Dementia','C'),
+('diab','Diabetes','C'),
+('epi','Epilepsy','C'),
+('fbm','Fibromyalgia','C'),
+('hemo','Hemophilia','C'),
+('hiv','HIV','C'),
+('htn','Hypertension','C'),
+('ihd','Ischemic Heart Disease','C'),
+('lymp','Lymphedema','C'),
+('ms','MS','C'),
+('pain','Chronic Pain','C'),
+('park','Parkinsons','C'),
+('ra','Rheumatoid Arthritis','C'),
+('scd','Sickle Cell Disease','C'),
+('smi','Serious Mental Illness','C'),
+('del','Delivery','E'),
+('lbirth','Live Birth','E'),
+('lbpreg','Rate of Pregnancy resulting in Live Birth','E'),
+('preg','Pregnancy','E'),
+('cfib','Cystic Fibrosis','G'),
+('cysf','Cystic Fibrosis and other Respiratory Conditions','G'),
+('ca','Cancer','P'),
+('dep','Depression','P'),
+('lbp','Low Back Pain','P'),
+('opi','Opioid','P'),
+('nicu','NICU','T'),
+('tbi','Traumatic Brain Injruy','T'),
+('trans','Transplant','T'),
+('trau','Trauma ','T')
+;
                                       
-select * from conditions.condition_desc order by condition_cd;
-
+                                     
 
 update conditions.condition_desc set type_desc = case  
  when type_cd = 'C' then 'Chronic' 
@@ -64,18 +105,20 @@ update conditions.condition_desc set type_desc = case
  end;
 
 
-update conditions.condition_desc set carry_forward = '1' where carry_forward = 'Y';
 
-update conditions.condition_desc set carry_forward = '0' where carry_forward = 'N';
 
 alter table conditions.condition_desc add column logic_version text default 'v40';
 
-alter table conditions.condition_desc add column additional_logic_flag char(1) default '0';
+alter table conditions.condition_desc_new add column additional_logic_flag char(1) default '0';
 
 
 
-update conditions.condition_desc set additional_logic_flag = '1' where condition_cd in ('ASTH','DB','DEL','DEM','HTN','LB','LBPREG','OPI','PREG','TOB');
-                                      
+
+update conditions.condition_desc set additional_logic_flag = '1' where condition_cd in ('asth','db','del','dem','htm','lb','lbpreg','opi','preg','tob');
+
+
+
+drop table if exists dev.wc_cond_desc_flags;
 
 select distinct c.cd_type , a.condition_cd 
 into dev.wc_cond_desc_flags
@@ -97,6 +140,8 @@ update conditions.condition_desc a set diag_flag = '1'
 from condcte b
 where a.condition_cd = b.condition_cd
  ; 
+
+
 
 --icd proc
 with condcte as
@@ -155,10 +200,6 @@ where a.condition_cd = b.condition_cd
  ;  
 
 
--- end 
-
-select * from conditions.condition_desc cd ;
-
 
 ---remove dashes and convert to lowercase for consistency across greenplum
 update conditions.condition_desc set condition_cd = replace(condition_cd,'-','');
@@ -170,6 +211,8 @@ update conditions.condition_desc set condition_cd = lower(condition_cd);
 
 update conditions.codeset set condition_cd = lower(condition_cd); 
 
+--create copy in ref for user access 
+drop table if exists reference_tables.condition_desc;
 
 create table reference_tables.condition_desc as table conditions.condition_desc ; 
 

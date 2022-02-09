@@ -97,7 +97,6 @@ analyze dw_staging.temp_member_enrollment_month;
 	array_counter = month_counter + 1;
 	end loop;
 
-end $$;
 
 --Calculate total_enrolled_months
 update dw_staging.member_enrollment_yearly
@@ -110,6 +109,7 @@ drop table if exists dw_staging.temp_member_enrollment_month;
 
 raise notice 'total_enrolled_months updated';
 
+end $$;
 --fort worth rodeo 
 
 do $$

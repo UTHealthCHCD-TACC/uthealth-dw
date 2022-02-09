@@ -83,11 +83,6 @@ partition by list(data_source)
  )
 ;
 
-execute 'insert into dw_staging.member_enrollment_yearly 
-		select * 
-		from data_warehouse.member_enrollment_yearly 
-		where data_source not in ' || my_data_source || ';'
-;
 raise notice 'enrollment yearly created';
 
 --claim header

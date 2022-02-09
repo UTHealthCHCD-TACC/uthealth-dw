@@ -8,15 +8,19 @@
  * ******************************************************************************************************
  */
 
+select * 
+from conditions.condition_desc cd 
+order by condition_cd 
 
 ---create one column in yearly enrollment for each condition 
 do $$ 
 declare
 	r_cond_cd text;
-	baseline_conditions text[]:= array['aimm','ami','ca','cab','caco','cacv','cal','cap','cfib','chf','ckd','cliv',
-										 'copd','cres','dep','epi','fbm','hemo','hep','hiv','hml','ihd','lbp','lymp',
-										 'ms','nicu','pain','park','pneu','ra','scd','scz','smi','str','tbi','trans',
-										 'trau']; 
+	baseline_conditions text[]:= array['aimm','ami','asth','ca','cfib','chf','ckd','cliv','copd','cysf',
+                                       'db','del','dem','dep','epi','fbm','hemo','hep','hiv','htn','ihd',
+                                       'lb','lbp','lbpreg','lymp','ms','nicu','opi','pain','park','pneu',
+                                       'preg','ra','scd','smi','str','tbi','tob','trans','trau'
+                                      ]; 
 	condition_column text;
 	r_carry char(1);
 begin
