@@ -3,8 +3,8 @@ import zipfile
 import io
 import os
 import sys
-sys.path.append('H:/uth_helpers/')
-from uth_helpers import helpers
+sys.path.append('H:/chcd_py/')
+from chcd_py.helpers import helpers
 
 
 zip_icd_cm_file_urls = {
@@ -51,17 +51,6 @@ zip_icd_pcs_file_urls = {
 'ICD9_2006': 'https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/Downloads/v24_icd9.zip',
 'ICD9_2005': 'https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/Downloads/v23_icd9.zip'
 }
-
-
-def zip_outputter(output_dir, dir_name, url):
-    zip_output_dir = os.path.join(output_dir, dir_name)
-    if os.path.exists(zip_output_dir):
-        print('ZIP already extracted')
-    else:
-        r = requests.get(url)
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        z.extractall(zip_output_dir)
-        print('Zip Extracted')
 
 
 if __name__ == '__main__':
