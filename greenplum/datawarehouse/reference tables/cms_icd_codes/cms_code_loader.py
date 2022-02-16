@@ -3,8 +3,8 @@ import psycopg2
 import psycopg2.extras
 import pandas as pd
 import sys
-sys.path.append('H:/uth_helpers/')
-from uth_helpers.db_utils import get_dsn
+sys.path.append('H:/chcd_py/')
+from chcd_py.helpers.db_utils import get_dsn
 
 
 def create_cms_code_tables(cursor):

@@ -210,6 +210,13 @@ where a.msclmid is not null
 
 raise notice 'mdcro loaded';
 
+
+
+do $$ 
+
+begin 
+
+
 -------- Claim Detail 
 -------------------------------- truven commercial inpatient--------------------------------------
 insert into dw_staging.claim_detail (  
@@ -269,7 +276,7 @@ select  'truv',
 	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
+        lpad(substring(a.drg::text from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -363,7 +370,7 @@ select  'truv',
 	   									 else null end as procedure_type,
         a.procmod, 
         null as proc_mod_2, 
-        lpad(substring(a.drg from '[0-9]*(?=\.*)'),3,'0') as drg,
+        lpad(substring(a.drg::text from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
         null, 
         a.pay, 
@@ -397,7 +404,6 @@ where a.msclmid is not null
 
 raise notice 'mdcrs loaded';
 
-analyze dw_staging.claim_detail;
 
 end $$;
 
@@ -449,15 +455,21 @@ with wc_truv_billtype as ( ---- joe: added cte to get rid of duplicates
 		from dev.wc_truv_billtype a
 		group by uth_member_id, uth_claim_id, seq_num
 )
+
+
 update dw_staging.claim_detail a 
 set bill_type_inst = billtypeinst, bill_type_class = billtypeclass, bill_type_freq = billtypefreq 
-from wc_truv_billtype b 
+from dev.wc_truv_billtype b 
 where a.uth_member_id = b.uth_member_id 
   and a.uth_claim_id = b.uth_claim_id 
   and a.claim_sequence_number = b.seq_num
   and a.data_source = 'truv'
 ;
 
+select * 
+from dw_staging.claim_detail cd 
+where data_source = 'truv' 
+and bill_type_inst is not null;
 
 
 drop table  dev.wc_truv_billtype;

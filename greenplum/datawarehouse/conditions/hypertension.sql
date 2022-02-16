@@ -1,6 +1,9 @@
 --hypertension
 -- Search in any facility or professional claim for ICD 9 DX  (primary or other) in 3 or more claims
 -- Search in any facility or professional claim for ICD 10 DX  (primary or other) in 3 or more claims
+select * 
+from conditions.codeset where condition_cd = 'hml';
+
 
 drop table if exists conditions.xl_condition_htn_dx_1;
 create table conditions.xl_condition_htn_dx_1 as

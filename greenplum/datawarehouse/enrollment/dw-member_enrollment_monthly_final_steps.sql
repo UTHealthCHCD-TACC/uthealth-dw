@@ -15,6 +15,7 @@
  *  ******************************************************************************************************
 */
 
+--runtime 1/31/2022 38minutes
 
 do $$ 
 begin
@@ -79,9 +80,13 @@ drop table if exists dev.temp_dupe_enrollment_rows;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 
 create table dw_staging.member_enrollment_monthly_new 
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select * 
-from dw_staging.member_enrollment_monthly 
+(like dw_staging.member_enrollment_monthly including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
 distributed by (uth_member_id)
 partition by list(data_source)
  (partition optz values ('optz'),
@@ -93,6 +98,13 @@ partition by list(data_source)
  )
 ;
 
+insert into dw_staging.member_enrollment_monthly_new 
+select * 
+from dw_staging.member_enrollment_monthly 
+;
+
+raise notice 'monthly new insert complete';
+
 drop table if exists dw_staging.member_enrollment_monthly;
 
 alter table dw_staging.member_enrollment_monthly_new rename to member_enrollment_monthly;
@@ -102,6 +114,8 @@ alter table dw_staging.member_enrollment_monthly_new rename to member_enrollment
 analyze dw_staging.member_enrollment_monthly;
 
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
+
+raise notice 'done';
 
 end $$;
 

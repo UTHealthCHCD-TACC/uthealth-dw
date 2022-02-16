@@ -92,3 +92,103 @@ alter table dev.wc_suk_main add column metastatic_boolean boolean;
 
 alter table dev.wc_suk_main add column meta_first_date date;
 
+
+
+select count(*)
+from dev.wc_suk_cohort_extract wsce 
+
+
+---file received back from caroline, load in csv 
+create table dev.wc_suk_cohort_hf ( patid text, index_date text, age_at_index_date text, death_my text, death_boolean text, 
+                                    metastatic_date text, metastatic_boolean text, hf_score text, hf_boolean text )
+                                    ;
+
+                                   
+select * 
+into dev.wc_suk_cohort_final 
+from dev.wc_suk_cohort_hf          
+where death_boolean = 'True' 
+  or metastatic_boolean = 'True' 
+  or hf_boolean = 'True'
+;
+
+---begin actual extract here
+select * 
+from dev.wc_suk_cohort_final 
+;
+
+
+---enrollment
+select patid, pat_planid, cdhp, eligeff, eligend, gdr_cd, health_exch, lis_dual, race, state, yrdob
+into dev.wc_suk_extract_enrollment
+from optum_dod.mbr_enroll_r 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and eligend >= '2016-01-01' 
+;
+
+select count(*) from dev.wc_suk_extract_enrollment
+
+--medical
+select patid, pat_planid, admit_chan, admit_type, charge, clmid, clmseq, 
+	   cob, coins, conf_id, copay, deduct, drg, dstatus, enctr, fst_dt, hccc, 
+	   icd_flag, loc_cd, lst_dt, ndc, pos, proc_cd, procmod, prov, provcat, 
+	   std_cost, std_cost_yr, tos_cd, units, ndc_uom, ndc_qty, tos_ext
+into dev.wc_suk_extract_medical
+from optum_dod.medical m 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and extract(year from m.fst_dt) between 2016 and 2020 
+;  
+
+--diagnosis
+select patid, pat_planid, clmid, diag, diag_position, icd_flag, loc_cd, poa, fst_dt
+into dev.wc_suk_extract_diagnosis
+from optum_dod.diagnostic m 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and extract(year from m.fst_dt) between 2016 and 2020 
+;  
+
+--procedure
+select patid, pat_planid, clmid, icd_flag, proc, proc_position, fst_dt
+into dev.wc_suk_extract_procedure
+from optum_dod."procedure" m
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and extract(year from m.fst_dt) between 2016 and 2020 
+;  
+
+--confinement
+select patid, pat_planid, admit_date, charge, coins, conf_id, copay, deduct, diag1,
+       diag2, diag3, diag4, diag5, 
+       disch_date, drg, dstatus, icd_flag, los, pos, proc1, proc2, proc3, proc4, proc5, 
+       prov, std_cost, std_cost_yr, tos_cd, icu_ind, icu_surg_ind, maj_surg_ind, tos
+into dev.wc_suk_extract_confinement
+from optum_dod.confinement m 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and extract(year from m.admit_date) between 2016 and 2020 
+;  
+
+--rx 
+select patid, pat_planid, ahfsclss, avgwhlsl, brnd_nm, charge, clmid, 
+       copay, daw, days_sup, deduct, dispfee, fill_dt, form_typ, fst_fill, 
+       gnrc_ind, gnrc_nm, ndc, prc_typ, quantity, rfl_nbr, spclt_ind, std_cost, std_cost_yr
+into dev.wc_suk_extract_rx
+from optum_dod.rx 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+  and extract(year from fill_dt) between 2016 and 2020 
+;  
+
+--provider xxx
+select p.prov_unique, p.bed_sz_range, p.prov_state, p.prov_type, p.provcat, p.taxonomy1, p.taxonomy2
+into dev.wc_suk_extract_provider
+from optum_dod.provider p 
+   join optum_dod.provider_bridge b 
+     on b.prov_unique  = p.prov_unique
+   join dev.wc_suk_extract_medical m 
+     on m.prov = b.prov 
+;  
+
+--date of death 
+select patid, death_ym 
+into dev.wc_suk_extract_dateofdeath
+from optum_dod.mbrwdeath 
+where patid::text in ( select patid from dev.wc_suk_cohort_final) 
+;  

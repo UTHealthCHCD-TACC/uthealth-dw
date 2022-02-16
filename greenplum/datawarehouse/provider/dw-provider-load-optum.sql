@@ -1,8 +1,8 @@
 
 --create provider
-drop table if exists data_warehouse.provider;
+drop table if exists dev.provider;
 
-CREATE TABLE data_warehouse.provider (
+CREATE TABLE dev.provider (
 	uth_provider_id bigserial NOT NULL,	
 	data_source bpchar(4) NULL,
 	provider_id_src text NOT null,
@@ -26,7 +26,7 @@ WITH (appendonly=true, orientation=column)
 DISTRIBUTED BY (uth_provider_id);
 
 ------ provider optd
-insert into data_warehouse.provider (
+insert into dev.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -48,7 +48,7 @@ zip_5
 select
 distinct
 'optd' as data_source,
-a.p as provider_id_src,
+a.prov as provider_id_src,
 b.prov_unique as provider_id_src_2,
 a.npi as npi,
 b.taxonomy1 as taxonomy1,
@@ -66,7 +66,7 @@ null as zip,
 null as zip_5
 from optum_dod.provider_bridge a
 join optum_dod.provider b on a.prov_unique = b.prov_unique 
-left join data_warehouse.provider c on c.provider_id_src = a.prov::text and data_source = 'optd'
+left join dev.provider c on c.provider_id_src = a.prov::text and data_source = 'optd'
 where c.uth_provider_id is null 
 and a.prov is not null
 ;
@@ -77,7 +77,7 @@ and a.prov is not null
 --Optum ZIP
 ------------------------------------------------------------------------------------------
 
-insert into data_warehouse.provider (
+insert into dev.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -117,7 +117,7 @@ null as zip,
 null as zip_5
 from optum_zip.provider_bridge a
 join optum_zip.provider b on a.prov_unique = b.prov_unique 
-left join data_warehouse.provider c on c.provider_id_src = a.prov::text and data_source = 'optz'
+left join dev.provider c on c.provider_id_src = a.prov::text and data_source = 'optz'
 where c.uth_provider_id is null 
 and a.prov is not null
 ;

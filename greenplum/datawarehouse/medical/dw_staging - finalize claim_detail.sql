@@ -44,8 +44,12 @@ end $$
 ;
 
 
+
+do $$ 
+
+begin 
 ---update claim sequence  
- drop table if exists dev.claim_seq_build ;
+drop table if exists dev.claim_seq_build ;
 
 --- 60min
 create table dev.claim_seq_build 
@@ -77,8 +81,13 @@ raise notice 'clm seq updated';
 ---****redistribute on uth_member_id
 
 create table dw_staging.claim_detail_temp 
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select * from dw_staging.claim_detail 
+(like dw_staging.claim_detail including defaults) 
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
 distributed by (uth_member_id)
 partition by list(data_source)
  (partition optz values ('optz'),
@@ -90,14 +99,17 @@ partition by list(data_source)
  )
 ;
 
-analyze dw_staging.claim_detail_temp;
+insert into dw_staging.claim_detail_temp 
+select * 
+from dw_staging.claim_detail
+;
 
-select count(*), data_source from dw_staging.claim_detail_temp cdt group by data_source ;
+
 
 raise notice 'redistributing claim detail';
 
 ---replace 
-drop table dw_staging.claim_detail;
+drop table dw_staging.claim_detail cascade;
 
 alter table dw_staging.claim_detail_temp rename to claim_detail;
 

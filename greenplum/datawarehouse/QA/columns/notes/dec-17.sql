@@ -2,13 +2,13 @@
 --------------------------------QA----------------------12-17-2021-----------------------
 /*
 
-FIXED 1/4/2022 1) Many CPT codes in medicaid raw data are actually revenue codes
+1) Many CPT codes in medicaid raw data are actually revenue codes
 2) There are digits mixed up in optum to date of service in 2014-2016
 3) There are medicare claims with null revenue center date (most have revenue code 0001
-FIXED 1/4/2022 4) optum discharge status as NA -> should be changed to null
+4) optum discharge status as NA -> should be changed to null
 4) There are many, many admit and discharge dates in medicaid that are incorrect
-Leave for now 1/4/2022 5) Several strange discharge status codes for medicaid
-			There are not that many values 
+5) Several strange discharge status codes for medicaid
+			There are not that many values in lookup table 
 6) truven claim sequence number actually means sequence in entire table - which is why numbers are huge
 
 
@@ -210,10 +210,8 @@ select * from optum_zip.medical where clmid = '38JRNFRVLO';
 
 ---------------------------cpt cpdes mdcd-------------------------------
 
---- FIXED 1/4/2022
 --it turns out they are revenue codes
 --it is only a problem in medicaid.clm_detail
---added logic to load script 1/4/2022
 
 
 select * from dw_staging.claim_detail 

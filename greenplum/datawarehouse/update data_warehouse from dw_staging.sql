@@ -9,6 +9,8 @@
  * ****************************************************************************************************** 
  *  wc002  || 10/05/2021 || add mbsf_abcd table
  * ****************************************************************************************************** 
+ *  wc003  || 02/09/2022 || add partition code block
+ * ****************************************************************************************************** 
  * */
 
 ----rename existing production tables to _old
@@ -95,5 +97,49 @@ alter table data_warehouse.medicaid_program_enrollment_old set schema dw_staging
 -----||
 
 
+do $$ 
+	declare 
+	r_dw_partition text;
+	r_stage_partition text;
+	r_dbo_partition text;
+begin 
+	--move old data warehouse partitions to dbo 
+	for r_dw_partition in 
+	select  partitiontablename 
+	from pg_catalog.pg_partitions
+	where partitionschemaname = 'data_warehouse'
+	
+	loop 
+			execute 'alter table data_warehouse.' || r_dw_partition || ' set schema dbo;';
+	end loop;
+	
+	--move new staging partition to data_warehouse 
+	for r_stage_partition in 
+	select  partitiontablename 
+	from pg_catalog.pg_partitions
+	where partitionschemaname = 'dw_staging'
+	
+	loop 
+			execute 'alter table dw_staging.' || r_stage_partition || ' set schema data_warehouse;';
+	end loop;
+	
 
+		--move new staging partition to data_warehouse 
+	for r_dbo_partition in 
+	select  partitiontablename 
+	from pg_catalog.pg_partitions
+	where partitionschemaname = 'dbo'
+	
+	loop 
+			execute 'alter table dbo.' || r_dbo_partition || ' set schema dw_staging;';
+	end loop;
+
+	raise notice 'done';
+end
+$$
+
+--validate
+select *
+from pg_catalog.pg_partitions
+;
 

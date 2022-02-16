@@ -64,9 +64,6 @@ from truven.mdcrf a
  ) inr 
  where inr.proc_cd is not null 
 ;     
-;
-
-
 
 
 
