@@ -32,25 +32,15 @@ where table_schema = 'dev' and table_name = 'gm_test'
 
 -- uthealth_analyst role definition
 drop owned by uthealth_analyst cascade;
-
 drop role uthealth_analyst;
 
 create role uthealth_analyst;
 
 grant connect on database uthealth to uthealth_analyst;
+grant temporary on database uthealth to uthealth_analyst;
 
 ---****uthealth_analyst assigned users *****************************************************
-grant uthealth_analyst to turban;
-
 grant uthealth_analyst to lghosh1;
-
-grant uthealth_analyst to ctruong;
-
-grant uthealth_analyst to jharri66;
-
-grant uthealth_analyst to jfu2;
-
-grant uthealth_analyst to smadhuri;
 
 
 ----! run this query for each new uthealth_analyst so that everyone can access their dev tables freely

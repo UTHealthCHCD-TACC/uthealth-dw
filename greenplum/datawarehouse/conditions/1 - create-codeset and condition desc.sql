@@ -1,5 +1,7 @@
 /* ******************************************************************************************************
  *  Condition related queries
+ *  Codeset table is provided by jeff based on criteria from dr krause, imported and modify code values 
+ *  to be compatible with postgres logic statements
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
