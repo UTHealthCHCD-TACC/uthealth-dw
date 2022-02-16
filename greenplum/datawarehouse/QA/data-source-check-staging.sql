@@ -1,5 +1,9 @@
 delete from qa_reporting.data_source_check where schema_ = 'staging';
 
+
+select * from qa_reporting.data_source_check;
+
+
 --- header 
 with data_sources as
 (
