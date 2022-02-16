@@ -394,7 +394,7 @@ from (
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
-                    when place_of_service !~ '^\d{1,2}$'
+                    when place_of_service !~ '^\d{1,2}$' and place_of_service is not null
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -1063,7 +1063,7 @@ from (
 ------------------------------------
 --bill_type_freq
 ------------------------------------
-   
+
 -- others
 
 insert into qa_reporting.claim_detail_column_checks (

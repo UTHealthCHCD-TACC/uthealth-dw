@@ -362,3 +362,41 @@ from (
     ) a;
 
    
+   
+------------------------------------\
+-----icd_version--------------------
+------------------------------------
+
+insert into qa_reporting.claim_diag_column_checks (
+    test_var,
+    valid_values,
+    invalid_values,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'icd_version' as test_var,
+    valid_values,
+    invalid_values,
+    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
+    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as notes
+from (
+    select sum(case
+                when icd_version = '10' or icd_version = '0'
+                    then 1
+                end) as valid_values,
+        coalesce(sum(case
+                    when icd_version != '10' and icd_version != '0' and icd_version is not null
+                        or icd_version is null
+                        then 1
+                    end), 0) as invalid_values,
+        extract (year from from_date_of_service) as year,
+        data_source
+    from dw_staging.claim_diag 
+    group by data_source, extract (year from from_date_of_service) 
+    ) a;

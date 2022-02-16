@@ -7,6 +7,7 @@
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 --- jw001 | 9/21/21 | | script creation
+--- jw001 | 2/7/2022 || NEED TO ADD: null is okay for truven 
 */
 
 
@@ -368,9 +369,9 @@ from (
     group by data_source, extract (year from from_date_of_service) 
     ) a;
 
-   /*
+
 ------------------------------------
---------icd_type--------------------
+--------icd_version--------------------
 ------------------------------------
 
 insert into qa_reporting.claim_proc_column_checks (
@@ -383,7 +384,7 @@ insert into qa_reporting.claim_proc_column_checks (
     data_source,
     note
     )
-select 'icd_type' as test_var,
+select 'icd_version' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
@@ -393,21 +394,21 @@ select 'icd_type' as test_var,
     '' as notes
 from (
     select sum(case
-                when icd_type = '10' or icd_type = '9'
+                when icd_version = '9' or icd_version = '0'
                     then 1
                 end) as valid_values,
         coalesce(sum(case
-                    when icd_type != '10' and icd_type != '9'
-                        or icd_type is null
+                    when icd_version != '9' and icd_version != '0' and icd_version is not null
+                        or icd_version is null
                         then 1
                     end), 0) as invalid_values,
-        year,
+        extract (year from from_date_of_service) as year,
         data_source
     from dw_staging.claim_icd_proc
-    group by data_source, year
+    group by data_source, extract (year from from_date_of_service) 
     ) a;
 
-   
+   /*
 -----------------------------------
 -----fiscal_year------------------
 -----------------------------------

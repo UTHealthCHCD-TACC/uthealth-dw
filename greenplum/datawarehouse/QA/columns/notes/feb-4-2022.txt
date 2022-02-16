@@ -1,0 +1,19 @@
+2/4/2022 
+
+claim header
+
+select claim_type from dw_staging.claim_header where data_source = 'mcrt';
+
+|claim_type|
+|----------|
+|1         |
+|1         |
+|1         |
+|1         |
+|1         |
+|1         |
+|1         |
+|1         |
+|1         |
+
+I believe is already fixed 
