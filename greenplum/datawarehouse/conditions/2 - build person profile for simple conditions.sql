@@ -31,33 +31,15 @@ distributed by (uth_member_id);
 
 analyze conditions.person_profile_work_table ;
 
-
-select * 
-from conditions.person_profile_work_table ppwt 
-
-insert into conditions.person_profile_work_table (data_source, year, uth_member_id, cd_value, cd_type, condition_cd, carry_forward )
-select d.data_source, extract( year from d.from_date_of_service), d.uth_member_id, d.diag_cd, c.cd_type , c.condition_cd, b.carry_forward 
-		from data_warehouse.claim_diag d
-		  join conditions.codeset c 
-		   on position('%' in c.cd_value) = 0
-		  and c.cd_type in ('ICD-10','ICD-9')
-		  and c.cd_value = d.diag_cd 
-	     join  conditions.condition_desc b
- 		  on c.condition_cd = b.condition_cd 
-		;
 --ICD10-CM = icd procedure code 
 --ICD-10 = diagnosis codes
 --CPT = cpt/hcpcs
 
 
---dx 
---get all diags from claim diag (this should probably be changed to grab values from ref cms table )      
-create table dev.wc_all_diagnosis_codes as 
-select distinct diag_cd 
-from data_warehouse.claim_diag cd 
-;       
 
---list to be used for join so like condition can be avoided 
+--Diagnosis codes
+	
+--list will be used to avoid using like condition on insert statement 
 drop table conditions.diagnosis_codes_list;  
 
 ---wildcards into diagnosis code list
@@ -70,11 +52,11 @@ drop table conditions.diagnosis_codes_list;
 	where position('%' in a.cd_value) > 0
 	  and a.cd_type in ('ICD-10','ICD-9')
 ) 	
-select d.diag_cd, c.condition_cd, c.carry_forward, additional_logic_flag 
+select d.cd_value as diag_cd, c.condition_cd, c.carry_forward, additional_logic_flag 
    into conditions.diagnosis_codes_list
-from dev.wc_all_diagnosis_codes d 
+from reference_tables.ref_cms_icd_cm_codes d 
   join cond_cte c 
-    on d.diag_cd like c.cd_value
+    on d.cd_value like c.cd_value
 ;     
 
 ---non-wildcards into diagnosis code list
@@ -85,8 +67,9 @@ from conditions.codeset a
 	  on a.condition_cd = b.condition_cd 
 where position('%' in a.cd_value) = 0
   and a.cd_type in ('ICD-10','ICD-9')
+;
 
-
+---Diagnosis
 --pull patient records into work table 
 insert into conditions.person_profile_work_table 
 		select  d.data_source, extract(year from d.from_date_of_service) as yr, d.uth_member_id, d.diag_cd, 'DX', c.condition_cd, c.carry_forward
@@ -175,6 +158,7 @@ insert into conditions.person_profile_work_table
 analyze conditions.person_profile_work_table;
 
 
+select distinct condition_cd from conditions.person_profile_work_table;
 
 
 ---consolidate 

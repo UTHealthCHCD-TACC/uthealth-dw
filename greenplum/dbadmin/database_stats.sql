@@ -133,17 +133,19 @@ SELECT * FROM gp_toolkit.gp_bloat_diag;
 
 --Distribution Keys
 
+create view qa_reporting.distribution_keys as
 SELECT
-	pgn.nspname as table_owner
+	pgn.nspname as schema_name
 	,pgc.relname as table_name
 	,COALESCE(pga.attname,'DISTRIBUTED RANDOMLY') as distribution_keys
-	--,get_ao_compression_ratio(pgc.oid) as compression_ratio
 from pg_catalog.gp_distribution_policy dp
 JOIN pg_class AS pgc ON dp.localoid = pgc.oid
 JOIN pg_namespace pgn ON pgc.relnamespace = pgn.oid
 LEFT OUTER JOIN pg_attribute pga ON dp.localoid = pga.attrelid and (pga.attnum = dp.distkey[0] or pga.attnum = dp.distkey[1] or pga.attnum = dp.distkey[2])
-where pgn.nspname in ('data_warehouse')-- and pgc.relname = 'temp_script_id'
+--where pgn.nspname in ('data_warehouse')-- and pgc.relname = 'temp_script_id'
 ORDER BY pgn.nspname, pgc.relname;
+
+alter view qa_reporting.distribution_keys owner to uthealth_dev;
 
 --Compression
 drop view qa_reporting.compression_status;

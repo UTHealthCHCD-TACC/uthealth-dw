@@ -47,6 +47,25 @@ alter table tableau.diag_dashboard owner to uthealth_analyst;
 analyze tableau.diag_dashboard;
 
 
+select  sum(b.total_allowed_amount) as total_allowed, 
+from tableau.dashboard_1720 b 
+where a.data_source = 'optz'
+group by a.year 
+;
+
+with cte_MY as (
+select data_source, year, sum(total_enrolled_months) as MY
+from tableau.enrollment_only 
+group by 1,2  
+) 
+select  a.data_source, a.year, b.MY, sum(a.total_allowed_amount) as total_allowed
+from tableau.dashboard_1720 a
+   join cte_MY b 
+  on b.data_source = a.data_source 
+ and b.year = a.year 
+group by 1,2,3
+order by 1,2 
+;
 
 
 ---1/18/2022 meeting w/Madhuri table for direct connection 
