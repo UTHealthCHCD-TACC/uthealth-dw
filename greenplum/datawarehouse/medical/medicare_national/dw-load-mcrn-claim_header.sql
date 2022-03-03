@@ -13,6 +13,8 @@
  * ******************************************************************************************************
  *  jwozny  || 12/17/2021 || changed claim_type value to 'F' or 'P' based on which raw dataset is being loaded
  * ******************************************************************************************************
+ *  jwozny  || 03/03/2022 || updated payment variables
+ * ******************************************************************************************************
  * */
 
 --------------- BEGIN SCRIPT -------
@@ -35,7 +37,11 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)							        						        
 select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
+        null, 
+        a.clm_tot_chrg_amt::numeric, 
+       	clm_pmt_amt::numeric + clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::int + ---- allowed amount jw 3/3/2022
+        a.nch_bene_ip_ddctbl_amt::numeric + a.nch_bene_pta_coinsrnc_lblty_am::numeric + nch_bene_blood_ddctbl_lblty_am::numeric + nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt, 
+        clm_pmt_amt::numeric + clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::int as total_paid_amount,
       	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
       	a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 
       	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
@@ -54,7 +60,10 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,
+        null, a.clm_tot_chrg_amt::numeric, 
+        a.clm_pmt_amt::numeric + a.nch_bene_ptb_ddctbl_amt::numeric + a.nch_bene_ptb_coinsrnc_amt::numeric + ---- allowed amount jw 3/3/2022
+  			a.nch_bene_blood_ddctbl_lblty_am::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt,
+        a.clm_pmt_amt::numeric, 
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
       	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
@@ -114,7 +123,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric, 
+        null, a.clm_tot_chrg_amt::numeric, a.clm_pmt_amt::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric, a.clm_pmt_amt::numeric, 
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
       	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
@@ -135,7 +144,7 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
+        null, a.clm_tot_chrg_amt::numeric, a.clm_pmt_amt::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric, a.clm_pmt_amt::numeric, 
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
       	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
@@ -155,7 +164,10 @@ insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim
                                 uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
                                 bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, null, a.clm_pmt_amt::numeric,       
+        null, a.clm_tot_chrg_amt::numeric, 
+        a.clm_pmt_amt::numeric + a.nch_bene_ip_ddctbl_amt::numeric + a.nch_bene_pta_coinsrnc_lblty_am::numeric + 
+        a.nch_bene_blood_ddctbl_lblty_am::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt,
+        a.clm_pmt_amt::numeric,       
         dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
         a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 
       	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
