@@ -7,15 +7,16 @@
  *  wc001        || 11/18/2021 || modified to all lower case
  * ******************************************************************************************************
  */
---test
+--unfinished_conditions text[]:= array['asth', 'db', 'dem', 'htn', 'lb', 
+--                                         'lbpreg', 'opi', 'preg', 'tob']; 
+
+
+
 ---create one column in yearly enrollment for each condition 
 do $$ 
 declare
 	r_cond_cd text;
 	r_carry char(1);
-	unfinished_conditions text[]:= array['asth', 'db', 'del', 'htn', 'lb', 
-                                         'lbpreg', 'opi', 'preg', 'tob']; 
-	condition_column text;
 begin
 	
 	drop table if exists conditions.conditions_member_enrollment_yearly;
@@ -33,10 +34,10 @@ begin
 	alter table conditions.conditions_member_enrollment_yearly owner to uthealth_dev;
 	
 ---loop to add new columns based on condition types in condition_desc 
-for r_cond_cd 
+for r_cond_cd, r_carry 
 	 in 
-		select condition_cd 
-		from conditions.condition_desc cd 		
+		select distinct condition_cd, carry_forward 
+		from conditions.person_profile_stage 
 		order by condition_cd
 	loop 	
 		if exists ( select 1 
@@ -55,12 +56,6 @@ for r_cond_cd
 
 
 	---loop through columns and populate,  check for carry forward and apply logic accordingly
-	
-		select carry_forward 
-		into r_carry
-		from conditions.condition_desc 
-		where condition_cd = r_cond_cd
-		;
 		
 		raise notice 'Loading column % , carry %', r_cond_cd, r_carry;
 	
@@ -93,15 +88,6 @@ for r_cond_cd
 	
 		
 	end loop;
-	
-	foreach condition_column in array unfinished_conditions
-	loop 
-
-	execute 'alter table conditions.conditions_member_enrollment_yearly drop column ' || condition_column || ';';
-	raise notice 'column % dropped', condition_column;
-	
-	end loop;
-	
 	
 	analyze conditions.conditions_member_enrollment_yearly;
 

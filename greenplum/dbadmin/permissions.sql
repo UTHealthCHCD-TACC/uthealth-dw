@@ -42,10 +42,11 @@ grant temporary on database uthealth to uthealth_analyst;
 ---****uthealth_analyst assigned users *****************************************************
 grant uthealth_analyst to lghosh1;
 
+grant uthealth_analyst to judyk277;
 
 ----! run this query for each new uthealth_analyst so that everyone can access their dev tables freely
-set role lghosh1;
-alter default privileges for user lghosh1 in schema dev grant all on tables to uthealth_analyst; 
+set role judyk277;
+alter default privileges for user judyk277 in schema dev grant all on tables to uthealth_analyst; 
 ----!
 
 set role wcough;  select session_user;  select current_user;
@@ -176,7 +177,8 @@ grant all on schema qa_reporting to uthealth_dev;
 grant all on all tables in schema qa_reporting to uthealth_dev; 
 grant all privileges on all sequences in schema qa_reporting to uthealth_dev; 
 alter default privileges in schema qa_reporting grant all on tables to uthealth_dev; 
-
+grant execute on all functions in schema qa_reporting to uthealth_dev;
+ 
 ---reference_tables (all access)
 grant all on schema reference_tables to uthealth_dev; 
 grant all on all tables in schema reference_tables to uthealth_dev; 

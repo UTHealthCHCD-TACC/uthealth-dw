@@ -1,0 +1,151 @@
+
+
+
+drop table if exists dev.wc_glasz_prov_geo;
+
+create table dev.wc_glasz_prov_geo 
+with (appendonly=true, orientation=column, compresstype=zlib)
+as 
+select m.year, patid, clmid, m.prov, patid::text as member_id_src 
+from optum_zip.medical m 
+   join optum_zip.provider_bridge pb 
+      on pb.prov = m.prov  
+   join optum_zip.provider p 
+      on p.prov_unique  = pb.prov_unique 
+     and p.prov_state in ('DC','DE','MD','PA','VA')
+where m.year between 2012 and 2019 
+distributed by (member_id_src)
+;
+
+
+--MRI 
+select d.clmid, d.member_id_src, d.diag , d.year 
+into dev.wc_glasz_mri_diag 
+from optum_zip.diagnostic d 
+   join dev.wc_glasz_prov_geo p 
+      on p.member_id_src = d.member_id_src 
+     and p.clmid = d.clmid 
+     and p.year = d."year"
+where d.diag = 'M545'
+;
+
+---MRI cpt 
+drop table if exists dev.wc_glasz_mri_cohort;
+
+select m.patid, m.clmid, m."year", m.fst_dt 
+into dev.wc_glasz_mri_cohort
+from optum_zip.medical m 
+  join dev.wc_glasz_mri_diag d 
+    on d.member_id_src = m.member_id_src 
+   and d.clmid = m.clmid 
+   and d.year = m.year 
+where proc_cd in ('72148','72149','72158')
+;
+
+
+----MRI Extract
+select a.patid, a.bus, a.cdhp, a.eligeff, a.eligend, a.gdr_cd, a.health_exch, a.lis_dual , a.product , a.yrdob, a.zipcode_5
+into dev.wc_glasz_mri_mbr_enroll
+from optum_zip.mbr_enroll a
+  join dev.wc_glasz_mri_cohort b 
+    on a.patid = b.patid 
+;
+
+drop table if exists dev.wc_glasz_mri_medical ;
+
+select m.patid, m.std_cost, m.clmid, m.clmseq, m.icd_flag, m.fst_dt, m.lst_dt, m.proc_cd, m.provcat
+into dev.wc_glasz_mri_medical 
+from optum_zip.medical m 
+   join dev.wc_glasz_mri_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt - 60 and b.fst_dt 
+;
+ 
+select m.patid, m.clmid, m.icd_flag, m.fst_dt, m.diag, m.diag_position, m.poa 
+into dev.wc_glasz_mri_diagnostic
+from optum_zip.diagnostic m 
+   join dev.wc_glasz_mri_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt - 60 and b.fst_dt 
+;
+
+select m.patid, m.clmid, m.icd_flag, m.fst_dt, m.proc, m.proc_position
+into dev.wc_glasz_mri_icd_proc
+from optum_zip."procedure" m 
+   join dev.wc_glasz_mri_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt - 60 and b.fst_dt 
+;
+
+select m.* 
+into dev.wc_glasz_mri_confinement 
+from optum_zip.confinement m
+   join dev.wc_glasz_mri_cohort b 
+     on b.patid = m.patid 
+    and m.admit_date between b.fst_dt - 60 and b.fst_dt 
+;
+
+---***************************************************************************************************************
+---Preoperative Evaluation
+select d.clmid, d.member_id_src, d.diag , d.year 
+into dev.wc_glasz_preop_diag
+from optum_zip.diagnostic d 
+   join dev.wc_glasz_prov_geo p 
+      on p.member_id_src = d.member_id_src 
+     and p.clmid = d.clmid 
+     and p.year = d."year"
+where d.diag in ('Z0181','Z01818','Z01811','Z01812','Z01810')
+     and d.year between 2012 and 2019
+;
+
+select m.patid, m.clmid, m."year", m.fst_dt 
+into dev.wc_glasz_preop_cohort
+from optum_zip.medical m 
+  join dev.wc_glasz_preop_diag d 
+    on d.member_id_src = m.member_id_src 
+   and d.clmid = m.clmid 
+   and d.year = m.year 
+where proc_cd in ('71045','71046','71010','71015','71020','71021','71022','71023','71030','71034','71035')
+;
+
+
+----preop Extract
+select a.patid, a.bus, a.cdhp, a.eligeff, a.eligend, a.gdr_cd, a.health_exch, a.lis_dual , a.product , a.yrdob, a.zipcode_5
+into dev.wc_glasz_preop_mbr_enroll
+from optum_zip.mbr_enroll a
+  join dev.wc_glasz_preop_cohort b 
+    on a.patid = b.patid 
+;
+
+
+select m.patid, m.std_cost, m.clmid, m.clmseq, m.icd_flag, m.fst_dt, m.lst_dt, m.proc_cd, m.provcat
+into dev.wc_glasz_preop_medical 
+from optum_zip.medical m 
+   join dev.wc_glasz_preop_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt and b.fst_dt + 180
+;
+ 
+select m.patid, m.clmid, m.icd_flag, m.fst_dt, m.diag, m.diag_position, m.poa 
+into dev.wc_glasz_preop_diagnostic
+from optum_zip.diagnostic m 
+   join dev.wc_glasz_preop_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt and b.fst_dt + 180
+;
+
+select m.patid, m.clmid, m.icd_flag, m.fst_dt, m.proc, m.proc_position
+into dev.wc_glasz_preop_icd_proc
+from optum_zip."procedure" m 
+   join dev.wc_glasz_preop_cohort b 
+     on b.patid = m.patid 
+    and m.fst_dt between b.fst_dt and b.fst_dt + 180
+;
+
+select m.* 
+into dev.wc_glasz_preop_confinement 
+from optum_zip.confinement m
+   join dev.wc_glasz_preop_cohort b 
+     on b.patid = m.patid 
+    and m.admit_date between b.fst_dt and b.fst_dt + 180
+;

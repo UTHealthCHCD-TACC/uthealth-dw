@@ -17,15 +17,18 @@
 */
 
 
+
+---runtime 3/29/2022: 72 minutes
+
 do $$
 declare
 ---(1) change my_data_source according to what data is being updated, use two single quotes around each data source
 ---example:  my_data_source text := ' (''truv'',''mcrt'',''optz'') ';  //   := ' (''truv'') ';
-	my_data_source text := ' (''truv'') ';
+	my_data_source text := ' (''truv'',''mcrt'',''mcrn'') ';
 	med_return boolean;
 begin
 
-raise notice 'Creating dw_staging tables for: %', my_data_source;
+raise notice 'Creating dw_staging tables for all sources except: %', my_data_source;
 
 
 ---(2) drop existing tables

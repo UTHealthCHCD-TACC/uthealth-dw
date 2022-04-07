@@ -1,4 +1,4 @@
-							 
+drop table wrk.dbo.wc_5a_tdcj_annual_clms	;				 
 					
 ---free world		 
 select state_id, FSCYR 
@@ -95,6 +95,8 @@ from
 	or replace(DX2 ,'.','') in ('V700','V700','V7231','V705','V703','V7284','V7285','Z0000','Z0001','Z00110','Z00111','Z00121','Z00129','Z003','Z01411','Z01419')
 ) inr;
 
+
+drop table if exists wrk.dbo.wc_5a_tdcj_annual_cohort;
 ---consolidate
 select distinct state_id, fscyr 
 into wrk.dbo.wc_5a_tdcj_annual_cohort	
@@ -107,24 +109,44 @@ from wrk.dbo.wc_5a_tdcj_annual_clms
 
 
  ---collapse records for CE
-drop table if exists WRK.dbo.wc_tdcj_CE ;
+drop table if exists WRK.dbo.wc_tdcj_CE_new ;
+
 select * 
-into WRK.dbo.wc_tdcj_CE 
+into WRK.dbo.wc_tdcj_CE_new 
 from (
 	select sum(ENRLMNTH) as enr, sid_no, FSCYR, sex, AGE_FSC, min(left(reg,4)) as region 
 	from TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New
 	group by sid_no, FSCYR, sex, AGE_FSC	
-) x where enr >= 12
+) x
 ;
 
-select * from TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New where sid_no = '00254730';
+--update 4/1/2022 from jeff 
+with gender_cte as ( select distinct sid_no, sex  
+                     from  
+                     (
+                     	 select sid_no, sex 
+	                     from dbo.AGG_ENRL_OFF_UNT_NEW
+	                     union 
+	                     select sid_no , sex 
+	                     from dbo.AGG_ENRL_OFF_UNT_NEW2 
+                      ) agg_inr 
+                    )
+insert into wrk.dbo.wc_tdcj_ce_new 
+select 15 as enr, a.sid_no, a.FSCYR, g.sex, a.age, left(reg,4) as region --count(*) 
+from dbo.Wellness_fy1621 a 
+   join gender_cte g 
+     on g.sid_no = a.sid_no 
+where FSCYR <> 2021 
+  and not exists ( select 1 from wrk.dbo.wc_tdcj_ce_new b where b.sid_no = a.sid_no and b.fscyr = a.FSCYR );
+  
+select * from TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New where sid_no = '03671660';
 
-select * from wrk.dbo.wc_tdcj_ce;
+select * from wrk.dbo.wc_tdcj_ce where sid_no = '03673633';
 
 --by region
 select replace(str(a.FSCYR) + case when region is null then 'U' else region end, ' ','' )  as nv, 
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_annual_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -145,7 +167,7 @@ select replace(str(a.FSCYR) + 'A' +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_annual_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -177,7 +199,7 @@ select replace(str(a.FSCYR) + a.sex +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_annual_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
