@@ -231,72 +231,150 @@ select a.uth_member_id, 'meta' as comorb
 where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
  and  substring(diag_cd,1,3) between 'C77' and 'C80'
 ;
+
+
+-----***************** New Comorbidities 3/10/2022
+
+--hypothyroidism  
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'hypothyroidism' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('E890') 
+     or a.diag_cd like 'E00% '
+	or a.diag_cd like 'E01%'
+	or a.diag_cd like 'E02%'
+	or a.diag_cd like 'E03%'
+ )
+;
+
+
+--renalfailure
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'renalfailure' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('N250','Z490','Z491','Z492','Z940','Z992','I120','I131') 
+     or a.diag_cd like 'N18%'
+     or a.diag_cd like 'N19%'
+ )
+;
+
+
+--liverdisease
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'liverdisease' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('I864','I982','K711','K713','K714','K715','K717','K760','K762','K763','K764','K765','K766','K767','K768','K769','Z944') 
+    or a.diag_cd like 'B18%'
+	or a.diag_cd like 'I85%'
+	or a.diag_cd like 'K70%'
+	or a.diag_cd like 'K72%'
+	or a.diag_cd like 'K73%'
+	or a.diag_cd like 'K74%'
+ )
+;
+
+--pepticulcers
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'pepticulcers' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('K257','K259','K267','K269','K277','K279','K287','K289' ) )
+;
+
+
+--HIVAIDS
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'HIVAIDS' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and ( a.diag_cd like 'B20%'
+	or a.diag_cd like 'B21%'
+	or a.diag_cd like 'B22%'
+	or a.diag_cd like 'B24%'
+ )
+;
+
+
+--lymphoma
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'lymphoma' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('C900','C902') 
+     or a.diag_cd like 'C81%'
+	or a.diag_cd like 'C82%'
+	or a.diag_cd like 'C83%'
+	or a.diag_cd like 'C84%'
+	or a.diag_cd like 'C85%'
+	or a.diag_cd like 'C88%'
+	or a.diag_cd like 'C96%'
+ )
+;
+
+
+--rheumatoid arthritis RA
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'RA' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('M469','M468','M461','M313','M312','M311','M310','M123','M120','L943','L941','L940') 
+     or a.diag_cd like 'M45%'
+	or a.diag_cd like 'M35%'
+	or a.diag_cd like 'M34%'
+	or a.diag_cd like 'M33%'
+	or a.diag_cd like 'M32%'
+	or a.diag_cd like 'M30%'
+	or a.diag_cd like 'M08%'
+	or a.diag_cd like 'M06%'
+	or a.diag_cd like 'M05%'
+ )
+;
+
+--coagulopathy
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'coagulopathy' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and (a.diag_cd in ('D65','D66','D67','D691','D693','D694','D695','D696') 
+     or a.diag_cd like 'D68%'
+ )
+;
+
+
+--bloodlossanemia
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'bloodlossanemia' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and ( a.diag_cd = 'D500'
+ )
+;
+
+
+--deficiencyanemia
+insert into dev.wc_dell_med_comorbidities
+select a.uth_member_id, 'deficiencyanemia' as comorb
+ from data_warehouse.claim_diag a
+where data_source = 'optd' and  extract(year from from_date_of_service) = 2018
+ and ( a.diag_cd in ('D508','D509') 
+     or a.diag_cd like 'D51%'
+     or a.diag_cd like 'D52%'
+     or a.diag_cd like 'D53%'
+ )
+;
+
+--- End New Comorbidities 3/10/2022 ***********
+
    
+analyze dev.wc_dell_med_comorbidities;
 
+select count(*), comorb 
+from dev.wc_dell_med_comorbidities  
+group by comorb ;
 
-update dev.wc_dell_med_study_table a set hypertension = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'hypertension' )
-;
-
-update dev.wc_dell_med_study_table a set diabetes_uncomplicated = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'diabetesU' )
-;
-
-update dev.wc_dell_med_study_table a set diabetes_complicated = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'diabetesC' )
-;
-
-update dev.wc_dell_med_study_table a set peripheral_vascular_disorder = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'PVD' )
-;
-
-update dev.wc_dell_med_study_table a set obesity = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'obesity' )
-;
-
-update dev.wc_dell_med_study_table a set fluid_conditions = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'fluid' )
-;
-
-update dev.wc_dell_med_study_table a set congestive_heart_failure = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'CHF' )
-;
-
-update dev.wc_dell_med_study_table a set weight_loss = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'weight loss' )
-;
-
-update dev.wc_dell_med_study_table a set cardiac_arrhythmia = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'arrhythmia' )
-;
-
-update dev.wc_dell_med_study_table a set valvular_disease = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'valvular' )
-;
-
-update dev.wc_dell_med_study_table a set pulmonary_circulation_disorder = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'PCD' )
-;
-
-update dev.wc_dell_med_study_table a set chronic_pulmonary_disease = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'chronic pulmonary' )
-;
-
-update dev.wc_dell_med_study_table a set tumor_without_metastasis = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'tumor' )
-;
-
-update dev.wc_dell_med_study_table a set metastatic_cancer = 1 
-where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'meta' )
-;
-
-
----validate before extract
-select count(*), count(distinct uth_member_id)
-from dev.wc_dell_med_study_table a 
-
-
-select * from dev.wc_dell_med_study_table
 
 
 ---exclusions 
@@ -341,153 +419,18 @@ where c.year = 2018
 
 select count(distinct uth_member_id) from dev.wc_dell_med_exclusions; _test;
     
-    
-select  b.uth_member_id , min(a.race ) as rc
-into dev.wc_dm_race_temp
-from optum_dod.mbr_enroll_r a 
-join data_warehouse.dim_uth_member_id b 
-  on b.member_id_src = a.patid::text 
-group by b.uth_member_id 
-;
-
-alter table dev.wc_dell_med_study_table alter column race type text;
-
-
-update dev.wc_dell_med_study_table a set race = rc 
-from dev.wc_dm_race_temp b where a.uth_member_id = b.uth_member_id 
-;
-
----crg
-create table dev.wc_dell_med_crg (member_id_src text, crg text);
-
-
-truncate dev.wc_dell_med_crg 
-
-
----final table for extract
-drop table if exists dev.wc_dell_med_study_table_extract;
-
-select b.member_id_src, a.*
-into dev.wc_dell_med_study_table_extract
-from dev.wc_dell_med_study_table a 
-   join data_warehouse.dim_uth_member_id b 
-     on a.uth_member_id = b.uth_member_id 
-where a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
-;
-
-select count(*) from dev.wc_dell_med_study_table_extract
-
-----------**************************************************************************************************************
-----overall counts and analytics----------------------------------------------------------------------------------------------
-select count(*), 
-       case when age_derived between 21 and 30 then 1
-            when age_derived between 31 and 40 then 2 
-            when age_derived between 41 and 50 then 3 
-            when age_derived between 51 and 64 then 4 
-            end as age_group
-            
-select count(distinct uth_member_id )
-from data_warehouse.member_enrollment_yearly a
-where data_source = 'optd'
-and age_derived between 21 and 64 
- and total_enrolled_months = 12 
-  and a.year = 2018
-  ;
- 
- 
- select * from data_warehouse.dim_uth_member_id where member_id_src = '33003282155'
- 
- select * from data_warehouse.member_enrollment_yearly where uth_member_id = 109780019 and year = 2007
- 
- select count(uth_member_id) 
- from data_warehouse.member_enrollment_monthly a 
- where data_source = 'optd' 
-   and age_derived between 21 and 64 
-   and "year" = 2018
-   and month_year_id = 201812 
-   and consecutive_enrolled_months >= 12
-;
-
-select count(patid) 
-from ( 
-select count(*) as rw, patid  
-from optum_zip.mbr_enroll_r a 
-   join reference_tables.ref_month_year b 
-     on b.start_of_month between a.eligeff and a.eligend 
-    and b.year_int = 2018
- where a.yrdob between 1954 and 1997
- group by patid 
-    ) inr 
-    where rw >= 12
-;
-
-
-select * from data_warehouse.member_enrollment_yearly 
-where uth_member_id in ( 
-select uth_member_id 
-from data_warehouse.dim_uth_member_id 
-where data_source = 'optd'   
-and member_id_src::bigint not in ( select patid from optum_zip.mbr_enroll_r mer )
-) 
-
-select * from data_warehouse.member_enrollment_yearly a 
-   where uth_member_id = 101922079
- 
-  --and a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
-  
-  select * from data_warehouse.member_enrollment_yearly mey where uth_member_id = 102813129;
-  
-  select count(distinct patid) from optum_zip.mbr_co_enroll mce where eligeff between '2018-01-02' and '2018-01-20';
- 
-  select * from data_warehouse.dim_uth_member_id where data_source = 'optd' and member_id_src = '33003315584';
- 
-  select * from optum_zip.mbr_co_enroll where patid = 33003315584
-  
-  
-  select * from dev.wc_dell_med_exclusions where uth_member_id = 102813129
-  
-  
-group by case when age_derived between 21 and 30 then 1
-            when age_derived between 31 and 40 then 2 
-            when age_derived between 41 and 50 then 3 
-            when age_derived between 51 and 64 then 4 
-            end
-
- 
-            
-drop table dev.wc_dellmed_compare;
-            
-select b.member_id_src::bigint, a.age_derived , a.bus_cd , a.gender_cd , a.zip5 
-into dev.wc_dellmed_compare
-from data_warehouse.member_enrollment_yearly a
-  join data_warehouse.dim_uth_member_id b  
-     on b.uth_member_id = a.uth_member_id 
- -- join dev.wc_dm_race_temp b 
-    --on a.uth_member_id = b.uth_member_id 
-where a.data_source = 'optd'
-  and age_derived between 21 and 64 
-  and total_enrolled_months = 12 
-  and a.year = 2018
-  and a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
---group by rc;
-
-  
-  
-select distinct b.member_id_src::bigint
-into dev.wc_dellmed_excl_compare
-  from dev.wc_dell_med_exclusions a
-join data_warehouse.dim_uth_member_id b  
-     on b.uth_member_id = a.uth_member_id 
- ;    
      
---overall table
+--overall table extract (THIS IS THE FINAL TABLE TO BE CONVERTED TO SAS)
 drop table if exists dev.wc_dellmed_overall;
 
 select u.member_id_src, a.uth_member_id, a.gender_cd, a.age_derived, b.rc, 0 as depression, 0 as bipolar,
       0 as hypertension, 0 as diabetes_uncomplicated, 0 as diabetes_complicated, 0 as peripheral_vascular_disorder,
       0 as obesity, 0 as fluid_conditions, 0 as congestive_heart_failure, 0 as weight_loss, 0 as cardiac_arrhythmia,
       0 as valvular_disease, 0 as pulmonary_circulation_disorder, 0 as chronic_pulmonary_disease, 0 as tumor_without_metastasis, 
-      0 as metastatic_cancer
+      0 as metastatic_cancer,
+      ---new comorbs added 3/10/2022
+      0 as HIVAIDS, 0 as RA, 0 as bloodlossanemia, 0 as coagulopathy, 0 as deficiencyanemia,
+      0 as hypothyroidism, 0 as liverdisease, 0 as lymphoma, 0 as pepticulcers, 0 as renalfailure
 into dev.wc_dellmed_overall
 from data_warehouse.member_enrollment_yearly a
   join dev.wc_dm_race_temp b 
@@ -567,7 +510,52 @@ where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_
 update dev.wc_dellmed_overall a set metastatic_cancer = 1 
 where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'meta' )
 ;
+
+---new comorbds 3/11/2022
  
+update dev.wc_dellmed_overall a set HIVAIDS = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'HIVAIDS' )
+;
+
+update dev.wc_dellmed_overall a set RA = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'RA' )
+;
+
+update dev.wc_dellmed_overall a set bloodlossanemia = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'bloodlossanemia' )
+;
+
+update dev.wc_dellmed_overall a set coagulopathy = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'coagulopathy' )
+;
+
+update dev.wc_dellmed_overall a set deficiencyanemia = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'deficiencyanemia' )
+;
+
+update dev.wc_dellmed_overall a set hypothyroidism = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'hypothyroidism' )
+;
+
+update dev.wc_dellmed_overall a set liverdisease = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'liverdisease' )
+;
+
+update dev.wc_dellmed_overall a set lymphoma = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'lymphoma' )
+;
+
+update dev.wc_dellmed_overall a set pepticulcers = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'pepticulcers' )
+;
+
+update dev.wc_dellmed_overall a set renalfailure = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'renalfailure' )
+;
+
+----
+      
+      
 select count(uth_member_id) 
 from (
 	select uth_member_id , 
@@ -581,21 +569,94 @@ from (
 where cond_count >0; 
  
  
+select * 
+from dev.wc_dellmed_overall  ;
 
-select count(*), avg(a.age_derived ) as ad, stddev(age_derived )  
-from dev.wc_dellmed_overall a 
 
 
-select b.member_id_src  , a.*
-into dev.wc_dell_med_crg_extract
-from dev.wc_dell_med_study_table_extract a 
-   join data_warehouse.dim_uth_member_id b  
-      on a.uth_member_id = b.uth_member_id 
-      
-      
-      
-      
-      
-      select * 
-      from dev.wc_dellmed_overall
-      ;
+---------------------------------------------------------------------------------------------------------
+
+
+-------------- OLD CODE BELOW 
+
+ 
+----------------------------------------------------------------------------
+
+---(DEPRECATED) table for extract
+drop table if exists dev.wc_dell_med_study_table_extract;
+
+select b.member_id_src, a.*
+into dev.wc_dell_med_study_table_extract
+from dev.wc_dell_med_study_table a 
+   join data_warehouse.dim_uth_member_id b 
+     on a.uth_member_id = b.uth_member_id 
+where a.uth_member_id not in ( select uth_member_id from dev.wc_dell_med_exclusions )
+;
+
+
+
+
+update dev.wc_dell_med_study_table a set hypertension = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'hypertension' )
+;
+
+update dev.wc_dell_med_study_table a set diabetes_uncomplicated = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'diabetesU' )
+;
+
+update dev.wc_dell_med_study_table a set diabetes_complicated = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'diabetesC' )
+;
+
+update dev.wc_dell_med_study_table a set peripheral_vascular_disorder = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'PVD' )
+;
+
+update dev.wc_dell_med_study_table a set obesity = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'obesity' )
+;
+
+update dev.wc_dell_med_study_table a set fluid_conditions = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'fluid' )
+;
+
+update dev.wc_dell_med_study_table a set congestive_heart_failure = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'CHF' )
+;
+
+update dev.wc_dell_med_study_table a set weight_loss = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'weight loss' )
+;
+
+update dev.wc_dell_med_study_table a set cardiac_arrhythmia = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'arrhythmia' )
+;
+
+update dev.wc_dell_med_study_table a set valvular_disease = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'valvular' )
+;
+
+update dev.wc_dell_med_study_table a set pulmonary_circulation_disorder = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'PCD' )
+;
+
+update dev.wc_dell_med_study_table a set chronic_pulmonary_disease = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'chronic pulmonary' )
+;
+
+update dev.wc_dell_med_study_table a set tumor_without_metastasis = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'tumor' )
+;
+
+update dev.wc_dell_med_study_table a set metastatic_cancer = 1 
+where exists ( select 1 from dev.wc_dell_med_comorbidities b where b.uth_member_id = a.uth_member_id and comorb = 'meta' )
+;
+
+
+---validate before extract
+select count(*), count(distinct uth_member_id)
+from dev.wc_dell_med_study_table a 
+
+
+select * from dev.wc_dell_med_study_table
+

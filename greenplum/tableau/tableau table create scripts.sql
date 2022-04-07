@@ -12,7 +12,7 @@ from data_warehouse.member_enrollment_yearly a
     left outer join data_warehouse.claim_header b 
      on a.uth_member_id = b.uth_member_id 
     and a."year" = b."year" 
-where a.year between 2015 and 2020
+where a.year between 2012 and 2021
   and a.data_source in ('optz', 'truv','mcrt','mcrn')
 distributed by (uth_member_id)
 ;
@@ -33,11 +33,11 @@ create table tableau.diag_dashboard
 with (appendoptimized=true, orientation=column, compresstype=zlib)
 as 
 select data_source, extract(year from from_date_of_service) as year, count(distinct uth_member_id) as members, count(distinct uth_claim_id) as claims, 
-        diag_cd, case when diag_position = 1 then 'Primary' else 'Secondary' end as diag_pos, b.description 
+        diag_cd, case when diag_position = 1 then 'Primary' else 'Secondary' end as diag_pos, b.code_description as description 
 from data_warehouse.claim_diag a
-   join reference_tables.icd_10_diags b  
-      on a.diag_cd = b.code 
-where extract(year from from_date_of_service) between 2019 and 2020 
+   join reference_tables.ref_cms_icd_cm_codes b
+      on a.diag_cd = b.cd_value 
+where extract(year from from_date_of_service) between 2012 and 2021 
 and data_source in ('optz','truv','mcrt','mcrn')
 group by 1,2,5,6,7
 ;
@@ -76,7 +76,7 @@ with (appendoptimized=true, orientation=column, compresstype=zlib)
 as 
 select data_source, year, uth_member_id, gender_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
 from data_warehouse.member_enrollment_yearly a 
-where a.year between 2015 and 2020
+where a.year between 2012 and 2021
   and a.data_source in ('optz', 'truv','mcrt','mcrn')
 distributed by (uth_member_id)
 ;
@@ -89,17 +89,18 @@ analyze tableau.enrollment_only;
   
   
 ---conditions
+--select * from data_warehouse.conditions_member_enrollment_yearly
 drop table if exists tableau.member_conditions;
 
 create table tableau.member_conditions
 with (appendoptimized=true, orientation=column, compresstype=zlib)
 as 
 select a.data_source, a."year" , a.uth_member_id , a.total_enrolled_months , a.gender_cd, a.race_cd, a.age_derived , a.state , a.bus_cd,
-      a.aimm, a.ami, asth, a.ca, a.cab, a.caco, a.cacv, a.cal, a.cap, a.cfib, a.chf, a.ckd, a.cliv, a.copd, a.cres, a.csec, a.cysf, 
-      a.db, a.del, a.dem, a.dep, a.epi, a.fbm, a.hemo, a.hep, a.hip, a.hiv, a.hml, a.htn, a.ihd, a.knee, a.lb, a.lbp, a.lbpreg, a.lbw,
-      a.lymp, a.ms, a.nicu, a.opi, a.pain, a.park, a.pneu, a.preg, a.ra, a.scd, a.scz, a.slb, a.smi, a.spf, a.str, a.tbi, a.tob, a.trans, a.trau
-from conditions.member_enrollment_yearly a 
-where a.year between 2017 and 2020
+      a.aimm, a.ami,  a.ca,      a.cfib, a.chf, a.ckd, a.cliv, a.copd,   a.cysf, 
+        a.dem, a.dep, a.epi, a.fbm, a.hemo, a.hep,  a.hiv, a.ihd,  a.lbp, 
+      a.lymp, a.ms, a.nicu, a.pain, a.park, a.pneu,a.ra, a.scd, a.smi, a.str, a.tbi, a.trans, a.trau
+from data_warehouse.conditions_member_enrollment_yearly a 
+where a.year between 2012 and 2021
   and a.data_source in ('optz', 'truv','mcrt','mcrn')
 distributed by (uth_member_id)
 ;

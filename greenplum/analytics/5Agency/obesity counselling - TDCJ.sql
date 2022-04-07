@@ -131,17 +131,22 @@ from wrk.dbo.wc_5a_tdcj_obesity_clms
 -----counts for spreadsheet
 ---******************************************
 
+select * 
+from dbo.Wellness_fy1621 a 
+where a.FSCYR between 2016 and 2020 
+  and a.sid_no not in ( select sid_no from TDCJ1620.dbo.AGG_ENRL_OFF_UNT_NEW )
+
 
 --by region
-select replace(str(a.FSCYR) + case when left(reg,4)   is null then 'U' else left(reg,4)  end, ' ','' )  as nv, 
+select replace(str(a.FSCYR) + case when region is null then 'U' else region end , ' ','' )  as nv, 
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New a 
+from WRK.dbo.wc_tdcj_CE_new a 
    left outer join wrk.dbo.wc_5a_tdcj_obesity_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
 where  a.FSCYR between 2016 and 2020 
-group by case when left(reg,4)   is null then 'U' else left(reg,4) end , a.FSCYR 
-order by a.FSCYR , case when left(reg,4)   is null then 'U' else left(reg,4)  end
+group by case when region is null then 'U' else region end  , a.FSCYR 
+order by a.FSCYR , case when region is null then 'U' else region end 
 ;
 
 
@@ -155,7 +160,7 @@ select replace(str(a.FSCYR) + 'A' +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New  a 
+from  WRK.dbo.wc_tdcj_CE_new  a 
    left outer join wrk.dbo.wc_5a_tdcj_obesity_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -187,7 +192,7 @@ select replace(str(a.FSCYR) + a.sex +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  TDCJ1620.dbo.AGG_ENRL_OFF_UNT_New   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_obesity_cohort b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 

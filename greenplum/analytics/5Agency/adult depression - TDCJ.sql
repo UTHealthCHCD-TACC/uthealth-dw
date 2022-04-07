@@ -1,5 +1,7 @@
 ---TDCJ Adult Depression					 
-					
+drop table if exists wrk.dbo.wc_5a_tdcj_depression_cohort	
+drop table if exists wrk.dbo.wc_5a_tdcj_depression_clms	
+
 ---free world		 
 select state_id, FSCYR 
 into wrk.dbo.wc_5a_tdcj_depression_clms	
@@ -111,7 +113,7 @@ from (
 --by region
 select replace(str(a.FSCYR) + case when region is null then 'U' else region end, ' ','' )  as nv, 
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_depression_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -132,7 +134,7 @@ select replace(str(a.FSCYR) + 'A' +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_depression_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -164,7 +166,7 @@ select replace(str(a.FSCYR) + a.sex +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_depression_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 

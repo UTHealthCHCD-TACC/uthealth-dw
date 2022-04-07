@@ -1,4 +1,6 @@
----TDCJ influenza vacc					 
+---TDCJ influenza vacc	
+
+drop table if exists wrk.dbo.wc_5a_tdcj_flu_clms;
 					
 ---free world		 
 select state_id, FSCYR 
@@ -39,15 +41,11 @@ insert into wrk.dbo.wc_5a_tdcj_flu_clms
 select state_id, FSCYR 
 from 
 (
-
-
-	select *--STATE_ID, FSCYR 
+	select STATE_ID, FSCYR 
 	from TDCJ1620.dbo.TTUMC_CLM_SID
 	where  CPT_Cd in ('90630','90654','90655','90655','90656','90657','90658','90658','90660','90661','90662','90672',
 '90672','90673','90674','90682','90685','90685','90686','90687','90688','90756','90756','90653',
 '90657','90658','90658','G0008','Q2034','Q2035','Q2036','Q2037','Q2038','Q2039','G8482')
-
-
 union 
 	select SID_NO, 2020 as FSCYR  
 	from TDCJ1620.dbo.TTUMC_CLM_SID_2020 
@@ -133,7 +131,7 @@ from (
 --by region
 select replace(str(a.FSCYR) + case when region is null then 'U' else region end, ' ','' )  as nv, 
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_flu_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -154,7 +152,7 @@ select replace(str(a.FSCYR) + 'A' +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_flu_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
@@ -186,7 +184,7 @@ select replace(str(a.FSCYR) + a.sex +
             when a.AGE_FSC between 65 and 74 then 6 
             else 7 end), ' ','' )  as nv,
        count(distinct a.sid_no) as unique_ce, count(distinct b.state_id) as numer
-from  WRK.dbo.wc_tdcj_CE   a 
+from  WRK.dbo.wc_tdcj_CE_new   a 
    left outer join wrk.dbo.wc_5a_tdcj_flu_cohort	 b  
     on b.state_id = a.sid_no 
    and b.fscyr = a.FSCYR 
