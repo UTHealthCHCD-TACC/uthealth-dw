@@ -17,9 +17,11 @@
 --------------- BEGIN SCRIPT -------
 
 
+--45min
 
-
-
+do $$ 
+begin 
+	
 -- Outpatient DX codes
 
 insert into dw_staging.claim_diag (data_source,  uth_member_id, uth_claim_id, claim_sequence_number,
@@ -45,7 +47,7 @@ from medicare_national.outpatient_revenue_center_k a
    and c.uth_claim_id = d.uth_claim_id 
    and d.claim_sequence_number = a.clm_line_num::numeric  
 ;
-;
+
 
 
 -- Bcarrier DX codes
@@ -205,6 +207,7 @@ from medicare_national.snf_revenue_center_k a
    and d.claim_sequence_number = a.clm_line_num::numeric
 ;
 
+end  $$
 
 --cleanup
 delete from dw_staging.claim_diag where diag_cd is null;

@@ -12,8 +12,12 @@
  * ******************************************************************************************************
  * */
 
+do $$ 
 
-
+begin 
+	
+	
+--10min
 create table dev.truven_detail_lines 
 with (appendonly=true, orientation=column, compresstype=zlib) as 
 select a.uth_claim_id, a.uth_member_id, a.claim_sequence_number_src, a.claim_sequence_number, b.member_id_src, b.claim_id_src
@@ -27,7 +31,8 @@ distributed by (member_id_src)
 
 analyze dev.truven_detail_lines;
 
--------------------------------- truven commercial outpatient --------------------------------------
+
+-------------------------------- truven commercial outpatient -------------------------------------- 22m
 insert into dw_staging.claim_diag ( data_source, 
                                     uth_member_id, 
                                     uth_claim_id, 
@@ -57,10 +62,9 @@ select  'truv',
 
 
 
-select count(*) from dw_staging.claim_diag cd where data_source = 'truv';
+
   
-  
--------------------------------- truven medicare outpatient -------------------------------------- 
+-------------------------------- truven medicare outpatient -------------------------------------- 4min
 insert into dw_staging.claim_diag ( data_source, 
                                     uth_member_id, 
                                     uth_claim_id, 
@@ -145,6 +149,7 @@ from truven.mdcrs a
     and b.claim_sequence_number_src = a.seqnum::text
 ;
 
+end $$
 
 
 

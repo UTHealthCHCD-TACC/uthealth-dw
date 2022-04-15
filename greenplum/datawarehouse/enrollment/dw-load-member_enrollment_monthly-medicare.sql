@@ -26,7 +26,8 @@
 
 ----  // BEGIN SCRIPT 
 
-
+do $$ 
+begin 
 
 -- *** Medicare  Texas--------------------------------------------------------------------------------------
 insert into dw_staging.member_enrollment_monthly (
@@ -216,6 +217,7 @@ from medicare_national.mbsf_abcd_summary m
 ;
 
 
-----/END SCRIPT
+end $$
+
 
 

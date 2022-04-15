@@ -44,6 +44,10 @@ end $$
 ;
 
 
+select * 
+from dw_Staging.claim_detail where data_source = 'truv';
+
+
 
 do $$ 
 
@@ -124,7 +128,7 @@ raise notice 'done';
 end $$
 ;
 
-------------- END SCRIPT 
+------------- END MAIN SCRIPT  CONTINUE FOR TRUVEN BILLTYPE ONLY IF UPDATING TRUVEN DATA  
 
 select * 
 from ( 
@@ -133,4 +137,75 @@ from dw_staging.claim_detail
 group by row_id 
 ) inr where cnt > 1 
 ;
+
+do $$ 
+
+begin 
+
+drop table if exists dev.wc_truv_billtype;
+
+create table dev.wc_truv_billtype 
+with (appendonly = true, orientation=column, compresstype = zlib) as 
+select distinct * from (
+	select substring(f.billtyp,1,1) as billtypeinst,
+	       substring(f.billtyp,2,1) as billtypeclass, 
+	       substring(f.billtyp,3,1) as billtypefreq, 
+	       c.uth_member_id,
+	       c.uth_claim_id, 
+	       rank() over ( partition by uth_claim_id
+	                           order by seqnum, svcdate
+	                      ) as seq_num
+	from truven.mdcrf f 
+	   join dev.truven_dim_uth_claim_id c
+	     on c.member_id_src = f.member_id_src 
+	    and c.claim_id_src = f.msclmid::text
+	    and c.data_year = f."year" 
+	union 
+	select substring(f.billtyp,1,1) as billtypeinst,
+	       substring(f.billtyp,2,1) as billtypeclass, 
+	       substring(f.billtyp,3,1) as billtypefreq, 
+	       c.uth_member_id,
+	       c.uth_claim_id, 
+	       rank() over ( partition by uth_claim_id
+	                           order by seqnum, svcdate 
+	                      ) as seq_num
+	from truven.ccaef f 
+	   join dev.truven_dim_uth_claim_id c
+	     on c.member_id_src = f.member_id_src 
+	    and c.claim_id_src = f.msclmid::text
+	    and c.data_year = f."year"
+) inr 
+distributed by (uth_member_id)
+;
+
+raise notice 'billtype created'; 
+
+analyze  dev.wc_truv_billtype;
+
+create table dev.wc_truv_billtype_dedupe 
+with (appendonly = true, orientation=column, compresstype = zlib) 
+as  ---- joe: added cte to get rid of duplicates
+		select max(billtypeinst) as billtypeinst,
+		 max(billtypeclass) as billtypeclass,
+		 max(billtypefreq) as billtypefreq,
+		uth_member_id, uth_claim_id, seq_num
+		from dev.wc_truv_billtype a
+		group by uth_member_id, uth_claim_id, seq_num
+distributed by (uth_member_id);
+
+--4minutes
+update dw_staging.claim_detail a 
+set bill_type_inst = billtypeinst, bill_type_class = billtypeclass, bill_type_freq = billtypefreq 
+from dev.wc_truv_billtype_dedupe  b 
+where a.uth_member_id = b.uth_member_id 
+  and a.uth_claim_id = b.uth_claim_id 
+  and a.claim_sequence_number = b.seq_num
+  and a.data_source = 'truv'
+;
+
+raise notice 'billtype loaded';
+
+drop table  dev.wc_truv_billtype;
+
+end $$;
 

@@ -29,7 +29,7 @@
 ----  // BEGIN SCRIPT 
 analyze dw_staging.member_enrollment_monthly;
 
-select count(*), data_source from dw_staging.member_enrollment_monthly group by data_source;
+select count(*), data_source, year from dw_staging.member_enrollment_monthly group by 2,3 order by 2,3;
 
 -- Truven Commercial ----------------------------------------------------------------------------
 -- 11/7/21 runtime 53min

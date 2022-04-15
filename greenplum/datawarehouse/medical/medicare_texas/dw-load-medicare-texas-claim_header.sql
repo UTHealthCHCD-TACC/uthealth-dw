@@ -20,23 +20,9 @@
 
 --------------- BEGIN SCRIPT -------
 
-/*  !! you should run this table build in the medicare national script since both are usually loaded together, 
- *     but if you are only doing medicare texas then adjust accordingly
- *  !!
- * 
----create a copy of production data warehouse table 
-drop table if exists dw_staging.claim_header;
+do $$
 
-create table dw_staging.claim_header 
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select *
-from data_warehouse.claim_header 
-where data_source not in ('mcrt','mcrt')
-distributed by (uth_member_id) 
-;
-
-vacuum analyze dw_staging.claim_header; 
-*/
+begin  
 
 --inpatient
 insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
@@ -186,13 +172,14 @@ from medicare_texas.snf_base_claims_k a
    and c.member_id_src = a.bene_id 
 ;
 
+end $$ 
+
 ---finalize
-vacuum analyze dw_staging.claim_header;
+analyze dw_staging.claim_header;
 
 --validate
 select data_source, year,  count(*)
 from dw_staging.claim_header 
-where data_source = 'mcrt'
 group by data_source, year
 order by data_source, year;
 
