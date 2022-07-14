@@ -17,7 +17,7 @@
  */
 
 
-
+--300 minutes
 do $$
 declare
 	month_counter integer := 1;
@@ -110,7 +110,9 @@ drop table if exists dw_staging.temp_member_enrollment_month;
 raise notice 'total_enrolled_months updated';
 
 end $$;
---fort worth rodeo 
+
+
+analyze dw_staging.member_enrollment_yearly;
 
 do $$
 declare
@@ -136,6 +138,8 @@ begin
 				 from dw_staging.member_enrollment_monthly
 				 group by 3, 4, 5;'
 		;
+	
+	    raise notice '1';
 		
 		execute 'create table dw_staging.final_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
@@ -145,7 +149,8 @@ begin
 				 distributed by(uth_member_id);'
 		;
 		
-		
+		raise notice '2';
+	
 		execute 'update dw_staging.member_enrollment_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
 				 where a.uth_member_id = b.uth_member_id
@@ -159,7 +164,6 @@ begin
 	
 	end loop;
 
-analyze dw_staging.member_enrollment_yearly;
 
 end $$;
 

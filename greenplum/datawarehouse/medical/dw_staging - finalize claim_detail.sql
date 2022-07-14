@@ -11,6 +11,8 @@
  *  ****************************************************************************************************** 
 */
 
+
+--37min
 do $$ 
 
 begin 
@@ -45,7 +47,7 @@ end $$
 
 
 select * 
-from dw_Staging.claim_detail where data_source = 'truv';
+from dw_Staging.claim_detail
 
 
 
@@ -109,6 +111,7 @@ from dw_staging.claim_detail
 ;
 
 
+drop table if exists dev.claim_seq_build;
 
 raise notice 'redistributing claim detail';
 

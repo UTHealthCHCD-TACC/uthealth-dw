@@ -9,8 +9,20 @@
  * ****************************************************************************************************** 
  * */
 
+
+create table dw_staging.truven_icd_proc_stage 
+with (appendonly=true, orientation=column) as 
+select * 
+from dw_staging.claim_icd_proc 
+limit 0 
+distributed by (uth_member_id)
+;
+
+delete from dw_staging.claim_icd_proc where data_source = 'truv'
+;
+
 -----commercial 
-insert into dw_staging.claim_icd_proc ( data_source, 
+insert into dw_staging.truven_icd_proc_stage ( data_source, 
                                         uth_member_id,	
                                         uth_claim_id,
 									    claim_sequence_number,
@@ -39,7 +51,7 @@ select * from
  
 
 ----med
-insert into dw_staging.claim_icd_proc ( data_source, 
+insert into dw_staging.truven_icd_proc_stage ( data_source, 
                                         uth_member_id,	
                                         uth_claim_id,
 									    claim_sequence_number,
@@ -66,36 +78,16 @@ from truven.mdcrf a
 ;     
 
 
+analyze dw_staging.truven_icd_proc_stage
 
+insert into dw_staging.claim_icd_proc 
+select distinct * 
+from dw_staging.truven_icd_proc_stage 
+;
 
-select * 
+analyze dw_staging.claim_icd_proc;
+
+select data_source, extract(year from from_date_of_service) as yr , count(*) 
 from dw_staging.claim_icd_proc 
-where data_source = 'truv'
-  and uth_claim_id = 36289087943;
-
- select * 
- from data_warehouse.dim_uth_claim_id b 
- where uth_claim_id = 36289087943;
-
-
- select  'truv', 
-	         b.uth_member_id, 
-	         b.uth_claim_id, 
-	         null as claim_sequence_number, 
-	         a.svcdate ,
-	         unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
-			 unnest(array[1,2,3,4,5,6]) as proc_pos,
-			 a.dxver
-	from truven.ccaef a
-	   join data_warehouse.dim_uth_claim_id b  
-	      on a.member_id_src = b.member_id_src 
-	     and b.claim_id_src = a.msclmid::text 
-	     and b.uth_claim_id = 36289087943
-
-	     
-	     select * 
-	     from data_warehouse.dim_uth_claim_id duci where uth_claim_id = 36289087943
-	     
-	     select * 
-	     from truven.ccaef where msclmid  = '637982668'
-	     and enrolid = 27258549101
+group by 1,2 order by 1,2 
+;

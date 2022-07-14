@@ -127,4 +127,7 @@ analyze dw_staging.claim_header ;
 --------------- END SCRIPT -------
 select count(*), data_source, year 
 from dw_staging.claim_header ch 
+where data_source like 'opt%'
 group by 2,3 order by 2,3;
+
+

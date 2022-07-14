@@ -163,20 +163,40 @@ from optum_zip.medical a
 	join reference_tables.ref_optum_cost_factor c
 		on c.service_type = left(a.tos_cd, (position('.' in a.tos_cd)-1))
 	   and c.standard_price_year = a.std_cost_yr::int
-	left outer join reference_tables.ref_optum_bill_type_from_tos e
-		on e.tos = a.tos_cd
 	left outer join optum_zip.confinement d
 	  on d.member_id_src = a.member_id_src
 	 and d.conf_id = a.conf_id
 ;
 
+
+
+
+
+
 --va
 analyze dw_staging.claim_detail;
-
 
 
 --------------- END SCRIPT -------
 
 select count(*), data_source, year
 from dw_staging.claim_detail cd
+where data_source like 'opt%'
 group by 2,3 order by 2,3;
+
+
+select count(*), year 
+from optum_dod.medical 
+group by 2 order by 2 
+;
+
+select count(*), year 
+from optum_zip.medical 
+group by 2 order by 2
+;
+
+
+select count(*), data_year 
+from dw_staging.optd_uth_claim_id
+group by 2 order by 2
+;

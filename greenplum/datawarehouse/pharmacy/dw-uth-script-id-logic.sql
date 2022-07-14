@@ -116,7 +116,7 @@ and a.fill_date=u.fill_date and a.refill_count is not distinct from u.refill_cou
 raise info '%: create dev.pharmacy_claims_0 ', clock_timestamp();
 
 --Get just the first/min records
---drop table dev.pharmacy_claims_0;
+--drop table aadev.pharmacy_claims_0;a
 create table dev.pharmacy_claims_0
 with(appendonly=true,orientation=column)
 as
@@ -142,8 +142,8 @@ raise info '%: update refill_count>0 to match above ', clock_timestamp();
 -- Update refill_count>0 to match above
 update dw_staging.pharmacy_claims b set uth_script_id=a.uth_script_id
 from dev.pharmacy_claims_0 as a
-where b.refill_count is not null
-and a.uth_member_id=b.uth_member_id and a.ndc=b.ndc 
+where a.uth_member_id=b.uth_member_id and a.ndc=b.ndc 
+and b.refill_count is not null
 and ((a.script_id is null and b.script_id is null) or (a.script_id=b.script_id)) 
 and b.refill_count>0 
 and a.fill_date = 

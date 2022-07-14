@@ -22,7 +22,7 @@ union
 ---2018 and 2019 only use BCBS and FSCRY
 	select id, FSCYR
 	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2020 
+	where a.FSCYR between 2018 and 2021 
 	  and ( 
 	          REPLACE(a.DiagnosisCode1,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
 	       or REPLACE(a.DiagnosisCode2,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
@@ -62,7 +62,7 @@ union
 ---2018 and 2019 only use BCBS and FSCRY
 	select id, FSCYR
 	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2020
+	where a.FSCYR between 2018 and 2021
 	  and ( a.HCPCSCPTCode in ('43770','43644','43645','43842','43843','43845','43846','43847','43659','S2082','S2085',
                         '43645','43771','43772','43774','43775','43848','43886','43887','43888')                        
 	       or REPLACE(a.DiagnosisCode1,'.','') in ('Z713','Z7189','V653')
@@ -82,87 +82,57 @@ union
 
 
 ---get counts for spreadsheet--------------------------------------------------------------------------
---validate 1 rec per mem per year 
-select count(*), count(distinct id), FSCYR 
-from TRSERS.dbo.ERS_AGG_YR 
-group by FSCYR order by FSCYR;
-
-select count(*), count(distinct id), FSCYR 
-from WRK.dbo.wc_ers_obese_cohort
-group by FSCYR order by FSCYR;
-
-select count(*), count(distinct id), FSCYR 
-from WRK.dbo.wc_ers_obese_counselling
-group by FSCYR order by FSCYR;
-
+----****RESULTS ***** 
 
 ---active vs cobra vs ret
 with dec_cohort as ( 
 	select distinct id, FSCYR 
 	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908','202008')
+	where yrmnth in ('201608','201708','201808','201908','202008','202108')
     )
 select replace( (str(a.FSCYR) +  stat), ' ','' ) as nv, count(distinct a.id) as denom, count(c.id) as numer 
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR
- --obesity
+ /*--obesity
   left outer join WRK.dbo.wc_ers_obese_cohort c
      on a.id = c.id 
      and a.FSCYR = c.fscyr 
-  /*--obesity counselling 
+  */   
+  --obesity counselling 
   join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_ers_obese_counselling c 
       on a.id = c.id 
      and a.FSCYR = c.fscyr
-     */
-where a.FSCYR between 2016 and 2020 
+where a.FSCYR between 2016 and 2021 
 group by a.FSCYR , stat 
-order by a.FSCYR , stat 
-;
-
-
-
+union 
 ---ee vs dep / active vs retiree
-with dec_cohort as ( 
-	select distinct id, FSCYR 
-	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908','202008')		
-    )
 select replace( (str(a.FSCYR) +  stat + case when typ = 'SELF' then 'E' when typ = 'DEP' then 'D' else 'X' end ), ' ','' ) as nv, 
        count(distinct a.id) as denom, count(c.id) as numer
 from TRSERS.dbo.ERS_AGG_YR a 
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
- --obesity
+ /*--obesity
   left outer join WRK.dbo.wc_ers_obese_cohort c
      on a.id = c.id 
      and a.FSCYR = c.fscyr 
-  /*--obesity counselling 
+  */   
+  --obesity counselling 
   join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_ers_obese_counselling c 
       on a.id = c.id 
      and a.FSCYR = c.fscyr
-     */
-where a.FSCYR between 2016 and 2020
+where a.FSCYR between 2016 and 2021
 group by a.FSCYR , typ, stat 
-order by a.FSCYR, stat, typ desc--, stat 
-;
-
-
-
+union 
 ---age group active vs retiree vs cobra 
-with dec_cohort as ( 
-	select distinct id, FSCYR 
-	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908','202008')		
-    )
 select replace( str(a.FSCYR) + stat + 
        case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
@@ -176,19 +146,19 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
- --obesity
+ /*--obesity
   left outer join WRK.dbo.wc_ers_obese_cohort c
      on a.id = c.id 
      and a.FSCYR = c.fscyr 
-  /*--obesity counselling 
+  */   
+  --obesity counselling 
   join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_ers_obese_counselling c 
       on a.id = c.id 
      and a.FSCYR = c.fscyr
-     */
-where a.FSCYR between 2016 and 2020
+where a.FSCYR between 2016 and 2021
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'
@@ -196,23 +166,8 @@ group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
        		when age between 55 and 64 then '5'
        		when age between 65 and 74 then '6'
        		when age >= 75 then '7' end
-order by  a.fscyr,  stat,    case when age between 0 and 19 then '1'
-            when age between 20 and 34 then '2' 
-       		when age between 35 and 44 then '3'
-       		when age between 45 and 54 then '4'
-       		when age between 55 and 64 then '5'
-       		when age between 65 and 74 then '6'
-       		when age >= 75 then '7' end
- ;
-
-
-
+union
 ---age group active vs retiree vs cobra / male vs female 
-with dec_cohort as ( 
-	select distinct id, FSCYR 
-	from TRSERS.dbo.ERS_AGG_YRMON 
-	where yrmnth in ('201608','201708','201808','201908','202008')		
-    )
 select replace( str(a.FSCYR) + gen + stat + 
        case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
@@ -226,27 +181,20 @@ from TRSERS.dbo.ERS_AGG_YR a
    join dec_cohort x 
      on x.id = a.ID 
     and x.fscyr = a.FSCYR 
- --obesity
+ /*--obesity
   left outer join WRK.dbo.wc_ers_obese_cohort c
      on a.id = c.id 
      and a.FSCYR = c.fscyr 
-  /*--obesity counselling 
+  */   
+  --obesity counselling 
   join WRK.dbo.wc_ers_obese_cohort b
      on a.id = b.id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_ers_obese_counselling c 
       on a.id = c.id 
      and a.FSCYR = c.fscyr
-     */
-where  a.FSCYR between 2016 and 2020 
+where  a.FSCYR between 2016 and 2021 
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
-            when age between 20 and 34 then '2' 
-       		when age between 35 and 44 then '3'
-       		when age between 45 and 54 then '4'
-       		when age between 55 and 64 then '5'
-       		when age between 65 and 74 then '6'
-       		when age >= 75 then '7' end
-order by  a.fscyr, a.gen, stat,    case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
        		when age between 35 and 44 then '3'
        		when age between 45 and 54 then '4'

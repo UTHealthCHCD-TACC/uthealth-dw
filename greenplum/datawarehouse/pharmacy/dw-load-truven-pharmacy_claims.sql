@@ -1,5 +1,16 @@
 
+update  truven.mdcrd set member_id_src = enrolid::text
+;
 
+analyze truven.ccaed;
+
+select count(*), year
+from truven.ccaed 
+where member_id_src is null 
+group by 2 order by 2 ;
+
+
+--19min
 do $$
 
 begin 

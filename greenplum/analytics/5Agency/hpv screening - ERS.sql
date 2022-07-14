@@ -12,7 +12,7 @@ from
 union 
 	select id, FSCYR , a.ClaimNumber 
 	from TRSERS.dbo.ERS_BCBSMedCLM a
-	where a.FSCYR between 2018 and 2020
+	where a.FSCYR between 2018 and 2021
  and a.HCPCSCPTCode in ('90649','90650','90651')
 ) inr 
 group by id, fscyr 
@@ -43,7 +43,7 @@ from TRSERS.dbo.ERS_AGG_YR a
       on a.id = c.id 
      and c.hpv_start <= a.FSCYR
      and cnt > 1
-where a.FSCYR between 2016 and 2020 
+where a.FSCYR between 2016 and 2021 
   and a.age = 13
   and a.enrlmnth = 12
 group by a.FSCYR , stat 
@@ -60,7 +60,7 @@ from TRSERS.dbo.ERS_AGG_YR a
       on a.id = c.id 
      and c.hpv_start <= a.FSCYR
      and cnt > 1      
-where a.FSCYR between 2016 and 2020
+where a.FSCYR between 2016 and 2021
   and a.age = 13
   and a.enrlmnth = 12 
 group by a.FSCYR , typ, stat 
@@ -84,7 +84,7 @@ from TRSERS.dbo.ERS_AGG_YR a
       on a.id = c.id 
       and c.hpv_start <= a.FSCYR
      and cnt > 1     
-where  a.FSCYR between 2016 and 2020
+where  a.FSCYR between 2016 and 2021
   and a.AGE = 13
   and enrlmnth = 12 
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
@@ -120,7 +120,7 @@ from TRSERS.dbo.ERS_AGG_YR a
       on a.id = c.id 
      and c.hpv_start <= a.FSCYR
      and cnt > 1      
-where  a.FSCYR between 2016 and 2020 
+where  a.FSCYR between 2016 and 2021 
   and a.AGE = 13
   and enrlmnth = 12 
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'

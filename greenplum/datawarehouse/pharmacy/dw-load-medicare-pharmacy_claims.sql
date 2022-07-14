@@ -13,15 +13,7 @@
 --------------- BEGIN SCRIPT -------
 
 ---create copy of data warehouse table in dw_staging 
-drop table if exists dw_staging.pharmacy_claims;
 
-create table dw_staging.pharmacy_claims
-with (appendonly=true, orientation=column, compresstype=zlib, compresslevel=5) as 
-select *
-from data_warehouse.pharmacy_claims
-where data_source not in ('mcrn','mcrt')
-distributed by (uth_member_id) 
-;
 
 vacuum analyze dw_staging.pharmacy_claims;
 

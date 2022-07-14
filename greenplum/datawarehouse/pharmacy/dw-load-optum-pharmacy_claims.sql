@@ -32,6 +32,8 @@ distributed by (member_id_src);
 
 analyze dw_staging.optd_uth_rx_claim;
 
+raise notice 'start optum dod';
+
 
 --optd  9m
 insert into dw_staging.pharmacy_claims (
@@ -113,7 +115,7 @@ from optum_dod.rx a
     and d.standard_price_year = a.std_cost_yr
  ;
 
-
+raise notice 'finish optum dod';
 
 ---******************************************************************************************************************
 ------ ***** Optum DoD - optd *****
@@ -129,7 +131,7 @@ distributed by (member_id_src);
 
 
 analyze dw_staging.optz_uth_rx_claim;
-
+raise notice 'start optum zip';
 
 --optz  9m
 insert into dw_staging.pharmacy_claims (
@@ -210,7 +212,7 @@ from optum_zip.rx a
      on d.service_type = 'PHARM'
     and d.standard_price_year = a.std_cost_yr
  ;
-
+raise notice 'finish optum zip';
 ---va
 analyze dw_staging.pharmacy_claims;
 
