@@ -1,29 +1,5 @@
 
---create provider
-drop table if exists dev.provider;
 
-CREATE TABLE dev.provider (
-	uth_provider_id bigserial NOT NULL,	
-	data_source bpchar(4) NULL,
-	provider_id_src text NOT null,
-	provider_id_src_2 text null,
-	npi varchar NULL,
-	taxonomy1 varchar NULL,
-	taxonomy2 varchar NULL,
-	spclty_cd1 varchar NULL,
-	spclty_cd2 varchar NULL,
-	provcat varchar null,
-	provider_type varchar NULL,
-	address1 varchar NULL,
-	address2 varchar NULL,
-	address3 varchar NULL,
-	city varchar NULL,
-	state varchar NULL,
-	zip varchar NULL,
-	zip_5 varchar NULL
-)
-WITH (appendonly=true, orientation=column)
-DISTRIBUTED BY (uth_provider_id);
 
 ------ provider optd
 insert into dev.provider (
@@ -77,7 +53,7 @@ and a.prov is not null
 --Optum ZIP
 ------------------------------------------------------------------------------------------
 
-insert into dev.provider (
+insert into data_warehouse.provider (
 data_source,
 provider_id_src,
 provider_id_src_2,
@@ -117,7 +93,7 @@ null as zip,
 null as zip_5
 from optum_zip.provider_bridge a
 join optum_zip.provider b on a.prov_unique = b.prov_unique 
-left join dev.provider c on c.provider_id_src = a.prov::text and data_source = 'optz'
+left join data_warehouse.provider  c on c.provider_id_src = a.prov::text and data_source = 'optz'
 where c.uth_provider_id is null 
 and a.prov is not null
 ;

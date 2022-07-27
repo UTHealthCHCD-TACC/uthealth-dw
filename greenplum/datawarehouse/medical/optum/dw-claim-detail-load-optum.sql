@@ -55,7 +55,8 @@ select 'optd', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
 					else a.lst_dt
 					end as lst_dt, 
        get_my_from_date(a.fst_dt) as month_year, a.pos,
-       null, null,
+       case when prov_par in ('C','P','T') then true else false end as network_ind, 
+       case when prov_par in ('C','P','T') then true else false end as network_paid_ind,
        d.admit_date, d.disch_date,
 			 case 
 		 		when d.dstatus = 'NA'
@@ -117,7 +118,8 @@ analyze dw_staging.optz_uth_claim_id;
 insert into dw_staging.claim_detail (
 		data_source, year, uth_member_id, uth_claim_id, claim_sequence_number,
        from_date_of_service, to_date_of_service, month_year_id, place_of_service,
-       network_ind, network_paid_ind,
+       network_ind, 
+       network_paid_ind,
        admit_date, discharge_date, discharge_status,
        cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, drg_cd,
        revenue_cd, charge_amount, allowed_amount, paid_amount,
@@ -134,7 +136,8 @@ select 'optz', extract(year from a.fst_dt) as year, b.uth_member_id, b.uth_claim
 					else a.lst_dt
 				end as lst_dt, 
        get_my_from_date(a.fst_dt) as month_year, a.pos,
-       null, null,
+       case when prov_par in ('C','P','T') then true else false end as network_ind, 
+       case when prov_par in ('C','P','T') then true else false end as network_paid_ind,
        d.admit_date, d.disch_date,
 			 case
 			 		when d.dstatus = 'NA'

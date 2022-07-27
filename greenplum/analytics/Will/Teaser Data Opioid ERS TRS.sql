@@ -420,3 +420,100 @@ union
 ) inr 
 order by data_source, measure asc
 ;
+
+
+
+--Average Days Per Script
+
+select uth_member_id, sum(days_supply) as days_supply  , count(distinct uth_script_id) as scripts
+into dev.wc_tease_avg_days
+from dev.wc_tease_opioid_details 
+group by uth_member_id 
+;
+
+
+select id, sum(DaysSupply) as days_supply, count(distinct script_id) as scripts 
+into wrk.dbo.wc_tease_avg_days
+from wrk.dbo.wc_trsers_opiod
+group by id 
+;
+
+
+with cohort_cte as ( 
+					select 'TRS' as data_source, combo_id , gen, enrlmnth, case when age between 0 and 19 then '1'
+							    when age between 20 and 34 then '2' 
+								when age between 35 and 44 then '3'
+								when age between 45 and 54 then '4'
+								when age between 55 and 64 then '5'
+								when age between 65 and 74 then '6'
+								when age >= 75 then '7' end as age_group 
+					from  TRSERS.dbo.TRS_AGG_CY 
+					where CY = 2019
+					  and AGE >= 18					  
+					union 
+					select 'ERS' as data_source, ID, gen, enrlmnth, case when age between 0 and 19 then '1'
+							    when age between 20 and 34 then '2' 
+								when age between 35 and 44 then '3'
+								when age between 45 and 54 then '4'
+								when age between 55 and 64 then '5'
+								when age between 65 and 74 then '6'
+								when age >= 75 then '7' end as age_group
+					from TRSERS.dbo.ERS_AGG_CY 
+					where CY = 2019
+					  and AGE >= 18
+                  ), 
+           measure_cte as ( 
+           	                 select * 
+           	                 from wrk.dbo.wc_tease_avg_days 	                
+                           )
+ select * 
+ from  
+ (           
+	select data_source, 
+		   'atotal' as measure,
+	       count(a.combo_id) as members, 
+	       sum(days_supply) / sum(cast(scripts as float)) as avg_days, 
+	       count(c.combo_id) as dep,
+	       count(d.combo_id) as u 
+	from cohort_cte a 
+	  join measure_cte b 
+	    on b.id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_dependence c 
+	    on c.combo_id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_use d 
+	    on d.combo_id = a.combo_id 
+	group by data_source 
+union 
+	select data_source, 
+		   gen,
+	       count(a.combo_id) as members, 
+	       sum(days_supply) / sum(cast(scripts as float)) as avg_days, 
+	       count(c.combo_id) as dep,
+	       count(d.combo_id) as u
+	from cohort_cte a 
+	  join measure_cte b 
+	    on b.id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_dependence c 
+	    on c.combo_id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_use d 
+	    on d.combo_id = a.combo_id 
+	group by data_source, gen 
+union 
+	select data_source, 
+		   age_group,
+	       count(a.combo_id) as members, 
+	       sum(days_supply) / sum(cast(scripts as float)) as avg_days, 
+	       count(c.combo_id) as dep,
+	       count(d.combo_id) as u
+	from cohort_cte a
+	  join measure_cte b 
+	    on b.id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_dependence c 
+	    on c.combo_id = a.combo_id 
+	  left outer join wrk.dbo.wc_teaser_use d 
+	    on d.combo_id = a.combo_id 
+	group by data_source , age_group 
+) inr 
+order by data_source, measure asc
+;
+

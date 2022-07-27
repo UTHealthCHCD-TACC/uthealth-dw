@@ -34,15 +34,14 @@ drop table if exists dev.wc_tease_opioid_details;
  ;
 
 
-----average day supply count
-
-select uth_script_id, sum(days_supply) as ds , uth_member_id
-into dev.wc_tease_avg_days
-from dev.wc_tease_opioid_details 
-group by uth_member_id , uth_script_id 
 
 
+alter table dev.wc_tease_opioid_details add column data_source char(4);
 
+update  dev.wc_tease_opioid_details a set data_source = b.data_source 
+from data_warehouse.dim_uth_member_id b 
+   where b.uth_member_id = a.uth_member_id 
+   ;
 
 
 ----
@@ -344,6 +343,7 @@ where data_source in ('mcrt','mdcd','optz','truv')
  select first_fill - 30, last_fill + 30, * 
  from dev.wc_tease_opioid_fills
  ;
+
  
  
  ---more than one script and condition within 30 days 
@@ -527,8 +527,6 @@ order by 1, 2, 4 desc
 ;	  
 
 
-
-
 ---Step Six Costs 
 with cohort_cte as ( select data_source, uth_member_id, gender_cd, 
 							case when age_derived between 0 and 19 then '1'
@@ -547,8 +545,8 @@ with cohort_cte as ( select data_source, uth_member_id, gender_cd,
 					 ),
 	 measure_cte as ( select  * 
 	 			      --from dev.wc_tease_30days
-	                  --from dev.wc_tease_multiple_scripts  
-	                  from dev.wc_tease_avg_days
+	                  from dev.wc_tease_multiple_scripts  
+	                  
 	                 )
 select * 
 from ( 
@@ -557,7 +555,7 @@ from (
 	       ,count(a.uth_member_id) as members
 	       --,sum(scripts) as unique_scripts
 	       --,sum(scripts) / count(a.uth_member_id) as avg_scripts
-	       ,sum(ds) / count(distinct b.uth_script_id) as days_per_script
+	       ,sum(days_supply) / sum(scripts) as days_per_script
 	       --,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
 	  from cohort_cte a 
 	     join measure_cte b
@@ -572,7 +570,7 @@ from (
 			  ,count(a.uth_member_id) as members
 	          --,sum(scripts) as unique_scripts
 	          --,sum(scripts) / count(a.uth_member_id) as avg_scripts
-	          ,sum(ds) / count(distinct b.uth_script_id) as days_per_script
+	          ,sum(days_supply) / sum(scripts) as days_per_script
 	          --,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
 	  from cohort_cte a 
 	     join measure_cte b
@@ -587,7 +585,7 @@ from (
 	         ,count(a.uth_member_id) as members
 	        -- ,sum(scripts) as unique_scripts
 	         --,sum(scripts) / count(a.uth_member_id) as avg_scripts
-	         ,sum(ds) / count(distinct b.uth_script_id) as days_per_script
+	         ,sum(days_supply) / sum(scripts) as days_per_script
 	        -- ,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
 	  from cohort_cte a 
 	     join measure_cte b
@@ -707,5 +705,85 @@ from (
 	        group by 1, 2
    ) inr 
  order by 1, 2 asc;
-  
+ 
+
+--avg avg_scripts 
+
+----average day supply count
+drop table if exists dev.wc_tease_avg_days;
+
+select uth_member_id, sum(days_supply) as days_supply  , count(distinct uth_script_id) as scripts
+into dev.wc_tease_avg_days
+from dev.wc_tease_opioid_details 
+group by uth_member_id 
+;
+
+select count(*), count(distinct uth_member_id)
+from dev.wc_tease_avg_days
+;
+
+select *
+from dev.wc_tease_avg_days 
+;
+
+---avg 
+with cohort_cte as ( select data_source, uth_member_id, gender_cd, 
+							case when age_derived between 0 and 19 then '1'
+							    when age_derived between 20 and 34 then '2' 
+								when age_derived between 35 and 44 then '3'
+								when age_derived between 45 and 54 then '4'
+								when age_derived between 55 and 64 then '5'
+								when age_derived between 65 and 74 then '6'
+								when age_derived >= 75 then '7' end as age_group, 
+					      total_enrolled_months 
+                     from data_warehouse.member_enrollment_yearly 
+                       where data_source in ('mcrt','mdcd', 'optz','truv')
+					    and "year" = 2019 
+					    and age_derived >= 18 
+					    and state = 'TX' and rx_coverage = 1
+					 ),
+	 measure_cte as ( select  * 
+	                  from dev.wc_tease_avg_days
+	                 )
+select * 
+from ( 
+	select a.data_source 
+	       ,'atotal' as measure
+	       ,count(a.uth_member_id) as members
+	       --,sum(scripts) as unique_scripts
+	       --,sum(scripts) / count(a.uth_member_id) as avg_scripts
+	       ,sum(days_supply) / sum(scripts) as days_per_script
+	       --,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
+	  from cohort_cte a 
+	     join measure_cte b
+	        on b.uth_member_id = a.uth_member_id 
+	  group by 1
+	--gender
+	union 
+	    select a.data_source 
+	          ,gender_cd as measure
+			  ,count(a.uth_member_id) as members
+	          --,sum(scripts) as unique_scripts
+	          --,sum(scripts) / count(a.uth_member_id) as avg_scripts
+	          ,sum(days_supply) / sum(scripts) as days_per_script
+	          --,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
+	  from cohort_cte a 
+	     join measure_cte b
+	        on b.uth_member_id = a.uth_member_id 
+	        group by 1, 2
+	union 
+	    select a.data_source 
+	         ,'Z' || age_group::text as measure
+	         ,count(a.uth_member_id) as members
+	        -- ,sum(scripts) as unique_scripts
+	         --,sum(scripts) / count(a.uth_member_id) as avg_scripts
+	         ,sum(days_supply) / sum(scripts) as days_per_script
+	        -- ,sum(charge) as total_charge, sum(allowed) as total_allowed, sum(paid) as total_paid 
+	  from cohort_cte a 
+	     join measure_cte b
+	        on b.uth_member_id = a.uth_member_id 
+	        group by 1, 2
+   ) inr 
+ order by 1, 2 asc;
+
   
