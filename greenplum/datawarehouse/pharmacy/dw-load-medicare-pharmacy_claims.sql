@@ -6,6 +6,8 @@
  * ******************************************************************************************************
  * ******************************************************************************************************
  *  wcc001  || 10/05/2021 || add comment block. migrate to dw_staging load 
+ * ******************************************************************************************************
+ * jw001 || 8/10/2022     || changed allowed amount and charge variables 
  * ****************************************************************************************************** 
  * */
 
@@ -69,7 +71,7 @@ select 'mcrt',
        qty_dspnsd_num::numeric,
        srvc_prvdr_id,
        rx_srvc_rfrnc_num,
-       tot_rx_cst_amt::numeric as charge, null as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
+       null as charge, tot_rx_cst_amt::numeric as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
        null, null, null, null, --	   deductible, copay, coins, cob,
        a.year::int2,
        null as cost_factor_year,
@@ -148,7 +150,7 @@ select 'mcrn',
        qty_dspnsd_num::numeric,
        srvc_prvdr_id,
        rx_srvc_rfrnc_num,
-       tot_rx_cst_amt::numeric as charge, null as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
+       null as charge, tot_rx_cst_amt::numeric as total_allowed_amount,  ptnt_pay_amt::numeric as paid,
        null, null, null, null, --	   deductible, copay, coins, cob,
        a.year::int2,
        null as cost_factor_year,
