@@ -92,11 +92,11 @@ select 'year' as test_var,
 	'' as notes
 from (
 	select sum(case
-				when year between 2007 and 2021
+				when year between 2007 and extract (year from current_date)
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when year not between 2007 and 2021
+					when year not between 2007 and extract (year from current_date)
 						or year is null
 						then 1
 					end), 0) as invalidvalues,
@@ -133,13 +133,17 @@ select 'total_enrolled_months' as test_var,
     '' as notes
 from (
     select sum(case
-                when total_enrolled_months = enrolled_jan + enrolled_feb + enrolled_mar + enrolled_apr + enrolled_may + enrolled_jun +
-enrolled_jul + enrolled_aug + enrolled_sep + enrolled_oct + enrolled_nov + enrolled_dec
+                when total_enrolled_months = enrolled_jan + enrolled_feb + 
+                enrolled_mar + enrolled_apr + enrolled_may + enrolled_jun +
+				enrolled_jul + enrolled_aug + enrolled_sep + enrolled_oct + 
+				enrolled_nov + enrolled_dec
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when total_enrolled_months != enrolled_jan + enrolled_feb + enrolled_mar + enrolled_apr + enrolled_may + enrolled_jun +
-enrolled_jul + enrolled_aug + enrolled_sep + enrolled_oct + enrolled_nov + enrolled_dec
+                    when total_enrolled_months != total_enrolled_months = enrolled_jan + enrolled_feb + 
+                enrolled_mar + enrolled_apr + enrolled_may + enrolled_jun +
+				enrolled_jul + enrolled_aug + enrolled_sep + enrolled_oct + 
+				enrolled_nov + enrolled_dec
                     then 1
                 end), 0) as invalidvalues,
         year,
@@ -217,11 +221,11 @@ select 'race_cd' as test_var,
 from (
     select sum(case
                 when (race_cd::int between 0 and 6 and race_cd is not null )
-                or ( race_cd is null and data_source = 'optz')
+                  or ( race_cd is null and data_source = 'optz')
                     then 1 
                 end) as validvalues,
         coalesce(sum(case
-                    when race_cd::int not between 0 and 6
+                       when race_cd::int not between 0 and 6
                         and race_cd is not null
                         then 1
                     end), 0) as invalidvalues,
@@ -357,9 +361,11 @@ drop table if exists dev.qa_temp_all_states;
         
 with state_table
 as (
-    select a.*, b.state as state_check
-    from dw_staging.member_enrollment_yearly a
-    left join dev.qa_temp_all_states b on a.state = b.state
+    select a.*, 
+    	   b.state as state_check
+      from dw_staging.member_enrollment_yearly a
+      left join dev.qa_temp_all_states b 
+        on a.state = b.state
     )
 insert into qa_reporting.yearly_enrollment_column_checks (
     test_var,
@@ -423,7 +429,7 @@ select 'zip5' as test_var,
 from (
     select sum(case
                 when ( zip5 ~ '^\d{5}$' and data_source in ('mcrn', 'mdcd', 'optz', 'mcrt'))
-                or (zip5 is null and data_source in ('truv', 'optd'))
+                   or (zip5 is null and data_source in ('truv', 'optd'))
                     then 1
                 end) as validvalues,
         coalesce(sum(case
@@ -463,12 +469,12 @@ select 'zip3' as test_var,
 from (
     select sum(case
                 when ( zip3 ~ '^\d{3}$' and data_source in ('mcrn', 'mdcd', 'optz', 'mcrt','truv'))
-                or (zip3 is null and data_source = 'optd')
+                  or (zip3 is null and data_source = 'optd')
                     then 1
                 end) as validvalues,
         coalesce(sum(case
                     when ( zip3 !~ '^\d{3}$' and data_source in ('mcrn', 'mdcd', 'optz', 'mcrt','truv'))
-                        or (zip3 is not null and data_source in ('optd'))
+                      or (zip3 is not null and data_source in ('optd'))
                         then 1
                     end), 0) as invalidvalues,
         year,
@@ -505,7 +511,7 @@ select 'death_date' as test_var,
 from (
     select sum(case
                 when (death_date between '1800-01-01' and '2050-01-01' and data_source in ('mcrn', 'mcrt', 'optd'))
-                or (death_date is null and data_source in ('optz', 'mdcd', 'truv'))
+                  or (death_date is null and data_source in ('optz', 'mdcd', 'truv'))
                     then 1
                 end) as validvalues,
         coalesce(sum(case
@@ -1154,11 +1160,12 @@ from (
 with ut_id_table
 as (
     select a.uth_member_id, 
-    				a."year", 
-    				a.data_source, 
-    				b.uth_member_id as dim_id
+			a."year", 
+			a.data_source, 
+			b.uth_member_id as dim_id
     from dw_staging.member_enrollment_yearly a
-    left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
+    left join data_warehouse.dim_uth_member_id b 
+      on a.uth_member_id = b.uth_member_id
     )
 insert into qa_reporting.yearly_enrollment_column_checks (
     test_var,
@@ -1245,7 +1252,10 @@ from (
     
 with ut_id_table
 as (
-    select a.uth_member_id, a."year", a.data_source, b.member_id_src as dim_id
+    select a.uth_member_id, 
+    	   a."year", 
+    	   a.data_source, 
+    	   b.member_id_src as dim_id
     from dw_staging.member_enrollment_yearly a
     join data_warehouse.dim_uth_member_id b 
         on a.uth_member_id = b.uth_member_id
@@ -1293,8 +1303,8 @@ group by data_source, year
 ------------------------------------
 
 	
-	-------------------not created yet 
 
+--- tbd
 
 	
 	
@@ -1367,12 +1377,57 @@ select 'fiscal_year' as test_var,
 	'' as note
 from (
 	select sum(case
-				when fiscal_year between 2007 and 2021
+				when fiscal_year between "year" - 1 and "year" + 1
 					then 1
 				end) as validvalues,
 		coalesce(sum(case
-					when fiscal_year not between 2007 and 2021
+					when fiscal_year not between "year" - 1 and "year" + 1
 						or fiscal_year is null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.member_enrollment_yearly
+    group by data_source, year
+	) a;
+
+
+
+
+
+
+-----------------------------------
+-----behavioral_coverage
+------------------------------------
+
+
+insert into qa_reporting.yearly_enrollment_column_checks (
+	test_var,
+	validvalues,
+	invalidvalues,
+	percent_invalid,
+	pass_threshold,
+	"year",
+	data_source,
+	note
+	)
+select 'behavioral_coverage' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select sum(case
+				when behavioral_coverage in ('0','1') and data_source = 'truv'
+				  or behavioral_coverage is null and data_source <> 'truv'
+					then 1
+				end) as validvalues,
+		coalesce(sum(case
+					when behavioral_coverage not in ('0','1') and data_source = 'truv'
+						or behavioral_coverage is not null and data_source <> 'truv'
 						then 1
 					end), 0) as invalidvalues,
 		year,

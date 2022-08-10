@@ -958,6 +958,9 @@ select bus_cd
 from dw_staging.member_enrollment_monthly 
 where data_source = 'truv'
 group by bus_cd ;
+
+
+
 -----------------------------------
 -----employee_status
 ------------------------------------
@@ -1039,56 +1042,46 @@ from (
 ------------------------------------
 
 	
-	-------------------not created yet 
-
 
 -----------------------------------
------row_identifier
+-----behavioral_coverage
 ------------------------------------
-/*
-	
+
+
 insert into qa_reporting.monthly_enrollment_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'row_identifier' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
+	test_var,
+	validvalues,
+	invalidvalues,
+	percent_invalid,
+	pass_threshold,
+	"year",
+	data_source,
+	note
+	)
+select 'behavioral_coverage' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
 from (
-    select sum(case
-                when pg_typeof(row_identifier)::text like 'bigint'
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when pg_typeof(row_identifier)::text not like 'bigint'
-                        or row_identifier is null
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.member_enrollment_monthly
+	select sum(case
+				when behavioral_coverage in ('0','1') and data_source = 'truv'
+				  or behavioral_coverage is null and data_source <> 'truv'
+					then 1
+				end) as validvalues,
+		coalesce(sum(case
+					when behavioral_coverage not in ('0','1') and data_source = 'truv'
+						or behavioral_coverage is not null and data_source <> 'truv'
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.member_enrollment_yearly
     group by data_source, year
-    ) a;	
-	
-	
-	
-	
-	
-	*/
-	
-	
-	
+	) a;
 	
 	
 	

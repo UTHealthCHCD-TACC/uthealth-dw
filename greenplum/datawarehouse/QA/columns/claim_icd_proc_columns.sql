@@ -65,50 +65,6 @@ from (
 		extract (year from from_date_of_service) 
 	) a;
 
-/*
-
-------------------------------------
---------year--------------
-------------------------------------
-
-insert into qa_reporting.claim_proc_column_checks (
-	test_var,
-	valid_values,
-	invalid_values,
-	percent_invalid,
-	pass_threshold,
-	"year",
-	data_source,
-	note
-	)
-select 'year' as test_var,
-	valid_values,
-	invalid_values,
-	invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-	((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-	year,
-	data_source,
-	'' as notes
-from (
-	select sum(case
-				when year between 2007 and 2021
-					then 1
-				end) as valid_values,
-		coalesce(sum(case
-					when year not between 2007 and 2021
-						or year is null
-						then 1
-					end), 0) as invalid_values,
-		year,
-		data_source
-	from dw_staging.claim_icd_proc 
-	group by data_source,
-		year
-	) a;
-
-*/
-
-
 
 ---------------------------------   
 -----uth_claim_id---------------
@@ -407,46 +363,4 @@ from (
     from dw_staging.claim_icd_proc
     group by data_source, extract (year from from_date_of_service) 
     ) a;
-
-   /*
------------------------------------
------fiscal_year------------------
------------------------------------
-insert into qa_reporting.claim_proc_column_checks (
-	test_var,
-	valid_values,
-	invalid_values,
-	percent_invalid,
-	pass_threshold,
-	"year",
-	data_source,
-	note
-	)
-select 'fiscal_year' as test_var,
-	valid_values,
-	invalid_values,
-	invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-	((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-	year,
-	data_source,
-	'' as note
-from (
-	select sum(case
-				when (fiscal_year between 2007 and 2021)
-				                        or fiscal_year is null
-					then 1
-				end) as valid_values,
-		coalesce(sum(case
-					when fiscal_year not between 2007 and 2021
-					and fiscal_year is not null
-						then 1
-					end), 0) as invalid_values,
-		year,
-		data_source
-	from dw_staging.claim_icd_proc 
-	group by data_source,
-		year
-	) a;
-
-*/
 

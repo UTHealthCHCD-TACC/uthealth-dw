@@ -1,10 +1,9 @@
-
 /*
  *
  *
 --------------------------------------------------------------------------------
 --********************************************----------------------------------
---------   dw_staging.claim_detail Column QA ------------------
+--------   dw_staging.pharmacy_claims Column QA ------------------
 --********************************************----------------------------------
 --------------------------------------------------------------------------------
 
@@ -14,27 +13,29 @@
 */
 
 
-drop table if exists qa_reporting.claim_detail_column_checks ;
+drop table if exists qa_reporting.pharmacy_column_checks ;
 
-create table qa_reporting.claim_detail_column_checks 
+create table qa_reporting.pharmacy_column_checks 
   ( 
-     test_var        UNKNOWN null, 
+     test_var        text null, 
      validvalues     INT8 null, 
      invalidvalues   INT8 null, 
      percent_invalid NUMERIC null, 
      pass_threshold  BOOL null, 
      "year"          INT2 null, 
-     data_source     BPCHAR(4) null, 
+     data_source     text null, 
      note            text null 
   )  ;
-
-
+  
+ 
+ ----
+ 
 ------------------------------------
 --------data source---------
 ------------------------------------
 
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -63,19 +64,16 @@ from (
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims 
     group by data_source, year
     ) a;
-
-
-
 
 ------------------------------------
 --------year--------------
 ------------------------------------
 
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -95,20 +93,19 @@ select 'year' as test_var,
     '' as notes
 from (
     select sum(case
-                when year between 2007 and 2021
+                when year between 2007 and extract( year from current_date)::int
                     then 1
                 end) as validvalues,
         coalesce(sum(case
-                    when year not between 2007 and 2021
+                    when year not between 2007 and extract( year from current_date)::int
                         or year is null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
-
 
 ---------------------------------   
 -----uth_claim_id---------------
@@ -116,28 +113,27 @@ from (
     
 with ut_claim_id_table
 as (
-    select a.uth_claim_id, a."year", a.data_source, b.uth_claim_id as dim_id
-    from dw_staging.claim_detail a
-    left join data_warehouse.dim_uth_claim_id b on a.uth_claim_id = b.uth_claim_id
+    select a.uth_rx_claim_id, a."year", 
+    	   a.data_source, b.uth_rx_claim_id as dim_id
+    from dw_staging.pharmacy_claims a
+    left join data_warehouse.dim_uth_rx_claim_id b on a.uth_rx_claim_id = b.uth_rx_claim_id
     )
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
     percent_invalid,
     pass_threshold,
     "year",
-    data_source,
-    note
+    data_source
     )
-select 'uth_claim_id' as test_var,
+select 'uth_rx_claim_id' as test_var,
     valid_values,
     invalid_values,
     invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
     ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
     year,
-    data_source,
-    'validate in data_warehouse.dim_uth_claim_id' as note
+    data_source
 from (
     select sum(case
                 when dim_id is not null
@@ -153,61 +149,19 @@ from (
 	group by data_source,
 		year
     ) a;
-
-
-------------------------------------
---------claim_sequence_number-------
-------------------------------------
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'claim_sequence_number' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as notes
-from (
-    select sum(case
-                when claim_sequence_number between 0 and 700
-                or claim_sequence_number is null
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when claim_sequence_number not between 0 and 1000
-                        and claim_sequence_number is not null
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-
-
-
----------------------------------   
+    
+   
+   ---------------------------------   
 -----uth_member_id---------------
 ---------------------------------
     
 with ut_id_table
 as (
     select a.uth_member_id, a."year", a.data_source, b.uth_member_id as dim_id
-    from dw_staging.claim_detail a
+    from dw_staging.pharmacy_claims  a
     left join data_warehouse.dim_uth_member_id b on a.uth_member_id = b.uth_member_id
     )
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -241,15 +195,51 @@ from (
 		year
     ) a;
 
-
-
+   ------------------------------
+   ----------fill_date
+   ------------------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'fill_date' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select coalesce(sum(case
+                when fill_date between '2007-01-01' and current_date
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when fill_date not between '2007-01-01' and current_date
+                        or fill_date is null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source, year
+    ) a;
     
+   
+   
+-----------------------------------
+-----ndc
 ------------------------------------
---------from_date_of_service--------------
-------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
+   
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -259,7 +249,7 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'from_date_of_service' as test_var,
+select 'ndc' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -268,27 +258,26 @@ select 'from_date_of_service' as test_var,
     data_source,
     '' as note
 from (
-    select coalesce(sum(case
-                when from_date_of_service between '2007-01-01' and current_date
+    select  coalesce(sum(case
+                when ndc ~ '^\d{11}$'
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
-                    when from_date_of_service not between '2007-01-01' and current_date
-                        or from_date_of_service is null
+                    when ndc !~ '^\d{11}$' and ndc is not null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims  
     group by data_source, year
     ) a;
-
+    
+   
+   -----------------------------------
+-----script_id
 ------------------------------------
---------to_date_of_service--------------
-------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
+   
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -298,7 +287,7 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'to_date_of_service' as test_var,
+select 'script_id' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -307,30 +296,64 @@ select 'to_date_of_service' as test_var,
     data_source,
     '' as note
 from (
-    select coalesce(sum(case
-                when to_date_of_service between '2007-01-01' and current_date
+    select  coalesce(sum(case
+                when script_id ~ '^[[:alnum:]]{0,12}$' 
+                  or script_id is null 
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
-                    when to_date_of_service not between '2007-01-01' and current_date
-                        or to_date_of_service is null
+                    when script_id !~ '^[[:alnum:]]{0,12}$'
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims  
     group by data_source, year
     ) a;
-
-
-
-
+    
+   -----------------------------------
+-----refill_count
 ------------------------------------
---------month_year_id--------------
+   
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'refill_count' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select  coalesce(sum(case
+                when refill_count between 0 and 999
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when refill_count between 0 and 999
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims  
+    group by data_source, year
+    ) a;
+    
+      -----------------------------------
+-----month_year_id
 ------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
+   
+   
+   insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -350,27 +373,25 @@ select 'month_year_id' as test_var,
     '' as note
 from (
     select coalesce (sum(case
-                when month_year_id between 200701 and 202112
+                when month_year_id between 200701 and (extract (year from current_date)::int::text || '12')::int
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
-                    when month_year_id not between 200701 and 202112
+                    when month_year_id not between 200701 and (extract (year from current_date)::int::text || '12')::int
                         or month_year_id is null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims 
     group by data_source, year
     ) a;
-
-
-
+    
 -----------------------------------
------place_of_service
+-----generic_ind
 ------------------------------------
-   
-insert into qa_reporting.claim_detail_column_checks (
+  
+      insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -380,7 +401,46 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'place_of_service' as test_var,
+select 'generic_ind' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select coalesce (sum(case
+                when generic_ind in ('0','1')
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when generic_ind not in ('0','1')
+                        or generic_ind is null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source, year
+    ) a;
+    
+   
+   -------------
+   ------- generic_name
+   -----------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'generic_name' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -390,37 +450,28 @@ select 'place_of_service' as test_var,
     '' as note
 from (
     select  coalesce(sum(case
-                when place_of_service ~ '^\d{1,2}$'
+                when generic_name ~ '^[[:alnum:]]{0,}$' 
+                  or generic_name is null 
                     then 1
                 end),0) as validvalues,
         coalesce(sum(case
-                    when place_of_service !~ '^\d{1,2}$' and place_of_service is not null
+                    when generic_name !~ '^[[:alnum:]]{0,}$'
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail 
+    from dw_staging.pharmacy_claims  
     group by data_source, year
     ) a;
-
------------------------------------
------network_ind
-------------------------------------
-
-
------------------------------------
------network_paid_ind
-------------------------------------
-
-
-
-
-------------------------------------
---------admit_date--------------
-------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
+    
+   
+   
+   
+   -------------
+   ------- brand_name
+   -----------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -430,38 +481,37 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'admit_date' as test_var,
+select 'brand_name' as test_var,
     validvalues,
     invalidvalues,
-    coalesce ((invalidvalues / (validvalues + invalidvalues)::numeric),0) as percent_invalid,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
     ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
     year,
     data_source,
-    'FYI medicaid values for admit will include enourmous amount of crazy dates' as note
+    '' as note
 from (
-    select coalesce(sum(case
-                when (admit_date between '2007-01-01' and current_date
-                and admit_date is not null) or admit_date is null 
+    select  coalesce(sum(case
+                when brand_name ~ '^.{0,50}$'
+                  or brand_name is null 
                     then 1
                 end),0) as validvalues,
-        coalesce (sum(case
-                    when admit_date not between '2007-01-01' and current_date
-                    and admit_date is not null
+        coalesce(sum(case
+                    when brand_name !~ '^.{0,50}$' and brand_name is not null
                         then 1
-                    end),0) as invalidvalues,
+                    end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims  
     group by data_source, year
     ) a;
-
-
-------------------------------------
---------discharge_date--------------
-------------------------------------
-
---delete from qa_reporting.claim_detail_column_checks where test_var = 'discharge_date';
-insert into qa_reporting.claim_detail_column_checks (
+    
+   
+   
+   -------------
+   ------- quantity
+   -----------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -471,7 +521,125 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'discharge_date' as test_var,
+select 'quantity' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select  coalesce(sum(case
+                when quantity between 0 and 100 
+                then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when quantity not between 0 and 100 
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims  
+    group by data_source, year
+    ) a;
+    
+     -------------
+   ------- provider_npi
+   -----------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'provider_npi' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select  coalesce(sum(case
+                when provider_npi ~ '^[[:alnum:]]{10}$' 
+                  or provider_npi is null 
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when provider_npi !~ '^[[:alnum:]]{10}$'
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims  
+    group by data_source, year
+    ) a;
+   
+   
+    -------------
+   ------- pharmacy_id
+   -----------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'pharmacy_id' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select  coalesce(sum(case
+                when pharmacy_id ~ '^[[:alnum:]]{9}$' 
+                  or pharmacy_id is null 
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when pharmacy_id !~ '^[[:alnum:]]{9}$' and pharmacy_id is not null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims  
+    group by data_source, year
+    ) a;
+   
+   
+    
+   
+   ------------------------------------
+--total_charge_amount
+------------------------------------
+
+
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'total_charge_amount' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -481,274 +649,23 @@ select 'discharge_date' as test_var,
     '' as note
 from (
     select coalesce(sum(case
-                when (discharge_date between '2007-01-01' and current_date
-                and discharge_date is not null) or discharge_date is null
-                    then 1
-                end),0) as validvalues,
-        coalesce(sum(case
-                    when discharge_date not between '2007-01-01' and current_date
-                        and discharge_date is not null
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-select count(*) from dw_staging.claim_detail where admit_date is not null; 
-
------------------------------------
------cpt_hcpcs
-------------------------------------
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'cpt_hcpcs_cd' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when cpt_hcpcs_cd ~ '^[[:alnum:]]{5,7}$'
-                and cpt_hcpcs_cd is not null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when (cpt_hcpcs_cd !~ '^[[:alnum:]]{5,7}$'
-                    and cpt_hcpcs_cd is not null)
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-	group by data_source,
-		year
-    ) a;
-
-
-
-
------------------------------------
------procedure_type
-------------------------------------
-   
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'procedure_type' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when procedure_type in ('CPT','HCPCS')
-                and procedure_type is not null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when procedure_type not in ('CPT','HCPCS')
-                    and procedure_type is not null            
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-	group by data_source,
-		year
-    ) a; 
-
-------------------------------------
---proc_mod_1
-------------------------------------
- insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'proc_mod_1' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when proc_mod_1 ~ '^[[:alnum:]]{2}$'
-                and proc_mod_1 is not null
-                or proc_mod_1 in ('',' ')
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when (proc_mod_1 !~ '^[[:alnum:]]{2}$'
-                    and proc_mod_1 is not null
-                    and proc_mod_1 not in ('',' '))
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-	group by data_source,
-		year
-    ) a;  
-   
-   
-   
-------------------------------------
---proc_mod_2
-------------------------------------
-
- insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'proc_mod_2' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when proc_mod_2 ~ '^[[:alnum:]]{2}$'
-                and proc_mod_2 is not null
-                or proc_mod_2 is null
-                or proc_mod_2 in ('', ' ')
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when (proc_mod_2 !~ '^[[:alnum:]]{2}$'
-                    and proc_mod_2 is not null and proc_mod_2 not in ('',' '))
-                        then 1
-                    end), 0) as invalid_values,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-	group by data_source,
-		year
-    ) a;  
-
-------------------------------------
---revenue_cd
-------------------------------------
-
-
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'revenue_cd' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when ( revenue_cd ~ '^\d{4}$' 
-                    and revenue_cd is not null ) or revenue_cd is null
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when revenue_cd !~ '^\d{4}$' 
-                    and revenue_cd is not null 
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-    group by data_source, year
-    ) a;   
-   
-------------------------------------
---charge_amount
-------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'charge_amount' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select coalesce(sum(case
-                when charge_amount < 1000000 or charge_amount is null then 1 end
+                when total_charge_amount < 1000000 or total_charge_amount is null then 1 end
                 ),0)  as validvalues,
         coalesce(sum(case
-                    when charge_amount > 1000000
+                    when total_charge_amount > 1000000
                         then 1
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
 
 ----------------
---allowed_amount
+--total_allowed_amount
 ----------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -758,7 +675,7 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'allowed_amount' as test_var,
+select 'total_allowed_amount' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -768,24 +685,24 @@ select 'allowed_amount' as test_var,
     '' as note
 from (
     select coalesce(sum(case
-                when allowed_amount < 1000000 or allowed_amount is null then 1 end
+                when total_allowed_amount < 1000000 or total_allowed_amount is null then 1 end
                 ),0)  as validvalues,
         coalesce(sum(case
-                    when allowed_amount > 1000000
+                    when total_allowed_amount > 1000000
                         then 1
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
 
 
 ------------------------------------
---paid_amount
+--total_paid_amount
 ------------------------------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -795,7 +712,7 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'paid_amount' as test_var,
+select 'total_paid_amount' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -805,73 +722,24 @@ select 'paid_amount' as test_var,
     '' as note
 from (
     select coalesce(sum(case
-                when paid_amount < 1000000 or paid_amount is null then 1 end
+                when total_paid_amount < 1000000 or total_paid_amount is null then 1 end
                 ),0)  as validvalues,
         coalesce(sum(case
-                    when paid_amount > 1000000
+                    when total_paid_amount > 1000000
                         then 1
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
-
-
-
-
-
-
-
-
-
-
-
-
-
-------------------------------------
---copay
-------------------------------------
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'copay' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select coalesce(sum(case
-                when copay < 50000 or copay is null then 1 end
-                ),0)  as validvalues,
-        coalesce(sum(case
-                    when copay > 50000
-                        then 1
-                    end), 0)  as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-
-------------------------------------
+    
+    ------------------------------------
 --deductible
 ------------------------------------
 --- could goto source values and see what those highest ones are 
    
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -899,7 +767,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
 
@@ -908,7 +776,7 @@ from (
 --coins
 ------------------------------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -936,7 +804,7 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
 
@@ -945,7 +813,7 @@ from (
 --cob
 ------------------------------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -973,328 +841,15 @@ from (
                     end), 0)  as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims
     group by data_source, year
     ) a;
-
-
-------------------------------------
---bill_type_inst
-------------------------------------
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'bill_type_inst' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when bill_type_inst ~ '^\d{1}$'
-                    or bill_type_inst is null then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when bill_type_inst !~ '^\d{1}$'
-                    and bill_type_inst is not null
-                    and bill_type_inst not in ('', ' ')
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-
-------------------------------------
---------bill_type_class---------
-------------------------------------
-
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'bill_type_class' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when bill_type_class ~ '^\d{1}$'
-                    or bill_type_class is null then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when bill_type_class !~ '^\d{1}$' 
-                    and bill_type_class is not null
-                    and bill_type_class  not in ('', ' ')
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-
-
-------------------------------------
---bill_type_freq
-------------------------------------
-
--- others
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'bill_type_freq' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when bill_type_freq ~ '^[a-zA-Z0-9]{1}$'
-                    or bill_type_freq is null then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when bill_type_freq !~ '^[a-zA-Z0-9]{1}$'
-                    and bill_type_freq is not null
-                    and bill_type_freq  not in ('', ' ')
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source, year
-    ) a;
-
-
-
-
-
-
-
-------------------------------------   
---units 
-------------------------------------   
-
-
---for optum we want to use alt units
-
-
-
-------------------------------------   
---drg_cd 
-------------------------------------
-
-
-
- insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'drg_cd' as test_var,
-    valid_values,
-    coalesce(invalid_values,0),
-    coalesce(invalid_values / (valid_values + invalid_values)::numeric,0) as percent_invalid,
-    (coalesce((invalid_values / (valid_values + invalid_values)::numeric),0) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select coalesce(sum(case
-                when drg_cd ~ '^[[:alnum:]]{3,4}$'
-                and drg_cd is not null
-                    then 1
-                end),0) as valid_values,
-        sum(case
-                    when (drg_cd !~ '^[[:alnum:]]{3,4}$'
-                    and drg_cd is not null
-                    and drg_cd not in ('', ' '))
-                        then 1
-                    end) as invalid_values,
-        year,
-        data_source
-    from dw_staging.claim_detail 
-	group by data_source,
-		year
-    ) a;  
-
-------------------------------------
---table_id_src
-------------------------------------   
-
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'table_id_src' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    "year",
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when table_id_src in (
-'dme_claims', 'inpatient_revenue_center', 'hospice_base_claims', 'outpatient_revenue_center', 
-'hha_revenue_center', 'snf_base_claims',  'snf_revenue_center', 'bcarrier_claims',  'bcarrier_line',
-'hospice_base_claims', 'hospice_revenue_center','enc_det', 'clm_detail', 
-'medical','ccaeo', 'mdcro', 'mdcrs', 'ccaes') or table_id_src is null
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when table_id_src not in (
-'dme_claims', 'inpatient_revenue_center', 'hospice_base_claims', 'outpatient_revenue_center', 
-'hha_revenue_center', 'snf_base_claims',  'snf_revenue_center', 'bcarrier_claims',  'bcarrier_line',
-'hospice_base_claims', 'hospice_revenue_center','enc_det', 'clm_detail', 
-'medical','ccaeo', 'mdcro', 'mdcrs', 'ccaes') and table_id_src is not null 
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source , year
-    ) a;
-
-   
-   
-   
-   
-------------------------------------   
---claim_sequence_number_src
-------------------------------------   
-
--------change to check for numbers 
-   
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'claim_sequence_number_src' as test_var,
-    valid_values,
-    invalid_values,
-    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
-    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as notes
-from (
-    select sum(case
-                when claim_sequence_number_src ~ '^[[:alnum:]]*$'
-                and claim_sequence_number_src is not null
-                    then 1
-                end) as valid_values,
-        coalesce(sum(case
-                    when (claim_sequence_number_src  !~ '^[[:alnum:]]*$'
-                        and claim_sequence_number_src is not null)
-                        or claim_sequence_number_src is null
-                        then 1
-                    end), 0) as invalid_values,
-        "year",
-        data_source
-    from dw_staging.claim_detail 
-    group by data_source, year
-    ) a;   
-   
-------------------------------------   
---cob_type
-------------------------------------
-/*
-insert into qa_reporting.claim_detail_column_checks (
-    test_var,
-    validvalues,
-    invalidvalues,
-    percent_invalid,
-    pass_threshold,
-    "year",
-    data_source,
-    note
-    )
-select 'cob_type' as test_var,
-    validvalues,
-    invalidvalues,
-    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
-    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
-    year,
-    data_source,
-    '' as note
-from (
-    select sum(case
-                when cob in ('C', 'A', 'N', 'Y', 'I') or cob_type is null
-                    then 1
-                end) as validvalues,
-        coalesce(sum(case
-                    when cob not in ('C', 'A', 'N', 'Y', 'I')
-                        then 1
-                    end), 0) as invalidvalues,
-        year,
-        data_source
-    from dw_staging.claim_detail
-    group by data_source , year
-    ) a;
-   
-   */
-
 
 -----------------------------------
 -----fiscal_year
 ------------------------------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -1324,18 +879,17 @@ from (
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from dw_staging.claim_detail 
+	from dw_staging.pharmacy_claims 
 	group by data_source,
 		year
 	) a;
-   
-  
-------------------------------------   
---cost_factor_year
+	
+
+-----------------------------------
+-----cost_factor_year
 ------------------------------------
 
-delete from qa_reporting.claim_detail_column_checks where test_var = 'cost_factor_year';
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -1354,27 +908,28 @@ select 'cost_factor_year' as test_var,
 	data_source,
 	'' as note
 from (
-	select sum(case
-				when (cost_factor_year between 2007 and 2021 and cost_factor_year is not null) or cost_factor_year is null
+	select coalesce (sum(case
+				when cost_factor_year between 2007 and extract( year from current_date )::int or cost_factor_year is null
 					then 1
-				end) as validvalues,
+				end),0) as validvalues,
 		coalesce(sum(case
-					when cost_factor_year not between 2007 and 2021
+					when cost_factor_year not between 2007  and extract( year from current_date )::int
 						and cost_factor_year is not null
 						then 1
 					end), 0) as invalidvalues,
 		year,
 		data_source
-	from dw_staging.claim_detail 
+	from dw_staging.pharmacy_claims 
 	group by data_source,
 		year
-	) a;   
-   
-------------------------------------
--- discharge_status
+	) a;
+	
+
+-----------------------------------
+-----therapeutic_class
 ------------------------------------
 
-insert into qa_reporting.claim_detail_column_checks (
+insert into qa_reporting.pharmacy_column_checks (
     test_var,
     validvalues,
     invalidvalues,
@@ -1384,7 +939,86 @@ insert into qa_reporting.claim_detail_column_checks (
     data_source,
     note
     )
-select 'discharge_status' as test_var,
+select 'therapeutic_class' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when therapeutic_class ~ '^\d{10}$'
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when therapeutic_class !~ '^\d{10}$'
+						and therapeutic_class is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+	
+
+-----------------------------------
+-----ahfs_class
+------------------------------------
+
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'ahfs_class' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when ahfs_class ~ '^\d{6}$'
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when ahfs_class !~ '^\d{6}$'
+						and ahfs_class is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+
+--------------
+-----first fill
+--------------
+	
+  insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'first_fill' as test_var,
     validvalues,
     invalidvalues,
     invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
@@ -1393,19 +1027,422 @@ select 'discharge_status' as test_var,
     data_source,
     '' as note
 from (
-    select sum(case
-                when (discharge_status ~ '^\d{2}$'
-                    and discharge_status is not null) or discharge_status is null then 1 
-                end) as validvalues,
+    select coalesce (sum(case
+                when first_fill in ('Y','N')
+                    then 1
+                end),0) as validvalues,
         coalesce(sum(case
-                    when discharge_status !~ '^\d{2}$' 
-                    and discharge_status is not null
-                    and discharge_status not in ('', ' ')
+                    when first_fill not in ('Y','N')
+                        or first_fill is null
                         then 1
                     end), 0) as invalidvalues,
         year,
         data_source
-    from dw_staging.claim_detail
+    from dw_staging.pharmacy_claims 
     group by data_source, year
     ) a;
+    
+   
+   ---------------
+   -----retail_or_mail_indicator
+   ---------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'retail_or_mail_indicator' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select coalesce (sum(case
+                when retail_or_mail_indicator in ('Y','N','U')
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when retail_or_mail_indicator not in ('Y','N','U')
+                        or retail_or_mail_indicator is null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source, year
+    ) a;
+   
+   -----------------------------------
+-----dispensed_as_written
+------------------------------------
 
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'dispensed_as_written' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when dispensed_as_written ~ '^[[:alnum:]]{2}$'
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when dispensed_as_written !~ '^[[:alnum:]]{2}$'
+						and dispensed_as_written is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+    
+   -----------------------------------
+-----dose
+------------------------------------
+
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'dose' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when dose ~ '^[[:alnum:]]{50}$'
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when dose !~ '^[[:alnum:]]{50}$'
+						and dose is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+    
+
+   -----------------------------------
+-----strength
+------------------------------------
+
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'strength' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when strength ~ '^.*$' or strength is null
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when strength !~ '^.*$'
+						and strength is not null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+
+
+---------------
+   -----formulary_ind
+   ---------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'formulary_ind' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select coalesce (sum(case
+                when formulary_ind in ('Y','N')
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when formulary_ind not in ('Y','N')
+                        or formulary_ind is null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source, year
+    ) a;
+    
+   
+   
+---------------
+   -----special_drug_ind
+   ---------------------
+   
+   insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'special_drug_ind' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select coalesce (sum(case
+                when special_drug_ind in ('Y','N')
+                    then 1
+                end),0) as validvalues,
+        coalesce(sum(case
+                    when special_drug_ind not in ('Y','N')
+                        or special_drug_ind is null
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source, year
+    ) a;
+    
+   
+-------------------
+---- rx_claim_id_src
+
+with ut_claim_id_table
+as (
+    select a.rx_claim_id_src, a."year", a.data_source, b.rx_claim_id_src as dim_id
+    from dw_staging.pharmacy_claims a
+    left join data_warehouse.dim_uth_rx_claim_id b on a.rx_claim_id_src = b.rx_claim_id_src 
+    )
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'rx_claim_id_src' as test_var,
+    valid_values,
+    invalid_values,
+    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
+    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select sum(case
+                when dim_id is not null
+                    then 1
+                end) as valid_values,
+        coalesce(sum(case
+                    when dim_id is null
+                        then 1
+                    end), 0) as invalid_values,
+        year,
+        data_source
+    from ut_claim_id_table
+	group by data_source,
+		year
+    ) a;
+   
+   
+   
+---------------------------------   
+-----uth_member_id_src---------------
+---------------------------------
+    
+with ut_id_table
+as (
+    select a.member_id_src, a."year", a.data_source, b.member_id_src as dim_id
+    from dw_staging.pharmacy_claims a
+    left join data_warehouse.dim_uth_member_id b on a.member_id_src = b.member_id_src
+    )
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'member_id_src' as test_var,
+    valid_values,
+    invalid_values,
+    invalid_values / (valid_values + invalid_values)::numeric as percent_invalid,
+    ((invalid_values / (valid_values + invalid_values)::numeric) < 0.01) as pass_threshold,
+    year,
+    data_source,
+    '' as note
+from (
+    select sum(case
+                when dim_id is not null
+                    then 1
+                end) as valid_values,
+        coalesce(sum(case
+                    when dim_id is null
+                        then 1
+                    end), 0) as invalid_values,
+        year,
+        data_source
+    from ut_id_table
+	group by data_source,
+		year
+    ) a;
+
+------------------------------------
+--table_id_src
+------------------------------------   
+
+insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'table_id_src' as test_var,
+    validvalues,
+    invalidvalues,
+    invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+    ((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+    "year",
+    data_source,
+    '' as note
+from (
+    select sum(case
+                when table_id_src in (
+				'chip','ffs','mco', 'pde_file','rx', 'mdcrd','ccaed'
+				)
+                    then 1
+                end) as validvalues,
+        coalesce(sum(case
+                    when table_id_src not in ('chip','ffs','mco', 'pde_file','rx', 'mdcrd','ccaed') 
+                    		or table_id_src is null 
+                        then 1
+                    end), 0) as invalidvalues,
+        year,
+        data_source
+    from dw_staging.pharmacy_claims 
+    group by data_source , year
+    ) a;
+   
+---------------------------------   
+-----uth_script_id---------------
+---------------------------------
+   
+  insert into qa_reporting.pharmacy_column_checks (
+    test_var,
+    validvalues,
+    invalidvalues,
+    percent_invalid,
+    pass_threshold,
+    "year",
+    data_source,
+    note
+    )
+select 'uth_script_id' as test_var,
+	validvalues,
+	invalidvalues,
+	invalidvalues / (validvalues + invalidvalues)::numeric as percent_invalid,
+	((invalidvalues / (validvalues + invalidvalues)::numeric) < 0.01) as pass_threshold,
+	year,
+	data_source,
+	'' as note
+from (
+	select coalesce (sum(case
+				when uth_script_id is not null
+					then 1
+				end),0) as validvalues,
+		coalesce(sum(case
+					when uth_script_id is  null
+						then 1
+					end), 0) as invalidvalues,
+		year,
+		data_source
+	from dw_staging.pharmacy_claims 
+	group by data_source,
+		year
+	) a;
+	

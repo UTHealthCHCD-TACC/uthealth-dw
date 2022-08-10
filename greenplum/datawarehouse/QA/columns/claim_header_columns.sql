@@ -470,7 +470,7 @@ from (
                 when total_paid_amount < 1000000 or total_paid_amount is null then 1 end
                 ),0)  as valid_values,
         coalesce(sum(case
-                    when total_paid_amount > 1000000
+                    when total_paid_amount > 1000000 and total_paid_amount is not null 
                         then 1
                     end), 0)  as invalid_values,
         year,
