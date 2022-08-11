@@ -10,6 +10,8 @@
  * ******************************************************************************************************
  * jwozny  || 11/09/2021 || added provider variables, removed old _src variables, pointed at dw_staging
  * ******************************************************************************************************
+ * jwozny  || 8/10/2022  || changed pos logic for claim_type in claim detail and changed encounter claim_type to tx_cd
+ * ******************************************************************************************************
  * */
 
 
@@ -33,7 +35,7 @@ insert into dw_staging.claim_header (
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
-       h.hdr_frm_dos::Date, case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
+       h.hdr_frm_dos::Date, case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, 
        dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
        h.hdr_to_dos::date,
@@ -59,11 +61,6 @@ select count(*) from medicaid.clm_header
 
 
 -----------encounters
-with cte_pos as ( 
-select max(pos) as pos, derv_enc  
-                  from medicaid.enc_det 
-                  group by derv_enc                                     
-) 
 insert into dw_staging.claim_header ( 
        data_source, "year", uth_claim_id, uth_member_id, uth_admission_id,
        from_date_of_service, claim_type, 
@@ -72,7 +69,9 @@ insert into dw_staging.claim_header (
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
 select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.frm_dos::Date, 
-       case when pos.pos <> '' then 'P' else 'F' end as claim_type, 
+       case when h.tx_cd = 'P' then 'P' 
+            when h.tx_cd = 'I' then 'F' 
+            else null end as claim_type, 
        h.tot_chrg_amt::float ,h.mco_pd_amt::float,     
        dev.fiscal_year_func(h.frm_dos::date) as fiscal_year,
       h.to_dos::date,
@@ -85,8 +84,6 @@ join medicaid.enc_proc p
       on p.derv_enc = claim_id_src 
      and p.mem_id = member_id_src 
      and c.data_source = 'mdcd' 
-   left outer join cte_pos pos 
-      on pos.derv_enc = h.derv_enc 
 ;   
 
 
