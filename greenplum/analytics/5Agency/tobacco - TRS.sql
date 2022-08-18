@@ -19,7 +19,7 @@ from (
 	        or replace(a.icd9_dx_cd_9,'.','') = d.diag_cd 
 	        or replace(a.icd9_dx_cd_10,'.','') = d.diag_cd 
 	        )
-		where a.MED_FSCYR between 2014 and 2020 	       
+		where a.MED_FSCYR between 2014 and 2021	       
 ) inrx;
 
 
@@ -45,7 +45,7 @@ select combo_ID, fscyr
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2014 and 2020	
+		where a.MED_FSCYR between 2014 and 2021
 		  and a.prcdr_cd  in ( '99406','99407','G0436','G0437','G9016','S9453','S4995','G9276','G9458',
 '1034F','4004F','4001F','G9906','G9907','G9908','G9909')	               
 ) inrx;
@@ -79,7 +79,7 @@ drop table if exists WRK.dbo.wc_TRS_tobacco_counselling_temp
 select combo_id, med_FSCYR as fscyr 
 into WRK.dbo.wc_TRS_tobacco_counselling_temp
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2020 
+		where a.MED_FSCYR between 2016 and 2021
 		 and (  replace(a.pri_icd9_dx_cd,'.','') = 'Z716'
 	        or replace(a.icd9_dx_cd_2,'.','') = 'Z716'
 	        or replace(a.icd9_dx_cd_3,'.','') = 'Z716'
@@ -140,11 +140,10 @@ from TRSERS.dbo.TRS_AGG_YR a
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
  --tobacco use 
-    /*
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR     
-     */ 
+     /* 
  --tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
@@ -152,6 +151,7 @@ from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
+     */
 where a.FSCYR between 2016 and 2021 
 group by a.FSCYR , stat 
 union 
@@ -162,12 +162,11 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
-  --tobacco use 
-    /*
+--tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR     
-     */ 
+     /* 
  --tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
@@ -175,6 +174,7 @@ from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
+     */
 where a.FSCYR between 2016 and 2021
 group by a.FSCYR , rel, stat 
 union
@@ -192,12 +192,11 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- --tobacco use 
-    /*
+--tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR     
-     */ 
+     /* 
  --tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
@@ -205,6 +204,7 @@ from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
+     */
 where a.FSCYR between 2016 and 2021
 group by  a.fscyr ,  stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 
@@ -228,12 +228,11 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
- --tobacco use 
-    /*
+--tobacco use 
   left outer join WRK.dbo.wc_TRS_tobacco_cohort c
      on c.combo_id = a.combo_id 
      and c.fscyr between a.FSCYR - 2 and a.FSCYR     
-     */ 
+     /* 
  --tobacco counselling
   join WRK.dbo.wc_TRS_tobacco_cohort b
      on b.combo_id = a.combo_id 
@@ -241,6 +240,7 @@ from TRSERS.dbo.TRS_AGG_YR a
   left outer join WRK.dbo.wc_TRS_tobacco_counselling c 
       on c.combo_id = a.combo_id 
      and c.fscyr = a.FSCYR   
+     */
 where  a.FSCYR between 2016 and 2021
 group by  a.fscyr , gen, stat,   case when age between 0 and 19 then '1'
             when age between 20 and 34 then '2' 

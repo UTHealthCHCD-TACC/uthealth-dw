@@ -17,7 +17,7 @@ from (
 	or replace(DX,'.','') like 'Z133%'	
 	UNION 
 	select SID_NO , FSCYR 
-	from TDCJ1620.dbo.FREEWRLD_20
+	from TDCJ1620.dbo.FREEWRLD_FY20_FY21
 	where [PROC_CD] in ('96127','G8431','G8510','G0444','G8433','G8940','90791','90792','99420','96160','96161')
 	or replace(DX1,'.','') like 'Z133%'	
 	or replace(DX2,'.','') like 'Z133%'

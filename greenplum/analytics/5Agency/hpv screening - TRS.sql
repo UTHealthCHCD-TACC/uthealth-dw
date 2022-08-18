@@ -6,7 +6,7 @@ from
 (
 	select a.combo_id, a.MED_FSCYR as fscyr, a.src_clm_id 
 	from trsers.dbo.TRS_CLM_FIN_NEW a
-	where a.MED_FSCYR between 2015 and 2020
+	where a.MED_FSCYR between 2015 and 2021
 	  and a.prcdr_cd in ('90649','90650','90651')
 	  
 ) inr 

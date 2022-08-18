@@ -140,7 +140,7 @@ select sum(aimm) aimm,
        sum(tbi) tbi, 
        sum(trans) trans,
        sum(trau) trau
-from conditions.conditions_member_enrollment_yearly 
+from data_warehouse.conditions_member_enrollment_yearly 
 ;
 
 

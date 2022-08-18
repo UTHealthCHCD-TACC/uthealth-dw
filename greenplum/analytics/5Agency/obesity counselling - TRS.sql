@@ -7,7 +7,7 @@ into WRK.dbo.wc_TRS_obese_cohort
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2020
+		where a.MED_FSCYR between 2016 and 2021
 	       and (   REPLACE(a.pri_icd9_dx_cd,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
 	       or REPLACE(a.icd9_dx_cd_2,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
 	       or REPLACE(a.icd9_dx_cd_3,'.','') in ('E660','E661','E662','E668','E669','27800','27801','V853','V8530','V8531','V8532','V8533','V8534','V8535','V8536','V8537','V8538','V8539','V854' )
@@ -60,7 +60,7 @@ into WRK.dbo.wc_TRS_obese_counselling
 from (
   select combo_id, med_FSCYR as fscyr 
 		from trsers.dbo.TRS_CLM_FIN_NEW a
-		where a.MED_FSCYR between 2016 and 2020 		
+		where a.MED_FSCYR between 2016 and 2021		
 	       and 
 	       (   REPLACE(a.pri_icd9_dx_cd,'.','') in ('Z713','Z7189','V653')
 	       or REPLACE(a.icd9_dx_cd_2,'.','') in ('Z713','Z7189','V653')
@@ -127,17 +127,17 @@ from TRSERS.dbo.TRS_AGG_YR a
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
   --obesity 
-  /*
     left outer  join WRK.dbo.wc_TRS_obese_cohort c
      on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr 
-  */--obesity and wt counsel
+  /*--obesity and wt counsel
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
+   */  
 where a.FSCYR between 2016 and 2021
 group by a.FSCYR , stat 
 union 
@@ -148,19 +148,18 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
-  --obesity
-    /*
+  --obesity 
     left outer  join WRK.dbo.wc_TRS_obese_cohort c
      on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr 
-  --obesity and wt counsel
-    */
+  /*--obesity and wt counsel
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
+   */  
 where a.FSCYR between 2016 and 2021
 group by a.FSCYR , rel, stat 
 union 
@@ -178,19 +177,18 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
-  --obesity
-    /*
+  --obesity 
     left outer  join WRK.dbo.wc_TRS_obese_cohort c
      on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr 
-  --obesity and wt counsel
-    */
+  /*--obesity and wt counsel
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
+   */  
 where a.FSCYR between 2016 and 2021
   and age between 0 and 125 
   and stat <> '' 
@@ -216,19 +214,18 @@ from TRSERS.dbo.TRS_AGG_YR a
    join dec_cohort x 
      on x.combo_id = a.combo_id 
     and x.fscyr = a.FSCYR 
-  --obesity
-    /*
+  --obesity 
     left outer  join WRK.dbo.wc_TRS_obese_cohort c
      on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr 
-  --obesity and wt counsel
-    */
+  /*--obesity and wt counsel
   join WRK.dbo.wc_TRS_obese_cohort b
      on a.combo_id = b.combo_id 
      and a.FSCYR = b.fscyr 
   left outer join WRK.dbo.wc_TRS_obese_counselling c 
       on a.combo_id = c.combo_id 
      and a.FSCYR = c.fscyr
+   */  
 where  a.FSCYR between 2016 and 2021
    and a.gen <> ''
    and age between 0 and 125

@@ -8,7 +8,7 @@ from
 (
 	select combo_id, ELIG_FSCYR 
 	from trsers.dbo.TRS_CLM_FIN_NEW a
-	where a.MED_FSCYR between 2016 and 2020
+	where a.MED_FSCYR between 2016 and 2021
 	  and ( 
 	         a.prcdr_cd in  ('90630','90654','90655','90655','90656','90657','90658','90658','90660','90661','90662','90672',
 '90672','90673','90674','90682','90685','90685','90686','90687','90688','90756','90756','90653',

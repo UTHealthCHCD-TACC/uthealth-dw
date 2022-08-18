@@ -1,18 +1,18 @@
---Annual Preventive Exam Aggregated 65 plus 2019
+--Annual Preventive Exam Aggregated 65 plus 2020
 
 
 ---optum and truven cohorts from DW
-drop table dev.wc_ape_65plus_2019;
+drop table dev.wc_ape_65plus_2020;
 
 --commercial
 select uth_member_id, 
        a.gender_cd, 
        a.zip3,
        data_source 
- into dev.wc_ape_65plus_2019
+ into dev.wc_ape_65plus_2020
 from data_warehouse.member_enrollment_yearly a
 where a.data_source in ('truv','optz')
-  and a.year = 2019
+  and a.year = 2020
   and a.bus_cd = 'COM'
   and a.state = 'TX'
   and a.age_derived >= 65
@@ -22,7 +22,7 @@ where a.data_source in ('truv','optz')
 ;
 
 ---medicare advantage
-insert  into dev.wc_ape_65plus_2019
+insert  into dev.wc_ape_65plus_2020
 select uth_member_id, 
        a.gender_cd, 
        a.zip3,
@@ -31,7 +31,7 @@ select uth_member_id,
        end as data_source 
 from data_warehouse.member_enrollment_yearly a
 where a.data_source in ('truv','optz')
-  and a.year = 2019
+  and a.year = 2020
   and a.bus_cd = 'MCR'
   and a.state = 'TX'
   and a.age_derived >= 65
@@ -42,7 +42,7 @@ where a.data_source in ('truv','optz')
 
 
 ---medicare texas 
-insert into dev.wc_ape_65plus_2019
+insert into dev.wc_ape_65plus_2020
 select a.uth_member_id, 
        a.gender_cd, 
        a.zip3,
@@ -54,7 +54,7 @@ from data_warehouse.member_enrollment_yearly a
    and b.bene_smi_cvrage_tot_mons > 0
    and b.year  = a.year  
 where a.data_source = 'mcrt'
-  and a.year = 2019 
+  and a.year = 2020 
   and a.state = 'TX'
   and a.age_derived >= 65
   and a.zip3 between '750' and '799'
@@ -64,7 +64,7 @@ where a.data_source = 'mcrt'
 
 
 ---medicaid 
-insert into dev.wc_ape_65plus_2019 
+--insert into dev.wc_ape_65plus_2020 
 select a.uth_member_id, 
        m.sex, 
        substring(m.zip3,1,3) as zip3, 
@@ -74,7 +74,7 @@ select a.uth_member_id,
        on a.data_source = 'mdcd' 
       and a.member_id_src = m.client_nbr
  where m.age >= 65
-   and m.enrl_cy = 2019
+   and m.enrl_cy = 2020
    and m.enrl_months = 12 
    and m.sex in ('M','F') 
    and m.zip3::int between 750 and 799 
@@ -82,44 +82,44 @@ select a.uth_member_id,
  
  
 --cleanup   
-delete from dev.wc_ape_65plus_2019 where zip3 = '771';
+delete from dev.wc_ape_65plus_2020 where zip3 = '771';
 
-delete from dev.wc_ape_65plus_2019 where length(zip3::text) = 2;
+delete from dev.wc_ape_65plus_2020 where length(zip3::text) = 2;
 
 
 
 ---
-drop table dev.wc_ape_65plus_2019_vacc;
+drop table dev.wc_ape_65plus_2020_vacc;
 
 select uth_member_id 
-into dev.wc_ape_65plus_2019_vacc_temp
+into dev.wc_ape_65plus_2020_vacc_temp
 from data_warehouse.claim_detail a
 where a.cpt_hcpcs_cd in ('99381','99382','99383','99384','99385','99386','99387',
 						 '99391','99392','99393','99394','99395','99396','99397',
 						 'S0610','S0612','S0615')
-      and a.year = 2019 
+      and a.year = 2020 
 ;
 
 
-insert into dev.wc_ape_65plus_2019_vacc_temp
+insert into dev.wc_ape_65plus_2020_vacc_temp
 select uth_member_id 
 from data_warehouse.claim_diag 
 where diag_cd in ('Z0000','Z0001','Z00110','Z00111','Z00121','Z00129','Z003','Z01411','Z01419',
 				  'V700','V700','V7231','V705','V703','V7284','V7285') 
-      and year = 2019 
+      and extract(year from from_date_of_service) = 2020 
 ;
 
 select distinct uth_member_id 
-into dev.wc_ape_65plus_2019_vacc
-from dev.wc_ape_65plus_2019_vacc_temp
+into dev.wc_ape_65plus_2020_vacc
+from dev.wc_ape_65plus_2020_vacc_temp
 ;
 
 
-alter table dev.wc_ape_65plus_2019 add column vacc_flag int2 default 0;
+alter table dev.wc_ape_65plus_2020 add column vacc_flag int2 default 0;
 
 
-update dev.wc_ape_65plus_2019 a set vacc_flag = 1
-  from dev.wc_ape_65plus_2019_vacc b 
+update dev.wc_ape_65plus_2020 a set vacc_flag = 1
+  from dev.wc_ape_65plus_2020_vacc b 
     where b.uth_member_id = a.uth_member_id
  ;
 
@@ -131,27 +131,27 @@ update dev.wc_ape_65plus_2019 a set vacc_flag = 1
 
 --prevalance - row 51  optz truv mdcd mdcr
 select ( sum(vacc_flag) / count(uth_member_id)::float ) as prev, count(uth_member_id), sum(vacc_flag), data_source
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 group by data_source
   order by data_source desc 
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag), data_source
-from dev.wc_ape_65plus_2019 a  
+from dev.wc_ape_65plus_2020 a  
 where a.gender_cd = 'F'
   group by data_source
   order by data_source desc 
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id), sum(vacc_flag), data_source
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where  a.gender_cd = 'M'
   group by data_source
     order by data_source desc 
 ;
 
 
-insert into dev.wc_ape_65plus_2019 values 
+insert into dev.wc_ape_65plus_2020 values 
 
 ----------------------------------------------------------------------------------------
 ---********************** Prevalance by ZIP **************************
@@ -161,14 +161,14 @@ insert into dev.wc_ape_65plus_2019 values
 
 ---truven COM
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'truv'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'truv'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -176,7 +176,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'truv'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -185,14 +185,14 @@ order by a.zip3
 
 ---truven MA
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'trma'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'trma'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -200,7 +200,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'trma'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -209,14 +209,14 @@ order by a.zip3
 
 ---optum COM
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'optz'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'optz'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -224,7 +224,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'optz'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -233,14 +233,14 @@ order by a.zip3
  
 ---optum MA
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'opma'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'opma'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -248,7 +248,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'opma'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -258,14 +258,14 @@ order by a.zip3
 
 ---medicaid
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'mdcd'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'mdcd'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -273,7 +273,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'mdcd'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -282,14 +282,14 @@ order by a.zip3
 
 ---medicare
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'mcrt'
 group by a.zip3 
 order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source =  'mcrt'
   and a.gender_cd = 'F'
   group by a.zip3 
@@ -297,7 +297,7 @@ order by a.zip3
 ;
 
 select ( sum(vacc_flag) / count(uth_member_id)::float )  as prev, count(uth_member_id) as mem
-from dev.wc_ape_65plus_2019 a 
+from dev.wc_ape_65plus_2020 a 
 where a.data_source = 'mcrt'
   and a.gender_cd = 'M'
   group by a.zip3 
@@ -308,7 +308,7 @@ order by a.zip3
 
 --- FILLER VALUES
 
-insert into dev.wc_ape_65plus_2019 values ('1','M','750','optz','0'),
+insert into dev.wc_ape_65plus_2020 values ('1','M','750','optz','0'),
 ('2','M','751','optz','0'),
 ('3','M','752','optz','0'),
 ('4','M','753','optz','0'),
