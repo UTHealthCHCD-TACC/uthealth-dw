@@ -15,8 +15,9 @@
  * ******************************************************************************************************
  *  wc001  || 11/12/2021 || consolidate to single script, add comments and raise notices
  * ******************************************************************************************************
+ *    jwozny  || 09/21/2022 || fixed payment variables
+ * ****************************************************************************************************** 
  * */
-
 
 
 do $$ 
@@ -67,9 +68,9 @@ select distinct on (uth_claim_id)
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
-	  null as total_charge_amount,
+	  sum(a.netpay) over (partition by b.uth_claim_id) as total_charge_amount,
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
-	  sum(a.netpay) over (partition by b.uth_claim_id) as paid_amt,
+	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	  null as cost_factor_year
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
@@ -112,9 +113,9 @@ select distinct on (uth_claim_id)
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
-	  null as total_charge_amount,
+	  sum(a.netpay) over (partition by b.uth_claim_id) as total_charge_amount,
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
-	  sum(a.netpay) over (partition by b.uth_claim_id) as paid_amt,
+	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	  null as cost_factor_year
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
@@ -157,9 +158,9 @@ select distinct on (uth_claim_id)
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
-	  null as total_charge_amount,
+	  sum(a.netpay) over (partition by b.uth_claim_id) as total_charge_amount,
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
-	  sum(a.netpay) over (partition by b.uth_claim_id) as paid_amt,
+	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	  null as cost_factor_year
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
@@ -203,9 +204,9 @@ select distinct on (uth_claim_id)
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
-	  null as total_charge_amount,
+	  sum(a.netpay) over (partition by b.uth_claim_id) as total_charge_amount,
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
-	  sum(a.netpay) over (partition by b.uth_claim_id) as paid_amt,
+	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
 	  null as cost_factor_year
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
