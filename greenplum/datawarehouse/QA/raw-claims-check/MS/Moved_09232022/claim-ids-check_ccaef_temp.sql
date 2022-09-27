@@ -35,12 +35,12 @@ claim_id_src will always join to source claim id, same with member_id_src for me
 --- join keys for truven are enrolid and msclmid
 
 select enrolid, msclmid 
-  from truven.ccaeo ;
+  from truven.ccaef ;
  
 --- example:
 
 select a.enrolid, b.uth_member_id, a.msclmid, b.uth_claim_id  
-  from truven.ccaeo a 
+  from truven.ccaef a 
  inner join data_warehouse.dim_uth_claim_id b  --- inner join keeps only 
     on a.enrolid::text = b.member_id_src ---- always join on both member and claim id
    and a.msclmid::text = b.claim_id_src  ---- you may need to change one of the ids to text, if you gives you an error about data types '::text' means take this column and make it into text 
@@ -61,14 +61,14 @@ select a.enrolid, b.uth_member_id, a.msclmid, b.uth_claim_id
 --- you create a where condition on the second table for where it is null... if the right column is null, it means that the keys for join were not found in 2nd table 
 
 select a.enrolid, b.uth_member_id, a.msclmid, b.uth_claim_id  
-  from truven.ccaeo a 
+  from truven.ccaef a 
   left outer join data_warehouse.dim_uth_claim_id b 
     on a.enrolid::text = b.member_id_src 
    and a.msclmid::text = b.claim_id_src  
    and b.uth_claim_id is null -- adding the null filter condition 
 ;
 /*
- * So now we have claims in ccaeo that do not exist in the DW 
+ * So now we have claims in ccaef that do not exist in the DW 
 |enrolid       |uth_member_id|msclmid    |uth_claim_id|
 |--------------|-------------|-----------|------------|
 |1,123,835,604 |             |759,979,666|            |
@@ -88,10 +88,10 @@ select a.enrolid, b.uth_member_id, a.msclmid, b.uth_claim_id
 
 
 ---Now we want to find counts - so as to assess if there are missing claims 
-explain analyze select count(distinct a.enrolid::text || msclmid)
-  from truven.ccaeo a 
+select count(distinct a.enrolid::text || msclmid)
+  from truven.ccaef a 
   left outer join data_warehouse.dim_uth_claim_id b 
-    on a.enrolid = b.member_id_src 
+    on a.enrolid::text = b.member_id_src 
    and a.msclmid::text = b.claim_id_src  
    and b.data_year = a."year" 
    and b.data_source = 'truv' 
@@ -109,6 +109,7 @@ create table qa_reporting.raw_claims_check(
 	total_raw int null,
 	count_found int null,
 	count_missing int null,
+	missing_raw_member_id int null,
 	pct_missing numeric null
 	);
 
@@ -117,7 +118,7 @@ create table qa_reporting.raw_claims_check(
 with getids as 
   (
 select distinct a."year", enrolid::text, msclmid, b.uth_member_id, b.uth_claim_id
-  from truven.ccaeo a 
+  from truven.ccaef a 
   left outer join data_warehouse.dim_uth_claim_id b 
     on a.enrolid::text = b.member_id_src 
    and a.msclmid::text = b.claim_id_src  
@@ -126,7 +127,7 @@ select distinct a."year", enrolid::text, msclmid, b.uth_member_id, b.uth_claim_i
    )
    insert into qa_reporting.raw_claims_check
   select 'truv' as data_source, 
-  		 'ccaeo' as raw_table,  
+  		 'ccaef' as raw_table,  
   		 "year" as data_year,
   		 count(*) as total_raw,
   		 count(*) filter (where uth_claim_id is not null) as count_found,
@@ -137,9 +138,11 @@ select distinct a."year", enrolid::text, msclmid, b.uth_member_id, b.uth_claim_i
   
   ------------ splitting it up into two steps took about 1/3 the time:
   ---- 1) get records with left join to capture missings ids in DW 
+  ----- drop table if exists dev.delete_temp_rawclaims;
+  
 select distinct a."year", enrolid::text, msclmid, b.uth_member_id, b.uth_claim_id
   into dev.delete_temp_rawclaims
-  from truven.ccaeo a 
+  from truven.ccaef a 
   left outer join data_warehouse.dim_uth_claim_id b 
     on a.enrolid::text = b.member_id_src 
    and a.msclmid::text = b.claim_id_src  
@@ -150,11 +153,12 @@ select distinct a."year", enrolid::text, msclmid, b.uth_member_id, b.uth_claim_i
 ---- 2) aggregate counts from temp table   
 insert into qa_reporting.raw_claims_check
    select 'truv' as data_source, 
-  		 'ccaeo' as raw_table,  
+  		 'ccaef' as raw_table,  
   		 "year" as data_year,
   		 count(*) as total_raw,
   		 count(*) filter (where uth_claim_id is not null) as count_found,
-  		 count(*) filter (where uth_claim_id is null) as count_missing
+  		 count(*) filter (where uth_claim_id is null) as count_missing,
+  		 count(*) filter (where enrolid is null) as missing_raw_member_id
     from  dev.delete_temp_rawclaims 
    group by "year" ;
    
