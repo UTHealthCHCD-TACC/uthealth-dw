@@ -20,6 +20,8 @@
  *    jwozny  || 12/23/2021 || added cte to get rid of duplicates in bottom bill type update script
  * ****************************************************************************************************** 
  *    jwozny  || 09/21/2022 || fixed payment variables
+ * ******************************************************************************************************
+ *    iperez  || 09/28/2022 || added claim id source and member id source to columns
  * ****************************************************************************************************** 
  * */
 
@@ -67,7 +69,9 @@ insert into dw_staging.claim_detail (
 	fiscal_year,
 	cost_factor_year,
 	table_id_src,
-	claim_sequence_number_src							   
+	claim_sequence_number_src,
+	claim_id_src,
+	member_id_src							   
 								)								   								   
 select  'truv',
 		b.data_year, 
@@ -109,7 +113,9 @@ select  'truv',
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
         'ccaeo', 
-        a.seqnum 
+        a.seqnum,
+		a.msclmid::text,
+		a.enrolid::text
 from truven.ccaeo a
   join dev.truven_dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
@@ -159,7 +165,9 @@ insert into dw_staging.claim_detail (
 	fiscal_year,
 	cost_factor_year,
 	table_id_src,
-	claim_sequence_number_src							   
+	claim_sequence_number_src,
+	claim_id_src,
+	member_id_src							   
 								)								   								   
 select  'truv',
 		b.data_year, 
@@ -197,7 +205,9 @@ select  'truv',
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
         'mdcro', 
-        a.seqnum 
+        a.seqnum,
+		a.msclmid::text,
+		a.enrolid::text
  from truven.mdcro a 
   join dev.truven_dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
@@ -251,7 +261,9 @@ insert into dw_staging.claim_detail (
 	fiscal_year,
 	cost_factor_year,
 	table_id_src,
-	claim_sequence_number_src							   
+	claim_sequence_number_src,
+	claim_id_src,
+	member_id_src							   
 								)								   								   
 select  'truv',
 		b.data_year, 
@@ -289,7 +301,9 @@ select  'truv',
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
         'ccaes', 
-        a.seqnum 
+        a.seqnum,
+		a.msclmid::text,
+		a.enrolid::text
   from truven.ccaes a 
   join dev.truven_dim_uth_claim_id b 
     on b.member_id_src = a.enrolid::text
@@ -345,7 +359,9 @@ insert into dw_staging.claim_detail (
 	fiscal_year,
 	cost_factor_year,
 	table_id_src,
-	claim_sequence_number_src							   
+	claim_sequence_number_src,
+	claim_id_src,
+	member_id_src							   
 								)								   								   
 select  'truv',
 		b.data_year, 
@@ -383,7 +399,9 @@ select  'truv',
         dev.fiscal_year_func(a.svcdate),
         null as cfy,
         'mdcrs', 
-        a.seqnum 
+        a.seqnum,
+		a.msclmid::text,
+		a.enrolid::text 
 from truven.mdcrs a 
   join dev.truven_dim_uth_claim_id  b
     on b.member_id_src = a.enrolid::text

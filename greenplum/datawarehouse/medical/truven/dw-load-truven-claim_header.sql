@@ -17,6 +17,8 @@
  * ******************************************************************************************************
  *    jwozny  || 09/21/2022 || fixed payment variables
  * ****************************************************************************************************** 
+ *  iperez  || 09/28/2022 || added claim id source and member id source to columns
+ * ******************************************************************************************************
  * */
 
 
@@ -56,7 +58,9 @@ insert into dw_staging.claim_header
 	total_allowed_amount, 
 	total_paid_amount, 
 	fiscal_year, 
-	cost_factor_year
+	cost_factor_year,
+	claim_id_src,
+	member_id_src
    -- ,bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
@@ -72,7 +76,9 @@ select distinct on (uth_claim_id)
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
 	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
-	  null as cost_factor_year
+	  null as cost_factor_year,
+	  a.msclmid::text,
+	  a.enrolid::text
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaeo a
 join dev.truven_dim_uth_claim_id b   --  join data_warehouse.dim_uth_claim_id b
@@ -101,7 +107,9 @@ insert into dw_staging.claim_header
 	total_allowed_amount, 
 	total_paid_amount, 
 	fiscal_year, 
-	cost_factor_year
+	cost_factor_year,
+	claim_id_src,
+	member_id_src
  -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
@@ -117,7 +125,9 @@ select distinct on (uth_claim_id)
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
 	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
-	  null as cost_factor_year
+	  null as cost_factor_year,
+	  a.msclmid::text,
+	  a.enrolid::text
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a
 join dev.truven_dim_uth_claim_id b --  join data_warehouse.dim_uth_claim_id b
@@ -146,7 +156,9 @@ insert into dw_staging.claim_header
 	total_allowed_amount, 
 	total_paid_amount, 
 	fiscal_year, 
-	cost_factor_year
+	cost_factor_year,
+	claim_id_src,
+	member_id_src
  -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
@@ -162,7 +174,9 @@ select distinct on (uth_claim_id)
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
 	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
-	  null as cost_factor_year
+	  null as cost_factor_year,
+	  a.msclmid::text,
+	  a.enrolid::text
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a
 join dev.truven_dim_uth_claim_id b--  join data_warehouse.dim_uth_claim_id b
@@ -192,7 +206,9 @@ insert into dw_staging.claim_header
 	total_allowed_amount, 
 	total_paid_amount, 
 	fiscal_year, 
-	cost_factor_year
+	cost_factor_year,
+	claim_id_src,
+	member_id_src
  -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
@@ -208,7 +224,9 @@ select distinct on (uth_claim_id)
 	  sum(a.pay) over (partition by b.uth_claim_id) as allowed_amt,
 	  null as paid_amt,
 	  dev.fiscal_year_func(a.svcdate) as fiscal_year,
-	  null as cost_factor_year
+	  null as cost_factor_year,
+	  a.msclmid::text,
+	  a.enrolid::text
  -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcrs a
 join dev.truven_dim_uth_claim_id b	--  join data_warehouse.dim_uth_claim_id b
