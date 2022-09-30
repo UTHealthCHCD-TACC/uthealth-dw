@@ -9,6 +9,8 @@
  * ****************************************************************************************************** 
  *  iperez  || 09/28/2022 || added claim id source and member id source to columns
  * ******************************************************************************************************
+ *  iperez  || 09/30/2022 || removed claim id source and member id source to columns
+ * ******************************************************************************************************
  * */
 
 
@@ -31,9 +33,7 @@ insert into dw_staging.truven_icd_proc_stage ( data_source,
 										from_date_of_service,
 										proc_cd,
 										proc_position,
-										icd_version,
-										claim_id_src,
-										member_id_src 
+										icd_version
 									   )								
 select * from 
 	(        select  'truv', 
@@ -43,9 +43,7 @@ select * from
 	         a.svcdate ,
 	         unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
 			 unnest(array[1,2,3,4,5,6]) as proc_pos,
-			 a.dxver,
-			 a.msclmid::text,
-	  		 a.enrolid::text
+			 a.dxver
 	from truven.ccaef a
 	   join data_warehouse.dim_uth_claim_id b  
 	      on a.member_id_src = b.member_id_src 
@@ -64,9 +62,7 @@ insert into dw_staging.truven_icd_proc_stage ( data_source,
 										from_date_of_service,
 										proc_cd,
 										proc_position,
-										icd_version,
-										claim_id_src,
-										member_id_src
+										icd_version
 									   )									   
 select * from 
 	(  select  'truv', 
@@ -76,9 +72,7 @@ select * from
          a.svcdate ,
          unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
 		 unnest(array[1,2,3,4,5,6]) as proc_pos,
-		 a.dxver,
-		 a.msclmid::text,
-	  	 a.enrolid::text
+		 a.dxver
 from truven.mdcrf a
    join data_warehouse.dim_uth_claim_id b  
       on a.member_id_src = b.member_id_src 

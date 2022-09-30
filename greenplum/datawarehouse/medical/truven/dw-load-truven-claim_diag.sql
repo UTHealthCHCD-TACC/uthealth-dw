@@ -11,7 +11,9 @@
  *  jwozny  || 1/03/2022  || removed icd_type, year, fiscal_year 
  * ******************************************************************************************************
  *  iperez  || 09/28/2022 || added claim id source and member id source to columns
- * ****************************************************************************************************** 
+ * ******************************************************************************************************
+ *  iperez  || 09/30/2022 || removed claim id source and member id source to columns
+ * ******************************************************************************************************
  * */
 
 do $$ 
@@ -43,9 +45,7 @@ insert into dw_staging.claim_diag ( data_source,
                                     diag_cd, 
                                     diag_position, 
                                     poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src 
+                                    icd_version
                                      )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -55,9 +55,7 @@ select  'truv',
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
          null,
-         a.dxver,
-         a.msclmid::text,
-         a.enrolid::text 
+         a.dxver 
    from truven.ccaeo a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -79,9 +77,7 @@ insert into dw_staging.claim_diag ( data_source,
                                     diag_cd, 
                                     diag_position, 
                                     poa_src, 
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src
+                                    icd_version
 )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -91,9 +87,7 @@ select  'truv',
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4]) as dx_pos,
          null,
-         a.dxver,
-         a.msclmid::text,
-         a.enrolid::text 
+         a.dxver
 from truven.mdcro a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -113,9 +107,7 @@ insert into dw_staging.claim_diag ( data_source,
                                     diag_cd, 
                                     diag_position, 
                                     poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src
+                                    icd_version
                                     )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -125,9 +117,7 @@ select  'truv',
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
          null,
-         a.dxver,
-         a.msclmid::text,
-         a.enrolid::text
+         a.dxver
    from truven.ccaes a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src
@@ -145,9 +135,7 @@ insert into dw_staging.claim_diag ( data_source,
                                     diag_cd, 
                                     diag_position,
                                     poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src 
+                                    icd_version
                                     )  								        						              
 select  'truv', 
          b.uth_member_id, 
@@ -157,9 +145,7 @@ select  'truv',
 	     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 		 unnest(array[1,2,3,4,5]) as dx_pos,
          null,
-         a.dxver,
-         a.msclmid::text,
-         a.enrolid::text 
+         a.dxver
 from truven.mdcrs a 
    join dev.truven_detail_lines  b 
      on b.member_id_src = a.member_id_src

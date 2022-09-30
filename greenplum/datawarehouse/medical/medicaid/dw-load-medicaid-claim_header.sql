@@ -12,6 +12,8 @@
  * ******************************************************************************************************
  * jwozny  || 8/10/2022  || changed pos logic for claim_type in claim detail and changed encounter claim_type to tx_cd
  * ******************************************************************************************************
+ *  iperez || 09/30/2022 || added claim id source and member id source to columns
+ * ******************************************************************************************************
  * */
 
 
@@ -33,14 +35,17 @@ insert into dw_staging.claim_header (
        from_date_of_service, claim_type, 
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
-       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
+       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+       claim_id_src, member_id_src)		
 select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.hdr_frm_dos::Date, case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, 
        dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
        h.hdr_to_dos::date,
        h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
-       null as perf_rn_provider, h.atd_prov_npi as perf_at_provider, null as perf_op_provider
+       null as perf_rn_provider, h.atd_prov_npi as perf_at_provider, null as perf_op_provider,
+       p.icn as claim_id_src,
+       p.pcn as member_id_src
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
       on h.icn  = p.icn 
@@ -66,7 +71,8 @@ insert into dw_staging.claim_header (
        from_date_of_service, claim_type, 
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
-       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
+       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+       claim_id_src, member_id_src)		
 select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.frm_dos::Date, 
        case when h.tx_cd = 'P' then 'P' 
@@ -76,7 +82,9 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
        dev.fiscal_year_func(h.frm_dos::date) as fiscal_year,
       h.to_dos::date,
       h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
-      null as perf_rn_provider, h.attd_phy_npi as perf_at_provider, null as perf_op_provider
+      null as perf_rn_provider, h.attd_phy_npi as perf_at_provider, null as perf_op_provider,
+      p.derv_enc as claim_id_src,
+      p.mem_id as member_id_src
   from medicaid.enc_header h  
 join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       
