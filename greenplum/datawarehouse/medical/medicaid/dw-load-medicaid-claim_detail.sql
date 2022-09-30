@@ -19,6 +19,8 @@
  * **********************************************************************************************
  *  jwozny || 02/18/2022  || added table_id_src values
  * **********************************************************************************************
+ *  iperez  || 09/30/2022 || added claim id source and member id source to columns
+ * ******************************************************************************************************
 */
 
 
@@ -39,7 +41,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      units, drg_cd,  claim_sequence_number_src,
                                      fiscal_year, cost_factor_year, discharge_status,
                                      bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-                                     table_id_src
+                                     table_id_src,
+                                     claim_id_src,
+                                     member_id_src
                                      )
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id,
        a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos),
@@ -67,7 +71,9 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        dev.fiscal_year_func(a.from_dos),   null, d.pat_stat_cd,
        null as bill_provider, a.ref_prov_npi as ref_provider, null as other_provider,
        a.perf_prov_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider,
-       'clm'
+       'clm',
+       b.icn as claim_id_src,
+       b.pcn as member_id_src
 from medicaid.clm_detail a
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -98,7 +104,9 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      units, drg_cd, claim_sequence_number_src,
                                      fiscal_year, cost_factor_year, discharge_status,
                                      bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-                                     table_id_src
+                                     table_id_src,
+                                     claim_id_src,
+                                     member_id_src
                                      )
 select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id,
        a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
@@ -116,7 +124,9 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        dev.fiscal_year_func(a.fdos_dt::date), null, d.pat_stat,
        null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider,
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider,
-       'enc'
+       'enc',
+       b.derv_enc as claim_id_src,
+       b.mem_id as member_id_src
 from medicaid.enc_det a
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc
