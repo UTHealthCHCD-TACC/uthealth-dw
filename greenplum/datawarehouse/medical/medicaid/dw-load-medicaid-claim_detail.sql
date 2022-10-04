@@ -43,7 +43,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
                                      table_id_src,
                                      claim_id_src,
-                                     member_id_src
+                                     member_id_src,
+                                     load_date
                                      )
 select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id,
        a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos),
@@ -68,12 +69,13 @@ select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.ut
        null, null, null, null,
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),
        null, b.drg, a.clm_dtl_nbr,
-       dev.fiscal_year_func(a.from_dos),   null, d.pat_stat_cd,
+       dev.fiscal_year_func(a.from_dos), null, d.pat_stat_cd,
        null as bill_provider, a.ref_prov_npi as ref_provider, null as other_provider,
        a.perf_prov_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider,
-       'clm',
+       'clm_detail',
        b.icn as claim_id_src,
-       b.pcn as member_id_src
+       b.pcn as member_id_src,
+       current_date as load_date  
 from medicaid.clm_detail a
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -106,7 +108,8 @@ insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_seq
                                      bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
                                      table_id_src,
                                      claim_id_src,
-                                     member_id_src
+                                     member_id_src,
+                                     load_date
                                      )
 select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id,
        a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
@@ -117,16 +120,17 @@ select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_m
        case when isdigit(rev_cd) is false then null
             when length(rev_cd) > 4 then null
             else lpad(rev_cd,4,'0') end as revenue_code,
-       a.sub_chrg_amt::numeric, null, a.dt_pd_amt::numeric,
+       a.sub_chrg_amt::numeric, a.dt_pd_amt::numeric, null AS paid_amount,
        null, null, null, null,
        substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),
        a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
        dev.fiscal_year_func(a.fdos_dt::date), null, d.pat_stat,
        null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider,
        a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider,
-       'enc',
+       'enc_det',
        b.derv_enc as claim_id_src,
-       b.mem_id as member_id_src
+       b.mem_id as member_id_src,
+       current_date as load_date 
 from medicaid.enc_det a
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc

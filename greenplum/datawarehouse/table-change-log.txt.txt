@@ -1,0 +1,6 @@
+10-03-2022
+
+Added provider type column to claim_detail and claim_header
+
+alter table data_warehouse.claim_detail add column provider_type text;
+alter table data_warehouse.claim_header add column provider_type text;
