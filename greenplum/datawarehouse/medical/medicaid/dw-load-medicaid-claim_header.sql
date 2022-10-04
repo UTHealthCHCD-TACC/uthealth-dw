@@ -36,7 +36,7 @@ insert into dw_staging.claim_header (
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       claim_id_src, member_id_src)		
+       table_id_src, claim_id_src, member_id_src, load_date)		
 select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.hdr_frm_dos::Date, case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, 
@@ -44,8 +44,10 @@ select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_i
        h.hdr_to_dos::date,
        h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
        null as perf_rn_provider, h.atd_prov_npi as perf_at_provider, null as perf_op_provider,
+       'clm_header' AS table_id_src,
        p.icn as claim_id_src,
-       p.pcn as member_id_src
+       p.pcn as member_id_src,
+       current_date as load_date 
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
       on h.icn  = p.icn 
@@ -72,7 +74,7 @@ insert into dw_staging.claim_header (
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       claim_id_src, member_id_src)		
+       table_id_src, claim_id_src, member_id_src, load_date)
 select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.frm_dos::Date, 
        case when h.tx_cd = 'P' then 'P' 
@@ -83,8 +85,10 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
       h.to_dos::date,
       h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
       null as perf_rn_provider, h.attd_phy_npi as perf_at_provider, null as perf_op_provider,
+      'enc_header' AS table_id_src,
       p.derv_enc as claim_id_src,
-      p.mem_id as member_id_src
+      p.mem_id as member_id_src,
+      current_date as load_date 
   from medicaid.enc_header h  
 join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       
