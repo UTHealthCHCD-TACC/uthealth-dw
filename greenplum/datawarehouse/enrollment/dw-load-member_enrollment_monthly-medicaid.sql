@@ -56,7 +56,7 @@ select 'mdcd',
        floor(a.age::float), 
        a.dob::date, 
        null as dth, 
-       null as plan_type, 
+       c.mco_program_nm  as plan_type, 
        null as bus, 
        1 as rx, 
        year_fy, 
@@ -105,7 +105,7 @@ select 'mdcd',
        floor(a.age::float), 
        to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob, 
        null as dth, 
-       null as plan_type, 
+       'CHIP' as plan_type, 
        null as bus, 
        1 as rx, 
        year_fy, 
@@ -117,7 +117,7 @@ from medicaid.chip_uth  a
   left outer join reference_tables.ref_zip_code z 
      on  substring(a.mailing_zip,1,5) = z.zip 
   left outer join reference_tables.medicaid_lu_contract c 
-     on c.plan_cd = a.plan_cd 
+     on c.plan_cd = a.contract_id  
   left outer join reference_tables.ref_race r 
      on r.race_cd_src = a.ethnicity 
     and r.data_source = 'mdcd'
