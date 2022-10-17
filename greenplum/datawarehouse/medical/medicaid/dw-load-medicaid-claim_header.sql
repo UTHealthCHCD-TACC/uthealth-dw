@@ -14,16 +14,18 @@
  * ******************************************************************************************************
  *  iperez || 09/30/2022 || added claim id source and member id source to columns
  * ******************************************************************************************************
+ *  jwozny || 10/10/2022 || added load_date, provider_type
+ * ******************************************************************************************************
  * */
 
-
+/*
 --confirm 1 to 1 icn
 select count(*), count(distinct icn)
 from medicaid.clm_header ch 
 
 select count(*), count(distinct icn)
 from medicaid.clm_proc; 
-
+*/
 
 -----------claims
 with cte_pos as ( select max(pos) as pos, icn  
@@ -31,13 +33,13 @@ with cte_pos as ( select max(pos) as pos, icn
                   group by icn 
 ) 
 insert into dw_staging.claim_header ( 
-       data_source, "year", uth_claim_id, uth_member_id, uth_admission_id,
+       data_source, "year", uth_claim_id, uth_member_id, --uth_admission_id,
        from_date_of_service, claim_type, 
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       table_id_src, claim_id_src, member_id_src, load_date)		
-select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
+       table_id_src, claim_id_src, member_id_src, load_date, provider_type)		
+select distinct 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, --null as uth_admission_id,
        h.hdr_frm_dos::Date, case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
        h.tot_bill_amt::float ,h.tot_alwd_amt::float, 
        dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
@@ -47,7 +49,8 @@ select 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_i
        'clm_header' AS table_id_src,
        p.icn as claim_id_src,
        p.pcn as member_id_src,
-       current_date as load_date 
+       current_date as load_date,
+       h.hdr_txm_cd 
 from medicaid.clm_header h  
    join medicaid.clm_proc p 
       on h.icn  = p.icn 
@@ -59,7 +62,9 @@ from medicaid.clm_header h
       on pos.icn = h.icn 
 ;
 
-select * from medicaid.clm_proc cp where year_fy = 2020
+vacuum analyze dw_staging.claim_header;
+
+--select * from medicaid.clm_proc cp where year_fy = 2020
 
 select count(*) from medicaid.enc_header eh 
 
@@ -74,7 +79,7 @@ insert into dw_staging.claim_header (
        total_charge_amount, total_allowed_amount, 
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       table_id_src, claim_id_src, member_id_src, load_date)
+       table_id_src, claim_id_src, member_id_src, load_date, provider_type)
 select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
        h.frm_dos::Date, 
        case when h.tx_cd = 'P' then 'P' 
@@ -88,9 +93,10 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
       'enc_header' AS table_id_src,
       p.derv_enc as claim_id_src,
       p.mem_id as member_id_src,
-      current_date as load_date 
+      current_date as load_date,
+      h.bill_prov_tax_cd 
   from medicaid.enc_header h  
-join medicaid.enc_proc p 
+  join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       
    join data_warehouse.dim_uth_claim_id c 
       on p.derv_enc = claim_id_src 

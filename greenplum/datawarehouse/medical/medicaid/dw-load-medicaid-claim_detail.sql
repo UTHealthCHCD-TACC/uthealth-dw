@@ -30,52 +30,79 @@ do $$
 begin
 
 ---claim
-insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id,
-                                     from_date_of_service, to_date_of_service, month_year_id, place_of_service,
-                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd,
-                                     procedure_type,
-                                     proc_mod_1, proc_mod_2, revenue_cd,
-                                     charge_amount, allowed_amount, paid_amount,
-                                     copay, deductible, coins, cob,
-                                     bill_type_inst, bill_type_class, bill_type_freq,
-                                     units, drg_cd,  claim_sequence_number_src,
-                                     fiscal_year, cost_factor_year, discharge_status,
-                                     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-                                     table_id_src,
-                                     claim_id_src,
-                                     member_id_src,
-                                     load_date
-                                     )
-select 'mdcd', extract(year from a.from_dos) as year, c.uth_claim_id, null, c.uth_member_id,
-       a.from_dos, a.to_dos, get_my_from_date(a.from_dos) as month_year, trim(a.pos),
-       true, true, case when d.adm_dt = '' then null else d.adm_dt::date end , case when d.dis_dt = '' then null else d.dis_dt::date end, 
-       case when a.proc_cd  ~ '[a-zA-Z0-9]{5}$' 
-          	  then a.proc_cd 
-					when a.proc_cd = a.rev_cd and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$'
-							then a.sub_proc_cd 
-					when a.proc_cd = a.rev_cd 
-							then null 
-														end as cpt_hcpcs_cd,
-        case when substring(proc_cd,1,1) ~ '[0-9]' 
-        			then 'CPT'
-	   	     when substring(proc_cd,1,1) ~ '[a-zA-Z]' 
-	   	     		then 'HCPCS' else null 
-	   	     									end as procedure_type,
+insert into dw_staging.claim_detail ( 
+data_source, year, uth_claim_id, claim_sequence_number, uth_member_id,
+ from_date_of_service, to_date_of_service, month_year_id, place_of_service,
+ network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd,
+ procedure_type,
+ proc_mod_1, proc_mod_2, revenue_cd,
+ charge_amount, allowed_amount, paid_amount,
+ copay, deductible, coins, cob,
+ bill_type_inst, bill_type_class, bill_type_freq,
+ units, drg_cd,  claim_sequence_number_src,
+ fiscal_year, cost_factor_year, discharge_status,
+ bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+ table_id_src,
+ claim_id_src,
+ member_id_src,
+ load_date,
+ provider_type
+)
+select 'mdcd', 
+	   extract(year from a.from_dos) as year, 
+	   c.uth_claim_id, 
+	   null, 
+	   c.uth_member_id,
+       a.from_dos, 
+       a.to_dos, 
+       get_my_from_date(a.from_dos) as month_year, 
+       trim(a.pos),
+       true, 
+       true, 
+       case when d.adm_dt = '' then null else d.adm_dt::date end , 
+       case when d.dis_dt = '' then null else d.dis_dt::date end, 
+       case 
+		   when a.proc_cd  ~ '[a-zA-Z0-9]{5}$' then a.proc_cd 
+		   when lpad(a.proc_cd,4,'0') = lpad(a.rev_cd,4,'0') 
+		    and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$' then a.sub_proc_cd 
+		   when a.proc_cd = '' 
+		    and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$' then a.sub_proc_cd 
+		   when a.proc_cd <> rev_cd 
+		    and a.proc_cd <> '' 
+		    and a.proc_cd  !~ '[a-zA-Z0-9]{5}$' 
+		    and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$' then a.sub_proc_cd
+		   when lpad(a.proc_cd,4,'0') = lpad(a.rev_cd,4,'0') 
+		    and a.rev_cd <> '' then null 
+		   when a.proc_cd = '' 
+		    and a.rev_cd = '' 
+		    and a.sub_proc_cd ~ '[a-zA-Z0-9]{5}$' then a.sub_proc_cd 
+	   end as cpt_hcpcs_cd,
+	   null as procedure_type,
 	   proc_mod_1, proc_mod_2,
-       case when isdigit(rev_cd) is false then null
-            when length(rev_cd) > 4 then null
-            else lpad(rev_cd,4,'0') end as revenue_code,
+       case 
+	   	when a.rev_cd = '' or rev_cd ~ '[a-zA-Z0-9]{5}$' then null 
+	   	else lpad(a.rev_cd,4,'0')
+	   end as revenue_cd,
        a.dtl_bill_amt, a.dtl_alwd_amt, a.dtl_pd_amt,
        null, null, null, null,
-       substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),
+       substring(b.bill,1,1), 
+       substring(b.bill,2,1), 
+       substring(b.bill,3,1),
        null, b.drg, a.clm_dtl_nbr,
-       dev.fiscal_year_func(a.from_dos), null, d.pat_stat_cd,
-       null as bill_provider, a.ref_prov_npi as ref_provider, null as other_provider,
-       a.perf_prov_npi as perf_rn_provider, null as perf_at_provider, null as perf_op_provider,
+       dev.fiscal_year_func(a.from_dos), 
+       null, 
+       d.pat_stat_cd,
+       null as bill_provider, 
+       a.ref_prov_npi as ref_provider, 
+       null as other_provider,
+       a.perf_prov_npi as perf_rn_provider, 
+       null as perf_at_provider, 
+       null as perf_op_provider,
        'clm_detail',
        b.icn as claim_id_src,
        b.pcn as member_id_src,
-       current_date as load_date  
+       current_date as load_date,
+       a.txm_cd
 from medicaid.clm_detail a
 	join medicaid.clm_proc b
       on b.icn  = a.icn
@@ -95,42 +122,70 @@ raise notice 'clm detail done %', clock_timestamp();
 
 
 ---enc  20min
-insert into dw_staging.claim_detail ( data_source, year, uth_claim_id, claim_sequence_number, uth_member_id,
-                                     from_date_of_service, to_date_of_service, month_year_id, place_of_service,
-                                     network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd,
-                                     procedure_type, proc_mod_1, proc_mod_2,
-                                     revenue_cd,
-                                     charge_amount, allowed_amount, paid_amount,
-                                     copay, deductible, coins, cob,
-                                     bill_type_inst, bill_type_class, bill_type_freq,
-                                     units, drg_cd, claim_sequence_number_src,
-                                     fiscal_year, cost_factor_year, discharge_status,
-                                     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-                                     table_id_src,
-                                     claim_id_src,
-                                     member_id_src,
-                                     load_date
-                                     )
-select 'mdcd', extract(year from a.fdos_dt::date), c.uth_claim_id, null, c.uth_member_id,
-       a.fdos_dt::date, a.tdos_csl::date, get_my_from_date(a.fdos_dt::date) as month_year, trim(a.pos),
-       true, true, d.adm_dt::date, d.dis_dt::date, a.proc_cd,
-       case when substring(proc_cd,1,1) ~ '[0-9]' then 'CPT'
-	   	    when substring(proc_cd,1,1) ~ '[a-zA-Z]' then 'HCPCS' else null end as procedure_type,
+insert into dw_staging.claim_detail ( 
+data_source, year, uth_claim_id, claim_sequence_number, uth_member_id,
+ from_date_of_service, to_date_of_service, month_year_id, place_of_service,
+ network_ind, network_paid_ind, admit_date, discharge_date, cpt_hcpcs_cd,
+ procedure_type, proc_mod_1, proc_mod_2,
+ revenue_cd,
+ charge_amount, allowed_amount, paid_amount,
+ copay, deductible, coins, cob,
+ bill_type_inst, bill_type_class, bill_type_freq,
+ units, drg_cd, claim_sequence_number_src,
+ fiscal_year, cost_factor_year, discharge_status,
+ bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+ table_id_src,
+ claim_id_src,
+ member_id_src,
+ load_date,
+ provider_type
+)
+select 'mdcd', 
+	   extract(year from a.fdos_dt::date), 
+       c.uth_claim_id, 
+       null, 
+       c.uth_member_id,
+       a.fdos_dt::date, 
+       a.tdos_csl::date, 
+       get_my_from_date(a.fdos_dt::date) as month_year, 
+       trim(a.pos),
+       true, 
+       true, 
+       d.adm_dt::date, 
+       d.dis_dt::date, 
+       case 
+	       when a.proc_cd ~ '[a-zA-Z0-9]{5}$' then a.proc_cd 
+	   end as cpt_hcpcs_cd,
+       null as procedure_type,
        proc_mod_cd_1, proc_mod_cd_2,
-       case when isdigit(rev_cd) is false then null
-            when length(rev_cd) > 4 then null
-            else lpad(rev_cd,4,'0') end as revenue_code,
-       a.sub_chrg_amt::numeric, a.dt_pd_amt::numeric, null AS paid_amount,
+       case 
+	   	when a.rev_cd = '' or rev_cd ~ '[a-zA-Z0-9]{5}$' then null 
+	   	else lpad(a.rev_cd,4,'0')
+	   end as revenue_cd,
+       a.sub_chrg_amt::numeric, 
+       a.dt_pd_amt::numeric, 
+       null AS paid_amount,
        null, null, null, null,
-       substring(b.bill,1,1), substring(b.bill,2,1), substring(b.bill,3,1),
-       a.dt_ln_unt::numeric, b.drg, a.ln_nbr,
-       dev.fiscal_year_func(a.fdos_dt::date), null, d.pat_stat,
-       null as bill_provider, a.sub_ref_prov_npi as ref_provider, null as other_provider,
-       a.sub_rend_prov_npi as perf_rn_provider, null as perf_at_provider, a.sub_opt_phy_npi as perf_op_provider,
+       substring(b.bill,1,1), 
+       substring(b.bill,2,1), 
+       substring(b.bill,3,1),
+       a.dt_ln_unt::numeric, 
+       b.drg, 
+       a.ln_nbr,
+       dev.fiscal_year_func(a.fdos_dt::date), 
+       null, 
+       d.pat_stat,
+       null as bill_provider, 
+       a.sub_ref_prov_npi as ref_provider, 
+       null as other_provider,
+       a.sub_rend_prov_npi as perf_rn_provider, 
+       null as perf_at_provider, 
+       a.sub_opt_phy_npi as perf_op_provider,
        'enc_det',
        b.derv_enc as claim_id_src,
        b.mem_id as member_id_src,
-       current_date as load_date 
+       current_date as load_date,
+       a.sub_rend_prv_tax_cd
 from medicaid.enc_det a
 	join medicaid.enc_proc b
       on b.derv_enc  = a.derv_enc
@@ -161,3 +216,7 @@ order by 2 ,3
 ;
 
 ----------------- END SCRIPT
+        /*case when substring(proc_cd,1,1) ~ '[0-9]' 
+        			then 'CPT'
+	   	     when substring(proc_cd,1,1) ~ '[a-zA-Z]' 
+	   	     		then 'HCPCS' else null */
