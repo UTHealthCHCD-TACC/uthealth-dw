@@ -24,8 +24,8 @@ declare
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-	col_list text[]:= array['state','zip5','zip3','plan_type','employee_status'];
-	col_list_len int = array_length(col_list,1);
+	--col_list text[]:= array['state','zip5','zip3','gender_cd','plan_type','employee_status'];
+	--col_list_len int = array_length(col_list,1);
 begin
 
 
@@ -35,7 +35,6 @@ execute 'insert into dw_staging.member_enrollment_yearly (
          data_source, 
          year, 
          uth_member_id, 
-		 gender_cd, 
 		 age_derived, 
 		 dob_derived, 
 		 death_date,
@@ -45,12 +44,12 @@ execute 'insert into dw_staging.member_enrollment_yearly (
 		 fiscal_year, 
 		 race_cd,
          family_id,
-		 behavioral_coverage )
+		 behavioral_coverage,
+         member_id_src )
 select distinct on( data_source, year, uth_member_id )
        data_source, 
        year, 
        uth_member_id, 
-       gender_cd, 
 	   age_derived, 
 	   dob_derived, 
 	   death_date,
@@ -60,7 +59,8 @@ select distinct on( data_source, year, uth_member_id )
 	   fiscal_year, 
 	   race_cd,
 	   family_id,
-	   behavioral_coverage
+	   behavioral_coverage,
+	   member_id_src
 from dw_staging.member_enrollment_monthly;'
 ;
 
@@ -79,7 +79,6 @@ distributed by(uth_member_id);'
 ;
 
 analyze dw_staging.temp_member_enrollment_month;
-
 
 --Add month flags
 --jw002 use execute function to loop through each month
@@ -120,7 +119,7 @@ declare
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-	col_list text[]:= array['state','zip5','zip3','plan_type','employee_status'];
+	col_list text[]:= array['state','zip5','zip3','gender_cd','dual','plan_type','employee_status'];
 	col_list_len int = array_length(col_list,1);
 begin
 
@@ -134,7 +133,7 @@ begin
 		execute 'create table dw_staging.temp_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
 				 as
-				 select count(*), min(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', year
+				 select count(*), max(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', year
 				 from dw_staging.member_enrollment_monthly
 				 group by 3, 4, 5;'
 		;
@@ -167,5 +166,5 @@ begin
 
 end $$;
 
-
+vacuum analyze dw_staging.member_enrollment_yearly;
 
