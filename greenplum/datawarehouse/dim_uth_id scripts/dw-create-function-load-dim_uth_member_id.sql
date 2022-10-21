@@ -144,6 +144,9 @@ with cte_distinct_member as (
 	   	union
 	   		select client_nbr
    			from medicaid.chip_uth
+   		union
+   			select client_nbr 
+   			  from medicaid.htw_enrl 
          ) inr 
     left outer join data_warehouse.dim_uth_member_id 
       on data_source = 'mdcd' 
