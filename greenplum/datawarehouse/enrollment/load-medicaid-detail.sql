@@ -1,0 +1,41 @@
+select 'mdcd', 
+	   extract(year from a.fdos_dt::date), 
+       a.fdos_dt::date as from_dos, 
+       a.tdos_csl::date as to_dos, 
+       get_my_from_date(a.fdos_dt::date) as month_year, 
+       trim(a.pos) as pos,
+       d.adm_dt::date, 
+       d.dis_dt::date, 
+       trim(a.proc_cd) as proc_cd,
+       trim(a.rev_cd) as rev_cd,
+       null as sub_proc_cd,
+       trim(proc_mod_cd_1), 
+       trim(proc_mod_cd_2),
+       a.sub_chrg_amt::numeric, 
+       a.dt_pd_amt::numeric, 
+       null as paid,
+       substring(b.bill,1,1), 
+       substring(b.bill,2,1), 
+       substring(b.bill,3,1),
+       a.dt_ln_unt::numeric, 
+       trim(b.drg) as drg, 
+       trim(a.ln_nbr) as claim_line_number,
+       dev.fiscal_year_func(a.fdos_dt::date) as fiscal_year, 
+       trim(d.pat_stat) as pat_stat_cd,
+       null as bill_provider, 
+       a.sub_ref_prov_npi as ref_provider, 
+       null as other_provider,
+       a.sub_rend_prov_npi as perf_rn_provider, 
+       null as perf_at_provider, 
+       a.sub_opt_phy_npi as perf_op_provider,
+       'enc_det',
+       b.derv_enc as claim_id_src,
+       b.mem_id as member_id_src,
+       current_date as load_date,
+       a.sub_rend_prv_tax_cd
+from medicaid.enc_det a
+	join medicaid.enc_proc b
+      on b.derv_enc  = a.derv_enc
+    join medicaid.enc_header d
+      on d.derv_enc = b.derv_enc
+      ;

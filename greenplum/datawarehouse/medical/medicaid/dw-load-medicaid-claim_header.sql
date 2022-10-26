@@ -18,80 +18,83 @@
  * ******************************************************************************************************
  * */
 
-/*
---confirm 1 to 1 icn
-select count(*), count(distinct icn)
-from medicaid.clm_header ch 
-
-select count(*), count(distinct icn)
-from medicaid.clm_proc; 
-*/
-
 -----------claims
 with cte_pos as ( select max(pos) as pos, icn  
                   from medicaid.clm_detail 
                   group by icn 
 ) 
 insert into dw_staging.claim_header ( 
-       data_source, "year", uth_claim_id, uth_member_id, --uth_admission_id,
+       data_source, "year", uth_claim_id, uth_member_id, 
        from_date_of_service, claim_type, 
-       total_charge_amount, total_allowed_amount, 
+       total_charge_amount, total_allowed_amount, total_paid_amount ,
        fiscal_year, to_date_of_service,
-       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+       bill_provider, ref_provider, other_provider, 
+       perf_rn_provider, perf_at_provider, perf_op_provider,
        table_id_src, claim_id_src, member_id_src, load_date, provider_type)		
-select distinct 'mdcd', extract(year from h.hdr_frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, --null as uth_admission_id,
-       h.hdr_frm_dos::Date, case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
-       h.tot_bill_amt::float ,h.tot_alwd_amt::float, 
+select distinct 'mdcd', 
+	   extract(year from h.hdr_frm_dos::date) as year, 
+	   c.uth_claim_id, 
+	   c.uth_member_id, 
+       h.hdr_frm_dos::Date, 
+       case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
+       h.tot_bill_amt::float ,
+       h.tot_alwd_amt::float, 
+       h.hdr_pd_amt::float,
        dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
        h.hdr_to_dos::date,
-       h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
-       null as perf_rn_provider, h.atd_prov_npi as perf_at_provider, null as perf_op_provider,
+       h.bill_prov_npi as bill_provider, 
+       null as ref_provider,  
+       null as other_provider,  
+       null as perf_rn_provider, 
+       h.atd_prov_npi as perf_at_provider, 
+       null as perf_op_provider,
        'clm_header' AS table_id_src,
-       p.icn as claim_id_src,
+       h.icn as claim_id_src,
        p.pcn as member_id_src,
        current_date as load_date,
        h.hdr_txm_cd 
 from medicaid.clm_header h  
-   join medicaid.clm_proc p 
-      on h.icn  = p.icn 
+join medicaid.clm_proc p 
+  on h.icn  = p.icn 
    join data_warehouse.dim_uth_claim_id c 
       on p.icn = c.claim_id_src 
      and p.pcn = c.member_id_src 
      and c.data_source = 'mdcd'
-   left outer join cte_pos pos 
+    left outer join cte_pos pos 
       on pos.icn = h.icn 
 ;
 
-vacuum analyze dw_staging.claim_header;
-
---select * from medicaid.clm_proc cp where year_fy = 2020
-
-select count(*) from medicaid.enc_header eh 
-
-select count(*) from medicaid.clm_header 
-
+analyze dw_staging.claim_header;
 
 
 -----------encounters
 insert into dw_staging.claim_header ( 
-       data_source, "year", uth_claim_id, uth_member_id, uth_admission_id,
+       data_source, "year", uth_claim_id, uth_member_id, 
        from_date_of_service, claim_type, 
-       total_charge_amount, total_allowed_amount, 
+       total_charge_amount, total_allowed_amount, total_paid_amount ,
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
        table_id_src, claim_id_src, member_id_src, load_date, provider_type)
-select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c.uth_member_id, null as uth_admission_id,
+select distinct 'mdcd', 
+       extract(year from h.frm_dos::date) as cal_year, 
+       c.uth_claim_id, c.uth_member_id, 
        h.frm_dos::Date, 
        case when h.tx_cd = 'P' then 'P' 
             when h.tx_cd = 'I' then 'F' 
             else null end as claim_type, 
-       h.tot_chrg_amt::float ,h.mco_pd_amt::float,     
-       dev.fiscal_year_func(h.frm_dos::date) as fiscal_year,
+      h.tot_chrg_amt::float ,
+      h.mco_pd_amt::float,     
+      null::float as total_paid_amount,
+      dev.fiscal_year_func(h.frm_dos::date) as fiscal_year,
       h.to_dos::date,
-      h.bill_prov_npi as bill_provider, null as ref_provider,  null as other_provider,  
-      null as perf_rn_provider, h.attd_phy_npi as perf_at_provider, null as perf_op_provider,
+      h.bill_prov_npi as bill_provider, 
+      null as ref_provider,  
+      null as other_provider,  
+      null as perf_rn_provider, 
+      h.attd_phy_npi as perf_at_provider, 
+      null as perf_op_provider,
       'enc_header' AS table_id_src,
-      p.derv_enc as claim_id_src,
+      h.derv_enc as claim_id_src,
       p.mem_id as member_id_src,
       current_date as load_date,
       h.bill_prov_tax_cd 
@@ -104,23 +107,53 @@ select 'mdcd', extract(year from h.frm_dos::date) as cal_year, c.uth_claim_id, c
      and c.data_source = 'mdcd' 
 ;   
 
+vacuum analyze dw_staging.claim_header;
 
+with cte_pos as ( select max(pos) as pos, icn  
+                  from medicaid.htw_clm_detail 
+                  group by icn 
+) 
+insert into dw_staging.claim_header ( 
+       data_source, "year", uth_claim_id, uth_member_id,
+       from_date_of_service, claim_type, 
+       total_charge_amount, total_allowed_amount, total_paid_amount ,
+       fiscal_year, to_date_of_service,
+       bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
+       table_id_src, claim_id_src, member_id_src, load_date, provider_type)
+select distinct 'mdcd', 
+	   extract(year from h.hdr_frm_dos::date) as year, 
+	   c.uth_claim_id, 
+	   c.uth_member_id, 
+       h.hdr_frm_dos::Date, 
+       case when pos.pos = '1' then 'P' else 'F' end as claim_type, 
+       h.tot_bill_amt::float ,
+       h.tot_alwd_amt::float, 
+       h.hdr_pd_amt::float,
+       dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
+       h.hdr_to_dos::date,
+       h.bill_prov_npi as bill_provider, 
+       null as ref_provider,  
+       null as other_provider,  
+       null as perf_rn_provider, 
+       h.atd_prov_npi as perf_at_provider, 
+       null as perf_op_provider,
+       'htw_clm_header' AS table_id_src,
+       h.icn as claim_id_src,
+       p.pcn as member_id_src,
+       current_date as load_date,
+       h.hdr_txm_cd 
+from medicaid.htw_clm_header h  
+join medicaid.htw_clm_proc p 
+  on h.icn  = p.icn 
+   join data_warehouse.dim_uth_claim_id c 
+      on p.icn = c.claim_id_src 
+     and p.pcn = c.member_id_src 
+     and c.data_source = 'mdcd'
+    left outer join cte_pos pos 
+      on pos.icn = h.icn 
+      ;       
+     
+ vacuum analyze dw_staging.claim_header;
 
-analyze dw_staging.claim_header;
-
-
-select data_source, fiscal_year , count(*), count(distinct uth_claim_id)
-from dw_staging.claim_header ch 
-where data_source = 'mdcd'
-group by data_source, fiscal_year 
-order by data_source, fiscal_year 
-;
-
-select data_source, data_year , count(*), count(distinct uth_claim_id)
-from data_warehouse.dim_uth_claim_id duci 
-where data_source = 'mdcd'
-group by data_source, data_year 
-order by data_source, data_year 
-;
-
-
+alter table dw_staging.claim_header owner to uthealth_dev;
+grant select on dw_staging.claim_header to uthealth_analyst;

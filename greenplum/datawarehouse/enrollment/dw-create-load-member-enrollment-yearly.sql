@@ -119,7 +119,7 @@ declare
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-	col_list text[]:= array['state','zip5','zip3','gender_cd','dual','plan_type','employee_status'];
+	col_list text[]:= array['state','zip5','zip3','gender_cd','dual','htw','plan_type','employee_status'];
 	col_list_len int = array_length(col_list,1);
 begin
 
@@ -167,4 +167,7 @@ begin
 end $$;
 
 vacuum analyze dw_staging.member_enrollment_yearly;
+alter table dw_staging.member_enrollment_monthly  owner to uthealth_dev;
+grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
+
 

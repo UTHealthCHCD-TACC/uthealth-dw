@@ -270,7 +270,7 @@ drop table if exists dev.temp_consec_enrollment;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 vacuum full analyze dw_staging.member_enrollment_monthly;
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
-
+grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
 
 
 /*
