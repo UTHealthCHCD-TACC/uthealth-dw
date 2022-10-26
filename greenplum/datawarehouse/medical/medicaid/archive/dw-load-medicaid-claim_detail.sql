@@ -140,7 +140,7 @@ data_source, year, uth_claim_id, claim_sequence_number, uth_member_id,
  load_date,
  provider_type
 )
-select 'mdcd', 
+select 'mdcd', a.
 	   extract(year from a.fdos_dt::date), 
        c.uth_claim_id, 
        null, 

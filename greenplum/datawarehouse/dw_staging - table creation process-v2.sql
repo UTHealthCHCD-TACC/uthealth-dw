@@ -2,24 +2,13 @@
 
 ---(2) drop existing tables
 drop table if exists dw_staging.member_enrollment_monthly;
-drop table if exists dw_staging.member_enrollment_monthly_old;
 drop table if exists dw_staging.member_enrollment_yearly;
-drop table if exists dw_staging.member_enrollment_yearly_old;
-
 drop table if exists dw_staging.medicaid_program_enrollment;
-drop table if exists dw_staging.medicaid_program_enrollment_old;
-
 drop table if exists dw_staging.claim_header;
-drop table if exists dw_staging.claim_header_old;
 drop table if exists dw_staging.claim_detail;
-drop table if exists dw_staging.claim_detail_old;
 drop table if exists dw_staging.claim_diag;
-drop table if exists dw_staging.claim_diag_old;
 drop table if exists dw_staging.claim_icd_proc;
-drop table if exists dw_staging.claim_icd_proc_old;
-
 drop table if exists dw_staging.pharmacy_claims;
-drop table if exists dw_staging.pharmacy_claims_old;
 
 
 
@@ -28,7 +17,7 @@ create table dw_staging.member_enrollment_yearly
 (like data_warehouse.member_enrollment_yearly including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -49,7 +38,7 @@ create table dw_staging.claim_header
 (like data_warehouse.claim_header including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -71,7 +60,7 @@ create table dw_staging.claim_diag
 (like data_warehouse.claim_diag including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -92,7 +81,7 @@ create table dw_staging.claim_icd_proc
 (like data_warehouse.claim_icd_proc including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -113,7 +102,7 @@ create table dw_staging.pharmacy_claims
 (like data_warehouse.pharmacy_claims including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -137,7 +126,7 @@ create table dw_staging.member_enrollment_monthly
 (like data_warehouse.member_enrollment_monthly including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
@@ -164,7 +153,7 @@ create table dw_staging.claim_detail
 (like data_warehouse.claim_detail including defaults) 
 with (
 		appendonly=true, 
-		orientation=column, 
+		orientation=row, 
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
