@@ -224,7 +224,6 @@ analyze dw_staging.htw_detail_etl ;
 drop table dw_staging.htw_clm_header_etl;
 drop table dw_staging.htw_clm_proc_etl;
 drop table dw_staging.htw_clm_detail_etl ;
-drop table dw_staging.htw_detail_etl ;
 
 ---------------------------------------------------------------
 ------------------ insert into staging-------------------------
@@ -267,7 +266,6 @@ select distinct
 	dev.fiscal_year_func(a.from_dos) as fiscal_year,
 	null::int as cost_factor_year,
 	'htw_clm_detail' as table_id_src,
-	null as claim_sequence_number_src,
 	null as bill_provider,
 	a.ref_prov_npi as ref_provider,
 	null as other_provider,

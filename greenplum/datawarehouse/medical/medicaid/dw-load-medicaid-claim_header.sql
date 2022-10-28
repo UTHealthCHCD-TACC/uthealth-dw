@@ -18,6 +18,30 @@
  * ******************************************************************************************************
  * */
 
+
+drop table if exists dw_staging.claim_header;
+
+create table dw_staging.claim_header
+(like data_warehouse.claim_header including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+; 
+
+
+
 -----------claims
 with cte_pos as ( select max(pos) as pos, icn  
                   from medicaid.clm_detail 
@@ -40,7 +64,7 @@ select distinct 'mdcd',
        h.tot_bill_amt::float ,
        h.tot_alwd_amt::float, 
        h.hdr_pd_amt::float,
-       dev.fiscal_year_func(h.hdr_frm_dos::date) as fiscal_year,
+       h.year_fy as fiscal_year,
        h.hdr_to_dos::date,
        h.bill_prov_npi as bill_provider, 
        null as ref_provider,  
@@ -85,7 +109,7 @@ select distinct 'mdcd',
       h.tot_chrg_amt::float ,
       h.mco_pd_amt::float,     
       null::float as total_paid_amount,
-      dev.fiscal_year_func(h.frm_dos::date) as fiscal_year,
+      h.year_fy  as fiscal_year,
       h.to_dos::date,
       h.bill_prov_npi as bill_provider, 
       null as ref_provider,  
@@ -153,7 +177,6 @@ join medicaid.htw_clm_proc p
       on pos.icn = h.icn 
       ;       
      
- vacuum analyze dw_staging.claim_header;
-
+vacuum analyze dw_staging.claim_header;
 alter table dw_staging.claim_header owner to uthealth_dev;
 grant select on dw_staging.claim_header to uthealth_analyst;

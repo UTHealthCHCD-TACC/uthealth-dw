@@ -28,7 +28,17 @@ vacuum analyze dw_staging.claim_detail;
 
 --3 update year and fiscal_year 
 update dw_staging.claim_detail 
-   set "year" = extract(year from from_date_of_service),
-       fiscal_year = dev.fiscal_year_func(from_date_of_service);
-      
+   set "year" = extract(year from from_date_of_service);
+
+update dw_staging.claim_detail 
+   set fiscal_year = dev.fiscal_year_func(from_date_of_service) 
+ where fiscal_year not between 2011 and extract(year from current_date);
+
+update dw_staging.claim_detail 
+   set month_year_id  = 
+   	  (
+       extract(year from from_date_of_service)::text ||
+	   lpad(extract(month from from_date_of_service)::text,2,'0')
+	  )::int;
+
 vacuum analyze dw_staging.claim_detail;
