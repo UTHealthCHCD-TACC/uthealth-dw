@@ -33,11 +33,12 @@ partition by list(data_source)
 ;
 
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id,  
+insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  
                                        from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, c.uth_claim_id,  
+		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), 
+		       c.uth_member_id, d.year_fy, c.uth_claim_id,  
 		       d.hdr_frm_dos::date, 
 			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
@@ -66,11 +67,12 @@ from (
 
 analyze dw_staging.claim_diag;
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id,  
+insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  
                                        from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.frm_dos::date), c.uth_member_id, c.uth_claim_id, 
+		select distinct 'mdcd', extract(year from d.frm_dos::date), 
+		       c.uth_member_id, d.year_fy, c.uth_claim_id, 
 		       d.frm_dos, 
 			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
@@ -100,11 +102,12 @@ from (
 vacuum analyze dw_staging.claim_diag;
 
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, uth_claim_id, 
+insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id, 
                                        from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, c.uth_claim_id, 
+		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), 
+		       c.uth_member_id, dev.fiscal_year_func(d.hdr_frm_dos::date),  c.uth_claim_id, 
 		       d.hdr_frm_dos::date, 
 			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
@@ -134,3 +137,4 @@ from (
 update dw_staging.claim_diag set load_date = current_date;
 vacuum analyze dw_staging.claim_diag;
 grant select on dw_staging.claim_diag to uthealth_analyst;
+

@@ -32,11 +32,11 @@ partition by list(data_source)
  )
 ;
 
-insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, uth_claim_id, 
+insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, fiscal_year, uth_claim_id, 
                                        from_date_of_service, proc_cd, proc_position, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, c.uth_claim_id, 
+		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, d.year_fy, c.uth_claim_id, 
 		       d.hdr_frm_dos::date, 
 			   unnest(array[  trim(a.proc_icd_cd_1), trim(a.proc_icd_cd_2), trim(a.proc_icd_cd_3), trim(a.proc_icd_cd_4), trim(a.proc_icd_cd_5), trim(a.proc_icd_cd_6), 
 			                  trim(a.proc_icd_cd_7), trim(a.proc_icd_cd_8), trim(a.proc_icd_cd_9), trim(a.proc_icd_cd_10), trim(a.proc_icd_cd_11), trim(a.proc_icd_cd_12), trim(a.proc_icd_cd_13), 
@@ -61,11 +61,11 @@ analyze dw_staging.claim_icd_proc;
 
 -----------------------enc----------------------------------------------------------
 
-insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, uth_claim_id, 
+insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, fiscal_year, uth_claim_id, 
                                        from_date_of_service, proc_cd, proc_position, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.frm_dos::date), c.uth_member_id, c.uth_claim_id,  
+		select distinct 'mdcd', extract(year from d.frm_dos::date), c.uth_member_id, d.year_fy , c.uth_claim_id,  
 		       d.frm_dos, 
 			   unnest(array[  trim(a.proc_icd_cd_1), trim(a.proc_icd_cd_2), trim(a.proc_icd_cd_3), trim(a.proc_icd_cd_4), trim(a.proc_icd_cd_5), trim(a.proc_icd_cd_6), 
 			                  trim(a.proc_icd_cd_7), trim(a.proc_icd_cd_8), trim(a.proc_icd_cd_9), trim(a.proc_icd_cd_10), trim(a.proc_icd_cd_11), trim(a.proc_icd_cd_12), trim(a.proc_icd_cd_13), 
@@ -89,11 +89,11 @@ from (
 vacuum analyze dw_staging.claim_icd_proc;
 
 -------------- htw ----------------------------
-insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, uth_claim_id, 
+insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, fiscal_year, uth_claim_id, 
                                        from_date_of_service, proc_cd, proc_position, icd_version)
 select * 
 from ( 
-		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, c.uth_claim_id, 
+		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), c.uth_member_id, get_my_from_date(d.hdr_frm_dos::date), c.uth_claim_id, 
 		       d.hdr_frm_dos::date, 
 			   unnest(array[  trim(a.proc_icd_cd_1), trim(a.proc_icd_cd_2), trim(a.proc_icd_cd_3), trim(a.proc_icd_cd_4), trim(a.proc_icd_cd_5), trim(a.proc_icd_cd_6), 
 			                  trim(a.proc_icd_cd_7), trim(a.proc_icd_cd_8), trim(a.proc_icd_cd_9), trim(a.proc_icd_cd_10), trim(a.proc_icd_cd_11), trim(a.proc_icd_cd_12), trim(a.proc_icd_cd_13), 

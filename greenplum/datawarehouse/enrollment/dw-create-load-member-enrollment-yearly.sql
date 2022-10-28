@@ -16,6 +16,27 @@
  * ******************************************************************************************************
  */
 
+drop table if exists dw_staging.member_enrollment_yearly;
+
+create table dw_staging.member_enrollment_yearly 
+(like data_warehouse.member_enrollment_yearly including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
+
 
 --300 minutes
 do $$
@@ -24,8 +45,6 @@ declare
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-	--col_list text[]:= array['state','zip5','zip3','gender_cd','plan_type','employee_status'];
-	--col_list_len int = array_length(col_list,1);
 begin
 
 
@@ -167,7 +186,7 @@ begin
 end $$;
 
 vacuum analyze dw_staging.member_enrollment_yearly;
-alter table dw_staging.member_enrollment_monthly  owner to uthealth_dev;
-grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
+alter table dw_staging.member_enrollment_yearly  owner to uthealth_dev;
+grant select on dw_staging.member_enrollment_yearly to uthealth_analyst;
 
 

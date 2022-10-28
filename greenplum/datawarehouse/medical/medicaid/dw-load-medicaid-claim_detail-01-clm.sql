@@ -34,6 +34,7 @@ grant select on dw_staging.claim_detail to uthealth_analyst;
 drop table if exists dw_staging.clm_detail_etl;
 
 CREATE TABLE dw_staging.clm_detail_etl (
+	year_fy int null,
 	icn varchar NULL,
 	clm_dtl_nbr varchar NULL,
 	from_dos date NULL,
@@ -62,6 +63,7 @@ DISTRIBUTED BY (icn);
 
 insert into dw_staging.clm_detail_etl
 select 
+year_fy,
 trim(icn),
 trim(clm_dtl_nbr),
 from_dos,
@@ -185,6 +187,7 @@ vacuum analyze dw_staging.clm_proc_etl;
 drop table if exists dw_staging.detail_etl;
 
 CREATE TABLE dw_staging.detail_etl (
+	year_fy int null,
 	icn varchar NULL,
 	pcn varchar NULL,
 	clm_dtl_nbr varchar NULL,
@@ -220,6 +223,7 @@ DISTRIBUTED BY (icn);
 
 insert into dw_staging.detail_etl 
 select 
+d.year_fy,
 h.icn,
 p.pcn,
 clm_dtl_nbr,
@@ -293,10 +297,9 @@ select distinct
 	bill_c,
 	bill_f,
 	null::int as units,
-	dev.fiscal_year_func(a.from_dos) as fiscal_year,
+	a.year_fy as fiscal_year,
 	null::int as cost_factor_year,
 	'clm_detail' as table_id_src,
-	null as claim_sequence_number_src,
 	null as bill_provider,
 	a.ref_prov_npi as ref_provider,
 	null as other_provider,

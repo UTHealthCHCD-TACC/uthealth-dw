@@ -2,6 +2,7 @@
 drop table if exists dw_staging.enc_detail_etl;
 
 CREATE TABLE dw_staging.enc_detail_etl (
+    year_fy int null,
 	ln_nbr varchar NULL,
 	fdos_dt varchar NULL,
 	tdos_csl varchar NULL,
@@ -33,6 +34,7 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.enc_detail_etl
 select 
+year_fy,
 trim(ln_nbr),
 trim(fdos_dt),
 trim(tdos_csl),
@@ -166,6 +168,7 @@ vacuum analyze dw_staging.enc_proc_etl;
 drop table if exists dw_staging.detail_enc_etl;
 
 CREATE TABLE dw_staging.detail_enc_etl (
+year_fy int null,
 derv_enc varchar null,
 mem_id varchar null,
 adm_dt date null, 
@@ -200,6 +203,7 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.detail_enc_etl
 select 
+d.year_fy,
 h.derv_enc,
 p.mem_id,
 h.adm_dt,
@@ -269,10 +273,9 @@ select distinct
 	bill_c,
 	bill_f,
 	dt_ln_unt as units,
-	dev.fiscal_year_func(a.fdos_dt) as fiscal_year,
+	a.year_fy  as fiscal_year,
 	null::int as cost_factor_year,
 	'enc_det' as table_id_src,
-	null as claim_sequence_number_src,
 	null as bill_provider,
 	a.sub_ref_prov_npi as ref_provider,
 	null as other_provider,
