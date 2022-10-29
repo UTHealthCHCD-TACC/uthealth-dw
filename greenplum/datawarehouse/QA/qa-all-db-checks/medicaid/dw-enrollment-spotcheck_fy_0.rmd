@@ -169,6 +169,9 @@ select client_nbr, dob
 into work.dbo.xz_mcd_reconciliation_dob
 from cte
 where row_num = 1;
+
+--delete temp table
+drop table if exists work.dbo.xz_mcd_reconcilation_dob_t;
 ```
 
 ### 2.22 Clean SEX on an FY basis
@@ -189,12 +192,34 @@ select client_nbr, fy, sex
 into work.dbo.xz_mcd_reconciliation_sex
 from cte
 where row_num = 1;
+
+--delete temp table
+drop table if exists work.dbo.xz_mcd_reconcilation_sex_t;
 ```
 
 
 
 ### 2.23 Clean MCO (plan_type)
 ```{sql, connection = spc}
+--Make MCO priority table
+drop table if exists work.dbo.xz_mcd_mco_priority;
+
+CREATE TABLE work.dbo.xz_mcd_mco_priority (
+  plan_type varchar(20) NOT NULL,
+  priority int NOT NULL
+);
+
+--add values to it
+INSERT INTO work.dbo.xz_mcd_mco_priority(plan_type, priority)
+  VALUES ('CHIP', 1 ),
+	('STAR Kids', 2 ),
+	('STAR+PLUS', 2 ),
+	('STAR Health', 2 ),
+	('STAR', 3 ),
+	('MMP', 4 ),
+	('FFS', 4 ),
+	('PCCM', 4 );
+
 --clean MCO
 drop table if exists work.dbo.xz_mcd_reconcilation_mco_t;
 select a.client_nbr, a.fy, a.mco, b.priority, count(distinct a.elig_date) as count, max(a.elig_date) as recent
@@ -211,6 +236,10 @@ select client_nbr, fy, mco
 into work.dbo.xz_mcd_reconciliation_mco
 from cte
 where row_num = 1;
+
+--delete temp tables
+drop table if exists work.dbo.xz_mcd_mco_priority;
+drop table if exists work.dbo.xz_mcd_reconcilation_mco_t;
 ```
 
 ## 2.3 Clean variables that do not need special treatment: RACE, ZIP, SMIB, HTW
@@ -235,6 +264,8 @@ select client_nbr, fy, @var
 into work.dbo.xz_mcd_reconciliation_@var
 from cte
 where row_num = 1;'
+
+spc_sql5 = 'drop table if exists work.dbo.xz_mcd_reconcilation_@var_t;'
 ```
 
 ###2.32 Cycle through variables to clean
@@ -246,138 +277,52 @@ for (i in 1:length(variables_to_clean)){
   
   spc_sql3.mod = spc_sql3 %>% gsub('@var', current_var, .)
   spc_sql4.mod = spc_sql4 %>% gsub('@var', current_var, .)
+  spc_sql5.mod = spc_sql5 %>% gsub('@var', current_var, .)
   
   dbGetQuery(spc, spc_sql3.mod)
   dbGetQuery(spc, spc_sql4.mod)
+  dbGetQuery(spc, spc_sql5.mod)
 }
 
 ```
 
 ## 2.4 Assemble it all together into a final table
-### 2.41 Calculate enrolled months and add columns for the other data
+
 ```{sql, connection = spc}
 
 --calculate enrolled_months and condense down to one row per client_nbr per fy
-drop table if exists work.dbo.xz_mcd_enrl_reconciled;
+drop table if exists work.dbo.xz_mcd_enrl_reconciled_t;
 select CLIENT_NBR as mem_id, FY, count(distinct elig_date) as enrolled_months
-into work.dbo.xz_mcd_enrl_reconciled
+into work.dbo.xz_mcd_enrl_reconciled_t
 from work.dbo.xz_mcd_reconciliation_etl
 group by client_nbr, fy;
 
---add columns to existing table
-alter table work.dbo.xz_mcd_enrl_reconciled
-	add DOB date,
-	SEX varchar(2),
-	MCO varchar(50),
-	RACE varchar(2),
-	ZIP varchar(10),
-	SMIB varchar(2),
-	HTW int;
+--join in half the data (do it in 2 operations to decrease server load)
+drop table if exists work.dbo.xz_mcd_enrl_reconciled_t1;
+select a.*, b.dob, c.sex, d.race
+into work.dbo.xz_mcd_enrl_reconciled_t1
+from work.dbo.xz_mcd_enrl_reconciled_t a
+	left join work.dbo.xz_mcd_reconciliation_dob b on a.mem_id  = b.client_nbr
+	left join work.dbo.xz_mcd_reconciliation_sex c on a.mem_id = c.client_nbr and a.fy = c.fy
+	left join work.dbo.xz_mcd_reconciliation_race d on a.mem_id = d.client_nbr and a.fy = d.fy;
+
+--join in other half of the data
+drop table if exists work.dbo.xz_mcd_enrl_reconciled;
+select a.*, e.zip, f.mco, g.smib, h.htw
+into work.dbo.xz_mcd_enrl_reconciled
+from work.dbo.xz_mcd_enrl_reconciled_t1 a
+	left join work.dbo.xz_mcd_reconciliation_zip e on a.mem_id = e.client_nbr and a.fy = e.fy
+	left join work.dbo.xz_mcd_reconciliation_mco f on a.mem_id = f.client_nbr and a.fy = f.fy
+	left join work.dbo.xz_mcd_reconciliation_smib g on a.mem_id = g.client_nbr and a.fy = g.fy
+	left join work.dbo.xz_mcd_reconciliation_htw h on a.mem_id = h.client_nbr and a.fy = h.fy;
+
+--drop temp tables
+drop table if exists work.dbo.xz_mcd_enrl_reconciled_t;
+drop table if exists work.dbo.xz_mcd_enrl_reconciled_t1;
 
 ```
-
-###2.41
-
-```{r}
-
-
-
-```
-
-# SECTION 3: 
-
-## 3.1 Pull random rows from data_warehouse by year and upload to spc
-```{r}
-tac_sql = 'select member_id_src, fiscal_year, total_enrolled_months, gender_cd, race_cd, age_derived, dob_derived, zip5, plan_type, dual
-from dw_staging.member_enrollment_yearly
-where htw = 0
-order by random()
-limit @rows_to_check;'
-
-tac_sql.mod = tac_sql %>% gsub('@rows_to_check', rows_to_check, .)
-tac_selection = dbGetQuery(tac, tac_sql.mod)
-
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
-dbWriteTable(spc, SQL('work.dbo.xz_dwqa_temp1'), tac_selection)
-
-```
-
-##3.2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 3.2 Make tables
-```{r}
-#list sources
-source_list = c("Data_warehouse Monthly Enrollment Table",
-                "Data_warehouse Yearly Enrollment Table",
-                "TACC server medicaid schema",
-                "SPC server medicaid schema")
-
-#compose numbers into table (distinct members)
-distinct_members = c(dw_monthly_memcount[1,1], dw_yearly_memcount[1,1],
-                     tac_monthly_memcount[1,1], spc_monthly_memcount[1,1])
-
-#compose numbers into table (distinct member-year-month combos)
-distinct_combos = c(dw_monthly_combocount[1,1], dw_yearly_combocount[1,1],
-                     tac_monthly_combocount[1,1], spc_monthly_combocount[1,1])
-
-colnames = c("Distinct Members", "Distinct Member-Year-Month combinations")
-
-output_table = data.frame(source_list, distinct_members, distinct_combos)
-
-
-```
-
-## 3.3 Make spreadsheet
-```{r}
-
-wb = createWorkbook()
-dir = here("outputs")
-path = here("outputs", "dw-enrollment-qa.xlsx")
-
-addWorksheet(wb, sheetName = "dw enrollment qa")
-
-writeData(wb, sheet = 1, "Data Warehouse Enrollment Tables QA", startCol=1, startRow=1)
-writeData(wb, sheet = 1, paste("Run date:", Sys.Date()), startCol=1, startRow=2)
-writeData(wb, sheet = 1, output_table, startCol=1, startRow=4)
-
-setColWidths(wb, sheet = 1, cols=1:3, widths="auto")
-
-dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
-saveWorkbook(wb, file=path, overwrite=TRUE)
-
-```
-# SECTION 4: Output to spreadsheet
 
 # SECTION 99: Close connections and clean-up
-
-```{sql connection = spc, eval=FALSE}
-drop table if exists work.dbo.xz_dwqa_temp1;
-
-```
-
-```{sql connection = tac, eval=FALSE}
-drop table if exists dev.xz_dwqa_temp1;
-drop table if exists dev.xz_dwqa_temp2;
-drop table if exists dev.xz_dwqa_temp3;
-
-```
 
 ```{r close-connections, eval=FALSE}
 # closes connections if they are open
