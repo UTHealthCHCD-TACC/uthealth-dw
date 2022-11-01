@@ -329,6 +329,7 @@ update dw_staging.member_enrollment_monthly a
 
 --**cleanup
 drop table if exists dev.temp_consec_enrollment;
+
 ---/drop sequence, rebuild table distributed on uth_member_id 
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 vacuum full analyze dw_staging.member_enrollment_monthly;
