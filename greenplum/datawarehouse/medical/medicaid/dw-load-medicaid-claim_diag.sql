@@ -134,6 +134,7 @@ from (
 ) inr where dx_cd <> ''
  ;
  
+update dw_staging.claim_diag set icd_version = null where icd_version not in ('0','9');
 update dw_staging.claim_diag set load_date = current_date;
 vacuum analyze dw_staging.claim_diag;
 grant select on dw_staging.claim_diag to uthealth_analyst;

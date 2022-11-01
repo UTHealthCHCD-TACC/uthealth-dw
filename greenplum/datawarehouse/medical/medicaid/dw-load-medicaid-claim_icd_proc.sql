@@ -115,7 +115,7 @@ from (
  ;
 
 update dw_staging.claim_icd_proc set load_date = current_date;
+update dw_staging.claim_icd_proc set icd_version = null where icd_version not in ('0','9');
 vacuum analyze dw_staging.claim_icd_proc;
-
 grant select on dw_staging.claim_diag to uthealth_analyst;
 
