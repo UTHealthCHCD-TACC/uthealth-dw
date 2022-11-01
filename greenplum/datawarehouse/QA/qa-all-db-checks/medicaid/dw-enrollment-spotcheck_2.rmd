@@ -1,7 +1,7 @@
 ---
 title: "dw-enrollment-check"
 author: "XRZ"
-date: '2022-10-26'
+date: '2022-10-31'
 output: html_document
 ---
 
@@ -9,9 +9,8 @@ output: html_document
 This R markdown script examines the accuracy of conversions from raw source tables to
 data_warehouse tables
 
-It selects random rows from the dw_staging yearly enrollment table and compares
-them to a table that is created using (mostly) the same logic from the SPC-side tables.
-
+It selects random rows from the enrollment table created in dw-enrollment-spotcheck-0
+and compares them to the dw_staging yearly enrollment table
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -20,7 +19,7 @@ them to a table that is created using (mostly) the same logic from the SPC-side 
 # Package installs/loading 
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+pacman::p_load(RPostgres, DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
 ```
 
@@ -37,11 +36,10 @@ pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, ticto
 
 
 #Connect to Greenplum
-tac <- dbConnect(odbc::odbc(),
-	 dsn = "PostgreSQL30",
-	 database = "uthealth",
-	 UID = "xrzhang",
-	 PWD = key_get("Greenplum", "xrzhang"),
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
 ```
@@ -62,78 +60,81 @@ spc <- dbConnect(odbc::odbc(),
 rm(list=setdiff(ls(), c("tac", "spc")))
 ```
 
-## 0.5 Set print to 25 rows
+## 0.5 Set some options for R
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
 
 ```
 
 # SECTION 1: Define global variables
 
 ```{r}
-#Define the starting and ending years for checking (4-digit year)
-starting_year = 2012
-ending_year = 2021
-
 #Define how many rows to check per year
-rows_to_check = '500000'
+rows_to_check = 500000
 
 #Define how many sets of errors to print out per year
 records_to_print = 5
 
-#convert to 2-digit year
-starting_yr = starting_year - 2000
-ending_yr = ending_year - 2000
 ```
 
 # SECTION 2: Compare SPC and TACC tables
 ## 2.1 Pull TACC data and upload to SPC
 ```{r}
-tac_sql = 'with b as (select race_cd_src, race_cd from reference_tables.ref_race
-	where data_source = \'mdcd\' and race_cd_src is not null)
 
-select a.data_source, a.member_id_src, a.year, a.total_enrolled_months, a.gender_cd,
-b.race_cd_src, a.age_derived, a.dob_derived, a.zip5, a.plan_type, a.dual, a.htw
-from dw_staging.member_enrollment_yearly a left join b
-	on a.race_cd = b.race_cd
-order by random()
-limit @rows_to_check;'
+rows_to_sample = as.integer(rows_to_check) * 1.2
 
-tac_sql.mod = tac_sql %>% gsub('@rows_to_check', rows_to_check, .)
-tac_selection = dbGetQuery(tac, tac_sql.mod)
+spc_sql = 'select top @rows_to_check *
+from work.dbo.xz_mcd_enrl_cy_reconciled
+tablesample(@rows_to_sample rows);'
 
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
-dbWriteTable(spc, SQL('work.dbo.xz_dwqa_temp1'), tac_selection)
+spc_sql.mod = spc_sql %>% gsub('@rows_to_check', rows_to_check, .) %>%
+  gsub('@rows_to_sample', rows_to_sample, .)
+spc_selection = dbGetQuery(spc, spc_sql.mod)
+
+dbGetQuery(tac, 'drop table if exists dev.xz_dwqa_temp1;')
+
+tic("Write to TACC")
+dbWriteTable(tac, SQL('dev.xz_dwqa_temp1'), spc_selection)
+toc()
 
 ```
-## 2.2 Make boolean table of mismatches
-```{sql, connection = spc}
---Make boolean table of matches
-drop table if exists work.dbo.xz_mcd_enrl_mismatches;
 
-select a.member_id_src as member_id, a.year,
-	case when b.mem_id is null then 1 else 0 end as member_id_mismatch,
+## 2.2 Make boolean table of mismatches
+```{sql, connection = tac}
+--Make boolean table of matches
+drop table if exists dev.xz_mcd_enrl_mismatches;
+```
+
+```{sql, connection = tac}
+with c as (select race_cd_src, race_cd from reference_tables.ref_race
+	where data_source = 'mdcd' and race_cd_src is not null)
+select b.mem_id as member_id, b.cy as year,
+	case when a.member_id_src is null then 1 else 0 end as member_id_mismatch,
 	case when a.total_enrolled_months != b.enrolled_months then 1 else 0 end as em_mismatch,
 	case when a.gender_cd != b.sex then 1 else 0 end as sex_mismatch,
-	case when a.race_cd_src != b.race and b.race is not null then 1 else 0 end as race_mismatch,
-	case when a.dob_derived != b.dob then 1 else 0 end as dob_mismatch,
+	case when c.race_cd_src != b.race and b.race is not null then 1 else 0 end as race_mismatch,
+	case when a.dob_derived != b.dob::date then 1 else 0 end as dob_mismatch,
 	case when a.zip5 != b.zip then 1 else 0 end as zip_mismatch,
-	case when a.plan_type != b.mco then 1 else 0 end as plan_mismatch,
-	case when a.dual !=  b.smib then 1 else 0 end as dual_mismatch,
+	case when trim(a.plan_type) != trim(b.mco) then 1 else 0 end as plan_mismatch,
+	case when a.dual::text !=  b.smib then 1 else 0 end as dual_mismatch,
 	case when a.htw != b.htw then 1 else 0 end as htw_mismatch,
 	a.gender_cd as tacc_sex, b.sex as spc_sex,
-	a.race_cd_src as tacc_race, b.race as spc_race,
+	c.race_cd_src as tacc_race, b.race as spc_race,
 	a.zip5 as tacc_zip, b.zip as spc_zip,
-	a.plan_type as tacc_plan, b.mco as spc_plan
-into work.dbo.xz_mcd_enrl_mismatches
-from work.dbo.xz_dwqa_temp1 a
-	left join work.dbo.xz_mcd_enrl_cy_reconciled b
-	on a.member_id_src = b.mem_id and a.year = b.cy;
+	a.plan_type as tacc_plan, b.mco as spc_plan,
+	a.dob_derived as tacc_dob, b.dob as spc_dob
+into dev.xz_mcd_enrl_mismatches
+from dev.xz_dwqa_temp1 b
+	left join dw_staging.member_enrollment_yearly a
+	on a.member_id_src = b.mem_id and a.year::text = b.cy
+	left join c
+	on a.race_cd = c.race_cd;
 
 ```
 
 ##2.3 Calculate the sum of errors
-```{sql, connection = spc, output.var = sum_errors}
+```{sql, connection = tac, output.var = sum_errors}
 
 select sum(member_id_mismatch) as member_id_mismatches,
 	sum(em_mismatch) as em_mismatches,
@@ -144,11 +145,15 @@ select sum(member_id_mismatch) as member_id_mismatches,
 	sum(plan_mismatch) as plan_mismatches,
 	sum(dual_mismatch) as dual_mismatches,
 	sum(htw_mismatch) as htw_mismatches
-from work.dbo.xz_mcd_enrl_mismatches;
+from dev.xz_mcd_enrl_mismatches;
 
 
 ```
 
+******************************************************************************
+UH EVERYTHING PASSED QC SO I'M GOING TO STOP CODING HERE
+EVERYTHING ELSE BELOW HERE NEEDS TO BE CHECKED BEFORE PROCEEDING, OKAY????
+*******************************************************************************
 
 # SECTION 3: Closer look at what's going wrong
 ## 3.1: Pull mismatches
@@ -156,20 +161,20 @@ from work.dbo.xz_mcd_enrl_mismatches;
 #SEX, RACE, ZIP, AND PLAN HAVE MISMATCHES
 #Pull lists of mismatches
 
-sex_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+sex_mismatches = dbGetQuery(tac, 'select member_id, year
+              from dev.xz_mcd_enrl_mismatches
               where sex_mismatch = 1;')
 
-race_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+race_mismatches = dbGetQuery(tac, 'select member_id, year
+              from dev.xz_mcd_enrl_mismatches
               where race_mismatch = 1;')
 
-zip_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+zip_mismatches = dbGetQuery(tac, 'select member_id, year
+              from dev.xz_mcd_enrl_mismatches
               where zip_mismatch = 1;')
 
-plan_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+plan_mismatches = dbGetQuery(tac, 'select member_id, year
+              from dev.xz_mcd_enrl_mismatches
               where plan_mismatch = 1;')
 
 ```
@@ -255,7 +260,7 @@ get_mismatch_info = function(current_mismatch){
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "dw-enrollment-spotcheck-tacc-to-spc.xlsx")
+path = here("outputs", "dw-enrollment-spotcheck-spc-to-tacc.xlsx")
 
 addWorksheet(wb, sheetName = "Summary of Mismatches") #1
 addWorksheet(wb, sheetName = "sex mismatches")        #2

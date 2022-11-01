@@ -392,7 +392,7 @@ select sum(member_id_mismatch) as member_id_mismatches,
 	sum(plan_mismatch) as plan_mismatches,
 	sum(dual_mismatch) as dual_mismatches,
 	sum(htw_mismatch) as htw_mismatches
-from work.dbo.xz_mcd_enrl_mismatches	
+from work.dbo.xz_mcd_enrl_mismatches;
 
 select *
 from work.dbo.xz_mcd_enrl_mismatches
@@ -441,5 +441,39 @@ select * from medicaid.dbo.enrl_2019 where CLIENT_NBR = '700024111' order by eli
 201907
 
 select * from medicaid.dbo.CHIP_UTH_SFY2018_Final where CLIENT_NBR = '700024111' order by elig_month;
+
+
+select client_nbr, cy, elig_date, dob, sex, race, zip, mco from work.dbo.xz_mcd_reconciliation_cy_etl
+where client_nbr = '720920939' and cy = '2020'
+order by elig_date;
+
+
+select a.member_id_src as member_id, a.year,
+	a.dob_derived, b.dob
+from work.dbo.xz_dwqa_temp1 a
+	left join work.dbo.xz_mcd_enrl_cy_reconciled b
+	on a.member_id_src = b.mem_id and a.year = b.cy
+where a.member_id_src = '731085427' and a.year = '2021';
+
+
+select * from work.dbo.xz_mcd_reconciliation_cy_etl
+where client_nbr = '731085427' order by elig_date;
+
+/*********************************************
+ *  Test code for starting on SPC side going to TACC side
+ * *******************************************/
+
+select top 100 *
+from work.dbo.xz_mcd_enrl_cy_reconciled
+tablesample(1000 rows);
+
+
+
+select * from work.dbo.xz_mcd_reconciliation_cy_etl where CLIENT_NBR = '701644512'
+order by elig_date;
+
+
+
+
 
 
