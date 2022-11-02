@@ -360,9 +360,8 @@ drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled_t1;
 /***********************************************
  * Comparison for each variable using CALENDAR YEAR
  ***********************************************/
-
---Make boolean table of matches
-drop table if exists work.dbo.xz_mcd_enrl_mismatches;
+--this is the old version without null checking
+drop table if exists work.dbo.xz_mcd_enrl_mismatches_old;
 
 select a.member_id_src as member_id, a.year,
 	case when b.mem_id is null then 1 else 0 end as member_id_mismatch,
@@ -370,6 +369,37 @@ select a.member_id_src as member_id, a.year,
 	case when a.gender_cd != b.sex then 1 else 0 end as sex_mismatch,
 	case when a.race_cd_src != b.race and b.race is not null then 1 else 0 end as race_mismatch,
 	case when a.dob_derived != b.dob then 1 else 0 end as dob_mismatch,
+	case when a.zip5 != b.zip then 1 else 0 end as zip_mismatch,
+	case when a.plan_type != b.mco then 1 else 0 end as plan_mismatch,
+	case when a.dual !=  b.smib then 1 else 0 end as dual_mismatch,
+	case when a.htw != b.htw then 1 else 0 end as htw_mismatch,
+	a.gender_cd as tacc_sex, b.sex as spc_sex,
+	a.race_cd_src as tacc_race, b.race as spc_race,
+	a.zip5 as tacc_zip, b.zip as spc_zip,
+	a.plan_type as tacc_plan, b.mco as spc_plan
+into work.dbo.xz_mcd_enrl_mismatches_old
+from work.dbo.xz_dwqa_temp1 a
+	left join work.dbo.xz_mcd_enrl_cy_reconciled b
+	on a.member_id_src = b.mem_id and a.year = b.cy;
+
+
+--Make boolean table of matches
+drop table if exists work.dbo.xz_mcd_enrl_mismatches;
+
+select a.member_id_src as member_id, a.year,
+	case when b.mem_id is null then 1 else 0 end as member_id_mismatch,
+	case when ((a.total_enrolled_months is null and b.enrolled_months is not null) or
+		(a.total_enrolled_months is not null and b.enrolled_months is null) or 
+		a.total_enrolled_months != b.enrolled_months) then 1 else 0 end as em_mismatch,
+	case when ((a.gender_cd is null and b.sex is not null) or 
+		(a.gender_cd is not null and b.sex is null) or 
+		a.gender_cd != b.sex) then 1 else 0 end as sex_mismatch,
+	case when ((a.race_cd_src is null and (b.race is not null or b.race != '6')) or 
+		((a.race_cd_src is not null or a.race_cd_src !='6') and b.race is null) or
+		a.race_cd_src != b.race) then 1 else 0 end as race_mismatch,
+	case when ((a.dob_derived is null and b.dob is not null) or 
+		(a.dob_derived is not null and b.dob is null) or 
+		a.dob_derived != b.dob then 1 else 0 end as dob_mismatch,
 	case when a.zip5 != b.zip then 1 else 0 end as zip_mismatch,
 	case when a.plan_type != b.mco then 1 else 0 end as plan_mismatch,
 	case when a.dual !=  b.smib then 1 else 0 end as dual_mismatch,

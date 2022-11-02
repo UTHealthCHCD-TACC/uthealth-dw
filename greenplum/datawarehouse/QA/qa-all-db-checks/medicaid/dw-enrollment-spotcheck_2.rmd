@@ -185,7 +185,7 @@ plan_mismatches = dbGetQuery(tac, 'select member_id, year
 
 mismatch_query = 'select member_id, year,tacc_sex, spc_sex, tacc_race, spc_race,
   tacc_zip, spc_zip, tacc_plan, spc_plan
-  from work.dbo.xz_mcd_enrl_mismatches where member_id = \'@memid\' and year = \'@year\''
+  from dev.xz_mcd_enrl_mismatches where member_id = \'@memid\' and year = \'@year\''
 
 tac_sql1 = 'with b as (select race_cd_src, race_cd from reference_tables.ref_race
 	where data_source = \'mdcd\' and race_cd_src is not null)
@@ -241,7 +241,7 @@ get_mismatch_info = function(current_mismatch){
   mismatch_query.mod = mismatch_query %>% gsub('@memid', current_mismatch[1,1], .) %>% 
     gsub('@year', current_mismatch[1,2], .)
   
-  mismatch_details = dbGetQuery(spc, mismatch_query.mod)
+  mismatch_details = dbGetQuery(tac, mismatch_query.mod)
   tacc_details = dbGetQuery(tac, tac_sql1.mod)
   spc_details = dbGetQuery(spc, spc_sql1.mod)
   
