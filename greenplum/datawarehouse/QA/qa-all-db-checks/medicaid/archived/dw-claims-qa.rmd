@@ -156,7 +156,7 @@ from (select icn from medicaid.clm_proc
 --get distinct ICNs from medicaid schema (TACC) by year
 select year_fy::text, count(distinct a.icn)
 from (select year_fy, icn from medicaid.clm_detail
-	union select year_fy, derv_enc from medicaid.enc_det) a
+	union all select year_fy, derv_enc from medicaid.enc_det) a
 	 inner join
 	 (select year_fy, icn from medicaid.clm_proc
 	union select year_fy, derv_enc from medicaid.enc_proc) b

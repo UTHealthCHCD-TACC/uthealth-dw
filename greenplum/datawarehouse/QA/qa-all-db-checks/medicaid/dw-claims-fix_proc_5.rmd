@@ -1,0 +1,172 @@
+---
+title: "dw-claims-details-qa"
+author: "XRZ"
+date: '2022-10-24'
+output: html_document
+---
+
+#Purpose:
+This R markdown script spot checks for the existence of dx and proc codes in dw_staging
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+
+#Connect to Greenplum
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc")))
+```
+
+## 0.5 Set print to 25 rows
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+
+```
+
+# SECTION 1: Declare global variables
+```{r}
+#Define the starting and ending years for checking (4-digit year)
+starting_year = 2012
+ending_year = 2021
+
+#convert to 2-digit year
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+```
+
+#SECTION 2: Scrape scrape scrape
+
+## 2.1 Declare base sql queries
+```{r}
+
+clms = 'insert into work.dbo.xz_mcd_clm_proc5
+select icn, \'clm_proc_@yr\' as tbl_name, PROC_ICD_CD_5 from medicaid.dbo.clm_proc_@yr
+where proc_icd_cd_5 is not null and trim(proc_icd_cd_5) != \'\';'
+
+encs = 'insert into work.dbo.xz_mcd_enc_proc5
+select derv_enc, \'enc_proc_@yr\' as tbl_name, PROC_ICD_CD_5 from medicaid.dbo.enc_proc_@yr
+where proc_icd_cd_5 is not null and trim(proc_icd_cd_5) != \'\';'
+
+```
+
+## 2.2 Prove there are no HTW codes to fix
+```{sql, connection = spc}
+--Note that there are no proc codes to scrape from HTW tables
+--proof:
+
+select icn, 'clm_proc_1819_HTW' as tbl_name, PROC_ICD_CD_5 from medicaid.dbo.clm_proc_1819_HTW
+where proc_icd_cd_5 is not null and trim(proc_icd_cd_5) != '';
+```
+
+## 2.3 Initialize tables and get first year
+```{sql, connection = spc}
+--initialize tables
+drop table if exists work.dbo.xz_mcd_clm_proc5;
+drop table if exists work.dbo.xz_mcd_enc_proc5;
+
+select icn, 'clm_proc_12' as tbl_name, PROC_ICD_CD_5
+into work.dbo.xz_mcd_clm_proc5
+from medicaid.dbo.clm_proc_12
+where proc_icd_cd_5 is not null and trim(proc_icd_cd_5) != '';
+
+select derv_enc, 'enc_proc_13' as tbl_name, PROC_ICD_CD_5
+into work.dbo.xz_mcd_enc_proc5
+from medicaid.dbo.enc_proc_13
+where proc_icd_cd_5 is not null and trim(proc_icd_cd_5) != '';
+
+```
+
+## 2.4 Scrape claims
+```{r}
+for (yr in 13:21){
+  print(paste0("Scraping clm_proc_", yr))
+  clms.mod = clms %>% gsub('@yr', yr, .)
+  dbGetQuery(spc, clms.mod)
+}
+```
+
+## 2.5 Scrape encounters
+
+```{r}
+for (yr in 14:21){
+  print(paste0("Scraping enc_proc_", yr))
+  encs.mod = encs %>% gsub('@yr', yr, .)
+  dbGetQuery(spc, clms.mod)
+}
+```
+
+#SECTION 3: D/l from SPC, U/L to TACC
+
+```{r}
+
+#pull from SPC
+clm_proc5 = dbGetQuery(spc, 'select * from work.dbo.xz_mcd_clm_proc5;')
+enc_proc5 = dbGetQuery(spc, 'select * from work.dbo.xz_mcd_enc_proc5;')
+
+#make all names lowercase bc GP gets case-sensitive
+names(clm_proc5) = tolower(names(clm_proc5))
+names(enc_proc5) = tolower(names(enc_proc5))
+
+tic("Write to TACC: clms")
+dbWriteTable(tac, SQL('dev.xz_mcd_clm_proc5'), clm_proc5, overwrite = T)
+toc()
+tic("Write to TACC: encs")
+dbWriteTable(tac, SQL('dev.xz_mcd_enc_proc5'), enc_proc5, overwrite = T)
+toc()
+
+
+```
+
+#SECTION 99: Delete temp tables, Close connections, clear R environment
+
+```{r close-connections, eval = FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval = FALSE}
+# clears R environment
+rm(list=ls())
+```
