@@ -11,26 +11,6 @@
  * ****************************************************************************************************** 
  * */
 
-drop table if exists dw_staging.pharmacy_claims ;
-
-create table dw_staging.pharmacy_claims 
-(like data_warehouse.pharmacy_claims including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
 
 ---chip 
 insert into dw_staging.pharmacy_claims (
