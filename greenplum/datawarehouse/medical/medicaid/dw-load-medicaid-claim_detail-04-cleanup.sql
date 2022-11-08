@@ -42,3 +42,5 @@ update dw_staging.claim_detail
 	  )::int;
 
 vacuum analyze dw_staging.claim_detail;
+alter table dw_staging.claim_detail owner to uthealth_dev;
+grant select on dw_staging.claim_detail to uthealth_analyst;

@@ -128,7 +128,7 @@ raise notice 'total_enrolled_months updated';
 end $$;
 
 
-analyze dw_staging.member_enrollment_yearly;
+vacuum analyze dw_staging.member_enrollment_yearly;
 
 do $$
 declare
@@ -180,6 +180,10 @@ begin
 	
 	end loop;
 
+
+
+end $$;
+
 /*
  * FIX PLAN TYPE TO ACCOUNT FOR PRIORITY LIST 
  */
@@ -229,7 +233,7 @@ select a.uth_member_id, year, b.plan_type, row_number ()
   left outer join dw_staging.mdcd_plan_priority b 
   on a.plan_type = b.plan_type 
   )  distributed by(uth_member_id);
-  ;
+  
  
  analyze dw_staging.mdcd_plan_rn;
 
@@ -282,8 +286,6 @@ update dw_staging.member_enrollment_yearly a
    and a.year = b.year
    and b.rn = 1;	
 
-
-end $$;
 
 /*
  * FINALIZE
