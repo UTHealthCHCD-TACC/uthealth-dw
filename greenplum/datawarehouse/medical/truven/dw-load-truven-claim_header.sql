@@ -61,14 +61,13 @@ insert into dw_staging.claim_header
 	cost_factor_year,
 	claim_id_src,
 	member_id_src
-   -- ,bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
     'truv',
 	  extract(year from a.svcdate),
-    b.uth_member_id,
-    b.uth_claim_id,
-    a.facprof,
+      b.uth_member_id,
+      b.uth_claim_id,
+      a.facprof,
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
@@ -110,14 +109,13 @@ insert into dw_staging.claim_header
 	cost_factor_year,
 	claim_id_src,
 	member_id_src
- -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
     'truv',
 	  extract(year from a.svcdate),
-    b.uth_member_id,
-    b.uth_claim_id,
-    a.facprof,
+      b.uth_member_id,
+      b.uth_claim_id,
+      a.facprof,
 	  a.svcdate,
 	  a.tsvcdat,
 	  null as uth_admission_id,
@@ -128,7 +126,6 @@ select distinct on (uth_claim_id)
 	  null as cost_factor_year,
 	  a.msclmid::text,
 	  a.enrolid::text
- -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.mdcro a
 join dev.truven_dim_uth_claim_id b --  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
@@ -159,7 +156,6 @@ insert into dw_staging.claim_header
 	cost_factor_year,
 	claim_id_src,
 	member_id_src
- -- bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider
 )
 select distinct on (uth_claim_id) 
     'truv',
@@ -177,7 +173,6 @@ select distinct on (uth_claim_id)
 	  null as cost_factor_year,
 	  a.msclmid::text,
 	  a.enrolid::text
- -- ,	null as bill_provider, null as ref_provider, null as other_provider, null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
 from truven.ccaes a
 join dev.truven_dim_uth_claim_id b--  join data_warehouse.dim_uth_claim_id b
 	on b.member_id_src = a.enrolid::text
