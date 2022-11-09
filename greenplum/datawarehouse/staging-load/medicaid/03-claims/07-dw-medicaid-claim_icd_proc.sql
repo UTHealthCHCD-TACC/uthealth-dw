@@ -11,30 +11,7 @@
  * ****************************************************************************************************** 
  * */
 
-drop table if exists dw_staging.claim_icd_proc;
-
-create table dw_staging.claim_icd_proc
-(like data_warehouse.claim_icd_proc including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
-
-insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, 
-									   claim_id_src, member_id_src,
-									   fiscal_year, uth_claim_id, 
+insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, fiscal_year, uth_claim_id, 
                                        from_date_of_service, proc_cd, proc_position, icd_version)
 select * 
 from ( 

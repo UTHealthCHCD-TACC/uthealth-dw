@@ -10,32 +10,8 @@
  *  wcough	    || 1/07/2022 || add icd_version back to table
  * ****************************************************************************************************** */
 
-drop table if exists dw_staging.claim_diag;
-
---claim diag
-create table dw_staging.claim_diag
-(like data_warehouse.claim_diag including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
-
-
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, 
-							       uth_claim_id,  claim_id_src, member_id_src,
-                                       from_date_of_service, diag_cd, diag_position, poa_src, icd_version )
+insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  
+                                       from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
 		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), 

@@ -1,27 +1,3 @@
-drop table if exists dw_staging.member_enrollment_monthly;
-
-create table dw_staging.member_enrollment_monthly  
-(like data_warehouse.member_enrollment_monthly including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
-
-alter table  dw_staging.member_enrollment_monthly add column row_id bigserial;
-alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
-
 drop table if exists dw_staging.medicaid_enroll_etl;
 
 CREATE TABLE dw_staging.medicaid_enroll_etl (
