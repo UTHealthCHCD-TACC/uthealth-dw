@@ -3,5 +3,4 @@ from pg_stat_activity
 where state = 'active';
 
 
-select pg_cancel_backend(136638);
-
+select pg_cancel_backend(321012);

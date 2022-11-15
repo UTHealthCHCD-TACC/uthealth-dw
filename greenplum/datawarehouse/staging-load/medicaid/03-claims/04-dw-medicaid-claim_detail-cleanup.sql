@@ -1,8 +1,12 @@
 /*
- * last update: 10/25/2022
- * author: joe wozny
- * 1) cleanup invalid date of service values in dw_staging.claim_detail
- * 2) update year and FY with fixed values 
+last update: 10/25/2022
+
+Logic:
+Several claims have dates of service outside of the valid date ranges.
+The corresponding claim in claim_header often has the correct date of service
+So we update claim detail from claim header and re-derive year
+
+
  */
 
 

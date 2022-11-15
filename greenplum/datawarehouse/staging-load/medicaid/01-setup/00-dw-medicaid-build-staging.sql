@@ -93,7 +93,7 @@ partition by list(data_source)
   partition mdcd values ('mdcd'),
   partition mcrt values ('mcrt'),
   partition mcrn values ('mcrn')
- )
+ ) 
 ; 
 
 ---claim diag 

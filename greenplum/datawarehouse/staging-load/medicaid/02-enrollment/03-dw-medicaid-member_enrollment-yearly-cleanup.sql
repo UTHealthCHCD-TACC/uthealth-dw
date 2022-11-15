@@ -1,3 +1,8 @@
+/*
+* assigning a yearly plan type requires logic about the hierarchy of plan types
+*/
+
+
 drop table if exists dw_staging.mdcd_plan_priority;
 
 create table dw_staging.mdcd_plan_priority (
@@ -15,8 +20,6 @@ INSERT INTO dw_staging.mdcd_plan_priority(plan_type, priority)
 	 ('FFS', 4 ),
 	 ('PCCM', 4 );
                 
-select * from dw_staging.mdcd_plan_priority;
-
 ---------------------
 
 drop table if exists dw_staging.mdcd_plan_count;
@@ -61,7 +64,7 @@ update dw_staging.member_enrollment_yearly a
  * FIX RACE CD
  */
   
-  drop table if exists dw_staging.mdcd_race_count;
+drop table if exists dw_staging.mdcd_race_count;
 
 create table dw_staging.mdcd_race_count 
 with (appendonly=true, orientation=row) as (
@@ -96,7 +99,7 @@ update dw_staging.member_enrollment_yearly a
    and a.year = b.year
    and b.rn = 1;	
 
-
+drop table if exists dw_staging.mdcd_race_rn;
 
 
 /*

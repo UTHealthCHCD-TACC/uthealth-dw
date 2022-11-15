@@ -1,0 +1,6 @@
+2022-11-12 09:55:19,117: o:\github\uthealth-dw\greenplum\datawarehouse\staging-load\medicaid\02-enrollment\01-dw-medicaid-member_enrollment_monthly.sql
+2022-11-12 09:55:19,297: <connection object at 0x0000015AF6A67230; dsn: 'user=jwozny password=xxx dbname=uthealth host=greenplum01.corral.tacc.utexas.edu port=5432', closed: 0>
+2022-11-12 09:58:55,226: VACUUM cannot be executed from a function or multi-command string
+
+2022-11-12 09:58:55,228: transaction commited
+2022-11-12 09:58:55,228: connection closed

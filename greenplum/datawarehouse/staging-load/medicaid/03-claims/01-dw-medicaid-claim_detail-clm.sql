@@ -1,5 +1,25 @@
 /* ETL TABLES FOR CLEANING */
 
+drop table if exists dw_staging.claim_detail;
+
+create table dw_staging.claim_detail
+(like data_warehouse.claim_detail including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
 
 drop table if exists dw_staging.clm_detail_etl;
 
@@ -232,8 +252,6 @@ drop table dw_staging.clm_header_etl;
 drop table dw_staging.clm_proc_etl;
 drop table dw_staging.clm_detail_etl ;
 	  
---vacuum analyze dw_staging.detail_etl ;
-
 insert into dw_staging.claim_detail
 select distinct 
     'mdcd' as data_source,

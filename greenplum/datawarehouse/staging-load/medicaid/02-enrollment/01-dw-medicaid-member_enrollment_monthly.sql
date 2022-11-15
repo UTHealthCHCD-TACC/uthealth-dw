@@ -1,3 +1,28 @@
+
+drop table if exists dw_staging.member_enrollment_monthly;
+
+create table dw_staging.member_enrollment_monthly  
+(like data_warehouse.member_enrollment_monthly including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
+
+alter table  dw_staging.member_enrollment_monthly add column row_id bigserial;
+alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
+
 drop table if exists dw_staging.medicaid_enroll_etl;
 
 CREATE TABLE dw_staging.medicaid_enroll_etl (
@@ -41,6 +66,8 @@ select trim(a.client_nbr) as client_nbr ,
 	   null as state
   from medicaid.enrl  a 
 ;
+
+select * from dw_staging.medicaid_enroll_etl;
 
 analyze dw_staging.medicaid_enroll_etl;
 
@@ -268,8 +295,8 @@ insert into dw_staging.member_enrollment_monthly (
     a.client_nbr as member_id_src,
     current_date as load_date
 from dw_staging.medicaid_enroll_etl  a 
-  join data_warehouse.dim_uth_member_id b  
-     on b.data_source = 'mdcd'
+  join data_warehouse.dim_uth_member_id b 
+     on b.data_source = 'mdcd' 
     and b.member_id_src = a.client_nbr 	
 	;
 
