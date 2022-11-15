@@ -67,6 +67,8 @@ select trim(a.client_nbr) as client_nbr ,
   from medicaid.enrl  a 
 ;
 
+select * from dw_staging.medicaid_enroll_etl;
+
 analyze dw_staging.medicaid_enroll_etl;
 
 ---
@@ -293,8 +295,8 @@ insert into dw_staging.member_enrollment_monthly (
     a.client_nbr as member_id_src,
     current_date as load_date
 from dw_staging.medicaid_enroll_etl  a 
-  join data_warehouse.dim_uth_member_id b  
-     on b.data_source = 'mdcd'
+  join data_warehouse.dim_uth_member_id b 
+     on b.data_source = 'mdcd' 
     and b.member_id_src = a.client_nbr 	
 	;
 
