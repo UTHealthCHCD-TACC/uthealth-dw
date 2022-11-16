@@ -74,7 +74,7 @@ from cte_distinct_member
 
 raise notice 'load optz finished';
 
-
+/*
 ---***** Truven ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
@@ -95,7 +95,7 @@ from cte_distinct_member
 
 raise notice 'load truven finished';
 raise notice 'load mcrt begin';
-
+*/
 
 --- ***** Medicare Texas ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
