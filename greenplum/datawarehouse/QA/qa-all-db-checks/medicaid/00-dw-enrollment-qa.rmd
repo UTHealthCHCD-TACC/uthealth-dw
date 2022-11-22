@@ -9,6 +9,15 @@ output: html_document
 This R markdown script examines the accuracy of conversions from raw source tables to
 data_warehouse tables
 
+It counts:
+  disctinct members
+  disctinct member-year-month combinations
+  
+Counted from:
+  SPCDEDPWPVS1 server
+  TACC server medicaid schema
+  TACC server dw_staging.member_enrollment_monthly
+  TACC server dw_staging.member_enrollment_yearly
 
 # SECTION 0: Loading required packages, making connections, the usual
 

@@ -1,0 +1,333 @@
+---
+title: "dw-claims-header-qa"
+author: "XRZ"
+date: '2022-10-24'
+output: html_document
+---
+
+# PURPOSE
+This R markdown script spot checks for matching header information in dw_staging
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+
+#Connect to Greenplum
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc")))
+```
+
+## 0.5 Set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+
+```
+
+# SECTION 1: Declare global variables
+```{r}
+#Define the starting and ending years for checking (4-digit year)
+starting_year = 2012
+ending_year = 2021
+
+#Define how many rows to check - will check this many rows 
+#from each of the clm_proc table and enc_proc table so double this number
+#for rows checked per year (except for 2012)
+rows_to_check = 5000
+
+#convert to 2-digit year
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+```
+
+# SECTION 2: Randomly select rows from SPC header tables and uploads to TACC
+## 2.1 Define base queries
+```{r}
+#set rows_to_sample as slightly higher than rows to check b/c of
+#the funny way that tablesample works
+rows_to_sample = as.integer(rows_to_check) * 1.2
+
+#select random rows from the claims table
+spc_sql1 = 'with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_@yr group by icn)
+
+select top @rows_to_check a.hdr_frm_dos as from_dos,
+	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
+	a.tot_bill_amt as tot_charge_amt,
+	a.TOT_ALWD_AMT as tot_allowed_amt,
+	a.hdr_pd_amt as tot_paid_amt,
+	\'20@yr\' as fy,
+	a.hdr_to_dos as to_dos,
+	a.BILL_PROV_NPI as bill_provider,
+	a.atd_prov_npi as perf_at_provider,
+	a.icn as icn,
+	a.hdr_txm_cd as provider_type
+into work.dbo.xz_dwqa_temp1
+from medicaid.dbo.clm_header_@yr a tablesample(@rows_to_sample rows)
+	left join p on a.icn = p.icn;'
+
+spc_sql2 = 'insert into work.dbo.xz_dwqa_temp1
+  select top @rows_to_check FRM_DOS,
+	case when TX_CD = \'P\' then \'P\'
+		when TX_CD = \'I\' then \'F\'
+		else null end as claim_type,
+	TOT_CHRG_AMT as tot_charge_amt,
+	MCO_PD_AMT as tot_allowed_amt,
+	null as tot_paid_amt,
+	\'20@yr\' as fy,
+	to_dos as to_dos,
+	BILL_PROV_NPI as bill_provider,
+	ATTD_PHY_NPI as perf_at_provider,
+	DERV_ENC as icn,
+	BILL_PROV_TAX_CD as provider_type
+from medicaid.dbo.enc_header_@yr tablesample(@rows_to_sample rows);'
+
+spc_sql3 = 'with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_1819_htw group by icn)
+
+select top @rows_to_check a.hdr_frm_dos as from_dos,
+	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
+	a.tot_bill_amt as tot_charge_amt,
+	a.TOT_ALWD_AMT as tot_allowed_amt,
+	a.hdr_pd_amt as tot_paid_amt,
+	\'HTW\' as fy,
+	a.hdr_to_dos as to_dos,
+	a.BILL_PROV_NPI as bill_provider,
+	a.atd_prov_npi as perf_at_provider,
+	a.icn as icn,
+	a.hdr_txm_cd as provider_type
+into work.dbo.xz_dwqa_temp1
+from medicaid.dbo.CLM_header_1819_HTW a tablesample(@rows_to_sample rows)
+	left join p on a.icn = p.icn;'
+
+```
+
+## 2.2 Send, year by year, random selections from header tables
+```{r}
+
+#clear the holding table on TACC side
+dbGetQuery(tac, 'drop table if exists dev.xz_dwqa_temp1;')
+
+for (yr in starting_yr:ending_yr){
+  
+  #clear tables
+  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  
+  if (yr == 12){
+    print("Sampling records for 2012, the special year")
+    
+    #for 2012,
+    #modify just the claims queries
+    spc_sql1.mod = spc_sql1 %>% gsub('@rows_to_check', rows_to_check, .) %>%
+      gsub('@rows_to_sample', rows_to_sample, .) %>%
+      gsub('@yr', yr, .) %>%
+      gsub('BILL_PROV_NPI', 'BIL_PROV_NPI', .)
+    
+    #and send query
+    tic("sample from claims")
+    dbGetQuery(spc, spc_sql1.mod)
+    toc()
+    
+  } else {
+    print(paste0("Sampling records for 20", yr))
+  
+    #for all other years
+    #modify queries
+    spc_sql1.mod = spc_sql1 %>% gsub('@rows_to_check', rows_to_check, .) %>%
+      gsub('@rows_to_sample', rows_to_sample, .) %>%
+      gsub('@yr', yr, .)
+    spc_sql2.mod = spc_sql2 %>% gsub('@rows_to_check', rows_to_check, .) %>%
+      gsub('@rows_to_sample', rows_to_sample, .) %>%
+      gsub('@yr', yr, .)
+    
+    #BILL_PROV_NPI is missing an L in 2012-2015
+    if (yr < 16){
+      spc_sql1.mod = spc_sql1.mod %>% gsub('BILL_PROV_NPI', 'BIL_PROV_NPI', .)
+    }
+        
+    tic("sample from claims")
+    dbGetQuery(spc, spc_sql1.mod)
+    toc()
+    tic("sample from encounters")
+    dbGetQuery(spc, spc_sql2.mod)
+    toc()
+    
+  }
+
+  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  #make all names lowercase bc GP gets case-sensitive
+  names(spc_selection) = tolower(names(spc_selection))
+  
+  tic("Write to TACC")
+  dbWriteTable(tac, SQL('dev.xz_dwqa_temp1'), spc_selection, append = T, overwrite = F)
+  toc()
+}
+
+  #Sample HTW claims
+
+  #clear tables
+  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  
+  spc_sql3.mod = spc_sql3 %>% gsub('@rows_to_check', rows_to_check, .) %>%
+  gsub('@rows_to_sample', rows_to_sample, .)
+  
+  tic("sample from HTW")
+  dbGetQuery(spc, spc_sql3.mod)
+  toc()
+
+  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  #make all names lowercase bc GP gets case-sensitive
+  names(spc_selection) = tolower(names(spc_selection))
+  
+  tic("Write to TACC")
+  dbWriteTable(tac, SQL('dev.xz_dwqa_temp1'), spc_selection, append = T, overwrite = F)
+  toc()
+
+```
+
+# SECTION 3: Looks for DX codes in dw_staging.clm_dx
+
+## 3.1 Search for dx codes
+
+```{sql, connection = tac}
+drop table if exists dev.xz_dwqa_temp2;
+```
+
+```{sql, connection = tac}
+select a.*, b.from_date_of_service, b.claim_type as dw_claim_type, b.total_charge_amount, b.total_allowed_amount,
+	b.total_paid_amount, b.fiscal_year, b.to_date_of_service, b.bill_provider as dw_bill_provider, b.ref_provider as dw_ref_provider, 
+	b.perf_at_provider as dw_perf_at_provider, b.provider_type as dw_provider_type,
+	case when b.claim_id_src is null then 1 when b.claim_id_src::text != trim(a.icn)::text then 1 else 0 end as icn_mismatch,
+	case when b.fiscal_year is null then 1 when b.fiscal_year::text != trim(a.fy)::text then 1 else 0 end as fy_mismatch,
+	case when b.from_date_of_service is null then 1 when b.from_date_of_service::text != trim(a.from_dos)::text then 1 else 0 end as from_dos_mismatch,
+	case when b.to_date_of_service is null then 1 when b.to_date_of_service::text != trim(a.to_dos)::text then 1 else 0 end as to_dos_mismatch,
+	case when b.claim_type is null then 1 when b.claim_type::text != trim(a.claim_type)::text then 1 else 0 end as claim_type_mismatch,
+	case when b.total_charge_amount is null then 1 when b.total_charge_amount::float != trim(a.tot_charge_amt)::float then 1 else 0 end as tot_charge_amt_mismatch,
+	case when b.total_allowed_amount is null then 1 when b.total_allowed_amount::float != trim(a.tot_allowed_amt)::float then 1 else 0 end as tot_allowed_amt_mismatch,
+	case when b.total_paid_amount is null and a.tot_paid_amt is not null then 1 when b.total_paid_amount::float != trim(a.tot_paid_amt)::float then 1 else 0 end as tot_paid_amt_mismatch,
+	case when b.bill_provider is null and trim(a.bill_provider) = '' then 0
+		when b.bill_provider is null and trim(a.bill_provider) != '' then 1
+		when b.bill_provider::text != trim(a.bill_provider)::text then 1 else 0 end as bill_provider_mismatch,
+	case when b.perf_at_provider is null and trim(a.perf_at_provider) = '' then 0
+		when b.perf_at_provider is null and trim(a.perf_at_provider) != '' then 1
+		when b.perf_at_provider::text != trim(a.perf_at_provider)::text then 1 else 0 end as perf_at_provider_mismatch,
+	case when b.provider_type is null then 1 when b.provider_type::text != trim(a.provider_type)::text then 1 else 0 end as provider_type_mismatch
+into dev.xz_dwqa_temp2
+from dev.xz_dwqa_temp1 a left join dw_staging.claim_header b on a.icn = b.claim_id_src;
+
+```
+
+## 3.2 Get sum of mismatches
+```{sql, connection = tac, output.var = sum_mismatches}
+
+select fy, sum(icn_mismatch) as icn_mismatches,
+  sum(fy_mismatch) as fy_mismatches,
+  sum(from_dos_mismatch) as from_dos_mismatches,
+  sum(to_dos_mismatch) as to_dos_mismatches,
+  sum(claim_type_mismatch) as claim_type_mismatches,
+  sum(tot_charge_amt_mismatch) as tot_charge_amt_mismatches,
+  sum(tot_allowed_amt_mismatch) as tot_allowed_amt_mismatches,
+  sum(tot_paid_amt_mismatch) as tot_paid_amt_mismatches,
+  sum(bill_provider_mismatch) as bill_provider_mismatches,
+  sum(perf_at_provider_mismatch) as perf_at_provider_mismatches,
+  sum(provider_type_mismatch) as provider_type_mismatches,
+ count(*) as rows_checked
+from dev.xz_dwqa_temp2
+group by fy
+order by fy;
+
+```
+
+# SECTION 4: Outputs results
+
+## 4.1 Write to xlsx
+```{r}
+output = sum_mismatches
+
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "dw-claim-header-spotcheck.xlsx")
+
+addWorksheet(wb, sheetName = "claim_header spotcheck")
+
+writeData(wb, sheet = 1, "Mismatches found in claim_header tables between SPC and dw_staging", startCol=1, startRow=1)
+writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = 1, paste("Rows sampled per SPC table:", rows_to_check), startCol=1, startRow=3)
+
+writeData(wb, sheet = 1, output, startCol=1, startRow=5)
+
+nextrow = nrow(output) + 7
+
+writeData(wb, sheet = 1, "Note: HTW FY mismatch is expected, as the FY is hardcoded as HTW on SPC side", startCol=1, startRow=nextrow)
+
+setColWidths(wb, sheet = 1, cols=1:ncol(output)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+#SECTION 99: Delete temp tables, Close connections, clear R environment
+
+```{sql, connection = spc, eval = FALSE}
+drop table if exists work.dbo.xz_dwqa_temp1;
+drop table if exists work.dbo.xz_dwqa_temp2;
+drop table if exists work.dbo.xz_dwqa_temp3;
+```
+
+```{sql, connection = tac, eval = FALSE}
+drop table if exists dev.xz_dwqa_temp1;
+drop table if exists dev.xz_dwqa_temp2;
+drop table if exists dev.xz_dwqa_temp3;
+```
+
+```{r close-connections, eval = FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval = FALSE}
+# clears R environment
+rm(list=ls())
+```

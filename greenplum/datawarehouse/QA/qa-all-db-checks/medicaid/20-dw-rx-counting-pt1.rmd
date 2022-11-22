@@ -1,12 +1,13 @@
 ---
-title: "dw-claims-details-qa"
+title: "dw-rx-counting"
 author: "XRZ"
-date: '2022-10-24'
+date: '2022-11-09'
 output: html_document
 ---
 
 #Purpose:
-This R markdown script counts distinct claims from SPC tables
+This R markdown script counts distinct pharmacy rx for medicaid in
+dw_staging and SPCDEDPWPVS1
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -15,7 +16,7 @@ This R markdown script counts distinct claims from SPC tables
 # Package installs/loading 
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc)
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
 ```
 
@@ -32,11 +33,10 @@ pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, ticto
 
 
 #Connect to Greenplum
-tac <- dbConnect(odbc::odbc(),
-	 dsn = "PostgreSQL30",
-	 database = "uthealth",
-	 UID = "xrzhang",
-	 PWD = key_get("Greenplum", "xrzhang"),
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
 ```
@@ -57,9 +57,10 @@ spc <- dbConnect(odbc::odbc(),
 rm(list=setdiff(ls(), c("tac", "spc")))
 ```
 
-## 0.5 Set print to 25 rows
+## 0.5 Set misc R options
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
 
 ```
 
@@ -70,7 +71,7 @@ knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 #SPC server shouldn't have major changes year to year, so if output exists already
 #use that
 
-path = here("outputs", "spc-claims-counting.xlsx")
+path = here("outputs", "spc-rx-counting.xlsx")
 
 if (file.exists(path)) {
 
@@ -78,24 +79,23 @@ stop("Output already exists!")
 
 }
 
-print("test")
+print("No previous output exists, proceeding...")
 
 ```
+
 ## 1.2 Otherwise define global variables and proceed
 ```{r}
-#define starting and ending year
+#Declare the year range
 starting_year = 2012
 ending_year = 2021
 
-#conver to 2-digit year
+#get the 2-digit version of years
 starting_yr = starting_year - 2000
 ending_yr = ending_year - 2000
 
 ```
 
-# SECTION 2: Count how many claims there are in each year
-
-## 2.1 First make sure claims ICN and encounters DERV_ENC are distinct from each other
+## 2.1 First make sure rx ICN and encounters DERV_ENC are distinct from each other
 
 ### 2.11 Declare base SQL query and initialize table
 ```{r}
@@ -135,12 +135,12 @@ for (yr in 13:21){
 
 
 
-## 2.2 Count claims and encounters for each 
+## 2.2 Count rx and encounters for each 
 
 ### 2.22 Declare base SQL query for getting count of distinct ICNS each year from SPC server and initialize table
 ```{r}
 
-#Counting from claims
+#Counting from rx
 
 clm_det = 'select count(distinct a.icn)
 from medicaid.dbo.clm_proc_@yr a inner join medicaid.dbo.clm_detail_@yr b
@@ -174,7 +174,7 @@ for (yr in starting_yr:ending_yr){
   
   print(paste0("Counting distinct claim numbers for 20", yr))
   
-  if (yr == 12) { #if year = 2012 then count claims only
+  if (yr == 12) { #if year = 2012 then count rx only
     
     clm_det.mod = clm_det %>% gsub(pattern = '@yr', replacement = yr)
     clm_head.mod = clm_head %>% gsub(pattern = '@yr', replacement = yr)
@@ -217,7 +217,7 @@ for (yr in starting_yr:ending_yr){
 
 ```
 
-### 2.24 Count HTW claims
+### 2.24 Count HTW rx
 ```{r}
 #initialize dataframe
 claim_counts_htw = data.frame(matrix(ncol=5, nrow=1))
@@ -263,11 +263,11 @@ claim_counts_sum = claim_counts %>%
 ```{r}
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "spc-claims-counting.xlsx")
+path = here("outputs", "spc-rx-counting.xlsx")
 
-addWorksheet(wb, sheetName = "SPCDEDPWPVS1 claims counting")
+addWorksheet(wb, sheetName = "SPCDEDPWPVS1 rx counting")
 
-writeData(wb, sheet = 1, "Count of distinct claims in SPCDEDPWPVS1", startCol=1, startRow=1)
+writeData(wb, sheet = 1, "Count of distinct rx in SPCDEDPWPVS1", startCol=1, startRow=1)
 writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
 writeData(wb, sheet = 1, claim_counts_sum, startCol=1, startRow=4)
 

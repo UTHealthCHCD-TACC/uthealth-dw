@@ -130,7 +130,7 @@ for (yr in 13:21){
 for (yr in 14:21){
   print(paste0("Scraping enc_proc_", yr))
   encs.mod = encs %>% gsub('@yr', yr, .)
-  dbGetQuery(spc, clms.mod)
+  dbGetQuery(spc, encs.mod)
 }
 ```
 

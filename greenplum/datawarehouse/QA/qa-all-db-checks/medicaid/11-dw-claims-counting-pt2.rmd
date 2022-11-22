@@ -5,7 +5,7 @@ date: '2022-10-24'
 output: html_document
 ---
 
-#Purpose:
+#PURPOSE
 This R markdown script counts distinct claims from TACC tables
 
 # SECTION 0: Loading required packages, making connections, the usual
@@ -15,7 +15,7 @@ This R markdown script counts distinct claims from TACC tables
 # Package installs/loading 
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc)
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
 ```
 
@@ -317,16 +317,30 @@ writeData(wb, sheet = 1, claim_counts_TACC_out, startCol=1, startRow=4)
 nextrow = nrow(claim_counts_TACC_out) + 6
 writeData(wb, sheet = 1, "Difference between counts (Raw data count - DW count)", startCol=1, startRow=nextrow)
 writeData(wb, sheet = 1, count_diffs, startCol=1, startRow=nextrow + 1)
-nextrow = nextrow + nrow(count_diffs) + 3
-writeData(wb, sheet = 1, table_legend, startCol=1, startRow=nextrow)
 
 #overwrite the spacer columns
 writeData(wb, sheet = 1, '', startCol=4, startRow=nextrow + 1)
 writeData(wb, sheet = 1, '', startCol=5, startRow=nextrow + 1)
 
+#write the legend
+nextrow = nextrow + nrow(count_diffs) + 3
+writeData(wb, sheet = 1, table_legend, startCol=1, startRow=nextrow)
+
+#write notes
+nextrow = nextrow + nrow(table_legend) + 3
+writeData(wb, sheet = 1, "Notes:", startCol=1, startRow=nextrow)
+nextrow = nextrow + 1
+writeData(wb, sheet = 1, "The 124 claims difference in 2016 is due to joining proc, details, and headers - the missing claims do not exist in the header table", startCol=1, startRow=nextrow)
+nextrow = nextrow + 1
+writeData(wb, sheet = 1, "The discrepancy in 2018 is largely due to HTW claims", startCol=1, startRow=nextrow)
+nextrow = nextrow + 1
+writeData(wb, sheet = 1, "HTW discrepancy: see 2018", startCol=1, startRow=nextrow)
+
+#set colwidths
 setColWidths(wb, sheet = 1, cols=1:ncol(claim_counts_TACC_out)+1, widths="auto")
 setColWidths(wb, sheet = 1, cols=1:2, widths=c(15, 15))
 
+#save to file
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
 saveWorkbook(wb, file=path, overwrite=TRUE)
 

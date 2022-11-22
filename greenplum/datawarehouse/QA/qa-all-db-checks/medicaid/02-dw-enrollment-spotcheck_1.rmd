@@ -12,6 +12,8 @@ data_warehouse tables
 It selects random rows from the dw_staging yearly enrollment table and compares
 them to a table that is created using (mostly) the same logic from the SPC-side tables.
 
+Spotcheck1 runs in the dw -> spc direction (Spotcheck2 runs in the reverse direction)
+
 
 # SECTION 0: Loading required packages, making connections, the usual
 

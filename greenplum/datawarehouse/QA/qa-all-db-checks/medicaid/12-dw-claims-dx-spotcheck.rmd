@@ -303,9 +303,9 @@ output = sum_mismatches %>%
 ```{r}
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "dw-claim-diag-spotcheck.xlsx")
+path = here("outputs", "dw-claim-dx-spotcheck.xlsx")
 
-addWorksheet(wb, sheetName = "claim_diag spotcheck")
+addWorksheet(wb, sheetName = "claim_dx spotcheck")
 
 writeData(wb, sheet = 1, "Mismatches found in claim_diag tables between SPC and dw_staging", startCol=1, startRow=1)
 writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
