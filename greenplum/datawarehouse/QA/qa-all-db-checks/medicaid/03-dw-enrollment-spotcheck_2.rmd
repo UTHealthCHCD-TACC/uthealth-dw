@@ -9,8 +9,10 @@ output: html_document
 This R markdown script examines the accuracy of conversions from raw source tables to
 data_warehouse tables
 
-It selects random rows from the enrollment table created in dw-enrollment-spotcheck-0
+It selects random rows from the enrollment table created on the SPC server
 and compares them to the dw_staging yearly enrollment table
+
+Spotcheck2 runs in the spc -> dw direction (Spotcheck1 runs in the reverse direction)
 
 # SECTION 0: Loading required packages, making connections, the usual
 
