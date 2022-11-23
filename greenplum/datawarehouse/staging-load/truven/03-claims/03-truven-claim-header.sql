@@ -135,7 +135,7 @@ select  'truv',
   /*
  *  Commercial Outpatient
  */
-  
+explain
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
@@ -181,7 +181,7 @@ select  'truv',
         a.enrolid,
         a.msclmid,
         current_date
-  from cte a
+   from cte a
    join dev.truv_dim_id b 
      on a.enrolid = b.member_id_src 
     and a.msclmid = b.claim_id_src  

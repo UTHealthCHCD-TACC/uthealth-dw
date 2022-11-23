@@ -27,13 +27,62 @@
 
 
 ----  // BEGIN SCRIPT 
-analyze dw_staging.member_enrollment_monthly;
 
-select count(*), data_source, year from dw_staging.member_enrollment_monthly group by 2,3 order by 2,3;
+drop table if exists dw_staging.member_enrollment_monthly_truven_test;
+
+create table dw_staging.member_enrollment_monthly_truven_test  
+(like data_warehouse.member_enrollment_monthly including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
+
+analyze dw_staging.member_enrollment_monthly_truven_test;
+
+/*
+ * Because there are several billion rows, we need to redistribute the enrollment table on a key with the right data type to speed up the join with dim in the DW
+ */
+drop table if exists dw_staging.ccaet;
+
+create table dw_staging.ccaet with (
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select m.enrolid::text,
+       m.medadv,
+       m.rx,
+       m.efamid,
+       m.mhsacovg,
+       m.egeoloc,
+       m.dtstart,
+       m.sex,
+       m.dtend,
+       m.plantyp,
+       m.empzip,
+       m.dobyr,
+       m.eestatu ,
+       m.year
+  from truven.ccaet m
+  distributed by (enrolid)
+  ;
+ 
+ analyze dw_staging.ccaet;
 
 -- Truven Commercial ----------------------------------------------------------------------------
--- 11/7/21 runtime 53min
-insert into dw_staging.member_enrollment_monthly  (
+insert into dw_staging.member_enrollment_monthly_truven_test  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -52,46 +101,79 @@ insert into dw_staging.member_enrollment_monthly  (
 	fiscal_year, 
 	race_cd,
 	family_id,
-	behavioral_coverage
+	behavioral_coverage,
+	load_date,
+	table_id_src,
+	member_id_src
+
 	)		
 select 'truv', 
-       b.year_int,
-       b.month_year_id, 
-       a.uth_member_id,
+       m.year,
+       (extract (year from m.dtstart)::text || lpad(extract (month from m.dtstart)::text , 2, '0'))::int, 
+       a.uth_member_id, 
        c.gender_cd, 
-       case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'),
-       b.year_int - dobyr as age_derived, 
+       case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'), 
+       m.year - dobyr as age_derived, 
        (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
-       null,
+       null, 
        d.plan_type, 
        case when m.medadv = '1' then 'MA' else 'COM' end as bus_cd, 
        eestatu, 
        m.rx, 
-       b.fy_ut,
-       '0' as race,
+       null, 
+       '0' as race, 
        m.efamid::text, 
-       m.mhsacovg
-from truven.ccaet m
-  join data_warehouse.dim_uth_member_id a 
-    on a.member_id_src = m.enrolid::text
-   and a.data_source = 'truv'
-  join reference_tables.ref_truven_state_codes s 
+       m.mhsacovg,
+       current_date,
+       'mdcrt',
+       enrolid 
+  from dw_staging.ccaet m
+  join data_warehouse.dim_uth_member_id  a 
+    on a.member_id_src = m.enrolid
+ and a.data_source = 'truv'
+  left outer join reference_tables.ref_truven_state_codes s 
     on m.egeoloc=s.truven_code
-  join reference_tables.ref_month_year b 
-    on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
   left outer join reference_tables.ref_gender c
-    on c.data_source = 'trv'
-   and c.gender_cd_src = m.sex::text
-  left outer join reference_tables.ref_plan_type d
-    on d.data_source = 'trv'
+    on c.data_source = 'trv' 
+   and c.gender_cd_src = m.sex::text 
+  left outer join reference_tables.ref_plan_type d 
+    on d.data_source = 'trv' 
   and d.plan_type_src::int = m.plantyp  
 ;
 ---------------------------------------------------------------------------------------------------
 
+/*
+ * Create re-distributed source table 
+ */
+drop table if exists dw_staging.mdcrt;
 
+create table dw_staging.mdcrt with (
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select m.enrolid::text,
+       m.medadv,
+       m.rx,
+       m.efamid,
+       m.mhsacovg,
+       m.egeoloc,
+       m.dtstart,
+       m.sex,
+       m.dtend,
+       m.plantyp,
+       m.empzip,
+       m.dobyr,
+       m.eestatu ,
+       m.year
+  from truven.mdcrt m
+  distributed by (enrolid)
+  ;
+ 
+analyze dw_staging.mdcrt;
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly  (
+insert into dw_staging.member_enrollment_monthly_truven_test  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -110,34 +192,38 @@ insert into dw_staging.member_enrollment_monthly  (
 	fiscal_year, 
 	race_cd,
 	family_id,
-	behavioral_coverage
+	behavioral_coverage,
+	load_date,
+	table_id_src,
+	member_id_src
 	)	
 select 
        'truv', 
-       b.year_int,
-       b.month_year_id, 
+       m.year,
+       (extract (year from m.dtstart)::text || lpad(extract (month from m.dtstart)::text , 2, '0'))::int, 
        a.uth_member_id,
        c.gender_cd, 
        case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'),
-       b.year_int - dobyr as age_derived, 
+       m.year - dobyr as age_derived, 
        (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
        null,
        d.plan_type, 
        case when m.medadv = '1' then 'MA' else 'MS' end as bus_cd, 
        eestatu, 
        m.rx, 
-       b.fy_ut,
+       null,
        '0' as race,
        m.efamid::text, 
-       m.mhsacovg
-from truven.mdcrt m
+       m.mhsacovg,
+       current_date,
+       'mdcrt',
+       enrolid 
+  from dw_staging.mdcrt m
   join data_warehouse.dim_uth_member_id a 
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
   join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
-  join reference_tables.ref_month_year b
-    on b.start_of_month between date_trunc('month', m.dtstart) and m.dtend
   left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
    and c.gender_cd_src = m.sex::text
@@ -145,15 +231,9 @@ from truven.mdcrt m
     on d.data_source = 'trv'
   and d.plan_type_src::int = m.plantyp
 ;
+
+vacuum analyze dw_staging.member_enrollment_monthly_truven_test;
 ---------------------------------------------------------------------------------------------------
-
-
---validate
-select count(*), data_source, year 
-from dw_staging.member_enrollment_monthly 
-group by data_source, year  
-order by data_source, year 
-;
 
 
 ----/END SCRIPT

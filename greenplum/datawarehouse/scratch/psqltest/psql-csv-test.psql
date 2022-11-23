@@ -1,0 +1,3 @@
+\copy  dev.psql_csv_test from 'O:\github\uthealth-dw\greenplum\datawarehouse\scratch\psqltest\psql-test-1.csv' delimiter ',' csv header;
+\copy  dev.psql_csv_test from 'O:\github\uthealth-dw\greenplum\datawarehouse\scratch\psqltest\psql-test-2.csv' delimiter ',' csv header;
+\copy  dev.psql_csv_test from 'O:\github\uthealth-dw\greenplum\datawarehouse\scratch\psqltest\psql-test-3.csv' delimiter ',' csv header;
