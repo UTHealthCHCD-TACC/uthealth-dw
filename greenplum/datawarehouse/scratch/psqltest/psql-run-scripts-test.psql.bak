@@ -1,0 +1,5 @@
+BEGIN;
+\i /github/uthealth-dw/greenplum/datawarehouse/scratch/psqltest/01-test-psql.sql
+\i /github/uthealth-dw/greenplum/datawarehouse/scratch/psqltest/02-test-psql.sql
+\i /github/uthealth-dw/greenplum/datawarehouse/scratch/psqltest/03-test-psql.sql
+COMMIT;

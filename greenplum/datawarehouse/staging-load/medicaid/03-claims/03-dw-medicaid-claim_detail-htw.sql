@@ -1,24 +1,24 @@
 drop table if exists dw_staging.htw_clm_detail_etl;
 
 CREATE TABLE dw_staging.htw_clm_detail_etl (
-	icn varchar NULL,
-	clm_dtl_nbr varchar NULL,
+	icn text NULL,
+	clm_dtl_nbr text NULL,
 	from_dos date NULL,
 	to_dos date NULL,
-	proc_cd varchar NULL,
-	sub_proc_cd varchar NULL,
+	proc_cd text NULL,
+	sub_proc_cd text NULL,
 	dtl_bill_amt numeric NULL,
 	dtl_alwd_amt numeric NULL,
 	dtl_pd_amt numeric NULL,
-	proc_mod_1 varchar NULL,
-	proc_mod_2 varchar NULL,
-	pos varchar NULL,
-	rev_cd varchar null,
-	ref_prov_npi varchar NULL,
-	perf_prov_npi varchar NULL,
-	txm_cd varchar NULL,
-	perf_prov_id varchar NULL,
-	sub_perf_prov_sfx varchar NULL
+	proc_mod_1 text NULL,
+	proc_mod_2 text NULL,
+	pos text NULL,
+	rev_cd text null,
+	ref_prov_npi text NULL,
+	perf_prov_npi text NULL,
+	txm_cd text NULL,
+	perf_prov_id text NULL,
+	sub_perf_prov_sfx text NULL
 )
 WITH (
 	appendonly=true,
@@ -82,10 +82,10 @@ vacuum analyze dw_staging.htw_clm_detail_etl;
 drop table if exists dw_staging.htw_clm_header_etl;
 
 CREATE TABLE dw_staging.htw_clm_header_etl (
-	icn varchar NULL,
-	adm_dt varchar NULL,
-	dis_dt varchar NULL,
-	pat_stat_cd varchar NULL
+	icn text NULL,
+	adm_dt text NULL,
+	dis_dt text NULL,
+	pat_stat_cd text NULL
 )
 WITH (
 	appendonly=true,
@@ -119,10 +119,10 @@ drop table if exists dw_staging.htw_clm_proc_etl;
 
 
 CREATE TABLE dw_staging.htw_clm_proc_etl (
-	icn varchar NULL,
-	pcn varchar NULL,
-	drg varchar null,
-	bill varchar null
+	icn text NULL,
+	pcn text NULL,
+	drg text null,
+	bill text null
 )
 WITH (
 	appendonly=true,
@@ -152,31 +152,31 @@ vacuum analyze dw_staging.htw_clm_proc_etl;
 drop table if exists dw_staging.htw_detail_etl;
 
 CREATE TABLE dw_staging.htw_detail_etl (
-	icn varchar NULL,
-	pcn varchar NULL,
-	clm_dtl_nbr varchar NULL,
+	icn text NULL,
+	pcn text NULL,
+	clm_dtl_nbr text NULL,
 	from_dos date NULL,
 	to_dos date NULL,
-	proc_cd varchar NULL,
+	proc_cd text NULL,
 	dtl_bill_amt numeric NULL,
 	dtl_alwd_amt numeric NULL,
 	dtl_pd_amt numeric NULL,
-	proc_mod_1 varchar NULL,
-	proc_mod_2 varchar NULL,
-	pos varchar NULL,
-	rev_cd varchar null,
-	ref_prov_npi varchar NULL,
-	perf_prov_npi varchar NULL,
-	txm_cd varchar NULL,
-	perf_prov_id varchar NULL,
-	sub_perf_prov_sfx varchar null,
+	proc_mod_1 text NULL,
+	proc_mod_2 text NULL,
+	pos text NULL,
+	rev_cd text null,
+	ref_prov_npi text NULL,
+	perf_prov_npi text NULL,
+	txm_cd text NULL,
+	perf_prov_id text NULL,
+	sub_perf_prov_sfx text null,
 	adm_dt date NULL,
 	dis_dt date NULL,
-	pat_stat_cd varchar null,
-	drg varchar null,
-	bill_i varchar null,
-	bill_c varchar null,
-	bill_f varchar null
+	pat_stat_cd text null,
+	drg text null,
+	bill_i text null,
+	bill_c text null,
+	bill_f text null
 )
 WITH (
 	appendonly=true,
@@ -229,7 +229,7 @@ drop table dw_staging.htw_clm_detail_etl ;
 ------------------ insert into staging-------------------------
 ---------------------------------------------------------------
 
-
+explain
 insert into dw_staging.claim_detail
 select distinct 
     'mdcd' as data_source,

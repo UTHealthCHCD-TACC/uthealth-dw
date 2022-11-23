@@ -148,7 +148,7 @@ select enrolid::text,
 
 ------------
 
-
+/*
 drop table if exists dev.ccaeo_etl;
 
 create table dev.ccaeo_etl with (
@@ -187,8 +187,117 @@ select enrolid::text,
  distributed by (enrolid, msclmid);
 
 analyze dev.ccaeo_etl;
+*/
 
----medicare outpatient: drop table if exists dev.mdcro_etl;
+drop table if exists dev.ccaeo_etl;
+
+create table dev.ccaeo_etl with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 ) as 
+select enrolid::text,
+	   msclmid::text,
+	   year,
+	   svcdate,
+	   tsvcdat,
+	   netpay,
+	   pay,
+	   facprof,
+	   stdplac,
+	   ntwkprov,
+	   fachdid::text,
+	   paidntwk,
+	   proc1,
+	   procmod,
+	   revcode,
+	   copay,
+	   deduct,
+	   coins,
+	   cob,
+	   qty,
+	   dxver,
+	   dx1,
+	   dx2,
+       dx3,
+       dx4,
+       stdprov 
+  from truven.ccaeo
+  where "year" between 2011 and 2013
+ distributed by (enrolid, msclmid);
+
+analyze dev.ccaeo_etl;
+
+----
+insert into dev.ccaeo_etl 
+select enrolid::text,
+	   msclmid::text,
+	   year,
+	   svcdate,
+	   tsvcdat,
+	   netpay,
+	   pay,
+	   facprof,
+	   stdplac,
+	   ntwkprov,
+	   fachdid::text,
+	   paidntwk,
+	   proc1,
+	   procmod,
+	   revcode,
+	   copay,
+	   deduct,
+	   coins,
+	   cob,
+	   qty,
+	   dxver,
+	   dx1,
+	   dx2,
+       dx3,
+       dx4,
+       stdprov 
+  from truven.ccaeo
+  where "year" between 2014 and 2018
+	;
+
+analyze dev.ccaeo_etl;
+
+---
+
+insert into dev.ccaeo_etl 
+select enrolid::text,
+	   msclmid::text,
+	   year,
+	   svcdate,
+	   tsvcdat,
+	   netpay,
+	   pay,
+	   facprof,
+	   stdplac,
+	   ntwkprov,
+	   fachdid::text,
+	   paidntwk,
+	   proc1,
+	   procmod,
+	   revcode,
+	   copay,
+	   deduct,
+	   coins,
+	   cob,
+	   qty,
+	   dxver,
+	   dx1,
+	   dx2,
+       dx3,
+       dx4,
+       stdprov 
+  from truven.ccaeo
+  where "year" between 2019 and 2021;
+
+analyze dev.ccaeo_etl;
+
+-------------------------------------------------
 
 drop table if exists dev.mdcro_etl;
 

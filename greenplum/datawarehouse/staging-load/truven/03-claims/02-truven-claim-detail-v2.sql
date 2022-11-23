@@ -123,10 +123,111 @@ select  'truv',
   left outer join  dev.truv_ccaef_etl f 
     on f.enrolid = a.enrolid 
    and f.fachdid = a.fachdid 
+   where a."year" between 2011 and 2013
    ;
 
 analyze dev.claim_detail_truv;
 
+---
+insert into dev.claim_detail_truv
+select  'truv',
+		a.year, 
+		b.uth_member_id, 
+		b.uth_claim_id,
+		null as claim_seq,
+		a.svcdate,
+		a.tsvcdat,
+		null,
+		substr(a.stdplac::text,1,2), 
+		a.ntwkprov::bool, 
+		a.paidntwk::bool, 
+        null as admit, 
+        null as discharge_dt,
+        null as discharge_status,
+        a.proc1 as cpt_hcpcs, 
+        null,
+        a.procmod, 
+        null as proc_mod_2, 
+        null as drg,
+        lpad(a.revcode::text,4,'0'), 
+        a.netpay as charge_amount,
+	  	a.pay as allowed_amt,
+	  	null as paid_amt, 
+        a.copay,
+        a.deduct,
+        a.coins, 
+        a.cob,
+        substring(f.billtyp,1,1) as billtypeinst,
+        substring(f.billtyp,2,1) as billtypeclass, 
+        substring(f.billtyp,3,1) as billtypefreq, 
+        trunc(a.qty,0) as units,  
+        dev.fiscal_year_func(a.svcdate),
+        null as cfy,
+        'ccaeo', 
+        null, null, null, null, null, null,
+		a.msclmid::text,
+		a.enrolid::text
+  from dev.ccaeo_etl a 
+  join dev.truv_dim_id  b 
+    on b.member_id_src = a.enrolid 
+   and b.claim_id_src = a.msclmid 
+  left outer join  dev.truv_ccaef_etl f 
+    on f.enrolid = a.enrolid 
+   and f.fachdid = a.fachdid 
+   where a."year" between 2014 and 2016
+   ;
+
+analyze dev.claim_detail_truv;
+
+insert into dev.claim_detail_truv
+select  'truv',
+		a.year, 
+		b.uth_member_id, 
+		b.uth_claim_id,
+		null as claim_seq,
+		a.svcdate,
+		a.tsvcdat,
+		null,
+		substr(a.stdplac::text,1,2), 
+		a.ntwkprov::bool, 
+		a.paidntwk::bool, 
+        null as admit, 
+        null as discharge_dt,
+        null as discharge_status,
+        a.proc1 as cpt_hcpcs, 
+        null,
+        a.procmod, 
+        null as proc_mod_2, 
+        null as drg,
+        lpad(a.revcode::text,4,'0'), 
+        a.netpay as charge_amount,
+	  	a.pay as allowed_amt,
+	  	null as paid_amt, 
+        a.copay,
+        a.deduct,
+        a.coins, 
+        a.cob,
+        substring(f.billtyp,1,1) as billtypeinst,
+        substring(f.billtyp,2,1) as billtypeclass, 
+        substring(f.billtyp,3,1) as billtypefreq, 
+        trunc(a.qty,0) as units,  
+        dev.fiscal_year_func(a.svcdate),
+        null as cfy,
+        'ccaeo', 
+        null, null, null, null, null, null,
+		a.msclmid::text,
+		a.enrolid::text
+  from dev.ccaeo_etl a 
+  join dev.truv_dim_id  b 
+    on b.member_id_src = a.enrolid 
+   and b.claim_id_src = a.msclmid 
+  left outer join  dev.truv_ccaef_etl f 
+    on f.enrolid = a.enrolid 
+   and f.fachdid = a.fachdid 
+   where a."year" between 2017 and 2021
+   ;
+
+analyze dev.claim_detail_truv;
 
 ----------------------------------------------
 -------------------MEDICARE-------------------
@@ -241,5 +342,3 @@ vacuum analyze dev.claim_detail_truv;
 
 ----cleanup
 drop table if exists dev.truv_mdcrf_etl;
-drop table if exists dev.truv_mdcrf_etl;
---drop table if exists dev.claim_detail_truv;
