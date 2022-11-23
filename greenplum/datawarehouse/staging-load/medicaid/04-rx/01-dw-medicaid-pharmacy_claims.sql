@@ -21,14 +21,6 @@ with (
 		compresslevel=5 
 	 )
 distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
 ;
 
 ---chip 
@@ -40,7 +32,7 @@ data_source, year, uth_rx_claim_id, uth_member_id,
  )
 select distinct 'mdcd', extract(year from a.rx_fill_dt) as yr, b.uth_rx_claim_id, b.uth_member_id, 
        a.rx_fill_dt, a.ndc, a.rx_days_supply, a.rx_nbr, a.refill_nbr, get_my_from_date(a.rx_fill_dt) as month_year, 
-        a.qty_prescribed, a.prescriber_npi, a.phmcy_nbr, a.gross_amt_due ,  a.amount_paid, 
+         floor(a.rx_quantity::numeric)::int, a.prescriber_npi, a.phmcy_nbr, a.gross_amt_due ,  a.amount_paid, 
        a.year_fy, pcn || ndc || replace(rx_fill_dt::text, '-',''), pcn, 'chip_rx' 
 from medicaid.chip_rx a 
   join data_warehouse.dim_uth_rx_claim_id  b  
