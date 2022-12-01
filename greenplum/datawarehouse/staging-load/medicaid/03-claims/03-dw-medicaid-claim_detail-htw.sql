@@ -229,7 +229,6 @@ drop table dw_staging.htw_clm_detail_etl ;
 ------------------ insert into staging-------------------------
 ---------------------------------------------------------------
 
-explain
 insert into dw_staging.claim_detail
 select distinct 
     'mdcd' as data_source,

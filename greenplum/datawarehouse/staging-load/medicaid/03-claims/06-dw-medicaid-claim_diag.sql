@@ -23,12 +23,8 @@ with (
 	 )
 distributed by (uth_member_id)
 partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
+(
+  partition mdcd values ('mdcd')
  )
 ;
 
@@ -138,6 +134,8 @@ from (
  
 update dw_staging.claim_diag set icd_version = null where icd_version not in ('0','9');
 update dw_staging.claim_diag set load_date = current_date;
-vacuum analyze dw_staging.claim_diag;
+vacuum full analyze dw_staging.claim_diag;
 grant select on dw_staging.claim_diag to uthealth_analyst;
+alter table dw_staging.claim_diag owner to uthealth_dev;
+
 
