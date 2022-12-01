@@ -18,6 +18,8 @@ dw_staging and SPCDEDPWPVS1
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
+#packages I don't use anymore: rstudioapi
+
 ```
 
 ## 0.2 Connect to TACC
@@ -95,167 +97,118 @@ ending_yr = ending_year - 2000
 
 ```
 
-## 2.1 First make sure rx ICN and encounters DERV_ENC are distinct from each other
+# SECTION 2 Count distinct PCN-NDC-FILLDT combinations
 
-### 2.11 Declare base SQL query and initialize table
+## 2.1 Declare base SQL queries
 ```{r}
-#declare base queries to modify for getting the count of distinct ICNs each year
+#declare base queries to modify for gathering distinct pcn-ndc-filldt combos
 
-#counts it from details
-sql1 = 'select count(distinct a.icn)
-from medicaid.dbo.clm_proc_@yr a inner join medicaid.dbo.enc_proc_@yr b
-on a.icn = b.DERV_ENC'
+#initialize tables
+sql0 = 'select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+into work.dbo.xz_dwqa_chiprx
+from medicaid.dbo.chip_rx_fy@yr
+where pcn != \'000000000\';
 
-years = c(2013:ending_year)
-clm_enc_overlaps = data.frame(cbind(years, matrix(ncol=1, nrow=ending_year-2013+1)))
+select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+into work.dbo.xz_dwqa_ffsrx
+from medicaid.dbo.ffs_rx_fy@yr
+where pcn != \'000000000\';
 
-colnames(clm_enc_overlaps) = c('Year', 'Count of clm/enc overlaps')
+select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+into work.dbo.xz_dwqa_mcorx
+from medicaid.dbo.mco_rx_fy@yr
+where pcn != \'000000000\';'
+
+#run for each year
+sql1 = 'insert into work.dbo.xz_dwqa_chiprx
+select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+from medicaid.dbo.chip_rx_fy@yr
+where pcn != \'000000000\';
+
+insert into work.dbo.xz_dwqa_ffsrx
+select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+from medicaid.dbo.ffs_rx_fy@yr
+where pcn != \'000000000\';
+
+insert into work.dbo.xz_dwqa_mcorx
+select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
+from medicaid.dbo.mco_rx_fy@yr
+where pcn != \'000000000\';'
 
 ```
 
-### 2.12 Run it for each year
-
+## 2.2 Run it for each year
 ```{r}
-
-for (yr in 13:21){
-  
-  print(paste("Counting overlaps for", yr))
-  
-  sql1.mod = sql1 %>% gsub(pattern = '@yr', replacement = yr)
-  
-  num = dbGetQuery(spc, sql1.mod)
-  
-  clm_enc_overlaps[yr-12,2] = num[1,1]
-  
-  print(num[1,1])
-  
-}
-
-```
-
-
-
-## 2.2 Count rx and encounters for each 
-
-### 2.22 Declare base SQL query for getting count of distinct ICNS each year from SPC server and initialize table
-```{r}
-
-#Counting from rx
-
-clm_det = 'select count(distinct a.icn)
-from medicaid.dbo.clm_proc_@yr a inner join medicaid.dbo.clm_detail_@yr b
-on a.icn = b.icn;'
-
-clm_head = 'select count(distinct a.icn)
-from medicaid.dbo.clm_proc_@yr a inner join medicaid.dbo.clm_header_@yr b
-on a.icn = b.icn;'
-
-#Counting from encounters
-
-enc_det = 'select count(distinct a.derv_enc)
-from medicaid.dbo.enc_proc_@yr a inner join medicaid.dbo.enc_det_@yr b
-on a.derv_enc = b.derv_enc;'
-
-enc_head = 'select count(distinct a.derv_enc)
-from medicaid.dbo.enc_proc_@yr a inner join medicaid.dbo.enc_header_@yr b
-on a.derv_enc = b.derv_enc;'
-
-years = c(starting_year:ending_year)
-claim_counts = data.frame(cbind(years, matrix(ncol=4, nrow=ending_year-starting_year+1)))
-
-colnames(claim_counts) = c('Year', 'CLM_DET', 'CLM_HEAD', 'ENC_DET', 'ENC_HEAD')
-
-```
-
-### 2.23 Run it for each year
-```{r}
+dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_chiprx;')
+dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_ffsrx;')
+dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_mcorx;')
 
 for (yr in starting_yr:ending_yr){
   
-  print(paste0("Counting distinct claim numbers for 20", yr))
+  print(paste0("Gathering rx-ndc-fill-dt combos for 20", yr))
+  tic("Processing time")
   
-  if (yr == 12) { #if year = 2012 then count rx only
+  if (yr == starting_yr) { #initialize tables for the first year
     
-    clm_det.mod = clm_det %>% gsub(pattern = '@yr', replacement = yr)
-    clm_head.mod = clm_head %>% gsub(pattern = '@yr', replacement = yr)
-    
-    clm_det_count = dbGetQuery(spc, clm_det.mod)
-    clm_head_count = dbGetQuery(spc, clm_head.mod)
-    
-    enc_det_count = 0
-    enc_head_count = 0
+    sql0.mod = sql0 %>% gsub(pattern = '@yr', replacement = yr)
+    dbGetQuery(spc, sql0.mod)
   
   } else {
-
-    clm_det.mod = clm_det %>% gsub(pattern = '@yr', replacement = yr)
-    clm_head.mod = clm_head %>% gsub(pattern = '@yr', replacement = yr)
     
-    enc_det.mod = enc_det %>% gsub(pattern = '@yr', replacement = yr)
-    enc_head.mod = enc_head %>% gsub(pattern = '@yr', replacement = yr)
-    
-    clm_det_count = dbGetQuery(spc, clm_det.mod)
-    clm_head_count = dbGetQuery(spc, clm_head.mod)
-    
-    enc_det_count = dbGetQuery(spc, enc_det.mod)
-    enc_head_count = dbGetQuery(spc, enc_head.mod)
-  
+    sql1.mod = sql1 %>% gsub(pattern = '@yr', replacement = yr)
+    dbGetQuery(spc, sql1.mod)
   }
+  toc()
   
-  #load it into dataframe
-  claim_counts[yr-(starting_yr-1), 2] = clm_det_count
-  claim_counts[yr-(starting_yr-1), 3] = clm_head_count
-  claim_counts[yr-(starting_yr-1), 4] = enc_det_count
-  claim_counts[yr-(starting_yr-1), 5] = enc_head_count
-  
-  #prints out to console so there's a record if things go south
-  cat(paste(claim_counts[yr-(starting_yr-1),1],
-            claim_counts[yr-(starting_yr-1),2],
-            claim_counts[yr-(starting_yr-1),3],
-            claim_counts[yr-(starting_yr-1),4],
-            claim_counts[yr-(starting_yr-1),5], sep='\t'), '\n')
 }
 
 ```
 
-### 2.24 Count HTW rx
+## 2.3 Get results
 ```{r}
-#initialize dataframe
-claim_counts_htw = data.frame(matrix(ncol=5, nrow=1))
-colnames(claim_counts_htw) = c('Year', 'CLM_DET', 'CLM_HEAD', 'ENC_DET', 'ENC_HEAD')
-claim_counts_htw[1,1] = 'HTW'
-claim_counts_htw[1,4] = claim_counts_htw[1,5] = 0
-
-#define queries
-clm_det_htw = 'select count(distinct a.icn)
-from medicaid.dbo.clm_proc_1819_htw a inner join medicaid.dbo.clm_detail_1819_htw b
-on a.icn = b.icn;'
-
-clm_head_htw = 'select count(distinct a.icn)
-from medicaid.dbo.clm_proc_1819_htw a inner join medicaid.dbo.clm_header_1819_htw b
-on a.icn = b.icn;'
-
-#retrieve counts
-claim_counts_htw[1, 2] = dbGetQuery(spc, clm_det_htw)
-claim_counts_htw[1, 3] = dbGetQuery(spc, clm_head_htw)
+#Next bit of code takes a while, so let's time it
+tic("Aggregate numbers")
 
 ```
 
-## 2.3 Get the sum for each year
-```{r}
-claim_counts_sum = claim_counts %>%
-  mutate_at(vars(Year), as.character) %>%
-  rbind(., claim_counts_htw) %>%
-  mutate(CLM_HEAD_EXCESS = CLM_HEAD - CLM_DET,
-         CLM_DET_EXCESS = CLM_DET - CLM_HEAD,
-         ENC_HEAD_EXCESS = ENC_HEAD - ENC_DET,
-         ENC_DET_EXCESS = ENC_DET - ENC_HEAD,
-         YR_TOTAL = pmin(CLM_HEAD, CLM_DET) + pmin(ENC_HEAD, ENC_DET)) %>%
-  select(Year, CLM_HEAD, CLM_DET,
-         ENC_HEAD, ENC_DET,
-          CLM_HEAD_EXCESS, CLM_DET_EXCESS,
-         ENC_HEAD_EXCESS, ENC_DET_EXCESS, YR_TOTAL)
+```{sql, connection = spc}
+
+drop table if exists work.dbo.xz_dwqa_rxtemp2;
+
+with a as (select fy, count(distinct rx_id) as chip from work.dbo.xz_dwqa_chiprx group by fy),
+b as (select fy, count(distinct rx_id) as ffs from work.dbo.xz_dwqa_ffsrx group by fy),
+c as (select fy, count(distinct rx_id) as mco from work.dbo.xz_dwqa_mcorx group by fy)
+
+select a.fy, a.chip, b.ffs, c.mco, (a.chip + b.ffs + c.mco) as sum
+into work.dbo.xz_dwqa_rxtemp2
+from a left join b on a.fy = b.fy left join c on a.fy = c.fy;
 
 ```
+
+```{sql, connection = spc, output.var = spc_counts}
+
+select * from work.dbo.xz_dwqa_rxtemp2 order by fy;
+
+```
+
+```{sql, connection = spc, output.var = htw_counts}
+
+select 'HTW' as fy, NULL as chip, NULL as ffs, NULL as mco, count(*) as sum
+from medicaid.dbo.FFS_RX_FY18_19_HTW;
+
+```
+
+```{r}
+toc()
+
+```
+## 2.4 Rbind the HTW numbers to other numbers
+```{r}
+
+spc_counts = rbind(spc_counts, htw_counts)
+
+```
+
 
 # SECTION 3: Print it out so we won't have to do this again
 
@@ -265,13 +218,15 @@ wb = createWorkbook()
 dir = here("outputs")
 path = here("outputs", "spc-rx-counting.xlsx")
 
+output = spc_counts
+
 addWorksheet(wb, sheetName = "SPCDEDPWPVS1 rx counting")
 
-writeData(wb, sheet = 1, "Count of distinct rx in SPCDEDPWPVS1", startCol=1, startRow=1)
+writeData(wb, sheet = 1, "Count of distinct pcn-ndc-fill_dt combos in SPCDEDPWPVS1", startCol=1, startRow=1)
 writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
-writeData(wb, sheet = 1, claim_counts_sum, startCol=1, startRow=4)
+writeData(wb, sheet = 1, output, startCol=1, startRow=4)
 
-setColWidths(wb, sheet = 1, cols=1:ncol(claim_counts_sum)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1:ncol(output)+1, widths="auto")
 setColWidths(wb, sheet = 1, cols=1, widths=10)
 
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist

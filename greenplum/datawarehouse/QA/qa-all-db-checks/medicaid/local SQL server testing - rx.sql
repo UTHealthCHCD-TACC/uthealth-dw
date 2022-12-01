@@ -530,6 +530,129 @@ from medicaid.dbo.FFS_RX_FY13 where rx_nbr = '000001294187' order by tcn;
 select rx_nbr, rx_dt, seq_nbr, rx_fill_dt, ndc, claim_status, refill_nbr, amount_paid, drug_cost, gross_amt_due, payment_dt, tcn, PREV_TCN
 from medicaid.dbo.FFS_RX_FY13 where rx_nbr = '000001294187' order by tcn;
 
+--
+
+select * from medicaid.dbo.chip_rx_fy12;
+select * from medicaid.dbo.ffs_rx_fy12;
+select * from medicaid.dbo.mco_rx_fy12;
+
+
+000000000 <--9 Digits in PCN
+
+select count(*) as count
+from medicaid.dbo.ffs_rx_fy12
+where pcn is null; --none
+
+select count(*) as count
+from medicaid.dbo.ffs_rx_fy12
+where trim(pcn) = ''; --none
+
+select count(*) as count
+from medicaid.dbo.ffs_rx_fy12
+where pcn = '000000000'; --also none
+
+
+select '2012' as fy, concat(pcn, ndc, replace(rx_fill_dt, '-', '')) as rx_id
+into work.dbo.xz_dwqa_chiprx
+from medicaid.dbo.chip_rx_fy12;
+
+select '2012' as fy, concat(pcn, ndc, replace(rx_fill_dt, '-', '')) as rx_id
+into work.dbo.xz_dwqa_ffsrx
+from medicaid.dbo.ffs_rx_fy12;
+
+select '2012' as fy, concat(pcn, ndc, replace(rx_fill_dt, '-', '')) as rx_id
+into work.dbo.xz_dwqa_mcorx
+from medicaid.dbo.mco_rx_fy12;
+
+DELETE FROM work.dbo.xz_dwqa_chiprx WHERE substring(rx_id, 1, 9) = '000000000';
+DELETE FROM work.dbo.xz_dwqa_ffsrx WHERE substring(rx_id, 1, 9) = '000000000';
+DELETE FROM work.dbo.xz_dwqa_mcorx WHERE substring(rx_id, 1, 9) = '000000000';
 
 
 
+select a.fy, count(distinct a.rx_id) from work.dbo.xz_dwqa_chiprx;
+
+select a.fy, count(distinct a.rx_id) from work.dbo.xz_dwqa_ffsrx;
+
+select a.fy, count(distinct a.rx_id) from work.dbo.xz_dwqa_mcorx;
+
+
+with a as (select fy, count(distinct rx_id) as chip from work.dbo.xz_dwqa_chiprx group by fy),
+b as (select fy, count(distinct rx_id) as ffs from work.dbo.xz_dwqa_ffsrx group by fy),
+c as (select fy, count(distinct rx_id) as mco from work.dbo.xz_dwqa_mcorx group by fy)
+
+select a.fy, a.chip, b.ffs, c.mco, (a.chip + b.ffs + c.mco) as sum
+from a left join b on a.fy = b.fy left join c on a.fy = c.fy
+order by a.fy;
+
+
+select top 10 rx_id from work.dbo.xz_dwqa_chiprx tablesample(500 rows);
+
+select top 10 rx_id from work.dbo.xz_dwqa_ffsrx tablesample(500 rows);
+
+select top 10 rx_id from work.dbo.xz_dwqa_mcorx tablesample(500 rows);
+
+
+select top 10 a.rx_id from work.dbo.xz_dwqa_chiprx a inner join work.dbo.xz_dwqa_ffsrx b
+on a.rx_id = b.rx_id; -- ran for 5 mins, I canceled
+
+select top 10 a.pcn, a.ndc, a.
+
+
+---
+
+select top 50
+'2012' as spc_fy,
+'chip' as spc_table,
+rx_fill_dt as spc_fill_date,
+ndc as spc_ndc,
+rx_days_supply as spc_days_supply,
+rx_nbr as spc_script_id,
+refill_nbr as spc_refill_count,
+rx_quantity as spc_quantity,
+prescriber_npi as spc_provider_npi,
+phmcy_nbr as spc_pharmacy_id,
+gross_amt_due  as spc_total_charge_amount,
+amount_paid as spc_total_paid_amount,
+pcn as spc_member_id_src
+
+from medicaid.dbo.ffs_rx_fy12 tablesample(6000 rows);
+
+select count(*) from medicaid.dbo.FFS_RX_FY18_19_HTW; --392868
+
+-- QTY mismatches
+
+--memid____ ndc________ date____
+--530233406 62037099910 20140102
+
+select pcn, ndc, rx_fill_dt, rx_quantity from medicaid.dbo.ffs_rx_fy14
+where pcn = '530233406' and ndc = '62037099910';
+
+--checking for CHIP_FFS_RX data
+
+select top 10 concat(pcn, ndc, replace(rx_fill_dt, '-', '')) as rx_id from medicaid.dbo.CHIP_FFS_RX_FY12;
+
+A632897026340205100120120220
+A632897026340205100120120220
+A632897026340205100120120220
+A632897026340205100120111120
+A632897035914800071320111023
+A632897036340205100120111120
+A632897035914800081320120225
+A632897035914800081320120225
+A632897035914800081320120225
+A632897030037820087720120223
+
+select top 10 * from medicaid.dbo.CHIP_FFS_RX_FY12;
+
+--TCNS
+12051200200029611
+12051200010280100
+12051200010326470
+11324200010509480
+11296200010177470
+11324200010509470
+12056200010551220
+12056200010538970
+12056200200062181
+12054200012132250
