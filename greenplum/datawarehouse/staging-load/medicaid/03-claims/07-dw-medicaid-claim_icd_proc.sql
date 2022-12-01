@@ -21,14 +21,6 @@ with (
 		compresslevel=5 
 	 )
 distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
 ;
 
 insert into dw_staging.claim_icd_proc (data_source, year, uth_member_id, 

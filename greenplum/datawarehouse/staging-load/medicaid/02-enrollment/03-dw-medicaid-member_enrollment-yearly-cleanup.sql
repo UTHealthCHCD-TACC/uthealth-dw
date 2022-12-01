@@ -82,7 +82,7 @@ drop table if exists dw_staging.mdcd_race_rn;
 create table dw_staging.mdcd_race_rn 
 with (appendonly=true, orientation=row) as (
 select a.uth_member_id, year, race_cd , row_number ()  
- 		over(partition by uth_member_id, year order by "count" desc, race_cd desc, my desc) as rn
+ 		over(partition by uth_member_id, year order by "count" desc, my desc) as rn
   from dw_staging.mdcd_race_count a 
   )  distributed by(uth_member_id);
   ;
