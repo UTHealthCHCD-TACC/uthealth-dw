@@ -1,0 +1,207 @@
+---
+title: "dw-rx-counting-pt2"
+author: "XRZ"
+date: '2022-11-22'
+output: html_document
+---
+
+#PURPOSE
+This R markdown script counts distinct rx from TACC tables
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+#packages I don't use anymore: rstudioapi
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+
+#Connect to Greenplum
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc")))
+```
+
+## 0.5 Set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+
+```
+
+# SECTION 1: Read in runs from previous code
+
+## 1.1 Read in output if it exists
+```{r}
+#SPC server shouldn't have major changes year to year, so if output exists already
+#use that
+
+path = here("outputs", "spc-rx-counting.xlsx")
+
+if (file.exists(path)) {
+
+spc_counts = read.xlsx(path, sheet=1, startRow = 4)
+
+} else {
+  stop("Output is missing! Go back and run the previous code file!")
+}
+
+```
+
+## 1.2 Define global variables
+```{r}
+#define starting and ending year
+starting_year = 2012
+ending_year = 2021
+
+#conver to 2-digit year
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+
+```
+
+# SECTION 2: Count distinct rx_ids from data_warehouse schema on TACC
+
+```{sql, connection = tac, output.var = dw_counts}
+
+--gets rx claim ids by year
+select fiscal_year::text, table_id_src, count(distinct rx_claim_id_src) as src_id, count(distinct uth_rx_claim_id) as uth_id
+from data_warehouse.pharmacy_claims_1_prt_mdcd
+group by fiscal_year, table_id_src
+order by table_id_src, fiscal_year; 
+
+```
+
+# SECTION 3: Compile it all into a table and compare
+```{r}
+dw_chip = dw_counts %>%
+  filter(table_id_src == 'chip_rx') %>%
+  select(fiscal_year, src_id) %>%
+  rename(fy = fiscal_year, dw_chip=src_id)
+
+dw_ffs = dw_counts %>%
+  filter(table_id_src == 'ffs_rx') %>%
+  select(fiscal_year, src_id) %>%
+  rename(fy = fiscal_year, dw_ffs=src_id)
+
+dw_mco = dw_counts %>%
+  filter(table_id_src == 'mco_rx') %>%
+  select(fiscal_year, src_id) %>%
+  rename(fy = fiscal_year, dw_mco=src_id)
+
+dw_htw_only = dw_counts %>%
+  filter(table_id_src == 'htw_ffs_rx')
+
+dw_htw = sum(dw_htw_only$src_id)
+
+all_counts = spc_counts %>%
+  rename(spc_chip = chip, spc_ffs = ffs, spc_mco = mco, spc_sum = sum) %>%
+  left_join(dw_chip, by = "fy") %>%
+  left_join(dw_ffs, by = "fy") %>%
+  left_join(dw_mco, by = "fy") %>%
+  mutate(dw_sum = dw_chip + dw_ffs + dw_mco) %>%
+  arrange(fy)
+
+#insert HTW number
+all_counts[which(all_counts$fy=='HTW'), 9] = dw_htw
+
+all_counts = all_counts %>%
+  mutate(chip_diff = spc_chip - dw_chip) %>%
+  mutate(ffs_diff = spc_ffs - dw_ffs) %>%
+  mutate(mco_diff = spc_mco - dw_mco) %>%
+  mutate(sum_diff = spc_sum - dw_sum) %>%
+  arrange(fy)
+
+percent_diff = all_counts %>%
+  mutate(chip_bad_records = chip_diff/dw_chip) %>%
+  mutate(ffs_bad_records = ffs_diff/dw_ffs) %>%
+  mutate(mco_bad_records = mco_diff/dw_mco) %>%
+  mutate(sum_bad_records = sum_diff/dw_sum) %>%
+  select(fy, chip_bad_records, ffs_bad_records, mco_bad_records, sum_bad_records)
+
+```
+
+# SECTION 4: Output to spreadsheet
+
+```{r}
+output = all_counts
+output2 = percent_diff
+
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "dw-rx-counting.xlsx")
+
+addWorksheet(wb, sheetName = "rx_id spotcheck")
+
+writeData(wb, sheet = 1, "Count of distinct PCN || NDC || FILL_DT combinations between SPC server and data_warehouse", startCol=1, startRow=1)
+writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+
+writeData(wb, sheet = 1, output, startCol=1, startRow=4)
+
+nextrow = nrow(output) + 7
+writeData(wb, sheet = 1, "Note: The missing RX claims are due to PCNs that do not exist in the enrollment tables", startCol=1, startRow=nextrow)
+writeData(wb, sheet = 1, "The proportion of claims with PCNs that do not match is:", startCol=1, startRow=nextrow+1)
+
+writeData(wb, sheet = 1, output2, startCol=1, startRow=nextrow+3)
+
+setColWidths(wb, sheet = 1, cols=1:ncol(output)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+```
+
+
+#SECTION 99: Delete temp tables, Close connections, clear R environment
+
+```{r close-connections, eval = FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval = FALSE}
+# clears R environment
+rm(list=ls())
+```
