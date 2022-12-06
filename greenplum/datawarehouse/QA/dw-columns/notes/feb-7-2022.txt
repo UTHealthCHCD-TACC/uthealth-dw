@@ -1,0 +1,39 @@
+
+/*
+------ DIAG
+-- check icd_version on mcrn 
+			--if garret is using that then there may be issues if not transformed 
+			
+			--poa src 
+
+-- missing uth_member_id in most tables for truven
+
+poa 
+
+
+
+------------- detail 
+
+mdcd check those bad admit and discharge claims for mdcd 
+				trudy said only check facility claims for those 
+
+check to see if NA is still in optum if so replace with script 
+
+look into place fo service for 
+
+check to date of service for optum FAILS 
+
+
+-------------- monthly enroll 
+			fine 
+---------- year enroll
+		fine 
+		
+		--------------- claim header 
+		
+				---------- look at claim_type for medicare 
+				
+----- proc 
+		look into for medicare  
+		all truven values are null in source table so idk do we even need the variable 
+			
