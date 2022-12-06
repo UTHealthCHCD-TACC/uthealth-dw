@@ -1,0 +1,1 @@
+truven missing to_date_of_service in insert statement
