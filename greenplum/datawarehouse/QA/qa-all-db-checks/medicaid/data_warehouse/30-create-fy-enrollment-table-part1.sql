@@ -14,12 +14,12 @@
  * ******************************************************************************************************
  * wc003  || 11/11/2021 || run as single script
  * ******************************************************************************************************
- * xz001  || modified for FY
+ * xz001  || modified for FY 
  */
 
-drop table if exists dev.member_enrollment_yearly;
+drop table if exists dev.member_enrollment_fiscal_yearly;
 
-create table dev.member_enrollment_yearly  
+create table dev.member_enrollment_fiscal_yearly  
 (like data_warehouse.member_enrollment_yearly including defaults) 
 with (
 		appendonly=true, 
@@ -38,18 +38,8 @@ partition by list(data_source)
  )
 ;
 
-do $$
-declare
-	month_counter integer := 1;
-	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
-	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
-	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-begin
-
-
-
---insert recs from monthly  14min
-execute 'insert into dev.member_enrollment_yearly (
+--get enrollment data from monthly table 15 min
+insert into dev.member_enrollment_fiscal_yearly (
          data_source, 
          year, 
          uth_member_id, 
@@ -63,7 +53,7 @@ execute 'insert into dev.member_enrollment_yearly (
          family_id,
 		 behavioral_coverage,
          member_id_src )
-select distinct on( data_source, year, uth_member_id )
+select distinct on( data_source, fiscal_year, uth_member_id )
        data_source, 
        year, 
        uth_member_id, 
@@ -77,32 +67,36 @@ select distinct on( data_source, year, uth_member_id )
 	   family_id,
 	   behavioral_coverage,
 	   member_id_src
-from data_warehouse.member_enrollment_monthly;'
-;
+from data_warehouse.member_enrollment_monthly_1_prt_mdcd;
 
-raise notice 'Records inserted into enrollment yearly';
+analyze dev.member_enrollment_fiscal_yearly;
 
---Create temp join table to populate month flags 6min
+--Create temp join table to populate month flags 6 min
 drop table if exists dev.temp_member_enrollment_month;
 
-execute 'create table dev.temp_member_enrollment_month
+create table dev.temp_member_enrollment_month
 with (appendonly=true, orientation=column)
 as
-select distinct uth_member_id, fiscal_year, month_year_id, month_year_id % fiscal_year as month
-from data_warehouse.member_enrollment_monthly
-distributed by(uth_member_id);'
-;
+select distinct uth_member_id, fiscal_year, month_year_id, month_year_id % year as month
+from data_warehouse.member_enrollment_monthly_1_prt_mdcd
+distributed by(uth_member_id);
 
-
---can't do this
 analyze dev.temp_member_enrollment_month;
+
+do $$
+declare
+	month_counter integer := 1;
+	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
+	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
+	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
+begin
 
 --Add month flags
 --jw002 use execute function to loop through each month
 	for array_counter in 1..12
 	loop
 	execute
-	'update dev.member_enrollment_yearly y
+	'update dev.member_enrollment_fiscal_yearly y
 			set ' || my_update_column[array_counter] || '= 1
 			from dev.temp_member_enrollment_month m
 			where y.uth_member_id = m.uth_member_id
@@ -114,10 +108,9 @@ analyze dev.temp_member_enrollment_month;
 	end loop;
 
 --Calculate total_enrolled_months
-update dev.member_enrollment_yearly
+update dev.member_enrollment_fiscal_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+
                           enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int;
-
 
 -- Drop temp table
 drop table if exists dev.temp_member_enrollment_month;
@@ -126,8 +119,20 @@ raise notice 'total_enrolled_months updated';
 
 end $$;
 
+vacuum analyze dev.member_enrollment_fiscal_yearly;
 
---vacuum analyze dw_staging.member_enrollment_yearly;
+/* did it work?
+select count(*) from dev.member_enrollment_fiscal_yearly where total_enrolled_months = 12;
+--5,087,050
+
+select count(*) from data_warehouse.member_enrollment_yearly_1_prt_mdcd
+where total_enrolled_months = 12
+and year = 2020;
+--4,369,353
+
+these numbers are on the same order of magnitude so good enough
+
+*/
 
 do $$
 declare
@@ -150,7 +155,7 @@ begin
 				 with (appendonly=true, orientation=column)
 				 as
 				 select count(*), max(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', fiscal_year
-				 from data_warehouse.member_enrollment_monthly
+				 from data_warehouse.member_enrollment_monthly_1_prt_mdcd
 				 group by 3, 4, 5;'
 		;
 	
@@ -166,7 +171,7 @@ begin
 		
 		raise notice '2';
 	
-		execute 'update dev.member_enrollment_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
+		execute 'update dev.member_enrollment_fiscal_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dev.final_enrl_' || col_list[col_counter] ||' b 
 				 where a.uth_member_id = b.uth_member_id
 				   and a.fiscal_year = b.fiscal_year
@@ -181,5 +186,20 @@ begin
 
 end $$;
 
+/*check if it worked?
+select count(*) from dev.member_enrollment_fiscal_yearly;
+--61090088
 
+select count(*) from data_warehouse.member_enrollment_yearly_1_prt_mdcd;
+--65858906
+
+select count(distinct member_id_src) from dev.member_enrollment_fiscal_yearly;
+--13029774
+
+select count(distinct member_id_src) from data_warehouse.member_enrollment_yearly_1_prt_mdcd;
+--13029774
+
+--good enough
+
+*/
 

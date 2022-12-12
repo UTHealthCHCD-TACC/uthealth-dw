@@ -1,0 +1,433 @@
+---
+title: "dw-qa-test"
+author: "XRZ"
+date: '2022-12-2'
+output: html_document
+---
+
+
+# Purpose
+This script compares the results for a sample query from Medicaid raw data on
+SPC servers to the data_warehouse.
+
+Sample query used: 5 Agencies - Wellness - Obesity
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+#packages I don't use anymore: rstudioapi
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+
+#Connect to Greenplum
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc")))
+```
+
+## 0.5 Set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+
+```
+
+#SECTION 1: Define global variables
+
+## 1.1 Global variables
+```{r}
+#define the years that we're trying to get data for [LAST 2 DIGITS, OMIT THE 20--]
+start_year = 16
+end_year = 21
+
+#define where the template spreadsheet is
+template_path = here("rows.csv")
+
+```
+
+## 1.2 Global functions
+```{r function-definitions}
+prep_df = function (df){
+  
+  #Prep vectors of column names for renaming
+  colnames.old = colnames(df)
+  colnames.new = c('FY', 'MCO', 'sex', 'agegrp', 'denominator', 'numerator')
+  
+  #Rename columns
+  df = df %>%
+    rename_at(vars(all_of(colnames.old)), ~colnames.new)
+  
+  #Calculate prevalence, trim white space from MCO column
+  df = df %>% mutate(prevalence = numerator/denominator) %>%
+        mutate(MCO = str_trim(MCO))
+  
+  #also add a blanks row for matching purposes
+  df[nrow(df)+1,] <- NA
+  
+  return(df)
+}
+
+append_by_year = function(df, joint_df, yr){
+  #subset by year
+  df = df %>%
+    filter(FY == (2000 + yr))
+
+  #Join to row number
+  df = rows %>%
+    left_join(df, by = c('MCO', 'sex', 'agegrp'), keep=FALSE) %>%
+    arrange(Row_num) %>%
+    select(Row_num, MCO, sex, agegrp, denominator, numerator, prevalence)
+
+  #Calcualtes total
+  df[7, "denominator"] = sum(df$denominator[1:6], na.rm=TRUE)
+  df[7, "numerator"] = sum(df$numerator[1:6], na.rm=TRUE)
+  df[7, "prevalence"] = df[7, "numerator"]/df[7, "denominator"]
+  
+  #Prep column names for renaming
+  colnames.old = colnames(df)
+  colnames.new = c('Row_num', 'MCO', 'sex', 'agegrp',
+                   paste0('denominator', yr),
+                   paste0('numerator', yr),
+                   paste0('prevalence', yr))
+  
+  #Renames columns with year
+  df = df %>%
+    rename_at(vars(all_of(colnames.old)), ~colnames.new)
+  
+  #Joins it to the final table
+  joint_df = joint_df %>%
+    left_join(df, by = c('Row_num', 'MCO', 'sex', 'agegrp'), keep=FALSE)
+  
+  return(joint_df)
+  
+}
+```
+
+# SECTION 2: Read in data from databases
+
+# 2.1 Read in data from SPC
+```{r}
+#read just the obesity data in
+
+for (yr in start_year:end_year){
+  
+  #define the query
+  # sql1 = paste0("select * from work.dbo.xz_5a_mcd_depression_finaltab_", yr)
+  # sql2 = paste0("select * from work.dbo.xz_5a_mcd_annual_finaltab_", yr)
+  # sql3 = paste0("select * from work.dbo.xz_5a_mcd_flu_finaltab_", yr)
+  # sql4 = paste0("select * from work.dbo.xz_5a_mcd_smoking_finaltab_", yr)
+  # sql5 = paste0("select * from work.dbo.xz_5a_mcd_smoking_finaltab2_", yr)
+  sql6 = paste0("select * from work.dbo.xz_5a_mcd_obesity_finaltab_", yr)
+  sql7 = paste0("select * from work.dbo.xz_5a_mcd_obesity_finaltab2_", yr)
+  
+  #Initialize dfs for the first year
+  if (yr == start_year){
+    # adult_depression_raw = dbGetQuery(spc, sql1)
+    # annual_exam_raw = dbGetQuery(spc, sql2)
+    # flu_raw = dbGetQuery(spc, sql3)
+    # smoking_raw = dbGetQuery(spc, sql4)
+    # smoking_cessation_raw = dbGetQuery(spc, sql5)
+    obesity_raw = dbGetQuery(spc, sql6)
+    obesity_counseling_raw = dbGetQuery(spc, sql7)
+  } else { #for all subsequent years, append data
+    # adult_depression_raw = rbind(adult_depression_raw, dbGetQuery(spc, sql1))
+    # annual_exam_raw = rbind(annual_exam_raw, dbGetQuery(spc, sql2))
+    # flu_raw = rbind(flu_raw, dbGetQuery(spc, sql3))
+    # smoking_raw = rbind(smoking_raw, dbGetQuery(spc, sql4))
+    # smoking_cessation_raw = rbind(smoking_cessation_raw, dbGetQuery(spc, sql5))
+    obesity_raw = rbind(obesity_raw, dbGetQuery(spc, sql6))
+    obesity_counseling_raw = rbind(obesity_counseling_raw, dbGetQuery(spc, sql7))
+  }
+  
+}
+
+#and also read in HPV - should already have all years appended
+# hpv_raw = dbGetQuery(spc, "select * from work.dbo.xz_5a_mcd_hpv_finaltab")
+
+```
+
+#2.2 Read in data from TACC
+
+```{sql, connection = tac, output.var = tacc_obesity_raw}
+select * from dev.xz_5a_mcd_obesity_finaltab
+order by fy;
+```
+
+```{sql, connection = tac, output.var = tacc_obesity_counseling_raw}
+select * from dev.xz_5a_mcd_obesity_finaltab2
+order by fy;
+```
+
+
+```{r intialize_dfs, message=FALSE}
+#Import rows so we can match Will's spreadsheets
+rows = read.csv(template_path, header = TRUE)
+
+#Age_cat imports as int, cast to character
+#rows$agegrp = as.character(rows$agegrp)
+
+results = rows[,-1] #don't need first column for matching
+
+```
+
+```{r prep-dfs, message=FALSE}
+
+# Prep data from SQL server for joining to final results tables
+
+# adult_depression_prep = prep_df(adult_depression_raw)
+# annual_exam_prep = prep_df(annual_exam_raw)
+# flu_prep = prep_df(flu_raw)
+# hpv_prep = prep_df(hpv_raw)
+# smoking_prep = prep_df(smoking_raw)
+# smoking_cessation_prep = prep_df(smoking_cessation_raw)
+obesity_prep = prep_df(obesity_raw)
+obesity_counseling_prep = prep_df(obesity_counseling_raw)
+tacc_obesity_prep = prep_df(tacc_obesity_raw)
+tacc_obesity_counseling_prep = prep_df(tacc_obesity_counseling_raw)
+
+```
+
+```{r makesheets, message=FALSE}
+
+#Make some empty sheets to put results into
+# adult_depression_results = results
+# annual_exam_results = results
+# flu_results = results
+# hpv_results = results
+# smoking_results = results
+# smoking_cessation_results = results
+obesity_results = results
+obesity_counseling_results = results
+tacc_obesity_results = results
+tacc_obesity_counseling_results = results
+
+#Make the actual sheets
+
+for (yr in start_year:end_year){
+  # adult_depression_results = append_by_year(adult_depression_prep, adult_depression_results, yr)
+  # annual_exam_results = append_by_year(annual_exam_prep, annual_exam_results, yr)
+  # flu_results = append_by_year(flu_prep, flu_results, yr)
+  # hpv_results = append_by_year(hpv_prep, hpv_results, yr)
+  # smoking_results = append_by_year(smoking_prep, smoking_results, yr)
+  # smoking_cessation_results = append_by_year(smoking_cessation_prep, smoking_cessation_results, yr)
+  obesity_results = append_by_year(obesity_prep, obesity_results, yr)
+  obesity_counseling_results = append_by_year(obesity_counseling_prep, obesity_counseling_results, yr)
+  tacc_obesity_results = append_by_year(tacc_obesity_prep, tacc_obesity_results, yr)
+  tacc_obesity_counseling_results = append_by_year(tacc_obesity_counseling_prep, tacc_obesity_counseling_results, yr)
+}
+```
+
+```{r xlsx-prep}
+
+#define styles
+blank = createStyle(fgFill = NULL, border = NULL)
+black = createStyle(fgFill = "#000000", border="TopBottomLeftRight", borderColour = "#000000", borderStyle="thin")
+color1 = createStyle(fgFill = "lavenderblush", border="TopBottomLeftRight",  borderColour = "#000000", borderStyle="thin")
+color2 = createStyle(fgFill = "lightgoldenrodyellow", border="TopBottomLeftRight",  borderColour = "#000000", borderStyle="thin")
+color3 = createStyle(fgFill = "#E7FFE7", border="TopBottomLeftRight",  borderColour = "#000000", borderStyle="thin")
+color4 = createStyle(fgFill = "lavender", border="TopBottomLeftRight",  borderColour = "#000000", borderStyle="thin")
+boldcenter = createStyle(halign = "center", textDecoration = c("BOLD"))
+bold = createStyle(textDecoration = c("BOLD"))
+males = createStyle(fgFill = "dodgerblue2", border=NULL, textDecoration = c("BOLD"), fontColour="white")
+females = createStyle(fgFill = "deeppink", border=NULL, textDecoration = c("BOLD"), fontColour="white")
+
+# define how many years we're writing data for
+num_years = end_year-start_year+1
+colsend = (num_years+1)*3
+
+#make mini-df of header names
+tinycolnames = data.frame(matrix(c("Denominator", "Numerator", "Prevalence"), nrow=1))
+
+#define which rows are black bars
+black_rows = c(11, 19, 27, 35, 43, 51, 59, 69, 77, 85, 93, 101, 109,
+              119, 127, 135, 143, 151, 159)
+
+#define which rows are clear
+clear_rows = c(60, 110)
+
+
+```
+
+```{r output-to-xlsx, message=FALSE}
+#this chunk takes all the dataframes and outputs them into a workbook
+
+# create blank workbook
+wb = createWorkbook()
+
+# Add data to workbook
+# addWorksheet(wb, sheetName = "Adult Depression")      #1
+# addWorksheet(wb, sheetName = "Annual Exam")           #2
+# addWorksheet(wb, sheetName = "Influenza Vaccination") #3
+# addWorksheet(wb, sheetName = "HPV Vaccination")       #4
+# addWorksheet(wb, sheetName = "Smoking Prevalence")    #5
+# addWorksheet(wb, sheetName = "Smoking Cessation")     #6
+addWorksheet(wb, sheetName = "Obesity Prevalence SPC")    #7
+addWorksheet(wb, sheetName = "Weight Counseling SPC")     #8
+addWorksheet(wb, sheetName = "Obesity Prevalence TACC")    #7
+addWorksheet(wb, sheetName = "Weight Counseling TACC")     #8
+
+
+# writeData(wb, sheet = 1, x = adult_depression_results[,-1], startCol=1, startRow=2)
+# writeData(wb, sheet = 2, x = annual_exam_results[,-1], startCol=1, startRow=2)
+# writeData(wb, sheet = 3, x = flu_results[,-1], startCol=1, startRow=2)
+# writeData(wb, sheet = 4, x = hpv_results[,-1], startCol=1, startRow=2)
+# writeData(wb, sheet = 5, x = smoking_results[,-1], startCol=1, startRow=2)
+# writeData(wb, sheet = 6, x = smoking_cessation_results[,-1], startCol=1, startRow=2)
+writeData(wb, sheet = 1, x = obesity_results[,-1], startCol=1, startRow=2)
+writeData(wb, sheet = 2, x = obesity_counseling_results[,-1], startCol=1, startRow=2)
+writeData(wb, sheet = 3, x = tacc_obesity_results[,-1], startCol=1, startRow=2)
+writeData(wb, sheet = 4, x = tacc_obesity_counseling_results[,-1], startCol=1, startRow=2)
+
+#style it up all nice and pretty-like
+for (j in 1:4){
+  for (i in 1:num_years)
+  {
+    #define which columns each year section lives + assigns a color
+    cellstart = ((i-1)*3 + 4)
+    cellend = ((i-1)*3 + 6)
+    style_num = if (i%%4==0) {4} else {i%%4}
+    current_style = get(paste0("color", style_num))
+    
+    #Write what fiscal year it is
+    writeData(wb, sheet = j, x = paste("FY", start_year+i-1),
+              startCol = cellstart, startRow = 1)
+    
+    #Write column headers: denominator, numerator, prevalence
+    writeData(wb, sheet = j, x = tinycolnames,
+              startCol = cellstart, startRow = 2, colNames=FALSE)
+  
+    #merge fiscal year cells
+    mergeCells(wb, sheet = j, cols = cellstart:cellend, rows = 1)
+    
+    #Add style: Fiscal year cells
+    addStyle(wb, sheet = j, style = current_style, cols = cellstart:cellend, rows = 1)
+    addStyle(wb, sheet = j, style = boldcenter, cols = cellstart:cellend, rows = 1, stack=TRUE)
+    
+    #Add style: colors each triplet of columns
+    addStyle(wb, sheet = j, style = current_style, cols = cellstart:cellend, gridExpand=TRUE, rows = 2:158)
+
+  }
+  
+  #Makes the horizontal black bars
+  addStyle(wb, sheet = j, style = black, cols = 1:colsend, gridExpand=TRUE, rows = black_rows)
+  
+  #Makes two rows clear
+  addStyle(wb, sheet = j, style = blank, cols = 1:colsend, gridExpand=TRUE, rows = clear_rows)
+  
+  #Makes male and female rows
+  writeData(wb, sheet = j, x = "Males", startCol = 1, startRow = 61)
+  writeData(wb, sheet = j, x = "Females", startCol = 1, startRow = 111)
+  addStyle(wb, sheet = j, style = males, cols = 1:colsend, gridExpand=TRUE, rows =61)
+  addStyle(wb, sheet = j, style = females, cols = 1:colsend, gridExpand=TRUE, rows =111)
+  
+  #Makes columns 1-3 bold
+  addStyle(wb, sheet = j, style = bold, cols = 1:3, rows = 1:158, gridExpand=TRUE, stack=TRUE)
+  
+  #Makes row 2 bold
+  addStyle(wb, sheet = j, style = bold, cols = 1:colsend, rows = 2, gridExpand=TRUE, stack=TRUE)
+  
+  #set column widths to auto
+  setColWidths(wb, sheet = j, widths="auto", cols=1:colsend)
+  
+  #freezes panes
+  freezePane(wb, sheet = j, firstActiveRow=3)
+}
+
+file_path = here("outputs", "dwqa_sample_query.xlsx")
+
+saveWorkbook(wb, file=file_path, overwrite=TRUE)
+
+```
+
+```{r clean-up-after-yourself}
+# This chunk will create a query to wipe all tables - does not actually do the wiping
+
+wipe_query = dbGetQuery(spc, "select \'DROP TABLE IF EXISTS WORK.DBO.\' + TABLE_NAME + \';\'
+from information_schema.tables where table_name like 'xz_5a_mcd_%'")
+
+nrow(wipe_query)
+
+wipe_all_tables = ""
+for (i in 1:nrow(wipe_query)){
+  wipe_all_tables = paste(wipe_all_tables, wipe_query[i,])
+}
+```
+
+
+```{r clean-up-after-yourself}
+# THIS CHUNK WILL WIPE ALL YOUR TABLES FROM THE SQL SERVER
+
+# DO. NOT. RUN. THIS. CHUNK. UNTIL. AFTER. YOU. ARE. COMPLETELY. SURE. YOU. ARE. DONE
+
+
+# DID YOU CHECK YOUR TABLES
+
+
+# ARE YOU SURE
+
+
+# CHECK AGAIN
+
+
+# THERE ARE NO TAKE-BACKSIES
+
+
+# OK YOUR FUNERAL
+
+
+dbGetQuery(spc, wipe_all_tables)
+
+```
+
+```{r close-connections}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env}
+# clears R environment
+rm(list=ls())
+```
+
+
+

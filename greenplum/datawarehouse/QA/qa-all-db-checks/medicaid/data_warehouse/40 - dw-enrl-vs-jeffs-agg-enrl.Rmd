@@ -1,0 +1,216 @@
+---
+title: "dw-enrl-vs-jeffs-agg-enrl"
+author: "XRZ"
+date: '2022-12-5'
+output: html_document
+---
+
+
+# Purpose
+Compare Jeff's agg enrl tables to dw agg enrl table (FY yearly only)
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+#packages I don't use anymore: rstudioapi
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+
+#Connect to Greenplum
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(), dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc")))
+```
+
+## 0.5 Set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+
+```
+
+# SECTION 1: Define global variables
+```{r}
+
+starting_yr = 13
+ending_yr = 21
+
+dx = 'F32'
+
+proc = '96127'
+
+ndc = '4580208801'
+
+```
+
+# SECTION 2: Define base queries for modification
+
+
+```{r}
+
+spc_sql1 = 'select \'20@yr\' as fy, icn, \'clm\' as src_table
+  into work.dbo.xz_temp1
+  from medicaid.dbo.clm_dx_@yr where
+  PRIM_DX_CD like \'@dx%\' or
+  DX_CD_1 like \'@dx%\' or
+  DX_CD_2 like \'@dx%\' or
+  DX_CD_3 like \'@dx%\' or
+  DX_CD_4 like \'@dx%\' or
+  DX_CD_5 like \'@dx%\' or
+  DX_CD_6 like \'@dx%\' or
+  DX_CD_7 like \'@dx%\' or
+  DX_CD_8 like \'@dx%\' or
+  DX_CD_9 like \'@dx%\' or
+  DX_CD_10 like \'@dx%\' or
+  DX_CD_11 like \'@dx%\' or
+  DX_CD_12 like \'@dx%\' or
+  DX_CD_13 like \'@dx%\' or
+  DX_CD_14 like \'@dx%\' or
+  DX_CD_15 like \'@dx%\' or
+  DX_CD_16 like \'@dx%\' or
+  DX_CD_17 like \'@dx%\' or
+  DX_CD_18 like \'@dx%\' or
+  DX_CD_19 like \'@dx%\' or
+  DX_CD_20 like \'@dx%\' or
+  DX_CD_21 like \'@dx%\' or
+  DX_CD_22 like \'@dx%\' or
+  DX_CD_23 like \'@dx%\' or
+  DX_CD_24 like \'@dx%\' or
+  DX_CD_25 like \'@dx%\';
+  --315240
+  
+  --enc
+  
+  select \'20@yr\' as fy, derv_enc, \'enc\' as src_table
+  into work.dbo.xz_temp2
+  from medicaid.dbo.enc_dx_@yr where
+  PRIM_DX_CD like \'@dx%\' or
+  DX_CD_1 like \'@dx%\' or
+  DX_CD_2 like \'@dx%\' or
+  DX_CD_3 like \'@dx%\' or
+  DX_CD_4 like \'@dx%\' or
+  DX_CD_5 like \'@dx%\' or
+  DX_CD_6 like \'@dx%\' or
+  DX_CD_7 like \'@dx%\' or
+  DX_CD_8 like \'@dx%\' or
+  DX_CD_9 like \'@dx%\' or
+  DX_CD_10 like \'@dx%\' or
+  DX_CD_11 like \'@dx%\' or
+  DX_CD_12 like \'@dx%\' or
+  DX_CD_13 like \'@dx%\' or
+  DX_CD_14 like \'@dx%\' or
+  DX_CD_15 like \'@dx%\' or
+  DX_CD_16 like \'@dx%\' or
+  DX_CD_17 like \'@dx%\' or
+  DX_CD_18 like \'@dx%\' or
+  DX_CD_19 like \'@dx%\' or
+  DX_CD_20 like \'@dx%\' or
+  DX_CD_21 like \'@dx%\' or
+  DX_CD_22 like \'@dx%\' or
+  DX_CD_23 like \'@dx%\' or
+  DX_CD_24 like \'@dx%\';'
+
+
+spc_sql2 = 'select a.fy, a.icn, b.pcn, a.src_table
+  into work.dbo.xz_temp3
+  from work.dbo.xz_temp1 a inner join medicaid.dbo.clm_proc_21 b
+  on a.icn = b.icn
+  where b.pcn is not null and trim(b.pcn) != \'\';
+  
+  insert into work.dbo.xz_temp3
+  select a.fy, a.icn, b.MEM_ID as pcn, a.src_table
+  from work.dbo.xz_temp2 a inner join medicaid.dbo.enc_proc_21 b
+  on a.icn = b.DERV_ENC
+  where b.MEM_ID is not null and trim(b.MEM_ID) != \'\';'
+
+spc_sql3 = 'select count(*) as rows, count(distinct icn) as distinct_icn,
+  count(distinct pcn) as distinct_pcn
+  from work.dbo.xz_temp3;'
+
+tac_sql1 = 'select fiscal_year as fy, claim_id_src as icn, member_id_src as pcn
+  into dev.xz_temp1
+  from data_warehouse.claim_diag_1_prt_mdcd
+  where diag_cd like \'@dx%\' and
+  fiscal_year = 20@yr;'
+
+tac_sql2 = 'select count(*) as rows, count(distinct icn) as distinct_icn,
+  count(distinct pcn) as distinct_pcn
+  from dev.xz_temp1;'
+
+
+```
+
+
+
+
+drop table if exists work.dbo.xz_temp1;
+drop table if exists work.dbo.xz_temp2;
+drop table if exists work.dbo.xz_temp3;
+
+drop table if exists dev.xz_temp1;
+
+select fiscal_year as fy, claim_id_src as icn, member_id_src as pcn
+into dev.xz_temp1
+from data_warehouse.claim_diag_1_prt_mdcd
+where diag_cd like 'F32%' and
+fiscal_year = 2021;
+
+select count(*) as rows, count(distinct icn) as distinct_icn,
+  count(distinct pcn) as distinct_pcn
+  from dev.xz_temp1;
+
+
+
+
+
+```{r close-connections}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env}
+# clears R environment
+rm(list=ls())
+```
+
+
+
