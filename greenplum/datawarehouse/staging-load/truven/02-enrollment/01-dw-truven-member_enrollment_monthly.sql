@@ -26,37 +26,17 @@
 */
 
 
-----  // BEGIN SCRIPT 
-
-drop table if exists dw_staging.member_enrollment_monthly_truven_test;
-
-create table dw_staging.member_enrollment_monthly_truven_test  
-(like data_warehouse.member_enrollment_monthly including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
-
-analyze dw_staging.member_enrollment_monthly_truven_test;
-
 /*
  * Because there are several billion rows, we need to redistribute the enrollment table on a key with the right data type to speed up the join with dim in the DW
  */
-drop table if exists dw_staging.ccaet;
 
-create table dw_staging.ccaet with (
+drop schema if exists staging_clean;
+create schema staging_clean;
+
+
+drop table if exists staging_clean.ccaet;
+
+create table staging_clean.ccaet with (
 	appendonly=true,
 	orientation=column,
 	compresstype=zlib
@@ -79,10 +59,10 @@ as select m.enrolid::text,
   distributed by (enrolid)
   ;
  
- analyze dw_staging.ccaet;
+ analyze staging_clean.ccaet;
 
 -- Truven Commercial ----------------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly_truven_test  (
+insert into dw_staging.member_enrollment_monthly_1_prt_truv  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -127,7 +107,7 @@ select 'truv',
        current_date,
        'mdcrt',
        enrolid 
-  from dw_staging.ccaet m
+  from staging_clean.ccaet m
   join data_warehouse.dim_uth_member_id  a 
     on a.member_id_src = m.enrolid
  and a.data_source = 'truv'
@@ -140,14 +120,16 @@ select 'truv',
     on d.data_source = 'trv' 
   and d.plan_type_src::int = m.plantyp  
 ;
+
+ analyze dw_staging.member_enrollment_monthly_1_prt_truv;  
 ---------------------------------------------------------------------------------------------------
 
 /*
  * Create re-distributed source table 
  */
-drop table if exists dw_staging.mdcrt;
+drop table if exists staging_clean.mdcrt;
 
-create table dw_staging.mdcrt with (
+create table staging_clean.mdcrt with (
 	appendonly=true,
 	orientation=column,
 	compresstype=zlib
@@ -170,10 +152,10 @@ as select m.enrolid::text,
   distributed by (enrolid)
   ;
  
-analyze dw_staging.mdcrt;
+analyze staging_clean.mdcrt;
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly_truven_test  (
+insert into dw_staging.member_enrollment_monthly_1_prt_truv  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -218,7 +200,7 @@ select
        current_date,
        'mdcrt',
        enrolid 
-  from dw_staging.mdcrt m
+  from staging_clean.mdcrt m
   join data_warehouse.dim_uth_member_id a 
     on a.member_id_src = m.enrolid::text
    and a.data_source = 'truv'
@@ -232,7 +214,10 @@ select
   and d.plan_type_src::int = m.plantyp
 ;
 
-vacuum analyze dw_staging.member_enrollment_monthly_truven_test;
+drop table if exists staging_clean.mdcrt;
+drop table if exists staging_clean.ccaet;
+
+vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
 ---------------------------------------------------------------------------------------------------
 
 
