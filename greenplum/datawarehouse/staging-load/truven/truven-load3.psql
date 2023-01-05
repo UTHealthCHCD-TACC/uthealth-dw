@@ -1,4 +1,0 @@
-\i /github/uthealth-dw/greenplum/datawarehouse/staging-load/truven/03-claims/01-redist-tables.sql
-\i /github/uthealth-dw/greenplum/datawarehouse/staging-load/truven/03-claims/02-truven-claim-detail-v2.sql
-
-

@@ -16,42 +16,28 @@
  * ******************************************************************************************************
  * */
 
-drop table if exists dev.claim_diag_truv;
+delete from  dw_staging.claim_diag_1_prt_truv;
+vacuum analyze dw_staging.claim_diag_1_prt_truv;
 
---claim diag
-create table dev.claim_diag_truv
-(like data_warehouse.claim_diag including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-;
 
 -------------------------------- truven commercial outpatient -------------------------------------- 22m
-insert into dev.claim_diag_truv ( data_source, 
-                                    uth_member_id, 
-                                    uth_claim_id, 
-                                    from_date_of_service,
-                                    diag_cd, 
-                                    diag_position, 
-                                    poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src,
-                                    load_date
-                                    )  							        						              
+insert into dw_staging.claim_diag 
+( 
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date
+)  							        						              
 select  'truv', 
+		 year,
          b.uth_member_id, 
          b.uth_claim_id, 
 		 a.svcdate,
@@ -62,32 +48,36 @@ select  'truv',
          a.msclmid::text,
          a.enrolid::text,
          current_date
-from truven.ccaeo a
-join dev.truven_temp_detail  b 
+from staging_clean.ccaeo_etl a
+join staging_clean.truv_dim_id  b 
   on b.member_id_src = a.enrolid 
  and b.claim_id_src = a.msclmid 
 ;
 
 
-analyze dev.claim_diag_truv;
+analyze dw_staging.claim_diag_1_prt_truv;
 
 
 
   
 -------------------------------- truven medicare outpatient -------------------------------------- 4min
-insert into dev.claim_diag_truv ( data_source, 
-                                    uth_member_id, 
-                                    uth_claim_id, 
-                                    from_date_of_service,
-                                    diag_cd, 
-                                    diag_position, 
-                                    poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src,
-                                    load_date
-                                    )    								        						              
+insert into dw_staging.claim_diag 
+( 
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date
+)    								        						              
 select  'truv', 
+		 year,
          b.uth_member_id, 
          b.uth_claim_id, 
 		 a.svcdate,
@@ -98,29 +88,34 @@ select  'truv',
          a.msclmid::text,
          a.enrolid::text,
          current_date
-from truven.mdcro a
-join dev.truven_temp_detail  b 
+from staging_clean.mdcro_etl a
+join staging_clean.truv_dim_id  b 
   on b.member_id_src = a.enrolid 
  and b.claim_id_src = a.msclmid 
 ;
 
-vacuum analyze dev.claim_diag_truv;
+vacuum analyze dw_staging.claim_diag_1_prt_truv;
+
 
   
  -------------------------------- truven commercial inpatient ------
-insert into dev.claim_diag_truv ( data_source, 
-                                    uth_member_id, 
-                                    uth_claim_id, 
-                                    from_date_of_service,
-                                    diag_cd, 
-                                    diag_position, 
-                                    poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src,
-                                    load_date
-                                    )  								        						              
+insert into dw_staging.claim_diag 
+(   
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date
+)  								        						              
 select  'truv', 
+		 year,
          b.uth_member_id, 
          b.uth_claim_id, 
 		 a.svcdate,
@@ -131,28 +126,33 @@ select  'truv',
          a.msclmid::text,
          a.enrolid::text,
          current_date
-from truven.ccaes a 
-join dev.truven_temp_detail  b 
+from staging_clean.ccaes_etl a 
+join staging_clean.truv_dim_id  b 
   on b.member_id_src = a.enrolid 
  and b.claim_id_src = a.msclmid 
 ;
 
-  vacuum analyze dev.claim_diag_truv;
+vacuum analyze dw_staging.claim_diag_1_prt_truv;
+
  
 -------------------------------- truven medicare inpatient ------
-insert into dev.claim_diag_truv ( data_source, 
-                                    uth_member_id, 
-                                    uth_claim_id, 
-                                    from_date_of_service,
-                                    diag_cd, 
-                                    diag_position, 
-                                    poa_src,
-                                    icd_version,
-                                    claim_id_src,
-                                    member_id_src,
-                                    load_date
-                                    )  									        						              
+insert into dw_staging.claim_diag 
+( 
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date
+)  									        						              
 select  'truv', 
+		 year,
          b.uth_member_id, 
          b.uth_claim_id, 
 		 a.svcdate,
@@ -163,20 +163,17 @@ select  'truv',
          a.msclmid::text,
          a.enrolid::text,
          current_date
-from truven.mdcrs  a 
-join dev.truven_temp_detail  b 
+from staging_clean.mdcrs_etl  a 
+join staging_clean.truv_dim_id  b 
   on b.member_id_src = a.enrolid 
  and b.claim_id_src = a.msclmid 
 ;
 
-  vacuum analyze dev.claim_diag_truv;
+vacuum analyze dw_staging.claim_diag_1_prt_truv;
 
 --clean up null rows
 
-delete from dev.claim_diag_truv cd where diag_cd is null;
-    
-vacuum analyze dev.claim_diag_truv;
- 
-analyze dev.claim_diag_truv;
+delete from dw_staging.claim_diag where diag_cd is null;
+vacuum analyze dw_staging.claim_diag_1_prt_truv;
+analyze dw_staging.claim_diag;
 
-drop table if exists dev.truven_detail_lines ;
