@@ -1,27 +1,7 @@
-drop table if exists dev.claim_header_truven;
 
-create table dev.claim_header_truven
-(like data_warehouse.claim_header including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn')
- )
-; 
-
-/*
- *  Commercial Inpatient
- */
+analyze dw_staging.claim_header;
+delete from dw_staging.claim_header where data_source = 'truv';
+vacuum analyze dw_staging.claim_header;
 
 with cte as (
 select enrolid, msclmid, 
@@ -30,10 +10,10 @@ select enrolid, msclmid,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
        sum(pay) as pay
-  from dev.ccaes_etl
+  from staging_clean.ccaes_etl
   group by enrolid, msclmid 
 )
-   insert into dev.claim_header_truven
+   insert into dw_staging.claim_header
 (
 	data_source, 
 	year, 
@@ -69,12 +49,12 @@ select  'truv',
         a.msclmid,
         current_date
   from cte a
-   join dev.truv_dim_id b 
+   join staging_clean.truv_dim_id b 
      on a.enrolid = b.member_id_src 
     and a.msclmid = b.claim_id_src  
     ;
    
-analyze dev.claim_header_truven;
+analyze dw_staging.claim_header;
 
 /*
  *  Medicare Inpatient
@@ -86,10 +66,10 @@ select enrolid, msclmid,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
        sum(pay) as pay
-  from dev.mdcrs_etl
+  from staging_clean.mdcrs_etl
   group by enrolid, msclmid 
 )
-   insert into dev.claim_header_truven
+   insert into dw_staging.claim_header
 (
 	data_source, 
 	year, 
@@ -125,17 +105,16 @@ select  'truv',
         a.msclmid,
         current_date
   from cte a
-   join dev.truv_dim_id b 
+   join staging_clean.truv_dim_id b 
      on a.enrolid = b.member_id_src 
     and a.msclmid = b.claim_id_src  
     ;
    
-   vacuum analyze dev.claim_header_truven;
+vacuum analyze dw_staging.claim_header;
   
   /*
  *  Commercial Outpatient
  */
-explain
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
@@ -143,10 +122,10 @@ select enrolid, msclmid,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
        sum(pay) as pay
-  from dev.ccaeo_etl
+  from staging_clean.ccaeo_etl
   group by enrolid, msclmid 
 )
-   insert into dev.claim_header_truven
+   insert into dw_staging.claim_header
 (
 	data_source, 
 	year, 
@@ -182,12 +161,12 @@ select  'truv',
         a.msclmid,
         current_date
    from cte a
-   join dev.truv_dim_id b 
+   join staging_clean.truv_dim_id b 
      on a.enrolid = b.member_id_src 
     and a.msclmid = b.claim_id_src  
     ;
     
-   vacuum analyze dev.claim_header_truven;
+vacuum analyze dw_staging.claim_header;
   
     /*
  *  Medicare Outpatient
@@ -200,10 +179,10 @@ select enrolid, msclmid,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
        sum(pay) as pay
-  from dev.mdcro_etl 
+  from staging_clean.mdcro_etl 
   group by enrolid, msclmid 
 )
-   insert into dev.claim_header_truven
+   insert into dw_staging.claim_header
 (
 	data_source, 
 	year, 
@@ -238,11 +217,11 @@ select  'truv',
         a.enrolid,
         a.msclmid,
         current_date
-  from cte a
-   join dev.truv_dim_id b 
+   from cte a
+   join staging_clean.truv_dim_id b 
      on a.enrolid = b.member_id_src 
     and a.msclmid = b.claim_id_src  
     ;
 
-   vacuum analyze dev.claim_header_truven;
+vacuum analyze dw_staging.claim_header;
   

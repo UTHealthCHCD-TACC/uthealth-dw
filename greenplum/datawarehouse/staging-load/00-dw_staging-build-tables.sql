@@ -197,3 +197,12 @@ analyze dw_staging.claim_diag;
 analyze dw_staging.claim_icd_proc;
 analyze dw_staging.pharmacy_claims;
 
+grant select on dw_staging.claim_detail to uthealth_analyst;
+grant select on dw_staging.claim_header to uthealth_analyst;
+grant select on dw_staging.member_enrollment_monthly  to uthealth_analyst;
+grant select on dw_staging.member_enrollment_yearly  to uthealth_analyst;
+grant select on dw_staging.claim_diag to uthealth_analyst;
+grant select on dw_staging.claim_icd_proc to uthealth_analyst;
+grant select on dw_staging.pharmacy_claims to uthealth_analyst;
+
+

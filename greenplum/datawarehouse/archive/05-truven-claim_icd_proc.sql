@@ -13,8 +13,9 @@
  * ******************************************************************************************************
  * */
 
+drop table if exists staging_clean.truven_icd_proc_stage ;
 
-create table dw_staging.truven_icd_proc_stage 
+create table staging_clean.truven_icd_proc_stage 
 with (appendonly=true, orientation=column) as 
 select * 
 from dw_staging.claim_icd_proc 
@@ -22,32 +23,38 @@ limit 0
 distributed by (uth_member_id)
 ;
 
-delete from dw_staging.claim_icd_proc where data_source = 'truv'
-;
+delete from dw_staging.claim_icd_proc where data_source = 'truv';
+
+
+
+vacuum analyze dw_staging.claim_icd_proc;
 
 -----commercial 
-insert into dw_staging.truven_icd_proc_stage ( data_source, 
+
+insert into staging_clean.truven_icd_proc_stage ( data_source, 
                                         uth_member_id,	
                                         uth_claim_id,
-									    claim_sequence_number,
 										from_date_of_service,
 										proc_cd,
 										proc_position,
-										icd_version
+										icd_version,
+										member_id_src,
+										claim_id_src 
 									   )								
 select * from 
 	(        select  'truv', 
 	         b.uth_member_id, 
 	         b.uth_claim_id, 
-	         null as claim_sequence_number, 
 	         a.svcdate ,
 	         unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
 			 unnest(array[1,2,3,4,5,6]) as proc_pos,
-			 a.dxver
-	from truven.ccaef a
-	   join data_warehouse.dim_uth_claim_id b  
-	      on a.member_id_src = b.member_id_src 
-	     and b.claim_id_src = a.msclmid::text 
+			 a.dxver,
+			 a.enrolid::text,
+			 msclmid::text
+	    from truven.ccaef a
+	    join staging_clean.truv_dim_id b  
+	      on a.enrolid = b.member_id_src 
+	     and b.claim_id_src = a.msclmid
  ) inr 
  where inr.proc_cd is not null 
 ;
@@ -55,7 +62,7 @@ select * from
  
 
 ----med
-insert into dw_staging.truven_icd_proc_stage ( data_source, 
+insert into staging_clean.truven_icd_proc_stage ( data_source, 
                                         uth_member_id,	
                                         uth_claim_id,
 									    claim_sequence_number,

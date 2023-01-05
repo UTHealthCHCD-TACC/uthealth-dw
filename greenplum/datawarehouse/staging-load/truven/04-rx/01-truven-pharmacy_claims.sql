@@ -1,36 +1,18 @@
 
-update  truven.mdcrd set member_id_src = enrolid::text
-;
-
-analyze truven.ccaed;
-
-select count(*), year
-from truven.ccaed 
-where member_id_src is null 
-group by 2 order by 2 ;
-
 
 --19min
+/*
 do $$
 
 begin 
 ---redistribute dim table for faster join 
-drop table if exists dw_staging.truven_rx_claim_id;
 
-create table dw_staging.truven_rx_claim_id
-with(appendonly=true, orientation=column, compresstype=zlib)
-as select *
-from data_warehouse.dim_uth_rx_claim_id
-where data_source = 'truv'
-distributed by (member_id_src)
-;
-
-analyze dw_staging.truven_rx_claim_id;
 
 raise notice 'dim table';
 
+*/
 
-
+vacuum analyze dw_staging.pharmacy_claims;
 
 --truven medicare adv
 insert into dw_staging.pharmacy_claims (
@@ -75,7 +57,7 @@ select 'truv',
        a.daysupp,
        null as script_id,
        a.refill,
-	   c.month_year_id,
+	   get_my_from_date(a.svcdate) as month_year_id,
 	   a.genind,
 	   a.generid::text,
 	   null,
@@ -88,8 +70,8 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.member_id_src || a.ndcnum::text || svcdate::text,
-       a.member_id_src,
+       a.rx_id_src,
+       a.enrolid::text,
        'mdcrd' as table_id_src,
 			 a.rxmr, --new
 			 coalesce(a.dawind,'00'), --new
@@ -97,15 +79,18 @@ select 'truv',
 			 r.strngth, --new
 			 null, --new
 			 null --new
-from truven.mdcrd a 
-  join dw_staging.truven_rx_claim_id b
-     on b.member_id_src = a.member_id_src
-    and b.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
+from staging_clean.mdcrd_etl a 
+  join staging_clean.truven_rx_claim_id b
+     on b.member_id_src = a.enrolid
+    and b.rx_claim_id_src = a.rx_id_src 
    left outer join reference_tables.redbook r --new
 	 on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-raise notice 'mdcrd done';
+vacuum analyze dw_staging.pharmacy_claims_1_prt_truv;
+
+
+--raise notice 'mdcrd done';
 
 ------********************************************************************
 --truven commercial
@@ -154,7 +139,7 @@ select 'truv',
        a.daysupp,
        null as script_id,
        a.refill,
-	   c.month_year_id,
+	   get_my_from_date(a.svcdate) as month_year_id,
 	   a.genind,
 	   a.generid::text,
 	   null,
@@ -176,24 +161,26 @@ select 'truv',
 			 r.strngth,--new
 			 null,--new
 			 null --new
-from truven.ccaed a
-  join dw_staging.truven_rx_claim_id b
-     on b.member_id_src = a.member_id_src
-    and b.rx_claim_id_src = a.member_id_src || ndcnum::text || svcdate::text
-  join reference_tables.ref_month_year c
-    on c.month_int = extract(month from a.svcdate)
-    and c.year_int = extract(year from a.svcdate)
-	left join reference_tables.redbook r -- new
-		 on r.ndcnum = lpad(a.ndcnum::text,11,'0')
+from staging_clean.ccaed_etl a
+  join staging_clean.truven_rx_claim_id b
+     on b.member_id_src = a.enrolid 
+    and b.rx_claim_id_src = a.rx_id_src 
+   left outer join reference_tables.redbook r -- new
+     on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
+
+vacuum analyze dw_staging.pharmacy_claims_1_prt_truv;
+
+
+
+/*
 raise notice 'ccaed done';
 
-analyze dw_staging.pharmacy_claims;
 
-drop table if exists dw_staging.truven_rx_claim_id;
+drop table if exists staging_clean.truven_rx_claim_id;
 
 raise notice ' done';
 
 end $$;
-
+*/
 

@@ -30,8 +30,12 @@
  * Because there are several billion rows, we need to redistribute the enrollment table on a key with the right data type to speed up the join with dim in the DW
  */
 
-drop schema if exists staging_clean;
-create schema staging_clean;
+
+delete from dw_staging.member_enrollment_monthly_1_prt_truv ;
+vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv ; 
+
+--drop schema if exists staging_clean;
+--create schema staging_clean;
 
 
 drop table if exists staging_clean.ccaet;
@@ -62,7 +66,7 @@ as select m.enrolid::text,
  analyze staging_clean.ccaet;
 
 -- Truven Commercial ----------------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly_1_prt_truv  (
+insert into dw_staging.member_enrollment_monthly  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -85,7 +89,6 @@ insert into dw_staging.member_enrollment_monthly_1_prt_truv  (
 	load_date,
 	table_id_src,
 	member_id_src
-
 	)		
 select 'truv', 
        m.year,
@@ -103,9 +106,9 @@ select 'truv',
        null, 
        '0' as race, 
        m.efamid::text, 
-       m.mhsacovg,
+       coalesce(m.mhsacovg,0),
        current_date,
-       'mdcrt',
+       'ccaet',
        enrolid 
   from staging_clean.ccaet m
   join data_warehouse.dim_uth_member_id  a 
@@ -155,7 +158,7 @@ as select m.enrolid::text,
 analyze staging_clean.mdcrt;
 
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly_1_prt_truv  (
+insert into dw_staging.member_enrollment_monthly  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -196,15 +199,15 @@ select
        null,
        '0' as race,
        m.efamid::text, 
-       m.mhsacovg,
+       coalesce(m.mhsacovg,0),
        current_date,
        'mdcrt',
        enrolid 
   from staging_clean.mdcrt m
   join data_warehouse.dim_uth_member_id a 
-    on a.member_id_src = m.enrolid::text
+    on a.member_id_src = m.enrolid
    and a.data_source = 'truv'
-  join reference_tables.ref_truven_state_codes s 
+  left outer join reference_tables.ref_truven_state_codes s 
 	on m.egeoloc=s.truven_code
   left outer join reference_tables.ref_gender c
     on c.data_source = 'trv'
@@ -214,11 +217,47 @@ select
   and d.plan_type_src::int = m.plantyp
 ;
 
+/*
+ * Get consecutive enrollment 
+ */
+
+vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
+
+drop table if exists dev.temp_consec_enrollment;
+
+create table dev.temp_consec_enrollment 
+with (appendonly=true, orientation=column) as 
+select row_id::bigint as row_id
+      ,row_number() over(partition by uth_member_id, my_grp order by  month_year_id) as in_streak
+from ( 
+	   select a.row_id
+	         ,a.month_year_id
+	         ,a.uth_member_id
+	         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
+	   from dw_staging.member_enrollment_monthly_1_prt_truv 	 a 
+	     join reference_tables.ref_month_year b 
+	       on a.month_year_id = b.month_year_id 	   		    
+	 ) inr    
+distributed by (row_id);
+
+analyze dev.temp_consec_enrollment;
+
+--update consec enrolled months  9m 
+update dw_staging.member_enrollment_monthly_1_prt_truv a 
+   set consecutive_enrolled_months = b.in_streak 
+  from dev.temp_consec_enrollment b 
+ where a.row_id = b.row_id
+;
+
+--**cleanup
+drop table if exists dev.temp_consec_enrollment;
 drop table if exists staging_clean.mdcrt;
 drop table if exists staging_clean.ccaet;
 
+alter table dw_staging.member_enrollment_monthly drop column row_id;
+
 vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
----------------------------------------------------------------------------------------------------
+alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
+grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
 
 
-----/END SCRIPT
