@@ -1,0 +1,9 @@
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U jwozny -W -f "O:\github\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\03-truven-claim-header.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U jwozny -W -f "O:\github\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\02-truven-claim-detail.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U jwozny -W -f "O:\github\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\04-truven-claim-diag.sql"
+
+
+
+

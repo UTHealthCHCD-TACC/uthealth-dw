@@ -4,5 +4,6 @@ select usename,
  where state = 'active'; 
 
 
-select pg_terminate_backend(165818);
-select pg_cancel_backend(165818);
+select pg_terminate_backend(169902);
+select pg_cancel_backend(279531);
+

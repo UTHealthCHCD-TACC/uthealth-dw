@@ -14,8 +14,8 @@
  * */
 
 
-delete from dw_staging.claim_icd_proc where data_source = 'truv';
-vacuum analyze dw_staging.claim_icd_proc;
+--delete from dw_staging.claim_icd_proc_1_prt_truv  ;
+--vacuum analyze dw_staging.claim_icd_proc_1_prt_truv ; 
 
 -------------get procs from claims table 
 
@@ -24,11 +24,11 @@ drop table if exists staging_clean.truven_proc;
 create table staging_clean.truven_proc as
 select distinct * from 
 (
-select enrolid, msclmid, svcdate, pproc as proc_cd, 1 as proc_pos, dxver 
+select enrolid, msclmid, year, svcdate, pproc as proc_cd, 1 as proc_pos, dxver 
   from truven.ccaes 
  where pproc is not null
 union all 
-select enrolid, msclmid, svcdate, pproc as proc_cd, 1 as proc_pos, dxver 
+select enrolid, msclmid, year, svcdate, pproc as proc_cd, 1 as proc_pos, dxver 
   from truven.mdcrs  
  where pproc is not null
  ) a
@@ -46,6 +46,7 @@ with procs as (
 	select 
 	enrolid,
 	msclmid,
+	year,
     svcdate ,
     unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
     unnest(array[1,2,3,4,5,6]) as proc_pos,
@@ -70,6 +71,7 @@ with procs as (
 	select 
 	enrolid,
 	msclmid,
+	"year", 
     svcdate ,
     unnest(array[proc1, proc2, proc3, proc4, proc5, proc6])  as proc_cd,
     unnest(array[1,2,3,4,5,6]) as proc_pos,
@@ -109,8 +111,8 @@ proc_position,
 icd_version,
 load_date,
 "year",
-claim_id_src,
-member_id_src
+member_id_src,
+claim_id_src
 )
 select 'truv',
 		b.uth_member_id,
@@ -120,7 +122,7 @@ select 'truv',
 		a.proc_pos ,
 		a.dxver, 
 		current_date,
-		extract(year from svcdate),
+		year,
 		a.enrolid::text,
 		a.msclmid::text
    from dis_all a 
@@ -133,7 +135,7 @@ vacuum analyze dw_staging.claim_icd_proc_1_prt_truv;
 
 --- get rid of duplicate procs 
 
-delete from 
+delete  
 from dw_staging.claim_icd_proc_1_prt_truv a 
 where exists 
 (
