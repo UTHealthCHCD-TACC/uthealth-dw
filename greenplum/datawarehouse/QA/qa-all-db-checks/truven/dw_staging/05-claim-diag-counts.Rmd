@@ -1,0 +1,316 @@
+---
+title: "dwqa-truven-claim-diag-counts"
+author: "XRZ"
+date: '2023-01-06'
+output: html_document
+---
+
+
+#Purpose:
+This R markdown script examines the accuracy of conversions from raw source tables to
+data_warehouse tables
+
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+#packages I don't use anymore: rstudioapi
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.3 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("connect_to_tacc")))
+```
+
+## 0.5 Set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+
+#Make sure that the here() function is pointing to the parent folder for this file
+here::i_am("03-claim-header-counts.Rmd")
+
+```
+# SECTION 1: Get counts of rows and distinct ENROLIDs
+
+## 1.1 Base SQL queries for modification
+```{r}
+
+dw_sql1 = "select year, table_id_src, count(distinct claim_id_src) as count from dw_staging.claim_header
+where table_id_src = '@table'
+group by year, table_id_src
+order by year;"
+
+truv_sql1 = "select year, '@table'::text as table, count(distinct msclmid) as count from truven.@table
+group by year
+order by year;"
+
+#this is the list of tables to look in and count
+list_of_tables = c("ccaes", "ccaeo", "mdcrs", "mdcro")
+
+```
+
+## 1.2 Get counts from dw
+```{r}
+tac = connect_to_tacc()
+
+#rm(dw_counts)
+
+for (i in 1:4){
+  
+  # we count in pieces bc otherwise the query takes too long
+  
+  table = list_of_tables[i]
+  dw_sql1.mod = dw_sql1 %>% gsub("@table", table, .)
+  
+  tic(paste("Count distinct claim IDs from dw -", table))
+  
+  current_results = dbGetQuery(tac, dw_sql1.mod)
+  
+  if (i == 1) {
+    dw_counts = current_results
+  } else {
+    dw_counts = rbind(dw_counts, current_results)
+  }
+  
+  toc()
+
+}
+  
+```
+## 1.3 Get counts from truven schema
+```{r}
+tac = connect_to_tacc()
+
+for (i in 1:4){
+  
+  # we count in pieces bc otherwise the query takes too long
+  
+  table = list_of_tables[i]
+  truv_sql1.mod = truv_sql1 %>% gsub("@table", table, .)
+  
+  tic(paste("Count distinct claim IDs from truven -", table))
+  
+  current_results = dbGetQuery(tac, truv_sql1.mod)
+  
+  if (i == 1) {
+    truv_counts = current_results
+  } else {
+   truv_counts = rbind(truv_counts, current_results)
+  }
+  
+  toc()
+
+}
+  
+```
+
+# SECTION 2: Make it a table
+```{r}
+
+# rearrange dw table so that each column is a table_id_src
+
+for (i in 1:4){
+  current_table = list_of_tables[i]
+  newcolname = paste0("dw_", current_table)
+  
+  current = dw_counts %>%
+    filter(table_id_src == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table_id_src)
+  
+  
+  if (i==1) {
+    all_counts = current
+  } else {
+    all_counts = all_counts %>%
+    left_join(current, by = "year")
+  }
+}
+
+# rerrange truven table so that each column is a separate table
+# (Must be run after dw results - just appends to the same table)
+
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  newcolname = paste0("truv_", current_table)
+  
+  current = truv_counts %>%
+    filter(table == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table)
+
+    all_counts = all_counts %>%
+    left_join(current, by = "year")
+}
+
+
+# get the difference
+
+difference = all_counts %>%
+  mutate(ccaes_diff = truv_ccaes - dw_ccaes,
+         ccaeo_diff = truv_ccaeo - dw_ccaeo,
+         mdcrs_diff = truv_mdcrs - dw_mdcrs,
+         mdcro_diff = truv_mdcro - dw_mdcro,) %>%
+  select(year, ccaes_diff, ccaeo_diff, mdcrs_diff, mdcro_diff)
+
+```
+
+# SECTION 3: Count distinct enrolid-msclmid combinations
+
+```{r}
+
+# First we're going to create the enrolid-msclmid combinations for the raw Truven tables
+# Then save it to a file so we don't have to run it multiple times
+
+# Check to see if raw counts for Truven exists - break if it does
+
+path = here("outputs", "truven-claims-counting.xlsx")
+
+if (file.exists(path)) {
+
+stop("Output already exists!")
+
+}
+
+# If file does not exist, proceed
+
+# Declare base SQL queries for modification
+
+truv_sql2 = "select year, '@table'::text as table_src, enrolid::text || msclmid::text as concat
+into dev.xz_dwqa_temp
+from truven.@table;"
+
+truv_sql3 = "select year, table_src, count(distinct concat) from dev.xz_dwqa_temp
+group by year, table_src
+order by year;"
+
+tac = connect_to_tacc()
+
+# Create enrolid-msclmid combinations for raw Truven tables
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  
+  truv_sql2.mod = truv_sql2 %>% gsub("@table", current_table, .)
+  
+  tic(paste("Creating table of enrolid || msclmid from truven -", current_table))
+  
+  dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;")
+  dbExecute(tac, truv_sql2.mod)
+  
+  toc()
+  
+  tic(paste("Counting distinct enrolid || msclmid from truven -", current_table))
+  
+  current_results = dbGetQuery(tac, truv_sql3)
+  
+  if (i == 1) {
+    truv_concat_counts = current_results
+  } else {
+   truv_concat_counts = rbind(truv_counts, current_results)
+  }
+  
+  toc()
+}
+
+
+```
+
+# SECTION 4: Output to spreadsheet
+```{r}
+
+here::i_am("03-claim-header-counts.Rmd")
+
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "truven-raw-counts.xlsx")
+
+addWorksheet(wb, sheetName="counts")
+
+current_sheet = 1; current_df = truv_concat_counts
+writeData(wb, sheet = current_sheet,
+          "Count of distinct claim IDs (msclmid) in data_warehouse and Truven schema on TACC server",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+setColWidths(wb, sheet = 1, cols=1:ncol(current_df)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+
+
+
+
+
+# SECTION 5: Output to spreadsheet
+```{r}
+
+here::i_am("03-claim-header-counts.Rmd")
+
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "truven-claim-header-counting.xlsx")
+
+addWorksheet(wb, sheetName="claim-header")
+
+current_sheet = 1; current_df = all_counts
+writeData(wb, sheet = current_sheet,
+          "Count of distinct claim IDs (msclmid) in data_warehouse and Truven schema on TACC server",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+writeData(wb, sheet=current_sheet, "Difference between Truven schema and data_warehouse (Truven - DW):", startCol=1, startRow = nextrow)
+writeData(wb, sheet = current_sheet, difference, startCol=1, startRow=nextrow+1)
+
+setColWidths(wb, sheet = 1, cols=1:ncol(current_df)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+
+

@@ -1,7 +1,7 @@
 ---
-title: "dwqa-truven-claim-detail-counts"
+title: "dwqa-truven-claim-header-counts"
 author: "XRZ"
-date: '2023-01-03'
+date: '2023-01-06'
 output: html_document
 ---
 
@@ -65,7 +65,7 @@ options("scipen"=100, "digits" = 4) #avoid scientific notation
 ## 1.1 Base SQL queries for modification
 ```{r}
 
-dw_sql1 = "select year, table_id_src, count(distinct claim_id_src) as count from dw_staging.claim_detail
+dw_sql1 = "select year, table_id_src, count(distinct claim_id_src) as count from dw_staging.claim_header
 where table_id_src = '@table'
 group by year, table_id_src
 order by year;"
@@ -82,6 +82,8 @@ list_of_tables = c("ccaes", "ccaeo", "mdcrs", "mdcro")
 ## 1.2 Get counts from dw
 ```{r}
 tac = connect_to_tacc()
+
+#rm(dw_counts)
 
 for (i in 1:4){
   
@@ -173,8 +175,6 @@ for (i in 1:4){
 }
 
 
-
-
 # get the difference
 
 difference = all_counts %>%
@@ -189,13 +189,13 @@ difference = all_counts %>%
 # SECTION 3: Output to spreadsheet
 ```{r}
 
-here::i_am("02-claim-detail-counts.Rmd")
+here::i_am("03-claim-header-counts.Rmd")
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "truven-claim-details-counting.xlsx")
+path = here("outputs", "truven-claim-header-counting.xlsx")
 
-addWorksheet(wb, sheetName="claim-details")
+addWorksheet(wb, sheetName="claim-header")
 
 current_sheet = 1; current_df = all_counts
 writeData(wb, sheet = current_sheet,
