@@ -205,4 +205,6 @@ grant select on dw_staging.claim_diag to uthealth_analyst;
 grant select on dw_staging.claim_icd_proc to uthealth_analyst;
 grant select on dw_staging.pharmacy_claims to uthealth_analyst;
 
+grant usage on schema staging_clean to xrzhang ;
+
 

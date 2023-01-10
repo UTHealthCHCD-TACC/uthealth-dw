@@ -30,11 +30,11 @@ drop table if exists staging_clean.truv_ccaef_etl;
 
 create table staging_clean.truv_ccaef_etl as
 select enrolid::bigint, 
-	   fachdid::bigint, 
+	   msclmid::bigint, 
 	   max(billtyp) as billtyp
   from truven.ccaef 
-group by enrolid, fachdid
-distributed by (enrolid, fachdid);
+group by enrolid, msclmid
+distributed by (enrolid, msclmid);
 
 analyze staging_clean.truv_ccaef_etl;
 
@@ -43,11 +43,11 @@ drop table if exists staging_clean.truv_mdcrf_etl;
 
 create table staging_clean.truv_mdcrf_etl as
 select enrolid::bigint, 
-	   fachdid::bigint, 
+	   msclmid::bigint, 
 	   max(billtyp) as billtyp
   from truven.mdcrf  
-group by enrolid, fachdid
-distributed by (enrolid, fachdid);
+group by enrolid, msclmid 
+distributed by (enrolid, msclmid);
 
 analyze staging_clean.truv_mdcrf_etl;
 
@@ -73,7 +73,6 @@ select enrolid::bigint,
 	   tsvcdat,
 	   netpay,
 	   pay,
-	   fachdid::bigint,
 	   facprof,
 	   stdplac,
 	   ntwkprov,
@@ -118,7 +117,6 @@ select enrolid::bigint,
 	   svcdate,
 	   tsvcdat,
 	   netpay,
-	   fachdid::bigint,
 	   pay,
 	   facprof,
 	   stdplac,
@@ -169,7 +167,6 @@ select enrolid::bigint,
 	   stdplac,
 	   ntwkprov,
 	   paidntwk,
-	   fachdid::bigint,
 	   proc1,
 	   procmod,
 	   revcode,
@@ -210,7 +207,6 @@ select enrolid::bigint,
 	   facprof,
 	   stdplac,
 	   ntwkprov,
-	   fachdid::bigint,
 	   paidntwk,
 	   proc1,
 	   procmod,

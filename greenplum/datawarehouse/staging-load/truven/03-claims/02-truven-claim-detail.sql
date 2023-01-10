@@ -1,13 +1,5 @@
 
 /*
- * 1) Build smaller version of dim_claim
- */
-
-analyze dw_staging.claim_detail;
-delete from dw_staging.claim_detail where data_source = 'truv';
-vacuum analyze dw_staging.claim_detail;
-
-/*
  * Insert commercial inpatient claim details
  * Joined to header 
  */
@@ -49,7 +41,8 @@ select  'truv',
         'ccaes', 
         null, null, null, null, null, null,
 		a.msclmid::text,
-		a.enrolid::text
+		a.enrolid::text,
+		current_date
   from staging_clean.ccaes_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -59,7 +52,7 @@ select  'truv',
    and f.msclmid  = a.msclmid 
  ;
 
-vacuum analyze dw_staging.claim_detail_1_prt_truv;
+analyze dw_staging.claim_detail_1_prt_truv;
 
 /*
  * Medicare Inpatient Claims
@@ -102,7 +95,8 @@ select  'truv',
         'mdcrs', 
         null, null, null, null, null, null,
 		a.msclmid::text,
-		a.enrolid::text
+		a.enrolid::text,
+		current_date 
   from staging_clean.mdcrs_etl  a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -112,7 +106,7 @@ select  'truv',
    and f.msclmid = a.msclmid 
  ;
 
-vacuum analyze dw_staging.claim_detail_1_prt_truv;
+analyze dw_staging.claim_detail_1_prt_truv;
 
 
 
@@ -164,7 +158,8 @@ select  'truv',
         'mdcro', 
         null, null, null, null, null, null,
 		a.msclmid::text,
-		a.enrolid::text
+		a.enrolid::text,
+		current_date
   from staging_clean.mdcro_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -174,7 +169,7 @@ select  'truv',
    and f.msclmid  = a.msclmid  
    ;
  
-vacuum analyze dw_staging.claim_detail_1_prt_truv;
+analyze dw_staging.claim_detail_1_prt_truv;
 
 
 ---------------------------------------------
@@ -217,7 +212,8 @@ select  'truv',
         'ccaeo', 
         null, null, null, null, null, null,
 		a.msclmid::text,
-		a.enrolid::text
+		a.enrolid::text,
+		current_date
   from staging_clean.ccaeo_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -227,6 +223,6 @@ select  'truv',
    and f.msclmid = a.msclmid 
    ;
 
-vacuum analyze dw_staging.claim_detail_1_prt_truv;
+analyze dw_staging.claim_detail_1_prt_truv;
 
 ----cleanup

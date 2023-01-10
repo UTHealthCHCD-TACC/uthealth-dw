@@ -1,11 +1,8 @@
 
-analyze dw_staging.claim_header;
-delete from dw_staging.claim_header where data_source = 'truv';
-vacuum analyze dw_staging.claim_header;
-
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
+       min(year) as year,
        max(tsvcdat) as tsvcdat,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
@@ -28,12 +25,12 @@ select enrolid, msclmid,
 	fiscal_year, 
 	cost_factor_year,
 	table_id_src,
-	claim_id_src,
 	member_id_src,
+	claim_id_src,
 	load_date
 )
 select  'truv',
-        extract(year from a.svcdate),
+        year,
         b.uth_member_id,
         b.uth_claim_id,
         a.facprof,
@@ -54,7 +51,7 @@ select  'truv',
     and a.msclmid = b.claim_id_src  
     ;
    
-analyze dw_staging.claim_header;
+analyze dw_staging.claim_header_1_prt_truv;
 
 /*
  *  Medicare Inpatient
@@ -62,6 +59,7 @@ analyze dw_staging.claim_header;
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
+       min(year) as year,
        max(tsvcdat) as tsvcdat,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
@@ -84,12 +82,12 @@ select enrolid, msclmid,
 	fiscal_year, 
 	cost_factor_year,
 	table_id_src,
-	claim_id_src,
 	member_id_src,
+	claim_id_src,
 	load_date
 )
 select  'truv',
-        extract(year from a.svcdate),
+        year,
         b.uth_member_id,
         b.uth_claim_id,
         a.facprof,
@@ -110,7 +108,7 @@ select  'truv',
     and a.msclmid = b.claim_id_src  
     ;
    
-vacuum analyze dw_staging.claim_header;
+analyze dw_staging.claim_header_1_prt_truv;
   
   /*
  *  Commercial Outpatient
@@ -118,6 +116,7 @@ vacuum analyze dw_staging.claim_header;
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
+       min(year) as year,
        max(tsvcdat) as tsvcdat,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
@@ -140,12 +139,12 @@ select enrolid, msclmid,
 	fiscal_year, 
 	cost_factor_year,
 	table_id_src,
-	claim_id_src,
 	member_id_src,
+	claim_id_src,
 	load_date
 )
 select  'truv',
-        extract(year from a.svcdate),
+        year,
         b.uth_member_id,
         b.uth_claim_id,
         a.facprof,
@@ -166,7 +165,7 @@ select  'truv',
     and a.msclmid = b.claim_id_src  
     ;
     
-vacuum analyze dw_staging.claim_header;
+analyze dw_staging.claim_header_1_prt_truv;
   
     /*
  *  Medicare Outpatient
@@ -175,6 +174,7 @@ vacuum analyze dw_staging.claim_header;
 with cte as (
 select enrolid, msclmid, 
        min(svcdate) as svcdate,
+       min(year) as year,
        max(tsvcdat) as tsvcdat,
        max(facprof) as facprof,
        sum(netpay) as netpay, 
@@ -197,12 +197,12 @@ select enrolid, msclmid,
 	fiscal_year, 
 	cost_factor_year,
 	table_id_src,
-	claim_id_src,
 	member_id_src,
+	claim_id_src,
 	load_date
 )
 select  'truv',
-        extract(year from a.svcdate),
+        year,
         b.uth_member_id,
         b.uth_claim_id,
         a.facprof,
@@ -223,5 +223,5 @@ select  'truv',
     and a.msclmid = b.claim_id_src  
     ;
 
-vacuum analyze dw_staging.claim_header;
+analyze dw_staging.claim_header_1_prt_truv;
   
