@@ -1,5 +1,5 @@
 ---
-title: "dwqa-truven-claim-diag-counts"
+title: "dwqa-truven-claim-icd-proc-counts"
 author: "XRZ"
 date: '2023-01-10'
 output: html_document
@@ -58,7 +58,7 @@ rm(list=setdiff(ls(), c("connect_to_tacc")))
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 options("scipen"=100, "digits" = 4) #avoid scientific notation
-here::i_am("05-claim-diag-counts.Rmd")
+here::i_am("05-claim-icd-proc-counts.Rmd")
 ```
 
 # SECTION 1: Get counts
@@ -75,7 +75,7 @@ if (!file.exists(path)) {
 
 } else {
   
-  truv_dx_in = read.xlsx(path, sheet = 4, startRow = 4,
+  truv_proc_in = read.xlsx(path, sheet = 5, startRow = 4, rows=c(4:16),
                              colNames = TRUE, rowNames = FALSE)
   
 }
@@ -96,7 +96,7 @@ dw_sql1 = " create table dev.xz_dwqa_temp (
 
 #sql query to write unique combinations of enrolid || msclmid to a temp table (dw)
 dw_sql2 = "create table dev.xz_dwqa_temp2 as
-  select year, member_id_src || claim_id_src as concat from dw_staging.claim_diag
+  select year, member_id_src || claim_id_src as concat from dw_staging.claim_icd_proc
   where year = @year
   distributed by (concat);"
 
@@ -150,15 +150,12 @@ dw_concat_counts = dbGetQuery(tac, "select * from dev.xz_dwqa_temp;")
 ```{r}
 
 #first need to make everything an int bc apparently it imported as chr
-truv_dx_in$truv_dx_ccaeo = as.integer(truv_dx_in$truv_dx_ccaeo)
-truv_dx_in$truv_dx_ccaes = as.integer(truv_dx_in$truv_dx_ccaes)
-truv_dx_in$truv_dx_mdcro = as.integer(truv_dx_in$truv_dx_mdcro)
-truv_dx_in$truv_dx_mdcrs = as.integer(truv_dx_in$truv_dx_mdcrs)
+truv_proc_in$truv_proc_ccae = as.integer(truv_proc_in$truv_proc_ccae)
+truv_proc_in$truv_proc_mdcr = as.integer(truv_proc_in$truv_proc_mdcr)
 
 # rearrange dw table so that each column is a table_id_src
-truv_squish = truv_dx_in %>%
-  mutate(truv_concat = truv_dx_ccaes + truv_dx_ccaeo +
-           truv_dx_mdcrs + truv_dx_mdcro) %>%
+truv_squish = truv_proc_in %>%
+  mutate(truv_concat = truv_proc_ccae + truv_proc_mdcr) %>%
   select(year, truv_concat)
 
 
@@ -184,7 +181,7 @@ all_concat_counts = dw_concat_counts %>%
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "truven-claim-diag-counting.xlsx")
+path = here("outputs", "truven-claim-icd-proc-counting.xlsx")
 
 addWorksheet(wb, sheetName="distinct-enrolid-clmid-combos")
 
@@ -198,11 +195,10 @@ writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
 nextrow = nrow(current_df) + 6
 
 writeData(wb, sheet=current_sheet,
-          "Note: The difference in enrolid || claim id count is due to the low-frequency data integrity issue where a distinct enrolid || claim id combination is used in two different years", startCol=1, startRow = nextrow)
+          "Note: the higher number in 2021 is probably because we didn't add enrolids that don't exist in 'a' but exist in the claim tables to dim_uth_member_id", startCol=1, startRow = nextrow)
 
 setColWidths(wb, sheet = current_sheet, cols=1:ncol(current_df)+1, widths="auto")
 setColWidths(wb, sheet = current_sheet, cols=1, widths=10)
-
 
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
 saveWorkbook(wb, file=path, overwrite=TRUE)

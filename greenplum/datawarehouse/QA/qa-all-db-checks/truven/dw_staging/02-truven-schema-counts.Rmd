@@ -66,6 +66,9 @@ here::i_am("02-truven-schema-counts.Rmd")
 #this is the list of tables to look in and count
 list_of_tables = c("ccaes", "ccaeo", "mdcrs", "mdcro")
 
+#this is the lsit of tables to look in and count for icd_proc
+list_of_tables2 = c("ccae", "mdcr")
+
 #sql query to count distinct msclmids
 truv_sql1 = "select year, '@table'::text as table, count(distinct msclmid) as count from truven.@table
 where enrolid is not null
@@ -82,7 +85,53 @@ distributed by (concat);"
 #sql query to count unique enrolid || msclmids
 truv_sql3 = "select year, table_src, count(distinct concat) from dev.xz_dwqa_temp
 group by year, table_src
-order by year;"
+order by table_src, year;"
+
+# sql query to write unique combinations of enrolid || msclmid to a temp table
+# ONLY for when dx columns are not all null
+truv_sql4 = "create table dev.xz_dwqa_temp as
+select year, '@table'::text as table_src, enrolid, enrolid::text || msclmid::text as concat
+from truven.@table
+where enrolid is not null
+and (pdx is not null or
+  dx1 is not null or
+  dx2 is not null or
+  dx3 is not null)
+distributed by (concat);"
+
+# count ONLY distinct enrolid || msclmids that map to an enrolid that exists
+# in the enrollment table (match on enrolid and year)
+truv_sql5 = "select a.year, a.table_src, count(distinct a.concat)
+from dev.xz_dwqa_temp a inner join truven.ccaea b 
+on a.enrolid = b.enrolid and a.year = b.year
+group by a.year, a.table_src
+order by a.year;"
+
+#get enrolid || msclmids from 's' tables where pproc is not null
+truv_sql6 = "create table dev.xz_dwqa_temp as
+select year, '@table'::text as table_src, enrolid::text || msclmid::text as concat
+from truven.@tables
+where enrolid is not null
+and pproc is not null
+distributed by (concat);"
+
+#append enrolid || msclmids from 'f' tables where proc1-6 is not null
+truv_sql7 = "insert into dev.xz_dwqa_temp
+select year, '@table'::text as table_src, enrolid::text || msclmid::text as concat
+from truven.@tablef
+where (proc1 is not null or
+  proc2 is not null or
+  proc3 is not null or
+  proc4 is not null or
+  proc5 is not null or
+  proc6 is not null);"
+
+truv_sql8 = "create table dev.xz_dwqa_temp as
+select year, '@tabled'::text as table_src,
+  enrolid::text || ndcnum::text || svcdate::text as concat
+from truven.@tabled
+where enrolid is not null
+distributed by (concat);"
 
 ```
 
@@ -148,6 +197,218 @@ for (i in 1:4){
 
 ```
 
+## 1.4: Count distinct enrolid-msclmid combinations (has dx only, enrolid exists in 'a' tables)
+```{r}
+
+tac = connect_to_tacc()
+
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  
+  truv_sql4.mod = truv_sql4 %>% gsub("@table", current_table, .)
+  
+  #'o' tables don't have pdx column so take that stipulation out
+  if (i == 2 || i == 4){
+  truv_sql4.mod = truv_sql4.mod %>% gsub("pdx is not null or", "", .)
+  }
+  
+  tic(paste("Creating table of enrolid || msclmid (dx only) from truven -", current_table))
+  
+  dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;")
+  dbExecute(tac, truv_sql4.mod)
+  
+  toc()
+  
+  tic(paste("Counting distinct enrolid || msclmid (dx only) from truven -", current_table))
+  
+  # check for enrolid in mdcra for mdcro and mdcrs
+  if (i == 3 || i == 4){
+  truv_sql5.mod = truv_sql5 %>% gsub("ccaea", "mdcra", .)
+  } else {
+    truv_sql5.mod = truv_sql5
+  }
+  
+  current_results = dbGetQuery(tac, truv_sql5.mod)
+  
+  toc()
+  
+  if (i == 1) {
+    truv_dx_counts = current_results
+  } else {
+   truv_dx_counts = rbind(truv_dx_counts, current_results)
+  }
+  
+
+}
+
+
+```
+## 1.5: Count distinct enrolid-msclmid combinations (has dx only, enrolid does not have to exist in 'a' tables)
+```{r}
+
+tac = connect_to_tacc()
+
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  
+  truv_sql4.mod = truv_sql4 %>% gsub("@table", current_table, .)
+  
+  #'o' tables don't have pdx column so take that stipulation out
+  if (i == 2 || i == 4){
+  truv_sql4.mod = truv_sql4.mod %>% gsub("pdx is not null or", "", .)
+  }
+  
+  tic(paste("Creating table of enrolid || msclmid (dx only) from truven -", current_table))
+  
+  dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;")
+  dbExecute(tac, truv_sql4.mod)
+  
+  toc()
+  
+  tic(paste("Counting distinct enrolid || msclmid (dx only) from truven -", current_table))
+  
+  current_results = dbGetQuery(tac, truv_sql3)
+  
+  toc()
+  
+  if (i == 1) {
+    truv_dx_counts2 = current_results
+  } else {
+   truv_dx_counts2 = rbind(truv_dx_counts2, current_results)
+  }
+  
+
+}
+
+
+```
+
+## 1.6: Count distinct enrolid-msclmid combinations with procs
+```{r}
+
+# this code is a bit different from other pieces, we're counting from
+# the 's' and 'f' tables
+
+tac = connect_to_tacc()
+
+for (i in 1:2){
+  
+  if (i == 1) current_table = 'ccae' else current_table = 'mdcr'
+  
+  truv_sql6.mod = truv_sql6 %>% gsub("@table", current_table, .)
+  truv_sql7.mod = truv_sql7 %>% gsub("@table", current_table, .)
+  
+  tic(paste0("Creating table of enrolid || msclmid (proc) from truven - ", 
+            current_table, 's'))
+  
+  dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;")
+  dbExecute(tac, truv_sql6.mod)
+  
+  toc()
+  
+  tic(paste0("Appending enrolid || msclmid (proc) from truven - ", 
+            current_table, 'f'))
+  
+  dbExecute(tac, truv_sql7.mod)
+  
+  toc()
+  
+  tic(paste("Counting distinct enrolid || msclmid (proc) from truven -", current_table, "tables"))
+  
+  current_results = dbGetQuery(tac, truv_sql3)
+  
+  toc()
+  
+  if (i == 1) {
+    truv_proc_counts = current_results
+  } else {
+   truv_proc_counts = rbind(truv_proc_counts, current_results)
+  }
+  
+
+}
+
+
+```
+## 1.6: Count distinct rx_ids from 'd' tables
+```{r}
+
+tac = connect_to_tacc()
+
+for (i in 1:2){
+  
+  current_table = list_of_tables2[i]
+  
+  truv_sql8.mod = truv_sql8 %>% gsub("@table", current_table, .)
+  
+  tic(paste0("Creating table of rxids from truven - ", 
+            current_table, 'd'))
+  
+  dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;")
+  dbExecute(tac, truv_sql8.mod)
+  
+  toc()
+  
+  tic(paste0("Counting distinct rxids from truven - ", current_table, "d"))
+  
+  current_results = dbGetQuery(tac, truv_sql3)
+  
+  toc()
+  
+  if (i == 1) {
+    truv_rx_counts = current_results
+  } else {
+   truv_rx_counts = rbind(truv_rx_counts, current_results)
+  }
+  
+
+}
+
+
+```
+
+## 1.8: Code blurb bc I did this bass-ackward
+```{r, eval=FALSE}
+# this code chunk intentially set to eval = FALSE
+# it's here bc I added in counting for dx and proc later on and wanted to
+# be able to make the spreadsheet w/o doing all the counting again
+
+# read in data from prior runs
+
+rm(truv_counts_in)
+
+if (!file.exists(path)) {
+
+ print("Missing counts from Truven schema! Go back and run 02-truven-schema-counts.Rmd")
+
+} else {
+  
+  truv_counts_in = read.xlsx(path, sheet = 1, startRow = 4,
+                             colNames = TRUE, rowNames = FALSE)
+  
+  truv_concat_in = read.xlsx(path, sheet = 2, startRow = 4,
+                             colNames = TRUE, rowNames = FALSE)
+}
+
+#truv_counts_in = as.data.frame(truv_counts_in)
+#truv_counts_in$truv_ccaes = as.integer(truv_counts_in$truv_ccaes)
+#truv_counts_in$truv_ccaeo = as.integer(truv_counts_in$truv_ccaeo)
+#truv_counts_in$truv_mdcrs = as.integer(truv_counts_in$truv_mdcrs)
+#truv_counts_in$truv_mdcro = as.integer(truv_counts_in$truv_mdcro)
+
+truv_clmid_tbl = truv_counts_in
+
+truv_concat_tbl = truv_concat_in
+
+typeof(truv_clmid_tbl)
+typeof(truv_counts_in)
+typeof(truv_dx_tbl)
+
+```
+
+
 
 # SECTION 2: Output to spreadsheet
 
@@ -195,10 +456,95 @@ for (i in 1:4){
 }
 
 
+# rearrange counts of distinct enrolid || msclmid combos for rows with dx only
+# (enrolid in 'a' tables)
+
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  newcolname = paste0("truv_dx_", current_table)
+  
+  current = truv_dx_counts %>%
+    filter(table_src == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table_src)
+
+    if (i==1){
+      truv_dx_tbl = current
+    } else {
+    truv_dx_tbl = truv_dx_tbl %>%
+    left_join(current, by = "year")
+    }
+}
+
+# rearrange counts of distinct enrolid || msclmid combos for rows with dx only
+# (enrolid not necessarily in 'a' tables)
+
+for (i in 1:4){
+  
+  current_table = list_of_tables[i]
+  newcolname = paste0("truv_dx_", current_table)
+  
+  current = truv_dx_counts2 %>%
+    filter(table_src == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table_src)
+
+    if (i==1){
+      truv_dx_tbl2 = current
+    } else {
+    truv_dx_tbl2 = truv_dx_tbl2 %>%
+    left_join(current, by = "year")
+    }
+}
+
+# rearrange counts of distinct enrolid || msclmid combos for rows with proc only
+# from 's' and 'f' tables
+
+for (i in 1:2){
+  
+  current_table = list_of_tables2[i]
+  newcolname = paste0("truv_proc_", current_table)
+  
+  current = truv_proc_counts %>%
+    filter(table_src == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table_src)
+
+    if (i==1){
+      truv_proc_tbl = current
+    } else {
+    truv_proc_tbl = truv_proc_tbl %>%
+    left_join(current, by = "year")
+    }
+}
+
+# rearrange counts of rx_ids from 'd' tables
+for (i in 1:2){
+  
+  current_table = paste0(list_of_tables2[i], 'd')
+  newcolname = paste0("truv_rx_", current_table)
+  
+  current = truv_rx_counts %>%
+    filter(table_src == current_table) %>%
+    rename(!!newcolname := count) %>%
+    select(-table_src)
+
+    if (i==1){
+      truv_rx_tbl = current
+    } else {
+    truv_rx_tbl = truv_rx_tbl %>%
+    left_join(current, by = "year")
+    }
+}
+
+
 ```
 
 ## 2.2 Output to spreadsheet
 ```{r}
+
+# idk why setcoldwidths introduced some coerce to NA errors
 
 wb = createWorkbook()
 dir = here("outputs")
@@ -206,8 +552,12 @@ path = here("outputs", "truven-raw-counts.xlsx")
 
 addWorksheet(wb, sheetName="msclmids")
 addWorksheet(wb, sheetName="enrolid || msclmid combos")
+addWorksheet(wb, sheetName="dx - enrolids in a")
+addWorksheet(wb, sheetName="dx - all enrolids")
+addWorksheet(wb, sheetName="proc")
+addWorksheet(wb, sheetName="rx")
 
-# sheet 1
+# sheet 1: distinct msclmids
 current_sheet = 1; current_df = truv_clmid_tbl
 writeData(wb, sheet = current_sheet,
           "Count of distinct claim IDs (msclmid) in Truven schema on TACC server",
@@ -216,10 +566,10 @@ writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1,
 writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
 nextrow = nrow(current_df) + 6
 
-setColWidths(wb, sheet = 1, cols=1:ncol(current_df)+1, widths="auto")
-setColWidths(wb, sheet = 1, cols=1, widths=10)
+# setColWidths(wb, sheet = 1, cols=1:ncol(truv_clmid_tbl)+1, widths="auto")
+# setColWidths(wb, sheet = 1, cols=1, widths=10)
 
-# sheet 2
+# sheet 2: distinct enrolid || msclmids
 current_sheet = 2; current_df = truv_concat_tbl
 writeData(wb, sheet = current_sheet,
           "Count of distinct enrolid-msclmid combinations in Truven schema on TACC server",
@@ -228,11 +578,72 @@ writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1,
 writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
 nextrow = nrow(current_df) + 6
 
-setColWidths(wb, sheet = 1, cols=1:ncol(current_df)+1, widths="auto")
-setColWidths(wb, sheet = 1, cols=1, widths=10)
+#setColWidths(wb, sheet = 2, cols=1:ncol(current_df)+1, widths="auto")
+#setColWidths(wb, sheet = 2, cols=1, widths=10)
 
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
 saveWorkbook(wb, file=path, overwrite=TRUE)
+
+# sheet 3: distinct enrolid || msclmids ONLY for rows with dx
+current_sheet = 3; current_df = truv_dx_tbl
+writeData(wb, sheet = current_sheet,
+          "Count of distinct enrolid-msclmid combinations in Truven schema on TACC server (rows with dx codes only, enrolid has to exist in 'a' tables)",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+#setColWidths(wb, sheet = 3, cols=1:ncol(current_df)+1, widths="auto")
+#setColWidths(wb, sheet = 3, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+# sheet 4: distinct enrolid || msclmids ONLY for rows with dx, enrolid does not have to exist in 'a' tables
+current_sheet = 4; current_df = truv_dx_tbl2
+writeData(wb, sheet = current_sheet,
+          "Count of distinct enrolid-msclmid combinations in Truven schema on TACC server (rows with dx codes only, enrolid DOES NOT have to exist in 'a' tables)",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+# setColWidths(wb, sheet = 4, cols=1:ncol(current_df)+1, widths="auto")
+# setColWidths(wb, sheet = 4, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+# sheet 5: distinct enrolid || msclmids ONLY for rows with proc codes, enrolid does not have to exist in 'a' tables
+current_sheet = 5; current_df = truv_proc_tbl
+writeData(wb, sheet = current_sheet,
+          "Count of distinct enrolid-msclmid combinations in Truven schema on TACC server (rows with proc codes only, counting from 's' and 'f' tables)",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+writeData(wb, sheet = current_sheet,
+          "Note that ccaes/ccaef tables were combined, then count distinct (otherwise there are too many overlaps)", startCol = 1, startRow=nextrow)
+
+# setColWidths(wb, sheet = 5, cols=1:ncol(current_df)+1, widths="auto")
+# setColWidths(wb, sheet = 5, cols=1, widths=10)
+
+# sheet 6: distinct enrolid || ndcnum || svcdate from 'd' tables, where enrolid is not null
+current_sheet = 6; current_df = truv_rx_tbl
+writeData(wb, sheet = current_sheet,
+          "Count of distinct enrolid || ndcnum || svcdate from 'd' tables, where enrolid is not null in Truven schema on TACC server",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+# setColWidths(wb, sheet = 5, cols=1:ncol(current_df)+1, widths="auto")
+# setColWidths(wb, sheet = 5, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
 
 ```
 

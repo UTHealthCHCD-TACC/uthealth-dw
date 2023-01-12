@@ -1,0 +1,194 @@
+Enrollment Scripts
+
+"uthealth-dw\greenplum\datawarehouse\enrollment\dw-load-member_enrollment_monthly-medicaid.sql"
+"uthealth-dw\greenplum\datawarehouse\enrollment\dw-create-load-member-enrollment-yearly.sql"
+
+Data Process:
+Monthly:
+
+Place cleaned and transformed variables into temporary table dw_staging.medicaid_enroll_etl
+Update reference table values
+Get most frequent birthday value, in case of ties, most recent wins, update column so same bday for all values in tables
+Delete duplicate records with multiple plan types according to hierarchy
+
+Insert into dw_staging.member_enrollment_monthly
+Create consecutive months enrolled
+
+Yearly:
+Insert variables where most common is not needed into dw_staging.member_enrollment_monthly
+Update flag variables for each column about which months they were enrolled 
+Update variables that may have multiple values during a year: take by order count, most recent
+
+
+------QA--------
+
+General stuff:
+The sum of enrollment months in yearly table should == the number of records in monthly
+	PASS sum_em from yearly = row_count from monthly = 580538199
+The sum of distinct people of course should be same in enrollment of course
+	PASS distinct_member_yearly = distinct_members_monthly = 13005054
+
+Count (distinct ppl | month-yr) == count(*) in dw_staging.monthly_enrollment 
+	PASS distinct combinations of member-month-year from yearly enrollment match row_count from monthy enrollment
+
+Because there are overlapping records in chip and enrl and duplicate records at the monthly data in medicaid data, the counts should not be the same between raw data and dw enrollment tables
+
+However, the count for distinct people || month year id is the same
+
+Existential:
+Or, for every person || month year, the same record should exist in monthly_enrollment 
+All client numbers exist in enrollment under member_id_src
+
+To check against source data: union enrl, chip_uth, and htw
+
+Overall agreement level - age and sex  
+
+QAing the variables might be a bit weird since it will not match jeff's tables
+We are following the ordering by count / most recent to assign variables from match 
+
+Claims checking:
+
+check distinct ICNs
+check what percentage of ICNs are orphaned
+
+-- Medicaid plan type heirarchy
+
+CHIP
+Star Kids
+STAR+PLUS
+Star Health
+STAR
+MMP
+FFS
+
+Things to fix in data_warehouse code:
+SMIB indicates dual membership
+ME_CODE = 'W' indicates membership in HTW
+Take out HTW from enrollment tables? What to do with them?
+
+*ONE MORE ISSUE:
+The ref_race table needs to be 1-1, or else this issue arises:
+
+select a.data_source, a.member_id_src, a.year, a.total_enrolled_months, a.gender_cd, a.race_cd, 
+case when a.race_cd in ('1', '2', '4', '5', '6') then b.race_cd_src else '6' end as race_cd,
+a.age_derived, a.dob_derived, a.zip5, a.plan_type, a.dual, a.htw
+from dw_staging.member_enrollment_yearly a left join reference_tables.ref_race b
+	on a.race_cd = b.race_cd and a.data_source = b.data_source 
+limit 20;
+
+Things to discuss in a general setting:
+
+ENROLLMENT TABLES
+1) Do we want separate FY and CY tables?
+2) HTW - include or do not include in enrollment tables?
+	if no include, then where?
+3) plan type logic - verify that this is correct
+	CHIP > STAR*NAMED* > STAR > MMP/FFS/PCCM
+4) Unknown vs known: do we prioritize known?
+	Example: member is 'U' for 11 months out of the year and 'M' for 1 month. Is s/he male?
+5) Assigning plan types:
+	Example: member has the following enrollment:
+	elig_date		plan_type
+	201301			STAR
+	201302			STAR
+	201303			FFS
+	201304			FFS
+	201305			FFS
+	201306			FFS
+	201306			STAR
+	
+	data_warehouse currently cleans the data on monthly level (applies priority for plan type)
+	so 201306 would have plan type of STAR:
+	elig_date		plan_type
+	201301			STAR
+	201302			STAR
+	201303			FFS
+	201304			FFS
+	201305			FFS
+	201306			STAR
+	
+	Because there is a tie (3 months FFS/3 months STAR) and STAR is the most recent,
+	data_warehouse logic says that STAR is the plan type.
+	
+	However, in the raw data, the member actually has 4 months of FFS and 3 months of STAR.
+	
+	Note: This problem applies to a very small minority of cases (< .5%)
+	Note2: Because deletion of rows occurs, this also generates mismatches for other variables. The rate of mismatch is EXTREMELY low, <0.01%
+	
+	
+DIAG TABLES
+1) FROM_DOS is currently taken from the CLM_HEADER HDR_FROM_DOS column - this is the DOS when the claim was opened, not necessarily the DOS for the particular DX
+	However, the advantage of using HDR_FROM_DOS is that it is a lot cleaner, with very few out of range dates
+	The DOS from CLAIM_DETAILS is more precise, but dirtier, with dates that are clearly out of range
+	
+PROC TABLES
+1) Prior to the ICD-9/10 changeover, procedure codes have an extra 0 padded in the front (ICD-9 proc codes are supposed to be numeric with 3-4 digits)
+Should we strip the leading 0?
+PROs: matches actual codes, is less easy to confuse with CPT/HCSPCS codes
+CONs: requires change
+
+HEADER TABLES
+1) Verify this is correct:
+		clm_header.atd_prov_npi maps to ref_provider on data_warehouse
+		enc_header.attd_phy_npi maps to perf_at_provider on data_warehouse
+ 
+DETAIL TABLES
+1) sub_proc_cd is currently being used to supplment the proc_cd column. It replaces proc_cd if proc_cd is missing or invalid.
+	This means that if there is both a VALID proc_cd and a valid sub_proc_cd, sub_proc_cd does not get included in the detail tables in data_warehouse
+	The sub_proc_cd column ONLY exists in clm tables in Medicaid
+	Note that other data sources do not have a sub_proc_cd column so it'll be a largely null column if we choose to add it
+	
+	A little more about the PROC and SUB_PROC_CDs
+	Top 5 most frequent SUB_PROC_CDs are:
+		SUB		FREQ
+		T1019	86498475		T1019 	Personal Care Attendant (15 mins = 1 unit)
+		92508	16441508		92508	Under Treatment of Auditory Processing Disorder
+		T1502	 5364771		T1502	Administration of oral, intramuscular and/or subcutaneous
+								medication by health care agency/professional, per visit
+		92507	 2058108		92507	Under Treatment of Auditory Processing Disorder
+		T1015	 2050913		T1015	Clinic visit/encounter, all-inclusive
+	
+	They seem to travel in pairs, and the top 5 proc_cd | sub_proc_cd pairs are:
+		PROC  SUB   FREQ
+		7049X T1019	61594530		<--These X codes don't come up when I search
+		7051X T1019	18951120
+		7025X 92508	10947261
+		7048X T1019	5836602
+		7026X 92508	5490137
+		7052X T1502	3802824
+		7021X 92507	1375746
+		Z9813 T1015	1100227			Z9813 FQHC ENCOUNTER (This I got off of a HTW pdf)
+		7042X T1002	991343
+		7053X T1502	922594
+		7022X 92507	678647
+		A0020 A0425	649477			A0020 is a deleted code? But A0425 is Ground mileage, per statute mile
+		7055X T1502	639353
+		7039X 97530	587793
+		Z9813 G0467	546759
+		
+2) Units : Are integers in CLM tables and are floats in ENC tables. However, data_warehouse stores them as ints, so when they get transferred over, they are coerced to int.
+	DW_UNITS	SPC_UNITS	SRC_TABLE
+			3	2.50	enc_det
+			4	3.50	enc_det
+			3	2.50	enc_det
+			3	2.50	enc_det
+			2	2.25	enc_det
+			6	5.50	enc_det
+			3	2.50	enc_det
+			4	3.50	enc_det
+			2	1.50	enc_det
+			4	3.50	enc_det
+			4	3.50	enc_det
+			5	4.50	enc_det
+			4	3.50	enc_det
+			4	3.50	enc_det
+			3	2.50	enc_det
+	
+RX TABLES (Pharmacy claims)
+1) do we need a month_year_id column
+2) for 2012 and 2013, there's a CHIP_RX table, an FFS_RX table, and a CHIP_FFS_RX table on the SPC server.
+	The information in the CHIP_FFS_RX table does not exist on TACC. Is this ok and also what's the reason
+	for excluding this information?
+3) rx_qty is a float in raw data/SPC and is coerced to int in dw_staging
+
+

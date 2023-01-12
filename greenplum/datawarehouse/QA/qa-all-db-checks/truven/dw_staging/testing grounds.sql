@@ -361,13 +361,491 @@ select * from dev.xz_dwqa_temp7;
 
 select count(*) from dev.xz_dwqa_temp7; --25,052
 
+/* new problem:
+ * work out counting method for claim-diag and claim-icd-proc
+ */
 
+drop table if exists dev.xz_dwqa_temp;
+drop table if exists dev.xz_dwqa_temp2;
 
+create table dev.xz_dwqa_temp (
+	year int,
+	concat text
+) distributed by (concat);
 
+create table dev.xz_dwqa_temp2 as
+select year, member_id_src || claim_id_src as concat from dw_staging.claim_diag
+where year = 2011
+distributed by (concat);
 
+insert into dev.xz_dwqa_temp
+select year, count(distinct concat) from dev.xz_dwqa_temp2
+group by year;
 
+select * from dev.xz_dwqa_temp;
 
+/* See if pdx is ALWAYS filled in before dx1 */
 
+select pdx, dx1 from truven.ccaes
+where pdx is null 
+limit 10;
+
+--dangit, looks like sometimes the pdx is left null while dx1 has info
+
+--ok so we've fixed the dx existing problem, but there are still enrolid || clm combos left over
+--maybe it's missing enrolids?
+
+drop table if exists dev.xz_dwqa_temp;
+
+create table dev.xz_dwqa_temp as
+select year, 'mdcrs'::text as table_src, enrolid, enrolid::text || msclmid::text as concat
+from truven.mdcrs
+where enrolid is not null
+and (pdx is not null or
+  dx1 is not null or
+  dx2 is not null or
+  dx3 is not null)
+distributed by (concat);
+
+select a.year, a.table_src, count(distinct a.concat)
+from dev.xz_dwqa_temp a inner join truven.mdcra b 
+on a.enrolid = b.enrolid and a.year = b.year
+group by a.year, a.table_src
+order by a.year;
+
+/* problem: claim diag doesn't match, let's find out why 
+ * Let's use 2018 as an example
+ */
+
+drop table if exists dev.xz_dwqa_temp1; --scrape all enrolid, clmids for 2018 from dw.claim_diag
+drop table if exists dev.xz_dwqa_temp2; --get just the distinct ones
+drop table if exists dev.xz_dwqa_temp3; --scrape all enrolid, clmids fro 2018 from truven tables
+drop table if exists dev.xz_dwqa_temp4; --get distinct, enrolid exists in ccaea/mdcra tables only
+drop table if exists dev.xz_dwqa_temp5; --this is the table of which ones are not included in the other one
+
+--temp1
+create table dev.xz_dwqa_temp1 as
+select member_id_src as enrolid, claim_id_src as clmid, member_id_src || claim_id_src as concat
+from dw_staging.claim_diag
+where year = 2018
+distributed by (concat);
+
+--temp2
+create table dev.xz_dwqa_temp2 as
+select max(enrolid) as enrolid, max(clmid) as clmid, concat
+from dev.xz_dwqa_temp1
+group by concat
+distributed by (concat);
+
+--temp3
+create table dev.xz_dwqa_temp3 as
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.ccaes
+where year = 2018
+and enrolid is not null
+and (pdx is not null or
+	dx1 is not null or
+	dx2 is not null or 
+	dx3 is not null or 
+	dx4 is not null)
+distributed by (concat);
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.mdcrs
+where year = 2018
+and enrolid is not null
+and (pdx is not null or
+	dx1 is not null or
+	dx2 is not null or 
+	dx3 is not null or 
+	dx4 is not null);
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.ccaeo
+where year = 2018
+and enrolid is not null
+and (dx1 is not null or
+	dx2 is not null or 
+	dx3 is not null or 
+	dx4 is not null);
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.mdcro
+where year = 2018
+and enrolid is not null
+and (dx1 is not null or
+	dx2 is not null or 
+	dx3 is not null or 
+	dx4 is not null);
+
+--temp4
+with b as (select enrolid from truven.ccaea where year = 2018
+	union
+	select enrolid from truven.mdcra where year = 2018)
+
+select distinct a.enrolid, a.msclmid, a.concat
+into dev.xz_dwqa_temp4
+from dev.xz_dwqa_temp3 a inner join b 
+on a.enrolid = b.enrolid;
+
+--temp5
+create table dev.xz_dwqa_temp5 as
+select a.enrolid as dw_enrolid, a.clmid as dw_clmid, a.concat as dw_concat,
+b.enrolid as truv_enrolid, b.msclmid as truv_clmid, b.concat as truv_concat
+from dev.xz_dwqa_temp2 a full outer join dev.xz_dwqa_temp4 b on
+a.concat = b.concat
+distributed by (truv_concat);
+
+--now the fun part
+--select only the ones that are in dw but not truven
+select * from dev.xz_dwqa_temp5 where truv_concat is null
+limit 5;
+
+/*enrolid	clmid	concat
+1006199705	5237004	10061997055237004 --enrolid in 2017
+1006951207	5020677	10069512075020677 --enrolid in 2016, 2017
+1006951207	5020698	10069512075020698 --same as prev
+1014050404	105387	1014050404105387  --enrolid in many years but not 2018
+1040207704	2808928	10402077042808928 --enrolid in many years but not 2018
+ */
+
+select * from dev.xz_dwqa_temp5 where dw_concat is null 
+limit 5;
+
+/*enrolid	clmid	concat
+1009214901	4649	10092149014649  --enrolid is in 2018, clm is in ccaeo, didn't match dw bc year = 2017
+1017215802	58104	101721580258104 --enrolid is in 2018, 
+1022158902	277227	1022158902277227
+1026194001	28940	102619400128940
+1045146101	3	10451461013
+ */
+
+select enrolid, year from truven.ccaea
+where enrolid = 1017215802;
+
+--case 1
+/*enrolid	clmid	concat
+1009214901	4649	10092149014649 */
+
+select year, enrolid, msclmid, dx1, dx2, dx3, dx4 from truven.ccaeo
+where enrolid = 1009214901 and msclmid = 4649;
+
+/*enrolid	clmid	dx1		(dx2-4 are empty)
+2018	1009214901	4649	G43009    			
+2018	1009214901	4649	G43009    			
+2018	1009214901	4649	G43009    			
+2017	1009214901	4649	M545      					
+*/
+
+select year, member_id_src, claim_id_src, diag_cd from dw_staging.claim_diag
+where member_id_src = '1009214901' and claim_id_src = '4649';
+/*yr	enrolid		clmid	dx
+2017	1009214901	4649	G43009
+*/
+
+--case 2
+/*enrolid	clmid	concat
+1017215802	58104	101721580258104 */
+
+select year, svcdate, enrolid, msclmid, dx1, dx2, dx3, dx4 from truven.ccaeo
+where enrolid = 1017215802 and msclmid = 58104;
+
+/*enrolid	clmid	dx1		dx2			dx3			dx4
+2018	1017215802	58104	C3490     			
+2018	1017215802	58104	C3490     			
+2017	1017215802	58104	S43432A   	M7502     	M75112    */
+
+select year, from_date_of_service, member_id_src, claim_id_src, diag_cd from dw_staging.claim_diag
+where member_id_src = '1017215802' and claim_id_src = '58104';
+
+/*yr	enrolid		clmid	dx
+2017	1017215802	58104	C3490
+2017	1017215802	58104	M7502
+2017	1017215802	58104	M75112 */
+
+--are these claims that span years?
+select * from truven.ccaeo
+where enrolid = 1017215802 and msclmid = 58104;
+
+--answer: no
+
+--are shorter claim ids more likely to be problematic?
+
+select length(truv_clmid::text) as msclmid_length, count(*) as count
+from dev.xz_dwqa_temp5 
+where dw_concat is null
+group by length(truv_clmid::text)
+order by length(truv_clmid::text);
+
+select length(truv_clmid::text) as msclmid_length, count(*) as count
+from dev.xz_dwqa_temp5 
+group by length(truv_clmid::text)
+order by length(truv_clmid::text);
+
+--answer: yes
+
+--what percentage of claims have same enrolid, same msclmid, but appear to be totally different claims?
+drop table if exists dev.xz_dwqa_temp7;
+
+create table dev.xz_dwqa_temp7 as
+select a.enrolid, a.msclmid, count(distinct a.year) as years
+from truven.ccaeo a inner join dev.xz_dwqa_temp5 b
+on a.enrolid = b.truv_enrolid and a.msclmid = b.truv_clmid
+group by a.enrolid, a.msclmid
+distributed by (msclmid);
+
+select count(*) from dev.xz_dwqa_temp7;
+--250027063 rows
+
+select count(*) from dev.xz_dwqa_temp7
+where years > 1;
+--92964
+
+select 92964/250027063.0; --0.00037181575020140920
+
+--okay so it's fairly negligible
+
+/*testing to get count of distinct enrolid || msclmids with procs*/
+drop table if exists dev.xz_dwqa_temp;
+
+create table dev.xz_dwqa_temp as
+select year, 'mdcrs'::text as table_src, enrolid::text || msclmid::text as concat
+from truven.mdcrs
+where enrolid is not null
+and pproc is not null
+distributed by (concat);
+
+insert into dev.xz_dwqa_temp
+select year, 'mdcrf'::text as table_src, enrolid::text || msclmid::text as concat
+from truven.mdcrf
+where (proc1 is not null or
+  proc2 is not null or
+  proc3 is not null or
+  proc4 is not null or
+  proc5 is not null or
+  proc6 is not null);
+
+/*UGGGGGGGGGGGGGHHHH*/
+ /*Now I have to find out why the numbers aren't matching up for icd proc*/
+
+/* problem: claim diag doesn't match, let's find out why 
+ * Let's use 2018 as an example
+ */
+
+drop table if exists dev.xz_dwqa_temp1; --scrape all enrolid, clmids for 2018 from dw.claim_diag
+drop table if exists dev.xz_dwqa_temp2; --get just the distinct ones
+drop table if exists dev.xz_dwqa_temp3; --scrape all enrolid, clmids fro 2018 from truven tables
+drop table if exists dev.xz_dwqa_temp4; --get distinct, enrolid exists in ccaea/mdcra tables only
+drop table if exists dev.xz_dwqa_temp5; --this is the table of which ones are not included in the other one
+
+--temp1
+create table dev.xz_dwqa_temp1 as
+select member_id_src as enrolid, claim_id_src as clmid, member_id_src || claim_id_src as concat
+from dw_staging.claim_icd_proc
+where year = 2018
+distributed by (concat);
+
+--temp2
+create table dev.xz_dwqa_temp2 as
+select max(enrolid) as enrolid, max(clmid) as clmid, concat
+from dev.xz_dwqa_temp1
+group by concat
+distributed by (concat);
+
+--temp3
+create table dev.xz_dwqa_temp3 as
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.ccaes
+where year = 2018
+and enrolid is not null
+and pproc is not null
+distributed by (concat);
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.mdcrs
+where year = 2018
+and enrolid is not null
+and pproc is not null;
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.ccaef
+where year = 2018
+and enrolid is not null
+and (proc1 is not null or
+	proc2 is not null or 
+	proc3 is not null or 
+	proc4 is not null or 
+	proc5 is not null or 
+	proc6 is not null);
+
+insert into dev.xz_dwqa_temp3
+select enrolid, msclmid, enrolid::text || msclmid::text as concat
+from truven.mdcrf
+where year = 2018
+and enrolid is not null
+and (proc1 is not null or
+	proc2 is not null or 
+	proc3 is not null or 
+	proc4 is not null or 
+	proc5 is not null or 
+	proc6 is not null);
+
+--temp4
+select distinct *
+into dev.xz_dwqa_temp4
+from dev.xz_dwqa_temp3;
+
+--temp5
+create table dev.xz_dwqa_temp5 as
+select a.enrolid as dw_enrolid, a.clmid as dw_clmid, a.concat as dw_concat,
+b.enrolid as truv_enrolid, b.msclmid as truv_clmid, b.concat as truv_concat
+from dev.xz_dwqa_temp2 a full outer join dev.xz_dwqa_temp4 b on
+a.concat = b.concat
+distributed by (truv_concat);
+
+select count(*) from dev.xz_dwqa_temp2; --9797024 distinct from dw
+select count(*) from dev.xz_dwqa_temp4; --9788278 distinct from truven
+
+--now the fun part
+--select only the ones that are in dw but not truven
+select * from dev.xz_dwqa_temp5 where truv_concat is null
+limit 5;
+
+/*enrolid	clmid	concat
+1011347702	29637	101134770229637
+1011380202	26672	101138020226672
+1011388401	26630	101138840126630
+1011428801	27336	101142880127336
+1011468202	55824	101146820255824
+ */
+
+select * from dev.xz_dwqa_temp5 where dw_concat is null 
+limit 5;
+
+--none?
+
+select enrolid, year from truven.ccaea
+where enrolid = 1017215802;
+
+--case 1
+/*enrolid	clmid	concat
+1009214901	4649	10092149014649 */
+
+select year, enrolid, msclmid, dx1, dx2, dx3, dx4 from truven.ccaeo
+where enrolid = 1009214901 and msclmid = 4649;
+
+/*enrolid	clmid	dx1		(dx2-4 are empty)
+2018	1009214901	4649	G43009    			
+2018	1009214901	4649	G43009    			
+2018	1009214901	4649	G43009    			
+2017	1009214901	4649	M545      					
+*/
+
+select year, member_id_src, claim_id_src, diag_cd from dw_staging.claim_diag
+where member_id_src = '1009214901' and claim_id_src = '4649';
+/*yr	enrolid		clmid	dx
+2017	1009214901	4649	G43009
+*/
+
+--case 2
+/*enrolid	clmid	concat
+1017215802	58104	101721580258104 */
+
+select year, svcdate, enrolid, msclmid, dx1, dx2, dx3, dx4 from truven.ccaeo
+where enrolid = 1017215802 and msclmid = 58104;
+
+/* working on rx table now*/
+
+select * from dw_staging.pharmacy_claims where ndc is null limit 10;
+--none
+
+select * from truven.ccaed where ndcnum is null limit 10;
+--none
+
+--ok so if we only take rows where enrolid exists, then that's good enough
+
+drop table if exists dev.xz_dwqa_temp;
+
+create table dev.xz_dwqa_temp as
+select year, 'mdcrd'::text as table_src,
+  enrolid::text || ndcnum::text || svcdate::text as concat
+from truven.mdcrd
+where enrolid is not null
+distributed by (concat);
+
+drop table if exists dev.xz_dwqa_temp;
+
+create table dev.xz_dwqa_temp as
+  select year, table_id_src, rx_claim_id_src as rx_id from dw_staging.pharmacy_claims
+  where table_id_src = 'mdcrd'
+  distributed by (rx_id);
+
+select year, table_id_src, count(distinct rx_id) from dev.xz_dwqa_temp
+  group by year, table_id_src;
+
+--problem: no rx claims in 2021 for ccaed
+ 
+ select year, enrolid, ndcnum, svcdate from truven.ccaed
+ where year = 2021 and enrolid is not null
+limit 5;
+--entries exist
+
+select year, member_id_src, ndc, fill_date from dw_staging.pharmacy_claims
+where year = 2021 and table_id_src = 'ccaed';
+--a lot of null member_id_srcs here
+
+select year, member_id_src, ndc, fill_date from dw_staging.pharmacy_claims
+where year = 2021 and table_id_src = 'ccaed'
+and member_id_src is not null;
+--all blank?????
+
+--how many enrolids are null in rx table for ccae
+
+select count(*) from truven.ccaed
+where year = 2021; --170987410
+
+select count(*) from truven.ccaed
+where year = 2021 and enrolid is not null; --170869240
+
+select 170987410 - 170869240; -- 118170
+select 118170 / 170987410.0; --0.00069110351458040098
+
+--check the ETL
+
+select count(*) from staging_clean.ccaed_etl
+where year = 2021; --170987410
+
+select count(*) from staging_clean.ccaed_etl
+where year = 2021 and enrolid is not null; --170869240
+
+--get sample of enrolids;
+select distinct enrolid from truven.ccaed
+where year = 2021 and enrolid is not null
+limit 10;
+
+/*4931698203
+4009402802
+4143395502
+4553427502
+34173329501
+33581613501
+32693719403
+4775788803
+3066781103
+2827054703*/
+
+select member_id_src from data_warehouse.dim_uth_member_id
+where member_id_src = '4931698203'; --exists in dim
+
+select member_id_src from data_warehouse.dim_uth_member_id
+where member_id_src = '4009402802'; --exists in dim
+
+--nm Joe found the error, it was a case of a.member_id_src vs a.enrolid on the etl
 
 
 
