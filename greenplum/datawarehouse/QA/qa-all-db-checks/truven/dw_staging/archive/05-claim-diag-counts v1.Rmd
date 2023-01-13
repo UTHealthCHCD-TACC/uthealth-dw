@@ -61,11 +61,12 @@ options("scipen"=100, "digits" = 4) #avoid scientific notation
 here::i_am("05-claim-diag-counts.Rmd")
 ```
 
-# SECTION 1: Get counts
-## 1.1 Get counts from TRUVEN RAW COUNTS table
+# SECTION 1: Check for existing counts from TRUVEN schema
 ```{r}
+# First we're going to create the enrolid-msclmid combinations for the raw Truven tables
+# Then save it to a file so we don't have to run it multiple times
 
-# Check to see if raw counts for Truven exists
+# Check to see if raw counts for Truven exists - break if it does
 
 path = here("outputs", "truven-raw-counts.xlsx")
 
@@ -75,9 +76,11 @@ if (!file.exists(path)) {
 
 } else {
   
-  truv_dx_in = read.xlsx(path, sheet = 4, startRow = 4,
+  truv_counts_in = read.xlsx(path, sheet = 1, startRow = 4,
                              colNames = TRUE, rowNames = FALSE)
   
+  truv_concat_in = read.xlsx(path, sheet = 2, startRow = 4,
+                             colNames = TRUE, rowNames = FALSE)
 }
 
 ```
@@ -86,7 +89,7 @@ if (!file.exists(path)) {
 ```{r}
 
 starting_year = 2011
-ending_year = 2021
+ending_year = 2012
 
 # sql query to initialize table to store counts in
 dw_sql1 = " create table dev.xz_dwqa_temp (
@@ -94,13 +97,13 @@ dw_sql1 = " create table dev.xz_dwqa_temp (
   	concat text
   ) distributed by (concat);"
 
-#sql query to write unique combinations of enrolid || msclmid to a temp table (dw)
+#sql query to write unique combinations of enrolid || msclmid to a temp table
 dw_sql2 = "create table dev.xz_dwqa_temp2 as
   select year, member_id_src || claim_id_src as concat from dw_staging.claim_diag
   where year = @year
   distributed by (concat);"
 
-#sql query to count unique enrolid || msclmids (dw)
+#sql query to count unique enrolid || msclmids
 dw_sql3 = "insert into dev.xz_dwqa_temp
   select year, count(distinct concat) from dev.xz_dwqa_temp2
   group by year;"
@@ -119,7 +122,8 @@ tac = connect_to_tacc()
 dbExecute(tac, "drop table if exists dev.xz_dwqa_temp;") 
 dbExecute(tac, dw_sql1)
 
-for (i in starting_year:ending_year){
+# for (i in starting_year:ending_year){
+for (i in 2013:2021){
   
   # we count in pieces bc otherwise the query takes too long
   dbExecute(tac, "drop table if exists dev.xz_dwqa_temp2;")
@@ -150,15 +154,15 @@ dw_concat_counts = dbGetQuery(tac, "select * from dev.xz_dwqa_temp;")
 ```{r}
 
 #first need to make everything an int bc apparently it imported as chr
-truv_dx_in$truv_dx_ccaeo = as.integer(truv_dx_in$truv_dx_ccaeo)
-truv_dx_in$truv_dx_ccaes = as.integer(truv_dx_in$truv_dx_ccaes)
-truv_dx_in$truv_dx_mdcro = as.integer(truv_dx_in$truv_dx_mdcro)
-truv_dx_in$truv_dx_mdcrs = as.integer(truv_dx_in$truv_dx_mdcrs)
+truv_concat_in$truv_concat_ccaeo = as.integer(truv_concat_in$truv_concat_ccaeo)
+truv_concat_in$truv_concat_ccaes = as.integer(truv_concat_in$truv_concat_ccaes)
+truv_concat_in$truv_concat_mdcro = as.integer(truv_concat_in$truv_concat_mdcro)
+truv_concat_in$truv_concat_mdcrs = as.integer(truv_concat_in$truv_concat_mdcrs)
 
 # rearrange dw table so that each column is a table_id_src
-truv_squish = truv_dx_in %>%
-  mutate(truv_concat = truv_dx_ccaes + truv_dx_ccaeo +
-           truv_dx_mdcrs + truv_dx_mdcro) %>%
+truv_squish = truv_concat_in %>%
+  mutate(truv_concat = truv_concat_ccaes + truv_concat_ccaeo +
+           truv_concat_mdcrs + truv_concat_mdcro) %>%
   select(year, truv_concat)
 
 
@@ -172,9 +176,7 @@ all_concat_counts = dw_concat_counts %>%
   left_join(truv_squish, by = "year") %>%
   mutate(dw_concat = as.integer(concat)) %>% # simultaneously convert to int and rename
   mutate(difference = truv_concat - dw_concat) %>%
-  mutate(percentage = difference/truv_concat) %>%
-  select(year, dw_concat, truv_concat, difference, percentage) %>%
-  arrange(year)
+  select(year, dw_concat, truv_concat, difference)
 
 ```
 
@@ -182,27 +184,64 @@ all_concat_counts = dw_concat_counts %>%
 # SECTION 3: Output to spreadsheet
 ```{r}
 
+
+###################
+
+# this section not yet modified
+
+###################
+
+
 wb = createWorkbook()
 dir = here("outputs")
 path = here("outputs", "truven-claim-diag-counting.xlsx")
 
+addWorksheet(wb, sheetName="distinct-claim-ids")
 addWorksheet(wb, sheetName="distinct-enrolid-clmid-combos")
 
 #sheet 1
-current_sheet = 1; current_df = all_concat_counts
+current_sheet = 1; current_df = all_counts
 writeData(wb, sheet = current_sheet,
-          "Count of distinct enrolid || claim IDs (msclmid) in data_warehouse and Truven schema on TACC server",
+          "Count of distinct claim IDs (msclmid) in data_warehouse and Truven schema on TACC server",
           startCol=1, startRow=1)
 writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
 writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
 nextrow = nrow(current_df) + 6
 
+writeData(wb, sheet=current_sheet, "Difference between Truven schema and data_warehouse (Truven - DW):", startCol=1, startRow = nextrow)
+writeData(wb, sheet = current_sheet, difference, startCol=1, startRow=nextrow+1)
+
+nextrow = nextrow + nrow(difference) + 4
+
 writeData(wb, sheet=current_sheet,
-          "Note: The difference in enrolid || claim id count is due to the low-frequency data integrity issue where a distinct enrolid || claim id combination is used in two different years", startCol=1, startRow = nextrow)
+          "Note: The difference in claim id count in 2021 is because some claims have enrolids that exist in the s and o tables that do not map to any enrolid in the a or t tables", startCol=1, startRow = nextrow)
+writeData(wb, sheet=current_sheet,
+          "The reason that this discrepancy ONLY exists in 2021 is likely because for 2020 and earlier, Will created entries in dim_uth_member_id to accomodate them", startCol=1, startRow = nextrow+1)
 
 setColWidths(wb, sheet = current_sheet, cols=1:ncol(current_df)+1, widths="auto")
 setColWidths(wb, sheet = current_sheet, cols=1, widths=10)
 
+#sheet 2
+current_sheet = 2; current_df = all_concat_counts
+writeData(wb, sheet = current_sheet,
+          "Count of distinct enrolid-clmid combinations in data_warehouse and Truven schema on TACC server",
+          startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, current_df, startCol=1, startRow=4)
+nextrow = nrow(current_df) + 6
+
+writeData(wb, sheet=current_sheet, "Difference between Truven schema and data_warehouse (Truven - DW):", startCol=1, startRow = nextrow)
+writeData(wb, sheet = current_sheet, difference_concat, startCol=1, startRow=nextrow+1)
+
+nextrow = nextrow + nrow(difference) + 4
+
+writeData(wb, sheet=current_sheet,
+          "Note: The difference in enrolid || claim id count in 2021 is because some claims have enrolids that exist in the s and o tables that do not map to any enrolid in the a or t tables", startCol=1, startRow = nextrow)
+writeData(wb, sheet=current_sheet,
+          "The reason that this discrepancy ONLY exists in 2021 is likely because for 2020 and earlier, Will created entries in dim_uth_member_id to accomodate them", startCol=1, startRow = nextrow+1)
+
+setColWidths(wb, sheet = current_sheet, cols=1:ncol(current_df)+1, widths="auto")
+setColWidths(wb, sheet = current_sheet, cols=1, widths=10)
 
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
 saveWorkbook(wb, file=path, overwrite=TRUE)
