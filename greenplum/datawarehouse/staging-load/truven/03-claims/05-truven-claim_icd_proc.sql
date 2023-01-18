@@ -14,9 +14,6 @@
  * */
 
 
---delete from dw_staging.claim_icd_proc_1_prt_truv  ;
---vacuum analyze dw_staging.claim_icd_proc_1_prt_truv ; 
-
 -------------get procs from claims table 
 
 drop table if exists staging_clean.truven_proc;

@@ -1,19 +1,4 @@
 
-
---19min
-/*
-do $$
-
-begin 
----redistribute dim table for faster join 
-
-
-raise notice 'dim table';
-
-*/
-
-vacuum analyze dw_staging.pharmacy_claims;
-
 --truven medicare adv
 insert into dw_staging.pharmacy_claims (
 		data_source,
@@ -46,10 +31,11 @@ insert into dw_staging.pharmacy_claims (
 		dose, --new
 		strength, --new
 		formulary_ind, --new
-		special_drug_ind --new
+		special_drug_ind, --new,
+		load_date 
 		)
 select 'truv',
-	   extract(year from a.svcdate),
+	   a."year" ,
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
 	   a.svcdate,
@@ -78,7 +64,8 @@ select 'truv',
 			 r.mstfmds, --new
 			 r.strngth, --new
 			 null, --new
-			 null --new
+			 null, --new
+			 current_date
 from staging_clean.mdcrd_etl a 
   join staging_clean.truven_rx_claim_id b
      on b.member_id_src = a.enrolid
@@ -87,13 +74,7 @@ from staging_clean.mdcrd_etl a
 	 on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-vacuum analyze dw_staging.pharmacy_claims_1_prt_truv;
-
-
---raise notice 'mdcrd done';
-
-------********************************************************************
---truven commercial
+analyze dw_staging.pharmacy_claims_1_prt_truv;
 
 
 ---truv commercial
@@ -128,10 +109,11 @@ insert into dw_staging.pharmacy_claims (
 		dose,--new
 		strength,--new
 		formulary_ind,--new
-		special_drug_ind--new
+		special_drug_ind,--new
+		load_date 
 		)
 select 'truv',
-	   extract(year from a.svcdate),
+	   a."year" ,
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
 	   a.svcdate,
@@ -152,15 +134,16 @@ select 'truv',
        a.thercls,
        null as ahfs,
        null as first_fill,
-       a.member_id_src || a.ndcnum::text || svcdate::text,
-       a.member_id_src,
+       a.rx_id_src,
+       a.enrolid::text,
        'ccaed' as table_id_src,
 			 a.rxmr,--new
 			 coalesce(a.dawind,'00'),--new
 			 r.mstfmds,--new
 			 r.strngth,--new
 			 null,--new
-			 null --new
+			 null, --new
+			 current_date
 from staging_clean.ccaed_etl a
   join staging_clean.truven_rx_claim_id b
      on b.member_id_src = a.enrolid 
@@ -169,18 +152,5 @@ from staging_clean.ccaed_etl a
      on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-vacuum analyze dw_staging.pharmacy_claims_1_prt_truv;
-
-
-
-/*
-raise notice 'ccaed done';
-
-
-drop table if exists staging_clean.truven_rx_claim_id;
-
-raise notice ' done';
-
-end $$;
-*/
+analyze dw_staging.pharmacy_claims_1_prt_truv;
 
