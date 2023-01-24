@@ -16,8 +16,6 @@
  * ******************************************************************************************************
  */
 
-delete from dw_staging.member_enrollment_yearly_1_prt_truv;
-vacuum analyze dw_staging.member_enrollment_yearly_1_prt_truv;
 
 --insert recs from monthly 
 

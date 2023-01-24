@@ -6,4 +6,3 @@ select usename,
 
 select pg_terminate_backend(169902);
 select pg_cancel_backend(279531);
-

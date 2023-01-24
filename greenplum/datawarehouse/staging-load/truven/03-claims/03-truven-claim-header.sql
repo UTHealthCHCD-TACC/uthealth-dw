@@ -216,7 +216,7 @@ select  'truv',
         'mdcro',
         a.enrolid,
         a.msclmid,
-        current_date
+        current_date 
    from cte a
    join staging_clean.truv_dim_id b 
      on a.enrolid = b.member_id_src 
@@ -224,4 +224,24 @@ select  'truv',
     ;
 
 analyze dw_staging.claim_header_1_prt_truv;
+
+--- add provider type 
+
+update dw_staging.claim_header_1_prt_truv a 
+   set provider_type = b.stdprov
+  from staging_clean.truv_ccaef_etl b
+ where a.member_id_src::bigint = b.enrolid 
+   and a.claim_id_src::bigint = b.msclmid 
+   and substring(table_id_src,1,2) = 'cc';
+  
+vacuum analyze dw_staging.claim_header_1_prt_truv;
+   
+update dw_staging.claim_header_1_prt_truv a 
+   set provider_type = b.stdprov
+  from staging_clean.truv_mdcrf_etl b
+ where a.member_id_src::bigint = b.enrolid 
+   and a.claim_id_src::bigint = b.msclmid 
+   and substring(table_id_src,1,2) = 'md';
+   
+vacuum analyze dw_staging.claim_header_1_prt_truv;
   
