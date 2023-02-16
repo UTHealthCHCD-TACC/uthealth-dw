@@ -31,7 +31,8 @@ drop table if exists staging_clean.truv_ccaef_etl;
 create table staging_clean.truv_ccaef_etl as
 select enrolid::bigint, 
 	   msclmid::bigint, 
-	   max(billtyp) as billtyp
+	   max(billtyp) as billtyp,
+	   max(stdprov) as stdprov 
   from truven.ccaef 
 group by enrolid, msclmid
 distributed by (enrolid, msclmid);
@@ -44,7 +45,8 @@ drop table if exists staging_clean.truv_mdcrf_etl;
 create table staging_clean.truv_mdcrf_etl as
 select enrolid::bigint, 
 	   msclmid::bigint, 
-	   max(billtyp) as billtyp
+	   max(billtyp) as billtyp,
+	   max(stdprov) as stdprov 
   from truven.mdcrf  
 group by enrolid, msclmid 
 distributed by (enrolid, msclmid);

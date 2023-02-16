@@ -30,14 +30,6 @@
  * Because there are several billion rows, we need to redistribute the enrollment table on a key with the right data type to speed up the join with dim in the DW
  */
 
-
-delete from dw_staging.member_enrollment_monthly_1_prt_truv ;
-vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv ; 
-
---drop schema if exists staging_clean;
---create schema staging_clean;
-
-
 drop table if exists staging_clean.ccaet;
 
 create table staging_clean.ccaet with (
@@ -221,7 +213,7 @@ select
  * Get consecutive enrollment 
  */
 
-vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
+analyze dw_staging.member_enrollment_monthly_1_prt_truv;
 
 drop table if exists dev.temp_consec_enrollment;
 
@@ -257,7 +249,5 @@ drop table if exists staging_clean.ccaet;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 
 vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
-alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
-grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
 
 

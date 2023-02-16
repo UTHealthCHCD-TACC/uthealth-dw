@@ -42,7 +42,8 @@ select  'truv',
         null, null, null, null, null, null,
 		a.msclmid::text,
 		a.enrolid::text,
-		current_date
+		current_date,
+		a.stdprov
   from staging_clean.ccaes_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -96,7 +97,8 @@ select  'truv',
         null, null, null, null, null, null,
 		a.msclmid::text,
 		a.enrolid::text,
-		current_date 
+		current_date ,
+		a.stdprov
   from staging_clean.mdcrs_etl  a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -159,7 +161,8 @@ select  'truv',
         null, null, null, null, null, null,
 		a.msclmid::text,
 		a.enrolid::text,
-		current_date
+		current_date ,
+		a.stdprov
   from staging_clean.mdcro_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -213,7 +216,8 @@ select  'truv',
         null, null, null, null, null, null,
 		a.msclmid::text,
 		a.enrolid::text,
-		current_date
+		current_date , 
+		a.stdprov
   from staging_clean.ccaeo_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
