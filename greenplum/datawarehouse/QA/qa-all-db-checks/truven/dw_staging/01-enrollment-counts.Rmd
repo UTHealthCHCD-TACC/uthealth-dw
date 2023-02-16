@@ -196,11 +196,11 @@ mym_counts_merged = rbind(ccaet_mym_counts, mdcrt_mym_counts) %>%
 # SECTION 3: Output to spreadsheet
 ```{r}
 
-here::i_am("enrollment-counts.Rmd")
+here::i_am("01-enrollment-counts.Rmd")
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "truven-enrollment-monthly-counting.xlsx")
+path = here("outputs", "01-truven-enrollment-monthly-counting.xlsx")
 
 addWorksheet(wb, sheetName = "Enrolids")
 addWorksheet(wb, sheetName = "Enrolid - Year - Months")
