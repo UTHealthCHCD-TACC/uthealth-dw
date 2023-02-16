@@ -16,22 +16,22 @@
 
 ---*** codeset table is provided by jeff based on criteria from dr krause, imported and modify code values to be compatible with postgres logic statements
 ---codes used to identify conditions, dx, proc, rev code etc
-drop table conditions.codeset 
+drop table conditions.codeset ;
 
 create table conditions.codeset ( log_seq int2, condition_cd text, cd_type text,  cd_value_raw text, cd_value text , logic_version text);
 
-update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x','%')
+update conditions.codeset set cd_value = replace(replace(cd_value_raw,'.',''),'x','%');
 
 --replaces xx --> %% to %
-update conditions.codeset set cd_value = substring(cd_value, 0,  position('%' in cd_value)+1) where cd_value like '%\%\%%'
+update conditions.codeset set cd_value = substring(cd_value, 0,  position('%' in cd_value)+1) where cd_value like '%\%\%%';
 --asthma in source has incorrect values; they are identified by a negative log_seq
-delete from conditions.codeset where log_seq<0
+delete from conditions.codeset where log_seq<0;
 
-select distinct condition_cd from conditions.codeset cd 
+select distinct condition_cd from conditions.codeset cd ;
 
-update conditions.condition_desc set logic_version = 'v40'
+update conditions.condition_desc set logic_version = 'v40';
 
-select * from conditions.condition_desc cd 
+select * from conditions.condition_desc cd ;
 
 
 ---*** condition desc table indicates if a condition if carry forward and also what types of codes are part of the criteria set. 
