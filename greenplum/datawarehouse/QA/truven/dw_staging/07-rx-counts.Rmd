@@ -55,7 +55,7 @@ rm(list=setdiff(ls(), c("connect_to_tacc")))
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 options("scipen"=100, "digits" = 4) #avoid scientific notation
-here::i_am("06-rx-counts.Rmd")
+here::i_am("07-rx-counts.Rmd")
 ```
 
 # SECTION 1: Get counts
@@ -64,7 +64,7 @@ here::i_am("06-rx-counts.Rmd")
 
 # Check to see if raw counts for Truven exists
 
-path = here("outputs", "truven-raw-counts.xlsx")
+path = here("outputs", "02-truven-raw-counts.xlsx")
 
 if (!file.exists(path)) {
 
@@ -72,7 +72,7 @@ if (!file.exists(path)) {
 
 } else {
   
-  truv_rx_in = read.xlsx(path, sheet = 6, startRow = 4, rows=c(4:16),
+  truv_rx_in = read.xlsx(path, sheet = 5, startRow = 4, rows=c(4:16),
                              colNames = TRUE, rowNames = FALSE)
   
 }
@@ -181,7 +181,7 @@ all_concat_tbl = dw_concat_tbl %>%
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "truven-pharmacy-claims-counting.xlsx")
+path = here("outputs", "07-truven-pharmacy-claims-counting.xlsx")
 
 addWorksheet(wb, sheetName="distinct-rx-ids")
 

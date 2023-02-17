@@ -1,0 +1,8 @@
+pharmacy table
+add status column
+
+claims header table
+add status column
+
+claims details table
+add inpatient/outpatient indicator
