@@ -67,7 +67,7 @@ here::i_am("05-claim-diag-counts.Rmd")
 
 # Check to see if raw counts for Truven exists
 
-path = here("outputs", "truven-raw-counts.xlsx")
+path = here("outputs", "02-truven-raw-counts.xlsx")
 
 if (!file.exists(path)) {
 
@@ -75,7 +75,7 @@ if (!file.exists(path)) {
 
 } else {
   
-  truv_dx_in = read.xlsx(path, sheet = 4, startRow = 4,
+  truv_dx_in = read.xlsx(path, sheet = 3, startRow = 4,
                              colNames = TRUE, rowNames = FALSE)
   
 }
@@ -184,7 +184,7 @@ all_concat_counts = dw_concat_counts %>%
 
 wb = createWorkbook()
 dir = here("outputs")
-path = here("outputs", "truven-claim-diag-counting.xlsx")
+path = here("outputs", "05-truven-claim-diag-counting.xlsx")
 
 addWorksheet(wb, sheetName="distinct-enrolid-clmid-combos")
 
