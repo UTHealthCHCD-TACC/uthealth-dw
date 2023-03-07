@@ -1,56 +1,117 @@
 
 /* ******************************************************************************************************
- *  This table is used to generate a de-identified claim id that will be used to populate claim_detail and claim_header tables
- *	The uth_claim_id column will be a sequence that is initially set to a 100,000,000
- *  This code can be re-run as new data comes in, logic is in place to prevent duplicate entries into table
+ * This script contains several code blocks useful for controlling user access on the Greenplum Server
+ * and contains definitions for user roles
  * ******************************************************************************************************
- *  Author || Date      || Notes
+ *  Author 			|| Date      	|| Notes
  * ******************************************************************************************************
- *  wallingTACC  || 1/1/2019 || script created
+ *  wallingTACC  	|| 1/1/2019 	|| script created
  * ******************************************************************************************************
- *  wcc001  || 9/09/2021 || organized uthealth_analyst and uthealthdev roles. cleaned up unused code. added comment block
+ *  wcc001  		|| 9/09/2021 	|| organized uthealth_analyst and uthealthdev roles. cleaned up unused code. added comment block
  * -------------------------   script is divided into: Role Defintions, User Creation, & Audits/Misc
  * ******************************************************************************************************
+ * Xiaorui Zhang	|| 03/07/2023	|| Updated, reformatted/reorganized, added user_role APCD
  * 
  * ****************************************************************************************************** */
 
+/*******************************************************************
+ * Role and user management code
+ *******************************************************************/
 
----(----------  *****************  ----------------------------------------------------------------------------------------------------)  
-
----utility query to check permissions on a given table 
-select grantee, privilege_type, table_name , table_schema 
-from information_schema.role_table_grants 
-where table_schema = 'dev' and table_name = 'gm_test'
-;
-
-
----(---------- Role Definitions    ----------------------------------------------------------------------------------------------------)
-
-/*
- * UTHealth uthealth_analyst Role
- */
-
--- uthealth_analyst role definition
-drop owned by uthealth_analyst cascade;
-drop role uthealth_analyst;
-
-create role uthealth_analyst;
-
-grant connect on database uthealth to uthealth_analyst;
-grant temporary on database uthealth to uthealth_analyst;
-
----****uthealth_analyst assigned users *****************************************************
+--Granting user role to a user
+--syntax: grant role_name to user_name
+grant apcd to lghosh1;
 grant uthealth_analyst to lghosh1;
 
-grant uthealth_analyst to judyk277;
+--Grant superuser status
+--Note that superusers do NOT have permission to grant superuser status
+--regardless of what the error message says
+ALTER USER lghosh1 SUPERUSER;
 
-----! run this query for each new uthealth_analyst so that everyone can access their dev tables freely
-set role judyk277;
-alter default privileges for user judyk277 in schema dev grant all on tables to uthealth_analyst; 
-----!
+--Revokes roles from a user
+revoke uthealth_analyst from lghosh1;
+revoke uthealth_dev from lghosh1;
+revoke covid_analyst from lghosh1;
 
-set role wcough;  select session_user;  select current_user;
+--Revokes other permissions, such as permission to connect
+--Does not remove user roles
+revoke all on database uthealth FROM lghosh1;
 
+
+/*******************************************************************
+ * Code to see current status
+ *******************************************************************/
+
+--Lists usernames/rolenames, assigned roles, and superuser status
+SELECT r.rolname, 
+  ARRAY(SELECT b.rolname
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+        WHERE m.member = r.oid) as memberof
+, r.rolsuper
+FROM pg_catalog.pg_roles r
+WHERE r.rolname !~ '^pg_'
+ORDER BY 1;
+
+--Lists the role name and privilege type for a specific table/schema
+select grantee, privilege_type, table_name , table_schema 
+from information_schema.role_table_grants 
+where table_schema = 'data_warehouse' and table_name = 'claim_detail';
+
+/*******************************************************************
+ * Role definitions: apcd
+ * 
+ * Purpose: Gives read access to ONLY optum_zip and data_warehouse
+ * 		Gives read/write access to dev
+ *******************************************************************/
+create role apcd;
+
+grant connect on database uthealth to apcd;  --allows connection to uthealth database
+grant temporary on database uthealth to apcd; --allows creation of temp tables
+grant all on all tables in schema dev to apcd; --allows read/write to dev
+
+grant select on all tables in schema optum_zip to apcd;
+grant select on all tables in schema data_warehouse to apcd;
+
+/* note that this code has not been run
+Xiaorui wanted to test out if grant select on... would be sufficient
+If anyone complains, come run this code
+ 
+grant usage on schema optum_zip to group apcd; 
+grant select on all tables in schema optum_zip to group apcd; 
+grant select on all sequences in schema optum_zip to apcd;
+alter default privileges in schema optum_zip grant select on tables to group apcd;
+
+grant usage on schema optum_zip to group apcd; 
+grant select on all tables in schema optum_zip to group apcd; 
+grant select on all sequences in schema optum_zip to apcd;
+alter default privileges in schema optum_zip grant select on tables to group apcd;
+ */
+
+/*******************************************************************
+ * Role definitions: uthealth_analyst
+ * 
+ * Purpose: Gives read access to all schemas
+ * 		Write access to dev schema
+ * 		Write access to tableau schema
+ *******************************************************************/
+
+-- uthealth_analyst role definition
+drop role uthealth_analyst;
+create role uthealth_analyst;
+
+grant connect on database uthealth to uthealth_analyst; --allows connection to uthealth database
+grant temporary on database uthealth to uthealth_analyst; --allows creation of temp tables
+grant all on all tables in schema dev to uthealth_analyst; --grants read/write privileges to schema dev
+
+--This code will delete all tables owned by anyone in the uthealth_analyst group along with dependent tables
+drop owned by uthealth_analyst cascade;
+/*from Posgresql documentation:
+DROP OWNED drops all the objects within the current database that are owned by one of the specified roles.
+Any privileges granted to the given roles on objects in the current database or on shared objects
+(databases, tablespaces, configuration parameters) will also be revoked.
+CASCADE
+Automatically drop objects that depend on the affected objects, and in turn all objects that depend on those objects.*/
 
 --***********************************************************************************************************
 --Schemas permissions for uthealth_analyst 
@@ -72,7 +133,6 @@ grant all on schema dev to uthealth_analyst;
 grant all on all tables in schema dev to uthealth_analyst; 
 grant all privileges on all sequences in schema dev to uthealth_analyst; 
 alter default privileges in schema dev grant all on tables to uthealth_analyst; 
-
 
 --tableau (all access)
 grant all on schema tableau to uthealth_analyst; 
@@ -135,99 +195,88 @@ grant all privileges on all sequences in schema truven_pay to uthealth_analyst;
 alter default privileges in schema truven_pay grant all on tables to uthealth_analyst; 
 
 
-/*
- * uthealth_dev role
- */
+/*******************************************************************
+ * Role definition: uthealth_dev
+ * 
+ * Purpose: Grants same permissions as uthealth_analyst AND
+ * 		Write access to:
+ * 				data_warehouse
+ *  			dw_staging
+ *  			qa_reporting
+ *   			reference_tables
+ *   			conditions
+ *   			public
+ *******************************************************************/
 
--- uthealth_dev role definition
-drop owned by uthealth_dev cascade;
+--Create role
+--drop owned by uthealth_dev cascade;
 
 drop role uthealth_dev;
-
 create role uthealth_dev;
-
 grant connect on database uthealth to uthealth_dev;
 
----****uthealth_analyst assigned users *****************************************************
+--grant same permissions as uthealth-analyst
 grant uthealth_analyst to uthealth_dev;
 
-grant uthealth_dev to jwozny;
+--Grant access to schemas other than raw data
 
-grant uthealth_dev to gmunoz1;
-
-
---***********************************************************************************************************
-
---***Schemas permissions for uthealth_dev***
-
----data_warehouse (all access)
+--data_warehouse (all access)
 grant all on schema data_warehouse to uthealth_dev; 
 grant all on all tables in schema data_warehouse to uthealth_dev; 
 grant all privileges on all sequences in schema data_warehouse to uthealth_dev; 
 alter default privileges in schema data_warehouse grant all on tables to uthealth_dev; 
  
----dw_staging (all access)
+--dw_staging (all access)
 grant all on schema dw_staging to uthealth_dev; 
 grant all on all tables in schema dw_staging to uthealth_dev; 
 grant all privileges on all sequences in schema dw_staging to uthealth_dev; 
 alter default privileges in schema dw_staging grant all on tables to uthealth_dev; 
 
----qa_reporting (all access)
+--qa_reporting (all access)
 grant all on schema qa_reporting to uthealth_dev; 
 grant all on all tables in schema qa_reporting to uthealth_dev; 
 grant all privileges on all sequences in schema qa_reporting to uthealth_dev; 
 alter default privileges in schema qa_reporting grant all on tables to uthealth_dev; 
 grant execute on all functions in schema qa_reporting to uthealth_dev;
  
----reference_tables (all access)
+--reference_tables (all access)
 grant all on schema reference_tables to uthealth_dev; 
 grant all on all tables in schema reference_tables to uthealth_dev; 
 grant all privileges on all sequences in schema reference_tables to uthealth_dev; 
 alter default privileges in schema reference_tables grant all on tables to uthealth_dev; 
 
-
-
----conditions (all access)
+--conditions (all access)
 grant all on schema conditions to uthealth_dev; 
 grant all on all tables in schema conditions to uthealth_dev; 
 grant all privileges on all sequences in schema conditions to uthealth_dev; 
 alter default privileges in schema conditions grant all on tables to uthealth_dev; 
 
-
----public (all access)
+--public (all access)
 grant all on schema public to uthealth_dev; 
 grant all on all tables in schema public to uthealth_dev; 
 grant all privileges on all sequences in schema public to uthealth_dev; 
 alter default privileges in schema public grant all on tables to uthealth_dev; 
 
 
-/*
- * UTHealthAdmin Role
- */
+/*******************************************************************
+ * Role definition: uthealth_admin
+ * 
+ * Purpose: Grants same permissions as uthealth_analyst AND uthealth_dev AND
+ * 		Write access to raw data tables
+ * 		Write access to tableau schema
+ *******************************************************************/
 
-
--- uthealthadmin role definition
-drop owned by uthealth_admin cascade;
-
+--Create role
+--drop owned by uthealth_admin cascade;
 drop role uthealth_admin;
-
 create role uthealth_admin;
-
 grant connect on database uthealth to group uthealth_admin;
 
----****uthealth_analyst assigned users *****************************************************
+--grant uthealth_analyst + uthealth_dev permissions
 grant uthealth_analyst to uthealth_admin;
-
 grant uthealth_dev to uthealth_admin;
 
-grant uthealth_admin to wcough; 
-
---******************************************************************************************
-
-
 --Schema permissions for uthealthadmin
-
-
 
 --***raw tables (all access)
 	---medicaid
@@ -259,51 +308,16 @@ grant uthealth_admin to wcough;
 	grant all on all tables in schema tableau to group uthealth_admin; 
 	alter default privileges in schema tableau grant all on tables to group uthealth_admin;
 
----(----------  End Role Definitions    ----------------------------------------------------------------------------------------------------)
----(----------  ********************   ----------------------------------------------------------------------------------------------------)
 
 
 
 
 
----(----------  ********************   ----------------------------------------------------------------------------------------------------)
----(----------  User Creation          ----------------------------------------------------------------------------------------------------)
-/*
- * Create User
- */
---Create User
-drop role uthtest;
 
 
-CREATE ROLE rhansen1 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN; --PASSWORD 'd3f@ult$';
-
-grant uthealthadmin to jharri66;
-grant uthealthdev to jharri66;
-grant uthealth_analyst to rhansen1;
-
-grant connect on database uthealth to dwtest;
-
-alter role uthtest nosuperuser;
-
-
-/*
- * Password change
- */
-alter user uthtest with password 'uthtest';
-
-/*
- * Superuser
- */
--- Grant superuser
-ALTER USER turban SUPERUSER; 
-
-
----(----------  End User Creation          ----------------------------------------------------------------------------------------------------)
----(----------  ********************   ----------------------------------------------------------------------------------------------------)
-
-
-
-
+/*********************************************************************************
+ * Code that Xiaorui doesn't want to delete but also does not seem useful
+ * ******************************************************************************/
 
 ---(----------  ******************** ----------------------------------------------------------------------------------------------------)
 ---(----------  Audits/Misc          ----------------------------------------------------------------------------------------------------)
@@ -352,15 +366,11 @@ SELECT
 FROM pg_catalog.pg_roles r
 ORDER BY 1;
 
-
-
 select * from pg_catalog.pg_tables where tableowner = 'yliu26'
-
 
 --CONNECT PERMISSIONS
 REVOKE CONNECT ON DATABASE coviddb FROM PUBLIC; 
 REVOKE ALL PRIVILEGES ON DATABASE uthealth FROM public;
-
 
 revoke connect on database uthealth from amoosa1;
 
@@ -370,3 +380,48 @@ select * from pg_roles where rolname='wcough';
 REASSIGN OWNED BY yliu26 to uthealthadmin;
 
 alter table qa_reporting.claim_diag_column_checks owner to jwozny;
+
+
+----! run this query for each new uthealth_analyst so that everyone can access their dev tables freely
+set role judyk277;
+alter default privileges for user judyk277 in schema dev grant all on tables to uthealth_analyst; 
+----!
+
+set role wcough;  select session_user;  select current_user;
+
+
+---(----------  ********************   ----------------------------------------------------------------------------------------------------)
+---(----------  User Creation          ----------------------------------------------------------------------------------------------------)
+/*
+ * Create User
+ */
+--Create User
+drop role uthtest;
+
+
+CREATE ROLE rhansen1 NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN; --PASSWORD 'd3f@ult$';
+
+grant uthealthadmin to jharri66;
+grant uthealthdev to jharri66;
+grant uthealth_analyst to rhansen1;
+
+grant connect on database uthealth to dwtest;
+
+alter role uthtest nosuperuser;
+
+
+/*
+ * Password change
+ */
+alter user uthtest with password 'uthtest';
+
+/*
+ * Superuser
+ */
+-- Grant superuser
+ALTER USER turban SUPERUSER; 
+
+
+---(----------  End User Creation          ----------------------------------------------------------------------------------------------------)
+---(----------  ********************   ----------------------------------------------------------------------------------------------------)
+
