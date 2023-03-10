@@ -6,8 +6,8 @@ as
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
 from data_warehouse.member_enrollment_yearly a 
-where a.year between 2012 and 2021
-  and a.data_source in ('optz', 'truv','mcrt','mcrn')
+where a.year between 2014 and 2021
+  and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 ),
 cond  as (
 select a.data_source, a."year" , a.uth_member_id,
@@ -15,8 +15,8 @@ select a.data_source, a."year" , a.uth_member_id,
        a.dep, a.epi, a.fbm, a.hemo, a.hep,  a.hiv, a.ihd,  a.lbp, 
       a.lymp, a.ms, a.nicu, a.pain, a.park, a.pneu,a.ra, a.scd, a.smi, a.str, a.tbi, a.trans, a.trau
 from data_warehouse.conditions_member_enrollment_yearly a 
-where a.year between 2012 and 2021
-  and a.data_source in ('optz', 'truv','mcrt','mcrn')
+where a.year between 2014 and 2021
+  and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 ),
 crg as (
 select
@@ -29,13 +29,13 @@ from data_warehouse.crg_risk cr
 inner join data_warehouse.member_enrollment_yearly mey 
   on  mey.uth_member_id = cr.uth_member_id
 	and mey."year" = cr.crg_year 
-where mey.year between 2012 and 2021
-  and mey.data_source in ('optz', 'truv','mcrt','mcrn')
+where mey.year between 2014 and 2021
+  and mey.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 ),
 covid as (
 select *
   from tableau.dw_severity_2020
- where data_source in ('optz', 'truv','mcrt','mcrn')
+ where data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 )
 select e.*, c.aimm, c.ami,  c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, c.cysf, 
        c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, c.ihd, c.lbp, 
@@ -65,8 +65,8 @@ select 'master_enrollment' as table, data_source, year, count(distinct uth_membe
 union
 select 'enrollment_only' as table, data_source, year, count(distinct uth_member_id) 
   from data_warehouse.member_enrollment_yearly
- where data_source in ('optz', 'truv','mcrt','mcrn')
-   and year between 2012 and 2021
+ where data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
+   and year between 2014 and 2021
  group by 2,3
 ) a
 order by 3,2,1;
@@ -120,3 +120,14 @@ alter table tableau.master_enrollment owner to uthealth_analyst;
 analyze tableau.master_enrollment;
 
 select * from tableau.master_enrollment;
+
+with official as (
+select table_name, year, frequency
+from qa_reporting.truven_official_counts
+where "column" = 'year')
+select a.year, a.table_name, a.row_count, frequency, frequency - a.row_count
+from qa_reporting.truven_counts a
+full join official b
+  on a.year = b.year
+  and a.table_name = b.table_name
+  order by 2,1;
