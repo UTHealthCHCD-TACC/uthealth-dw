@@ -10,7 +10,7 @@
  *  wcc001  		|| 9/09/2021 	|| organized uthealth_analyst and uthealthdev roles. cleaned up unused code. added comment block
  * -------------------------   script is divided into: Role Defintions, User Creation, & Audits/Misc
  * ******************************************************************************************************
- * Xiaorui Zhang	|| 03/07/2023	|| Updated, reformatted/reorganized, added user_role APCD
+ * Xiaorui Zhang	|| 03/08/2023	|| Updated, reformatted/reorganized, added user_role APCD
  * 
  * ****************************************************************************************************** */
 
@@ -20,8 +20,17 @@
 
 --Granting user role to a user
 --syntax: grant role_name to user_name
-grant apcd to lghosh1;
+grant apcd_uthealth_analyst to lghosh1;
+grant apcd_uthealth_analyst to cms2;
+grant uthealth_analyst to cms2;
 grant uthealth_analyst to lghosh1;
+
+--Grant specific user access to a specific schema
+--note that grant select alone is insufficient
+grant usage on schema optum_zip to lghosh1; 
+grant select on all tables in schema optum_zip to lghosh1; 
+grant select on all sequences in schema optum_zip to lghosh1;
+alter default privileges in schema optum_zip grant select on tables to lghosh1;
 
 --Grant superuser status
 --Note that superusers do NOT have permission to grant superuser status
@@ -30,13 +39,20 @@ ALTER USER lghosh1 SUPERUSER;
 
 --Revokes roles from a user
 revoke uthealth_analyst from lghosh1;
+revoke uthealth_analyst from cms2;
 revoke uthealth_dev from lghosh1;
-revoke covid_analyst from lghosh1;
+revoke apcd_uthealth_analyst from cms2;
+
+--Revoke access to specific schema from user
+revoke all on all tables in schema medicaid from lghosh1;
 
 --Revokes other permissions, such as permission to connect
 --Does not remove user roles
 revoke all on database uthealth FROM lghosh1;
 
+--This code set in theory lets other people access the tables that this person makes in dev
+set role oaborisa;
+alter default privileges for user oaborisa in schema dev grant all on tables to uthealth_analyst;
 
 /*******************************************************************
  * Code to see current status
@@ -56,37 +72,54 @@ ORDER BY 1;
 --Lists the role name and privilege type for a specific table/schema
 select grantee, privilege_type, table_name , table_schema 
 from information_schema.role_table_grants 
-where table_schema = 'data_warehouse' and table_name = 'claim_detail';
+where table_schema = 'medicaid' --and table_name = 'claim_detail';
+
+--Lists privileges for a specific grantee 
+select distinct grantee, privilege_type, table_schema, table_name
+from information_schema.role_table_grants 
+where grantee = 'lghosh1' and privilege_type = 'SELECT'
+order by table_schema;
+
+--check who has access to a specific schema
+SELECT *
+FROM pg_default_acl
+WHERE defaclobjtype = 'r' AND defaclnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'dev');
 
 /*******************************************************************
- * Role definitions: apcd
+ * Role definitions: apcd_uthealth_analyst
  * 
  * Purpose: Gives read access to ONLY optum_zip and data_warehouse
  * 		Gives read/write access to dev
  *******************************************************************/
-create role apcd;
+--run this code if you need to drop role
+--just make sure it doesn't take any tables with it
+drop owned by apcd_uthealth_analyst cascade;
+drop role apcd_uthealth_analyst;
 
-grant connect on database uthealth to apcd;  --allows connection to uthealth database
-grant temporary on database uthealth to apcd; --allows creation of temp tables
-grant all on all tables in schema dev to apcd; --allows read/write to dev
+create role apcd_uthealth_analyst;
 
-grant select on all tables in schema optum_zip to apcd;
-grant select on all tables in schema data_warehouse to apcd;
+grant connect on database uthealth to apcd_uthealth_analyst;  --allows connection to uthealth database
+grant temporary on database uthealth to apcd_uthealth_analyst; --allows creation of temp tables
 
-/* note that this code has not been run
-Xiaorui wanted to test out if grant select on... would be sufficient
-If anyone complains, come run this code
- 
-grant usage on schema optum_zip to group apcd; 
-grant select on all tables in schema optum_zip to group apcd; 
-grant select on all sequences in schema optum_zip to apcd;
-alter default privileges in schema optum_zip grant select on tables to group apcd;
+grant usage on schema optum_zip to apcd_uthealth_analyst; 
+grant select on all tables in schema optum_zip to apcd_uthealth_analyst; 
+grant select on all sequences in schema optum_zip to apcd_uthealth_analyst;
+alter default privileges in schema optum_zip grant select on tables to apcd_uthealth_analyst;
 
-grant usage on schema optum_zip to group apcd; 
-grant select on all tables in schema optum_zip to group apcd; 
-grant select on all sequences in schema optum_zip to apcd;
-alter default privileges in schema optum_zip grant select on tables to group apcd;
- */
+grant usage on schema data_warehouse to apcd_uthealth_analyst; 
+grant select on all tables in schema data_warehouse to apcd_uthealth_analyst; 
+grant select on all sequences in schema data_warehouse to apcd_uthealth_analyst;
+alter default privileges in schema data_warehouse grant select on tables to apcd_uthealth_analyst;
+
+grant all on schema apcd_test to apcd_uthealth_analyst; 
+grant all on all tables in schema apcd_test to apcd_uthealth_analyst; 
+grant all privileges on all sequences in schema apcd_test to apcd_uthealth_analyst;
+alter default privileges in schema apcd_test grant all on tables to apcd_uthealth_analyst;
+
+grant all on schema dev to apcd_uthealth_analyst; 
+grant all on all tables in schema dev to apcd_uthealth_analyst; 
+grant all privileges on all sequences in schema dev to apcd_uthealth_analyst; 
+alter default privileges in schema dev grant all on tables to apcd_uthealth_analyst; 
 
 /*******************************************************************
  * Role definitions: uthealth_analyst
@@ -389,6 +422,7 @@ alter default privileges for user judyk277 in schema dev grant all on tables to 
 
 set role wcough;  select session_user;  select current_user;
 
+set role nguyenk
 
 ---(----------  ********************   ----------------------------------------------------------------------------------------------------)
 ---(----------  User Creation          ----------------------------------------------------------------------------------------------------)
