@@ -59,7 +59,7 @@ select trim(a.client_nbr) as client_nbr ,
   from medicaid.enrl  a 
 ;
 
-select * from dw_staging.medicaid_enroll_etl;
+--select * from dw_staging.medicaid_enroll_etl;
 
 analyze dw_staging.medicaid_enroll_etl;
 
@@ -154,7 +154,6 @@ vacuum analyze dw_staging.medicaid_enroll_etl;
   
   
   drop table if exists dev.birth_dupes2;
-    
    select *,
   	     row_number() over (partition by client_nbr order by d_count desc, recent desc) as dob_row
     into dev.birth_dupes2
@@ -179,7 +178,6 @@ vacuum analyze dw_staging.medicaid_enroll_etl;
  drop table if exists dev.birth_dupes1;
 
 ------------------------------------------------------------
-
 
 delete from dw_staging.medicaid_enroll_etl a 
  where plan_type <> 'CHIP'
@@ -329,4 +327,9 @@ drop table if exists dev.temp_consec_enrollment;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 vacuum full analyze dw_staging.member_enrollment_monthly;
 alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
-grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
+
+--Joe W. added this to the script when Xiaorui had analyst permissions and needed to QA
+--grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
+
+
+
