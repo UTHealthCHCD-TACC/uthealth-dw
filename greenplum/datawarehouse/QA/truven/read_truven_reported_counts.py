@@ -77,12 +77,12 @@ def read_xml_files(directory):
         # While we are just getting the counts for the year column, we can modify this to get frequency for all of the columns that are reported in the XML file
         file_tree = ET.parse(directory+file)
         root = file_tree.getroot()
-        table_df = get_table_contents(get_worksheet(root, 'Summary Statistics'))
+        table_df = get_table_contents(get_worksheet(root, 'YEAR'))
 
         table_df['table_name'] = table_name
-        table_df['year'] = f'20{file[5:7]}'
+        # table_df['year'] = f'20{file[5:7]}'
 
-        counts_df = pd.concat([counts_df, table_df])#[['YEAR', 'table_name', 'Frequency']]])
+        counts_df = pd.concat([counts_df, table_df[['YEAR', 'table_name', 'Frequency']]])
         
     # We can change this part to instead create a new table in the database.
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
         counts_df = read_txt_files(count_directory)
     else:
         # Only latest update have report in an XML file (text files are also provided)
-        count_directory = 'Y:/Data Dictionary/MScan Doc for U of Texas 2023-02/5 - Data Quality Reports (Set A)/'
+        count_directory = ''
         counts_df = read_xml_files(count_directory)
 
     counts_df.to_csv('H:/truven_reported_counts.csv', index=False)
