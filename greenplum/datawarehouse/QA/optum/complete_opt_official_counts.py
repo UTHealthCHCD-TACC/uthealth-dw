@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     updates = ['202210', '202207']
 
-    data = 'optum_zip'
+    data = 'optum_dod'
 
     path = 'transformed_record_counts'
 
