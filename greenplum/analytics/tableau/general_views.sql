@@ -37,9 +37,9 @@ left join tableau.master_enrollment b
 
 -- Covid Severity
 
-create or replace view tableau.cov_severity_view
+create or replace view tableau.covid_severity_view
 as
-select data_source, uth_member_id, year, cov_severity, gender_cd, age_derived, plan_type, bus_cd, state
+select data_source, uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state
   from tableau.master_enrollment
  where year >= 2020;
  

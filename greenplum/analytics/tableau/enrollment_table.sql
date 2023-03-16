@@ -41,7 +41,7 @@ select e.*, c.aimm, c.ami,  c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, c.cysf,
        c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, c.ihd, c.lbp, 
       c.lymp, c.ms, c.nicu, c.pain, c.park, c.pneu,c.ra, c.scd, c.smi, c.str, c.tbi, c.trans, c.trau,
       cr.crg, cr.crg_abbreviated,
-      cs.severity as cov_severity
+      cs.severity as covid_severity
  from enrl e
  left join cond c
    on e.uth_member_id = c.uth_member_id
