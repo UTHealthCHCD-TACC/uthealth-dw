@@ -1,4 +1,11 @@
-
+/********************************************************************
+ * Version Control
+ * 
+ * 
+ * Author     | Date       | Change
+ * ****************************************************************
+ * J. Wozny   | 01/18/2023 | Script created
+ *******************************************************************/
 
 ---(2) drop existing tables
 drop table if exists dw_staging.member_enrollment_monthly;
@@ -9,8 +16,6 @@ drop table if exists dw_staging.claim_detail;
 drop table if exists dw_staging.claim_diag;
 drop table if exists dw_staging.claim_icd_proc;
 drop table if exists dw_staging.pharmacy_claims;
-
-
 
 --enrollment yearly
 create table dw_staging.member_enrollment_yearly 
@@ -179,7 +184,6 @@ alter table dw_staging.pharmacy_claims owner to uthealth_dev;
 ---/(5)
 
 ---(6) 
-
 vacuum full dw_staging.member_enrollment_monthly;
 vacuum full dw_staging.member_enrollment_yearly;
 vacuum full dw_staging.claim_header;
@@ -187,7 +191,6 @@ vacuum full dw_staging.claim_detail;
 vacuum full dw_staging.claim_diag;
 vacuum full dw_staging.claim_icd_proc;
 vacuum full dw_staging.pharmacy_claims;
-
 
 analyze dw_staging.member_enrollment_monthly;
 analyze dw_staging.member_enrollment_yearly;

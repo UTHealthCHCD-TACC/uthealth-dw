@@ -53,7 +53,7 @@ select a.uth_member_id, year, b.plan_type, row_number ()
 --------------  
 select * from dw_staging.mdcd_plan_rn;
 
-update dw_staging.member_enrollment_yearly a 
+update dw_staging.member_enrollment_fiscal_yearly a 
    set plan_type = b.plan_type 
   from dw_staging.mdcd_plan_rn  b 
  where a.uth_member_id = b.uth_member_id
@@ -92,7 +92,7 @@ select a.uth_member_id, year, race_cd , row_number ()
 --------------  
 select * from dw_staging.mdcd_race_rn;
 
-update dw_staging.member_enrollment_yearly a 
+update dw_staging.member_enrollment_fiscal_yearly a 
    set race_cd  = b.race_cd  
   from dw_staging.mdcd_race_rn  b 
  where a.uth_member_id = b.uth_member_id
@@ -106,6 +106,6 @@ drop table if exists dw_staging.mdcd_race_rn;
  * FINALIZE
  */
 
-vacuum analyze dw_staging.member_enrollment_yearly;
-alter table dw_staging.member_enrollment_yearly  owner to uthealth_dev;
-grant select on dw_staging.member_enrollment_yearly to uthealth_analyst;
+vacuum analyze dw_staging.member_enrollment_fiscal_yearly;
+alter table dw_staging.member_enrollment_fiscal_yearly owner to uthealth_dev;
+grant select on dw_staging.member_enrollment_fiscal_yearly to uthealth_analyst;
