@@ -17,9 +17,9 @@
  */
 
 --initialize table
-drop table if exists dw_staging.member_enrollment_yearly;
+drop table if exists dw_staging.member_enrollment_fiscal_yearly;
 
-create table dw_staging.member_enrollment_yearly 
+create table dw_staging.member_enrollment_fiscal_yearly 
 (like data_warehouse.member_enrollment_yearly including defaults) 
 with (
 		appendonly=true, 
@@ -42,7 +42,7 @@ begin
 
 
 --insert recs from monthly  14min
-execute 'insert into dw_staging.member_enrollment_yearly (
+execute 'insert into dw_staging.member_enrollment_fiscal_yearly (
          data_source, 
          year, 
          uth_member_id, 
@@ -93,7 +93,7 @@ analyze dw_staging.temp_member_enrollment_month;
 	for array_counter in 1..12
 	loop
 	execute
-	'update dw_staging.member_enrollment_yearly y
+	'update dw_staging.member_enrollment_fiscal_yearly y
 			set ' || my_update_column[array_counter] || '= 1
 			from dw_staging.temp_member_enrollment_month m
 			where y.uth_member_id = m.uth_member_id
@@ -106,7 +106,7 @@ analyze dw_staging.temp_member_enrollment_month;
 
 
 --Calculate total_enrolled_months
-update dw_staging.member_enrollment_yearly
+update dw_staging.member_enrollment_fiscal_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+
                           enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int;
 
@@ -119,7 +119,7 @@ raise notice 'total_enrolled_months updated';
 end $$;
 
 
-vacuum analyze dw_staging.member_enrollment_yearly;
+vacuum analyze dw_staging.member_enrollment_fiscal_yearly;
 
 --first clean gender_cd
 --this is slightly different from other variables bc we want to disregard 'U'
@@ -139,7 +139,7 @@ create table dw_staging.final_enrl_gender_cd
 	 from dw_staging.temp_enrl_gender_cd
 	 distributed by(uth_member_id);
 	
-update dw_staging.member_enrollment_yearly a set gender_cd  = b.gender_cd 
+update dw_staging.member_enrollment_fiscal_yearly a set gender_cd  = b.gender_cd 
 	 from dw_staging.final_enrl_gender_cd b 
 	 where a.uth_member_id = b.uth_member_id
 	   and a.fiscal_year = b.fiscal_year
@@ -187,7 +187,7 @@ begin
 		
 		raise notice '2';
 	
-		execute 'update dw_staging.member_enrollment_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
+		execute 'update dw_staging.member_enrollment_fiscal_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
 				 where a.uth_member_id = b.uth_member_id
 				   and a. '|| col_list[col_counter] ||' != b.' || col_list[col_counter] ||'

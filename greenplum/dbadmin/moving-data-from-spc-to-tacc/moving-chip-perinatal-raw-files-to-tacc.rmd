@@ -1,0 +1,394 @@
+---
+title: "moving-chip-perinatal-raw-files-to-tacc"
+author: "XRZ"
+date: '2023-03-13'
+output: html_document
+---
+
+#Purpose:
+This R markdown script moves the CHIP perinatal raw files from SPCDEDPWPVS1 to TACC
+
+Source tables: SPCDEDPWPVS1: medicaid.dbo.CHIP_Pren_FY[YEAR]
+Target table: Greenplum: medicaid.CHIP_Pren
+
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment, eval=FALSE}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
+```
+
+## 0.5 Declare root directory and set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("moving-chip-perinatal-raw-files-to-tacc.rmd")
+
+```
+
+# SECTION 1: Initialization
+
+```{r}
+
+starting_year = 2016
+ending_year = 2021
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+
+get_data_current_year = "select * from medicaid.dbo.CHIP_Pren_FY@year;"
+count_rows_current_year = "select count(*) from medicaid.dbo.CHIP_Pren_FY@year;"
+tac_current_year_rowcount = "select count(*) from medicaid.chip_pren_fy@year;"
+
+#initialize DF to hold rowcounts
+rowcounts = data.frame(matrix(ncol=4, nrow=0))
+colnames(rowcounts) = c('year', 'spc_count', 'tac_count', 'difference')
+
+```
+
+# SECTION 2: Data transfer and rowcounting
+```{r}
+#Send all tables to SPC side
+
+#refresh TACC connection bc it drops after 45 mins or so
+tac = connect_to_tacc()
+
+for (current_year in starting_year:ending_year){
+  
+  print(paste("Current year:", current_year))
+    
+  #modify all SQL code to reflect current year
+  current_table_name = paste0("medicaid.chip_pren_fy", current_year)
+  get_data_current_year.mod = get_data_current_year %>%
+    gsub('@year', current_year, .)
+  count_rows_current_year.mod = count_rows_current_year %>%
+    gsub('@year', current_year, .)
+  tac_current_year_rowcount.mod = tac_current_year_rowcount %>%
+    gsub('@year', current_year, .)
+  
+  #Pull table from SPCDEDPWPVS1 and get the rowcount
+  tic("Pulling data from SPC")
+  current_year_data = dbGetQuery(spc, get_data_current_year.mod)
+  current_year_rowcount = dbGetQuery(spc, count_rows_current_year.mod)
+  toc()
+  
+  #send data to TACC and get rowcount
+  tic("Sending data to TACC")
+  dbWriteTable(tac, SQL(current_table_name), current_year_data, overwrite = TRUE)
+  tac_side_rowcount = dbGetQuery(spc, count_rows_current_year.mod)
+  toc()
+  
+  #Add data to rowcounts dataframe
+  current_row = c(year = current_year, spc_count = current_year_rowcount,
+                  tac_count = tac_side_rowcount, difference= (current_year_rowcount - tac_side_rowcount))
+  rowcounts = rbind(rowcounts, current_row)
+  
+}
+
+#fix colnames b/c that last column gets weird for some reason
+colnames(rowcounts) = c('year', 'spc_count', 'tac_count', 'difference')
+
+```
+
+# SECTION 3: Compile chip_pren table on TACC side
+
+```{r}
+#Compile table on TACC side
+
+tac_table_initialization1 = "drop table if exists medicaid.chip_pren;"
+
+tac_table_initialization2 = "create table medicaid.chip_pren (
+  fy int,
+	client_nbr text, --10 digits
+	elig_month text, -- 6 digit YYYYMM
+	risk_group_cd text --3 digit numeric
+) distributed by (client_nbr);"
+
+tac_table_insert = "insert into medicaid.chip_pren
+  select '@year' as fy, * from medicaid.chip_pren_fy@year;"
+
+#refresh TACC connection bc it drops after 45 mins or so
+tac = connect_to_tacc()
+
+dbExecute(tac, tac_table_initialization1)
+dbExecute(tac, tac_table_initialization2)
+
+for (current_year in starting_year:ending_year){
+  tac_table_insert.mod = tac_table_insert %>%
+    gsub('@year', current_year, .)
+  
+  dbExecute(tac, tac_table_insert.mod)
+}
+
+```
+
+# SECTION 4: Make new chip_enrl table
+
+```{r}
+#Compile table on TACC side
+
+tac_make_chip_enrl1 = "drop table if exists medicaid.chip_enrl;"
+
+tac_make_chip_enrl2 = "create table medicaid.chip_enrl as
+select a.*, b.risk_group_cd,
+	case when risk_group_cd in ('309', '310', '311') then 'CP'
+	else 'C' end as CHIP_PER_FL
+from medicaid.chip_uth a left join medicaid.chip_pren b on
+a.year_fy = b.fy and a.client_nbr = b.client_nbr and a.elig_month = b.elig_month
+distributed by (client_nbr);"
+
+#refresh TACC connection bc it drops after 45 mins or so
+tac = connect_to_tacc()
+
+dbExecute(tac, tac_make_chip_enrl1)
+dbExecute(tac, tac_make_chip_enrl2)
+
+
+```
+
+
+# SECTION 5: Count rows to make sure things worked right
+
+## 5.1 Count SPC side
+```{r}
+#initialize DF to hold rowcounts
+spc_rowcounts = data.frame(matrix(ncol=4, nrow=0))
+colnames(spc_rowcounts) = c("year", "spc_uth_count", "spc_enrl_count")
+
+#SQL queries to mod
+spc_uth_count = "select count(*) from medicaid.dbo.CHIP_UTH_SFY20@yr_Final"
+spc_enrl_count = "select count(*) from medicaid.dbo.CHIP_ENRL_FY@yr;"
+
+
+#use 2-digit year
+for (current_yr in starting_yr:ending_yr){
+  
+  spc_uth_count.mod = spc_uth_count %>%
+    gsub('@yr', current_yr, .)
+  
+  spc_enrl_count.mod = spc_enrl_count %>%
+    gsub('@yr', current_yr, .)
+  
+  current_uth_count = dbGetQuery(spc, spc_uth_count.mod)
+  current_enrl_count = dbGetQuery(spc, spc_enrl_count.mod)
+  
+  current_row = c(year = current_yr + 2000,
+                  spc_uth_count = current_uth_count[1,1],
+                  spc_enrl_count = current_enrl_count[1,1])
+  spc_rowcounts = rbind(spc_rowcounts, current_row)
+
+}
+#fix colnames at the end
+colnames(spc_rowcounts) = c("year", "spc_uth_count", "spc_enrl_count")
+
+```
+
+## 5.1 Count TACC side
+```{r}
+#initialize DF to hold rowcounts
+
+tac_uth_count = "select year_fy, count(*) as tac_uth_count from medicaid.chip_uth
+where year_fy between @starting_year and @ending_year
+group by year_fy order by year_fy;"
+
+tac_enrl_count = "select year_fy, count(*) as tac_enrl_count from medicaid.chip_enrl
+where year_fy between @starting_year and @ending_year
+group by year_fy order by year_fy;"
+
+#modify queries
+tac_uth_count.mod = tac_uth_count %>%
+  gsub("@starting_year", starting_year, .) %>%
+  gsub("@ending_year", ending_year, .)
+
+tac_enrl_count.mod = tac_enrl_count %>%
+  gsub("@starting_year", starting_year, .) %>%
+  gsub("@ending_year", ending_year, .)
+
+#refresh TACC connection bc it drops after 45 mins or so
+tac = connect_to_tacc()
+
+#get counts
+tac_uth_count_df = dbGetQuery(tac, tac_uth_count.mod)
+tac_enrl_count_df = dbGetQuery(tac, tac_enrl_count.mod)
+
+tac_rowcounts = tac_uth_count_df %>%
+  left_join(tac_enrl_count_df, by = "year_fy")
+
+#get counts of how many nulls there are
+tac_enrl_null_count_df = dbGetQuery(tac,
+  "select year_fy, count(*) as count from medicaid.chip_enrl
+  where risk_group_cd is null and year_fy between 2016 and 2021
+  group by year_fy order by year_fy;")
+
+#fix colnames at the end
+colnames(tac_rowcounts) = c("year", "tac_uth_count", "tac_enrl_count")
+
+```
+
+## 5.3 Mush tables together and see differences
+```{r}
+
+all_counts = spc_rowcounts %>%
+  left_join(tac_rowcounts, by = "year") %>%
+  mutate(uth_diff = spc_uth_count - tac_uth_count,
+         enrl_diff = spc_enrl_count - tac_enrl_count,
+         spc_uth_enrl_diff = spc_uth_count - spc_enrl_count)
+
+```
+
+# SECTION 6: Count rows, distinct member IDs and who exists where
+
+```{r}
+
+
+```
+
+# SECTION 7: Output Summary
+
+## 6.1 Make table legends
+```{r}
+legend1 = data.frame("column_name" = c("spc_uth_count",
+                                       "spc_enrl_count",
+                                       "tac_uth_count",
+                                       "tac_enrl_count",
+                                       "uth_diff",
+                                       "enrl_diff",
+                                       "spc_uth_enrl_diff"),
+                     "description" = c("Count of rows per year in chip_uth tables on SPC server",
+                                       "Count of rows per year in chip_enrl tables on SPC server",
+                                       "Count of rows per year in chip_uth tables on TACC server",
+                                       "Count of rows per year in chip_enrl tables on TACC server",
+                                       "Difference between chip_uth tables between SPC and TACC servers",
+                                       "Difference between chip_enrl tables between SPC and TACC servers",
+                                       "Difference between chip uth and chip enrl tables within SPC server only"))
+
+```
+
+## 6.2 Output to spreadsheet
+```{r}
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "moving-chip-perinatal-raw-files-to-tacc.xlsx")
+
+addWorksheet(wb, sheetName = "chip_pren counts")
+addWorksheet(wb, sheetName = "server comparison")
+addWorksheet(wb, sheetName = "chip_enrl counts")
+
+#Sheet 1
+current_sheet = 1
+writeData(wb, sheet = current_sheet, "Count of rows in chip_pren by year", startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, rowcounts, startCol=1, startRow=4)
+
+setColWidths(wb, sheet = current_sheet, cols=1:ncol(rowcounts)+1, widths="auto")
+setColWidths(wb, sheet = current_sheet, cols=1, widths=10)
+
+#Sheet 2
+current_sheet = 2
+writeData(wb, sheet = current_sheet, "Count of rows in chip_uth and chip_enrl tables", startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, all_counts, startCol=1, startRow=4)
+
+setColWidths(wb, sheet = current_sheet, cols=1:ncol(all_counts)+1, widths="auto")
+setColWidths(wb, sheet = current_sheet, cols=1:2, widths=c(16, 15))
+
+
+#print legend
+nextrow = nrow(all_counts) + 6
+writeData(wb, sheet = current_sheet, "Note that the rowcount discrepancy is due to SPC side dropping rows if they do not have a corresponding member_id/elig_month combo in the chip_pren tables", startCol=1, startRow=nextrow+1)
+writeData(wb, sheet = current_sheet, legend1, startCol=1, startRow=nextrow+1)
+
+#Sheet 3
+current_sheet = 3
+writeData(wb, sheet = current_sheet, "Count of rows in chip_enrl (TACC side only) where risk_group_cd is null", startCol=1, startRow=1)
+writeData(wb, sheet = current_sheet, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+writeData(wb, sheet = current_sheet, tac_enrl_null_count_df, startCol=1, startRow=4)
+
+setColWidths(wb, sheet = current_sheet, cols=1:ncol(tac_enrl_null_count_df)+1, widths="auto")
+setColWidths(wb, sheet = current_sheet, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+
+# SECTION 7: Clean up temp tables
+
+```{r}
+tacc_drop_table = "drop table if exists medicaid.chip_pren_fy@year;"
+
+tac = connect_to_tacc()
+for (current_year in starting_year:ending_year){
+  tacc_drop_table.mod = tacc_drop_table %>%
+    gsub('@year', current_year, .)
+  
+  dbExecute(tac, tacc_drop_table.mod)
+}
+
+
+```
+
+
+# SECTION 99: Close connections and clean-up
+
+```{r close-connections, eval=FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval=FALSE}
+# clears R environment
+rm(list=ls())
+```
+
+
+

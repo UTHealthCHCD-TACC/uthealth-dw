@@ -9,6 +9,58 @@
  * 
  * ****************************************************************************************************** */
 
+--03/20/2023: Grant select 
+
+--make a test table
+create table reference_tables.access_test as
+select * from reference_tables.cpt_hcpc limit 10;
+
+drop table if exists reference_tables.access_test;
+
+--reference_tables (select only )
+--apparently running this grants all analysts access to new tables in ref
+grant usage on schema reference_tables to group uthealth_analyst; 
+grant select on all tables in schema reference_tables to group uthealth_analyst; 
+grant select on all sequences in schema reference_tables to uthealth_analyst;
+alter default privileges in schema reference_tables grant select on tables to group uthealth_analyst;
+
+--dev (all access)
+grant all on schema dev to uthealth_analyst; 
+grant all on all tables in schema dev to uthealth_analyst; 
+grant all privileges on all sequences in schema dev to uthealth_analyst; 
+alter default privileges in schema dev grant all on tables to uthealth_analyst;
+
+--data_warehouse
+grant usage on schema data_warehouse to uthealth_analyst; 
+grant select on all tables in schema data_warehouse to uthealth_analyst; 
+grant select on all sequences in schema data_warehouse to uthealth_analyst;
+alter default privileges in schema data_warehouse grant select on tables to uthealth_analyst;
+
+--Check Joe's access
+SELECT r.rolname, 
+  ARRAY(SELECT b.rolname
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+        WHERE m.member = r.oid) as memberof
+, r.rolsuper
+FROM pg_catalog.pg_roles r
+WHERE r.rolname !~ '^pg_'
+and r.rolname like 'jw%'
+ORDER BY 1;
+
+--check femi's access
+SELECT r.rolname, 
+  ARRAY(SELECT b.rolname
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+        WHERE m.member = r.oid) as memberof
+, r.rolsuper
+FROM pg_catalog.pg_roles r
+WHERE r.rolname !~ '^pg_'
+and r.rolname like 'oa%'
+ORDER BY 1;
+
+
 --03/10/2023: Created apcd_uthealth_analyst role
 
 /*******************************************************************
