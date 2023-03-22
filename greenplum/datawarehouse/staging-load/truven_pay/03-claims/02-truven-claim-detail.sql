@@ -1,6 +1,33 @@
 
+drop table if exists dw_staging.claim_detail;
+
+--create empty table
+create table dw_staging.claim_detail
+(like data_warehouse.claim_detail including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
+
+alter table dw_staging.claim_header owner to uthealth_dev;
+vacuum analyze dw_staging.claim_detail;
+
+
+
 /*
- * Insert commercial inpatient claim details
+ * Insert commercial inpatient claim details (ccaes)
  * Joined to header 
  */
 
@@ -24,10 +51,10 @@ select  'truv',
         a.procmod, 
         null as proc_mod_2, 
         lpad(substring(a.drg::text from '[0-9]*(?=\.*)'),3,'0') as drg,
-        lpad(a.revcode::text,4,'0'), 
-        a.netpay as charge_amount,
-	  	a.pay as allowed_amt,
-	  	null as paid_amt, 
+        lpad(a.revcode::text,4,'0'),
+        null as charge_amount,
+        a.pay as allowed_amt,
+        a.netpay as paid_amt,
         a.copay,
         a.deduct,
         a.coins, 
@@ -56,7 +83,7 @@ select  'truv',
 analyze dw_staging.claim_detail_1_prt_truv;
 
 /*
- * Medicare Inpatient Claims
+ * Medicare Inpatient Claims (mdcrs)
  */
 
 insert into dw_staging.claim_detail
@@ -80,9 +107,9 @@ select  'truv',
         null as proc_mod_2, 
         lpad(substring(a.drg::text from '[0-9]*(?=\.*)'),3,'0') as drg,
         lpad(a.revcode::text,4,'0'), 
-        a.netpay as charge_amount,
-	  	a.pay as allowed_amt,
-	  	null as paid_amt, 
+        null as charge_amount,
+        a.pay as allowed_amt,
+        a.netpay as paid_amt,
         a.copay,
         a.deduct,
         a.coins, 
@@ -121,7 +148,7 @@ analyze dw_staging.claim_detail_1_prt_truv;
 
 
 /*
- * Medicare Outpatient
+ * Medicare Outpatient (mdcro)
  */
 insert into dw_staging.claim_detail
 select  'truv',
@@ -144,9 +171,9 @@ select  'truv',
         null as proc_mod_2, 
         null as drg,
         lpad(a.revcode::text,4,'0'), 
-        a.netpay as charge_amount,
-	  	a.pay as allowed_amt,
-	  	null as paid_amt, 
+        null as charge_amount,
+        a.pay as allowed_amt,
+        a.netpay as paid_amt,
         a.copay,
         a.deduct,
         a.coins, 
@@ -176,7 +203,7 @@ analyze dw_staging.claim_detail_1_prt_truv;
 
 
 ---------------------------------------------
--------- Commercial Outpatient 
+-------- Commercial Outpatient (ccaeo)
 ---------------------------------------------
 insert into dw_staging.claim_detail
 select  'truv',
@@ -199,9 +226,9 @@ select  'truv',
         null as proc_mod_2, 
         null as drg,
         lpad(a.revcode::text,4,'0'), 
-        a.netpay as charge_amount,
-	  	a.pay as allowed_amt,
-	  	null as paid_amt, 
+        null as charge_amount,
+        a.pay as allowed_amt,
+        a.netpay as paid_amt,
         a.copay,
         a.deduct,
         a.coins, 

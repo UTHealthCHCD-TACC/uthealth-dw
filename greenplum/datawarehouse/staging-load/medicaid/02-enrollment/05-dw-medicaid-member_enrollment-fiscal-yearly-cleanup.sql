@@ -1,3 +1,12 @@
+/* ******************************************************************************************************
+ * Cleans up Medicaid fiscal year enrollment table
+ * ******************************************************************************************************
+ *  Author || Date      || Notes
+ * ******************************************************************************************************
+ * xrzhang || 03/21/202 || Created
+ */
+
+
 /*
 * assigning a yearly plan type requires logic about the hierarchy of plan types
 */
@@ -12,24 +21,26 @@ create table dw_staging.mdcd_plan_priority (
 --add values to it
 INSERT INTO dw_staging.mdcd_plan_priority(plan_type, priority)
   VALUES ('CHIP', 1 ),
-	 ('STAR Kids', 2 ),
-	 ('STAR+PLUS', 2 ),
-	 ('STAR Health', 2 ),
+  	 ('CHIP Perinatal', 2),
+	 ('STAR Kids', 3 ),
+	 ('STAR+PLUS', 3 ),
+	 ('STAR Health', 3 ),
 	 ('STAR', 3 ),
 	 ('MMP', 4 ),
 	 ('FFS', 4 ),
 	 ('PCCM', 4 );
                 
 ---------------------
+select distinct plan_type from dw_staging.mcd_member_enrollment_monthly;
 
 drop table if exists dw_staging.mdcd_plan_count;
 
 create table dw_staging.mdcd_plan_count 
 with (appendonly=true, orientation=row) as (
-select uth_member_id, "year", plan_type, 
+select uth_member_id, fiscal_year, plan_type, 
        count(*) as "count", 
        max(month_year_id) as my
-  from dw_staging.member_enrollment_monthly 
+  from dw_staging.mcd_member_enrollment_monthly 
   group by 1,2,3
   )  distributed by(uth_member_id);
  analyze dw_staging.mdcd_plan_count ;
@@ -40,8 +51,8 @@ drop table if exists dw_staging.mdcd_plan_rn;
 
 create table dw_staging.mdcd_plan_rn 
 with (appendonly=true, orientation=row) as (
-select a.uth_member_id, year, b.plan_type, row_number ()  
- 		over(partition by uth_member_id, year order by "count" desc, priority asc, my desc) as rn
+select a.uth_member_id, fiscal_year, b.plan_type, row_number ()  
+ 		over(partition by uth_member_id, fiscal_year order by "count" desc, priority asc, my desc) as rn
   from dw_staging.mdcd_plan_count a 
   left outer join dw_staging.mdcd_plan_priority b 
   on a.plan_type = b.plan_type 
@@ -51,27 +62,29 @@ select a.uth_member_id, year, b.plan_type, row_number ()
  analyze dw_staging.mdcd_plan_rn;
 
 --------------  
-select * from dw_staging.mdcd_plan_rn;
+--select * from dw_staging.mdcd_plan_rn;
 
 update dw_staging.member_enrollment_fiscal_yearly a 
    set plan_type = b.plan_type 
   from dw_staging.mdcd_plan_rn  b 
  where a.uth_member_id = b.uth_member_id
-   and a.year = b.year
+   and a.fiscal_year = b.fiscal_year
    and b.rn = 1;	
   
 /*
  * FIX RACE CD
  */
   
+ --why is race here instead of previous script?
+  
 drop table if exists dw_staging.mdcd_race_count;
 
 create table dw_staging.mdcd_race_count 
 with (appendonly=true, orientation=row) as (
-select uth_member_id, "year", race_cd, 
+select uth_member_id, fiscal_year, race_cd, 
        count(*) as "count", 
        max(month_year_id) as my
-  from dw_staging.member_enrollment_monthly 
+  from dw_staging.mcd_member_enrollment_monthly 
   group by 1,2,3
   )  distributed by(uth_member_id);
  analyze dw_staging.mdcd_plan_count ;
@@ -81,8 +94,8 @@ drop table if exists dw_staging.mdcd_race_rn;
 
 create table dw_staging.mdcd_race_rn 
 with (appendonly=true, orientation=row) as (
-select a.uth_member_id, year, race_cd , row_number ()  
- 		over(partition by uth_member_id, year order by "count" desc, my desc) as rn
+select a.uth_member_id, fiscal_year, race_cd , row_number ()  
+ 		over(partition by uth_member_id, fiscal_year order by "count" desc, my desc) as rn
   from dw_staging.mdcd_race_count a 
   )  distributed by(uth_member_id);
   ;
@@ -96,7 +109,7 @@ update dw_staging.member_enrollment_fiscal_yearly a
    set race_cd  = b.race_cd  
   from dw_staging.mdcd_race_rn  b 
  where a.uth_member_id = b.uth_member_id
-   and a.year = b.year
+   and a.fiscal_year = b.fiscal_year
    and b.rn = 1;	
 
 drop table if exists dw_staging.mdcd_race_rn;

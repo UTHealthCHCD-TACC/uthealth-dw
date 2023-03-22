@@ -229,4 +229,13 @@ select enrolid::bigint,
 
 analyze staging_clean.ccaeo_etl;
 
+/*check if ccaeo etl'd properly
+
+select count(*) from truven.ccaeo;
+select count(*) from staging_clean.ccaeo_etl;
+ * 
+ */
+
+
+
 

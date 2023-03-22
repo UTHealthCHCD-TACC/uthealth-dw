@@ -9,7 +9,25 @@
  * 
  * ****************************************************************************************************** */
 
---03/20/2023: Grant select 
+--03/22/2023: Change Maria's access to uthealth_analyst
+--Rationale: When she joined we gave her dev b/c of... ignorance, mostly.
+--But anyway she doesn't need write access to dw
+
+grant uthealth_analyst to ukhanova;
+revoke uthealth_dev from ukhanova;
+
+--check access
+SELECT r.rolname, 
+  ARRAY(SELECT b.rolname
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+        WHERE m.member = r.oid) as memberof
+, r.rolsuper
+FROM pg_catalog.pg_roles r
+WHERE r.rolname !~ '^pg_'
+ORDER BY 1;
+
+--03/20/2023: Refresh access for uthealth_analyst
 
 --make a test table
 create table reference_tables.access_test as

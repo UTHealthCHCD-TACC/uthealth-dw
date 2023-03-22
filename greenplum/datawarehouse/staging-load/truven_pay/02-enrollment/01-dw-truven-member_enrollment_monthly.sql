@@ -37,6 +37,7 @@
 
 drop table if exists staging_clean.ccaet;
 
+--note that there are no NULL enrolids in ccaet
 create table staging_clean.ccaet with (
 	appendonly=true,
 	orientation=column,
@@ -132,6 +133,7 @@ select 'truv',
  */
 drop table if exists staging_clean.mdcrt;
 
+--note that there are no NULL enrolids in mdcrt
 create table staging_clean.mdcrt with (
 	appendonly=true,
 	orientation=column,
@@ -260,5 +262,8 @@ drop table if exists staging_clean.ccaet;
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 
 vacuum analyze dw_staging.member_enrollment_monthly;
+
+
+
 
 

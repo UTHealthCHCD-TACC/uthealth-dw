@@ -1,7 +1,10 @@
+/**************************************************
+ * Create monthly member enrollment table
+ **************************************************/
+drop table if exists dw_staging.mcd_member_enrollment_monthly;
 
-drop table if exists dw_staging.member_enrollment_monthly;
-
-create table dw_staging.member_enrollment_monthly  
+--initialize empty table
+create table dw_staging.mcd_member_enrollment_monthly  
 (like data_warehouse.member_enrollment_monthly including defaults) 
 with (
 		appendonly=true, 
@@ -9,35 +12,41 @@ with (
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
-distributed by (uth_member_id)
-;
+distributed by (uth_member_id);
 
-alter table  dw_staging.member_enrollment_monthly add column row_id bigserial;
-alter sequence dw_staging.member_enrollment_monthly_row_id_seq cache 200;
+--adds a row_id that is an auto-generated sequential number
+--The cache keyword specifies how many sequence values should be
+--preallocated and stored in memory for faster access.
+alter table dw_staging.mcd_member_enrollment_monthly add column row_id bigserial;
+alter sequence dw_staging.mcd_member_enrollment_monthly_row_id_seq cache 200;
 
+/***********************************
+ * Pull enrollment data into an ETL
+ ***********************************/
 drop table if exists dw_staging.medicaid_enroll_etl;
 
-CREATE TABLE dw_staging.medicaid_enroll_etl (
-	client_nbr text NULL,
+create table dw_staging.medicaid_enroll_etl (
+	client_nbr text null,
 	year int2 null,
-	month_year_id int4 NULL,
-	elig_date_month date NULL,
-	sex text NULL,
-	zip text NULL,
-	zip3 text NULL,
-	yr_end_date date NULL,
-	dob date NULL,
-	contract_id text NULL,
-	year_fy int2 NULL,
-	race text NULL,
+	month_year_id int4 null,
+	elig_date_month date null,
+	sex text null,
+	zip text null,
+	zip3 text null,
+	yr_end_date date null,
+	dob date null,
+	contract_id text null,
+	year_fy int2 null,
+	race text null,
 	smib text null,
 	me_code text null,
-	table_id_src unknown NULL,
-	plan_type text NULL,
+	table_id_src unknown null,
+	plan_type text null,
 	state text null
 )
-DISTRIBUTED BY (client_nbr);
+distributed by (client_nbr);
 
+--insert from main enrollment tables (medicaid.enrl)
 insert into dw_staging.medicaid_enroll_etl 
 select trim(a.client_nbr) as client_nbr ,
        substring(trim(elig_date),1,4)::int as year, 
@@ -56,14 +65,13 @@ select trim(a.client_nbr) as client_nbr ,
 	   'enrl' as table_id_src,
 	   null as plan_type,
 	   null as state
-  from medicaid.enrl  a 
-;
+  from medicaid.enrl  a ;
 
 --select * from dw_staging.medicaid_enroll_etl;
 
 analyze dw_staging.medicaid_enroll_etl;
 
----
+--insert from CHIP enrollment tables
 insert into dw_staging.medicaid_enroll_etl 
 select trim(a.client_nbr) as client_nbr ,
        substring(trim(elig_month),1,4)::int as year, 
@@ -80,15 +88,16 @@ select trim(a.client_nbr) as client_nbr ,
        null as smib,
        null as me_code,
 	   'chip_uth' as table_id_src,
-	   'CHIP' as plan_type,
+	   case when chip_per_fl = 'CP' then 'CHIP Perinatal' else 'CHIP' end as plan_type,
 	   null as state
-  from medicaid.chip_uth a 
+  from medicaid.chip_enrl a 
 ;
+
+select distinct chip_per_fl from medicaid.chip_enrl where year_fy = 2021;
 
 analyze dw_staging.medicaid_enroll_etl;
 
---- htw
-
+--- insert from htw enrollment tables
 insert into dw_staging.medicaid_enroll_etl 
 select trim(a.client_nbr) as client_nbr ,
        substring(trim(elig_date),1,4)::int as year, 
@@ -114,70 +123,71 @@ select trim(a.client_nbr) as client_nbr ,
   from medicaid.htw_enrl a 
 ;
 
-analyze dw_staging.medicaid_enroll_etl;
----------------update values------------------
+vacuum analyze dw_staging.medicaid_enroll_etl;
 
+/*******************************************
+ * Pull in data from various reference tables
+ *******************************************/
+--get plan_type
 update dw_staging.medicaid_enroll_etl a 
-   set plan_type =  c.mco_program_nm
+   set plan_type = c.mco_program_nm
   from reference_tables.medicaid_lu_contract c 
  where c.plan_cd = a.contract_id
    and a.plan_type is null;  
-  
+
+--determine state by zip code
 update dw_staging.medicaid_enroll_etl a 
    set state =  z.state
   from reference_tables.ref_zip_code z 
  where a.zip = z.zip ;
 
+--convert Medicaid race codes to DW race codes
 update dw_staging.medicaid_enroll_etl a 
    set race = r.race_cd 
   from reference_tables.ref_race r 
  where r.race_cd_src = a.race
    and r.data_source = 'mdcd';
-  
+
+--Clean up sex that is not one of the permissible values
  update dw_staging.medicaid_enroll_etl a 
-     set sex = 'U' 
+   set sex = 'U' 
    where sex not in ('F','M','U');
 
 vacuum analyze dw_staging.medicaid_enroll_etl;
 
+/*******************************************
+ * Unify DOB - get most frequent or if tie, then most recent
+ *******************************************/
+
+create table dw_staging.temp_enrl_dob
+	 with (appendonly=true, orientation=column)
+	 as
+	 select count(*), max(month_year_id) as my, client_nbr, dob
+	 from dw_staging.medicaid_enroll_etl
+	 group by 3, 4;
+
+create table dw_staging.final_enrl_dob
+	 with (appendonly=true, orientation=column)
+	 as
+	 select * , row_number() over(partition by client_nbr order by count desc, my desc) as rn
+	 from dw_staging.temp_enrl_dob
+	 distributed by(client_nbr);
+	
+update dw_staging.medicaid_enroll_etl a set dob = b.dob 
+	 from dw_staging.final_enrl_dob b 
+	 where a.client_nbr = b.client_nbr
+	 	and a.dob != b.dob
+	 	and b.rn = 1;
+--Updated Rows	706261 / 587515219 = 0.00120211524256701851
+
+drop table dw_staging.temp_enrl_dob;
+drop table dw_staging.final_enrl_dob;
 
 
-
------------------------- get most common birthday ----------------------
-
- drop table if exists dev.birth_dupes1 ;
- 
-  select client_nbr, dob, count(*) as d_count, max(month_year_id) as recent 
-    into dev.birth_dupes1 
-    from dw_staging.medicaid_enroll_etl 
-   group by client_nbr, dob ;
-  
-  
-  drop table if exists dev.birth_dupes2;
-   select *,
-  	     row_number() over (partition by client_nbr order by d_count desc, recent desc) as dob_row
-    into dev.birth_dupes2
-  	from dev.birth_dupes1;
-  
-  drop table if exists dev.birth_dupes3;
-  
-  select client_nbr, dob 
-    into dev.birth_dupes3
-  	from dev.birth_dupes2
-   where dob_row = 1;
-  
-  update dw_staging.medicaid_enroll_etl a
-    set dob = b.dob 
-   from dev.birth_dupes3 b 
-  where a.client_nbr = b.client_nbr ;
-  
- vacuum analyze dw_staging.medicaid_enroll_etl;
-
- drop table if exists dev.birth_dupes3;
- drop table if exists dev.birth_dupes2;
- drop table if exists dev.birth_dupes1;
-
-------------------------------------------------------------
+/*****************************************
+ * Clean up plan type for when member has > 1 plan type per month_year_id
+ * Priority: CHIP > CHIP Perinatal > Any STAR (STAR is all equivalent to each other) > FFS
+ *****************************************/
 
 delete from dw_staging.medicaid_enroll_etl a 
  where plan_type <> 'CHIP'
@@ -188,7 +198,6 @@ delete from dw_staging.medicaid_enroll_etl a
  	  and a.month_year_id = b.month_year_id 
  	and b.plan_type = 'CHIP'
  );
-
 
 delete from dw_staging.medicaid_enroll_etl a 
  where plan_type = 'STAR'
@@ -209,7 +218,6 @@ delete from dw_staging.medicaid_enroll_etl a
  	  and a.month_year_id = b.month_year_id 
  	and b.plan_type in ('STAR Kids','STAR+PLUS')
  );
-
 
 delete from dw_staging.medicaid_enroll_etl a 
  where exists (
@@ -233,7 +241,7 @@ delete from dw_staging.medicaid_enroll_etl a
 vacuum analyze dw_staging.medicaid_enroll_etl;
 
 ---------- -------------------------------------
-insert into dw_staging.member_enrollment_monthly (
+insert into dw_staging.mcd_member_enrollment_monthly (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -290,7 +298,7 @@ from dw_staging.medicaid_enroll_etl  a
     and b.member_id_src = a.client_nbr 	
 	;
 
-analyze dw_staging.member_enrollment_monthly;
+analyze dw_staging.mcd_member_enrollment_monthly;
 
 
 ---**script to build consecutive enrolled months	
@@ -305,7 +313,7 @@ from (
 	         ,a.month_year_id
 	         ,a.uth_member_id
 	         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
-	   from dw_staging.member_enrollment_monthly 	 a 
+	   from dw_staging.mcd_member_enrollment_monthly 	 a 
 	     join reference_tables.ref_month_year b 
 	       on a.month_year_id = b.month_year_id 	   		    
 	 ) inr    
@@ -314,22 +322,21 @@ distributed by (row_id);
 analyze dev.temp_consec_enrollment;
 
 --update consec enrolled months  9m 
-update dw_staging.member_enrollment_monthly a 
+update dw_staging.mcd_member_enrollment_monthly a 
    set consecutive_enrolled_months = b.in_streak 
   from dev.temp_consec_enrollment b 
- where a.row_id = b.row_id
-;
+ where a.row_id = b.row_id;
 
 --**cleanup
 drop table if exists dev.temp_consec_enrollment;
 
 ---/drop sequence, rebuild table distributed on uth_member_id 
-alter table dw_staging.member_enrollment_monthly drop column row_id;
-vacuum full analyze dw_staging.member_enrollment_monthly;
-alter table dw_staging.member_enrollment_monthly owner to uthealth_dev;
+alter table dw_staging.mcd_member_enrollment_monthly drop column row_id;
+vacuum analyze dw_staging.mcd_member_enrollment_monthly;
+alter table dw_staging.mcd_member_enrollment_monthly owner to uthealth_dev;
 
 --Joe W. added this to the script when Xiaorui had analyst permissions and needed to QA
---grant select on dw_staging.member_enrollment_monthly to uthealth_analyst;
+--grant select on dw_staging.mcd_member_enrollment_monthly to uthealth_analyst;
 
 
 
