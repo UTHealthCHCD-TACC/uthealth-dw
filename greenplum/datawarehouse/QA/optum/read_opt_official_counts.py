@@ -115,14 +115,14 @@ def create_table_count(record_directory,data, agg_count=False, update_ym=None):
 
 
 if __name__ == '__main__':
-    data = 'optum_zip'
+    data = 'optum_dod'
     optd_file = 'official_record_counts/optum_dod/UTH_DODRv81_Record_Counts_202207.xlsx'
-    optz_file = 'official_record_counts/optum_zip/UTH_ZIP5_V81_Record_Counts_202207.xlsx'
-    update_ym = '202207'
+    optz_file = 'official_record_counts/optum_zip/UTH_ZIP5_V81_Record_Counts_202210.xlsx'
+    update_ym = '202210'
     df = pd.read_excel(optd_file if data == 'optum_dod' else optz_file)
     
     directory = 'transformed_record_counts'
-
+    print(data)
     create_count_csv(df, 'Update Ranges', f'{directory}/{update_ym}/{data}/{data}_update_ranges.csv', update_ym)
     create_count_csv(df, 'Member Data', f'{directory}/{update_ym}/{data}/{data}_enrollment_count.csv', update_ym)
     create_count_csv(df, 'IP Confinements', f'{directory}/{update_ym}/{data}/{data}_confinement_count.csv', update_ym)
