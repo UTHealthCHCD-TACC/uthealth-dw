@@ -1,5 +1,11 @@
 /***************************************************************
  * This script creates an update log for data_warehouse
+ * 
+ * Author  || Date       || Note
+ * *************************************************************
+ * Xiaorui || 03/16/2023 || Created
+ * *************************************************************
+ * Xiaorui || 03/23/2023 || Added Details column
 ****************************************************************/
 
 --deletes table
@@ -35,11 +41,18 @@ where schema_name = 'truven' and
 select * from data_warehouse.update_log
 order by schema_name, table_name;
 
+--add details column
+alter table data_warehouse.update_log add column details text;
 
+--Explain latest Truven update
+update data_warehouse.update_log
+set details = 'Truven CY 2021 updated with pay column and MSA'
+where schema_name = 'truven' and
+ ((table_name like 'ccae%' and table_name != 'ccaep') or
+  (table_name like 'mdcr%' and table_name != 'mdcrp'));
 
-
-
-
+--vacuum analyze because why not
+ vacuum analyze data_warehouse.update_log;
 
 
 

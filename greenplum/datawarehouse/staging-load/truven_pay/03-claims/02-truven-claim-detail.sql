@@ -1,3 +1,14 @@
+/**********************************************************************
+ * Truven claim_detail
+ * 
+ * Code originally by Will/David, updated in 2022 by J. Wozny and
+ * version control added March 2023 by Xiaorui
+ * ********************************************************************
+ * Author  || Date       || Notes
+ * ********************************************************************
+ * Xiaorui || 03/23/2023 || Changed mapping of pay to match what's on
+ * 							the ERD column map (verified by Lopita)
+ ***********************************************************************/
 
 drop table if exists dw_staging.claim_detail;
 
@@ -24,15 +35,13 @@ partition by list(data_source)
 alter table dw_staging.claim_header owner to uthealth_dev;
 vacuum analyze dw_staging.claim_detail;
 
-
-
 /*
  * Insert commercial inpatient claim details (ccaes)
  * Joined to header 
  */
 
 insert into dw_staging.claim_detail
-select  'truv',
+select  'truv' as data_source,
 		a.year, 
 		b.uth_member_id, 
 		b.uth_claim_id,

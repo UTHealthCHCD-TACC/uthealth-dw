@@ -9,6 +9,23 @@
  * 
  * ****************************************************************************************************** */
 
+--03/28/2023: Grant Femi and Jeff uthealth_dev role (they need to work on conditions)
+grant uthealth_dev to jfu2;
+grant uthealth_dev to oaborisa;
+
+--conditions (all access)
+grant all on schema conditions to uthealth_dev; 
+grant all on all tables in schema conditions to uthealth_dev; 
+grant all privileges on all sequences in schema conditions to uthealth_dev; 
+alter default privileges in schema conditions grant all on tables to uthealth_dev; 
+
+--dw_staging (all access)
+grant all on schema dw_staging to uthealth_dev; 
+grant all on all tables in schema dw_staging to uthealth_dev; 
+grant all privileges on all sequences in schema dw_staging to uthealth_dev; 
+alter default privileges in schema dw_staging grant all on tables to uthealth_dev; 
+
+
 --03/22/2023: Change Maria's access to uthealth_analyst
 --Rationale: When she joined we gave her dev b/c of... ignorance, mostly.
 --But anyway she doesn't need write access to dw

@@ -1,3 +1,15 @@
+/**********************************************************************
+ * Truven claim_header
+ * 
+ * Code originally by Will/David, updated in 2022 by J. Wozny and
+ * version control added March 2023 by Xiaorui
+ * ********************************************************************
+ * Author  || Date       || Notes
+ * ********************************************************************
+ * Xiaorui || 03/23/2023 || Changed mapping of pay to match what's on
+ * 							the ERD column map (verified by Lopita)
+ ***********************************************************************/
+
 
 with cte as (
 select enrolid, msclmid, 
@@ -29,13 +41,13 @@ select enrolid, msclmid,
 	claim_id_src,
 	load_date
 )
-select  'truv',
+select  'truv' as data_source,
         year,
         b.uth_member_id,
         b.uth_claim_id,
-        a.facprof,
-        a.svcdate,
-        a.tsvcdat,
+        a.facprof as claim_type,
+        a.svcdate as from_date_of_service,
+        a.tsvcdat as to_date_of_service,
         a.netpay,
         a.pay,
         null as paid_amt,

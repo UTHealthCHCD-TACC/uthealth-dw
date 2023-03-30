@@ -1,0 +1,105 @@
+---
+title: "moving-chip-perinatal-raw-files-to-tacc"
+author: "XRZ"
+date: '2023-03-13'
+output: html_document
+---
+
+#Purpose:
+This R markdown script uploads a new LU_CONTRACTS table to reference_tables.medicaid_lu_contracts
+
+Source table: new updated table MasterPlan.xlsx from Lisa Kalkanis at HHS
+Target table: Greenplum: reference_tables.medicaid_lu_contracts
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment, eval=FALSE}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
+```
+
+## 0.5 Declare root directory and set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("update-mcd-lu_contract-ref-table.rmd")
+
+```
+
+# SECTION 1: Upload to TACC
+
+```{r}
+# Read files in
+filename = 'resources/MasterPlan_03-29-23.xlsx'
+importfile = here(filename)
+
+lu_contract = read.xlsx(importfile, "Sheet1")
+
+# make names lowercase
+names(lu_contract) = tolower(names(lu_contract))
+
+# trims whitespace
+lu_contract[] <- lapply(lu_contract, trimws)
+
+# uploads to GP
+tac = connect_to_tacc()
+dbWriteTable(tac, SQL("reference_tables.medicaid_lu_contract_upd"), lu_contract, overwrite = TRUE)
+
+```
+
+----------------------------------
+After uploading table, there's a SQL file
+----------------------------------
+
+# SECTION 99: Close connections and clean-up
+
+```{r close-connections, eval=FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval=FALSE}
+# clears R environment
+rm(list=ls())
+```
+
+
+
