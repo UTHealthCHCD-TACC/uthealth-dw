@@ -96,7 +96,7 @@ update dw_staging.member_enrollment_yearly
 set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+
                           enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int;
 
-
+                         
 -- Drop temp table
 drop table if exists dw_staging.temp_member_enrollment_month;
 

@@ -1,19 +1,9 @@
 /* ******************************************************************************************************
- * Deletes and recreates member_enrollment_yearly records based on member_enrollment_monthly for a given dataset.
- * This includes creating all derived columns.
+ * Makes yearly member enrollment table by fiscal year instead of calendar year
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- *  wc001  || 1/01/2021 || script created
- * ******************************************************************************************************
- *  wallingTACC || 8/23/2021 || updated comments.
- * ******************************************************************************************************
- * jw002  || 9/08/2021 || added function for individual month flags
- * ******************************************************************************************************
- * wc002  || 9/09/2021 || move to dw_staging
- * ******************************************************************************************************
- * wc003  || 11/11/2021 || run as single script
- * ******************************************************************************************************
+ * xrzhang || 03/21/202 || Created
  */
 
 --initialize table
@@ -30,19 +20,8 @@ with (
 distributed by (uth_member_id)
 ;
 
---load monthly data into yearly data and add the total enrolled months
-do $$
-declare
-	month_counter integer := 1;
-	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
-	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
-	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-begin
-
-
-
---insert recs from monthly  14min
-execute 'insert into dw_staging.member_enrollment_fiscal_yearly (
+--insert 1 row per member per year from monthly table
+insert into dw_staging.member_enrollment_fiscal_yearly (
          data_source, 
          year, 
          uth_member_id, 
@@ -70,54 +49,59 @@ select distinct on( data_source, fiscal_year, uth_member_id )
 	   family_id,
 	   behavioral_coverage,
 	   member_id_src
-from dw_staging.member_enrollment_monthly;'
-;
+from dw_staging.mcd_member_enrollment_monthly;
 
-raise notice 'Records inserted into enrollment yearly';
 
---Create temp join table to populate month flags 6min
+
 drop table if exists dw_staging.temp_member_enrollment_month;
 
-execute 'create table dw_staging.temp_member_enrollment_month
+--create temp table that get the year and month of enrollment by fiscal year
+create table dw_staging.temp_member_enrollment_month
 with (appendonly=true, orientation=column)
 as
 select distinct uth_member_id, fiscal_year, month_year_id, month_year_id % year as month
-from dw_staging.member_enrollment_monthly
-distributed by(uth_member_id);'
-;
+from dw_staging.mcd_member_enrollment_monthly
+distributed by(uth_member_id);
 
 analyze dw_staging.temp_member_enrollment_month;
 
+--load monthly data into yearly data and add the total enrolled months
+do $$
+declare 
+	--month_counter integer := 1;
+	i int;
+	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
+	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
+	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
+begin
+
 --Add month flags
---jw002 use execute function to loop through each month
-	for array_counter in 1..12
+	for i in 1..12
 	loop
 	execute
 	'update dw_staging.member_enrollment_fiscal_yearly y
-			set ' || my_update_column[array_counter] || '= 1
-			from dw_staging.temp_member_enrollment_month m
-			where y.uth_member_id = m.uth_member_id
-			  and y.fiscal_year = m.fiscal_year
-			  and m.month = ' || month_counter || ';';
-	raise notice 'Month of %', my_update_column[array_counter];
-  month_counter = month_counter + 1;
-	array_counter = month_counter + 1;
+		set ' || my_update_column[i] || '= case when exists(
+		select 1 from dw_staging.temp_member_enrollment_month m
+		where y.uth_member_id = m.uth_member_id
+		and y.fiscal_year = m.fiscal_year
+		and m.month = ' || i || ') then 1 else 0 end';
+	raise notice 'Month of %', my_update_column[i];
+    --month_counter = month_counter + 1;
+	--i = month_counter + 1;
 	end loop;
-
-
---Calculate total_enrolled_months
-update dw_staging.member_enrollment_fiscal_yearly
-set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+
-                          enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int;
-
-
--- Drop temp table
-drop table if exists dw_staging.temp_member_enrollment_month;
-
-raise notice 'total_enrolled_months updated';
 
 end $$;
 
+--Calculate total_enrolled_months
+update dw_staging.member_enrollment_fiscal_yearly
+set total_enrolled_months=enrolled_jan + enrolled_feb + enrolled_mar + enrolled_apr + 
+	enrolled_may + enrolled_jun + enrolled_jul + enrolled_aug + 
+	enrolled_sep + enrolled_oct + enrolled_nov + enrolled_dec;
+
+raise notice 'total_enrolled_months updated';
+
+-- Drop temp table
+drop table if exists dw_staging.temp_member_enrollment_month;
 
 vacuum analyze dw_staging.member_enrollment_fiscal_yearly;
 
@@ -129,7 +113,7 @@ create table dw_staging.temp_enrl_gender_cd
 	 as
 	 select count(*), max(month_year_id) as my, uth_member_id, gender_cd , fiscal_year,
 	 	max(case when gender_cd = 'U' then 0 else 1 end) as not_u
-	 from dw_staging.member_enrollment_monthly
+	 from dw_staging.mcd_member_enrollment_monthly
 	 group by 3, 4, 5;
 
 create table dw_staging.final_enrl_gender_cd
@@ -150,13 +134,10 @@ drop table dw_staging.final_enrl_gender_cd;
 
 
 --clean all the rest of the variables
+--XRZ took out employee_status 3/21/23 because... Medicaid doesn't have employee status
 do $$
 declare
-	month_counter integer := 1;
-	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
-	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
-	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
-	col_list text[]:= array['state','zip5','zip3','dual','htw','employee_status'];
+	col_list text[]:= array['state','zip5','zip3','dual','htw'];
 	col_list_len int = array_length(col_list,1);
 begin
 
@@ -170,8 +151,8 @@ begin
 		execute 'create table dw_staging.temp_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
 				 as
-				 select count(*), max(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', fiscal_year
-				 from dw_staging.member_enrollment_monthly
+				 select count(*) as count, max(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ', fiscal_year
+				 from dw_staging.mcd_member_enrollment_monthly
 				 group by 3, 4, 5;'
 		;
 	
@@ -190,7 +171,8 @@ begin
 		execute 'update dw_staging.member_enrollment_fiscal_yearly a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
 				 where a.uth_member_id = b.uth_member_id
-				   and a. '|| col_list[col_counter] ||' != b.' || col_list[col_counter] ||'
+				   and (a.'|| col_list[col_counter] ||' is null or
+					a.'|| col_list[col_counter] ||' != b.' || col_list[col_counter] ||')
 				   and a.fiscal_year = b.fiscal_year
 				   and b.my_grp = 1;'
 		;
@@ -202,6 +184,4 @@ begin
 	end loop;
 
 end $$;
-
-
 
