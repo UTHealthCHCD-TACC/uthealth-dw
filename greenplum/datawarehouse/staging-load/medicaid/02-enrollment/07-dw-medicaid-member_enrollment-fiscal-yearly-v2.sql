@@ -1,15 +1,17 @@
 /* ******************************************************************************************************
- * Makes yearly member enrollment table by fiscal year instead of calendar year
+ * Deletes and recreates yearly member enrollment table by fiscal year instead of calendar year for Medicaid
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
  * xrzhang || 03/21/2023 || Created
  * ******************************************************************************************************
- * xrzhang || 03/29/2023 || HTW and CHIP PERI are distinct data sources now, added columns enrl_months_nondual
+ * xrzhang || 03/30/2023 || HTW and CHIP PERI are distinct data sources now, added columns enrl_months_nondual
  * 							and enrl_months_dual
  */
 
---initialize table
+/***************************
+ * INITIALIZE TABLE
+ ****************************/
 drop table if exists dw_staging.member_enrollment_fiscal_yearly_v2;
 
 create table dw_staging.member_enrollment_fiscal_yearly_v2 
@@ -38,11 +40,14 @@ alter table dw_staging.member_enrollment_fiscal_yearly_v2
 	add column enrl_months_nondual int2,
 	add column enrl_months_dual int2;
 
---insert 1 row per member per year from monthly table
---except for duals. They get 2 rows.
+--drop year column; this is the fiscal_year table, dagnabit
+alter table dw_staging.member_enrollment_fiscal_yearly_v2 drop column "year";
+
+/*********************************
+ * Insert data from monthly table
+ ********************************/
 insert into dw_staging.member_enrollment_fiscal_yearly_v2 (
-         data_source, 
-         year, 
+         data_source,
          uth_member_id, 
 		 age_derived, 
 		 dob_derived, 
@@ -53,10 +58,11 @@ insert into dw_staging.member_enrollment_fiscal_yearly_v2 (
 		 fiscal_year, 
          family_id,
 		 behavioral_coverage,
-         member_id_src )
+		 load_date,
+         member_id_src,
+         table_id_src)
 select distinct on( data_source, fiscal_year, uth_member_id)
        data_source, 
-       year, 
        uth_member_id, 
 	   age_derived, 
 	   dob_derived, 
@@ -67,22 +73,28 @@ select distinct on( data_source, fiscal_year, uth_member_id)
 	   fiscal_year, 
 	   family_id,
 	   behavioral_coverage,
-	   member_id_src
+	   load_date,
+	   member_id_src,
+	   table_id_src
 from dw_staging.mcd_member_enrollment_monthly;
 
+/*********************************
+ * Fill in enrolled months data
+ ********************************/
+--create temp table that get the year and month of enrollment by fiscal year
 drop table if exists dw_staging.temp_member_enrollment_month;
 
---create temp table that get the year and month of enrollment by fiscal year
 create table dw_staging.temp_member_enrollment_month
 with (appendonly=true, orientation=column)
 as
-select distinct uth_member_id, fiscal_year, dual, month_year_id, month_year_id % year as month
+select distinct data_source, uth_member_id, fiscal_year, dual,
+	month_year_id, month_year_id % "year" as month
 from dw_staging.mcd_member_enrollment_monthly
 distributed by(uth_member_id);
 
 analyze dw_staging.temp_member_enrollment_month;
 
---load monthly data into yearly data and add the total enrolled months
+--fill in the enrollment by month
 do $$
 declare 
 	--month_counter integer := 1;
@@ -101,7 +113,6 @@ begin
 		select 1 from dw_staging.temp_member_enrollment_month m
 		where y.uth_member_id = m.uth_member_id
 		and y.fiscal_year = m.fiscal_year
-		and y.dual = m.dual
 		and m.month = ' || i || ') then 1 else 0 end';
 	raise notice 'Month of %', my_update_column[i];
     --month_counter = month_counter + 1;
@@ -110,34 +121,52 @@ begin
 
 end $$;
 
---Calculate total_enrolled_months
-update dw_staging.member_enrollment_fiscal_yearly_v2
-set total_enrolled_months=enrolled_jan + enrolled_feb + enrolled_mar + enrolled_apr + 
-	enrolled_may + enrolled_jun + enrolled_jul + enrolled_aug + 
-	enrolled_sep + enrolled_oct + enrolled_nov + enrolled_dec;
+--Calculate dual, non-dual, and total enrolled months
+drop table if exists dw_staging.temp_enrolled_months_by_dual;
 
-raise notice 'total_enrolled_months updated';
+create table dw_staging.temp_enrolled_months_by_dual
+with (appendonly=true, orientation=column) as
+select data_source, uth_member_id, fiscal_year,
+	sum(case when dual = 0 then 1 else 0 end) as enrl_months_nondual,
+	sum(case when dual = 1 then 1 else 0 end) as enrl_months_dual,
+	count(*) as total_enrolled_months
+from dw_staging.temp_member_enrollment_month
+group by data_source, fiscal_year, uth_member_id
+distributed by(uth_member_id);
+
+analyze dw_staging.temp_enrolled_months_by_dual;
+
+--merge numbers into yearly enrollment table
+update dw_staging.member_enrollment_fiscal_yearly_v2 a
+set enrl_months_nondual = b.enrl_months_nondual,
+	enrl_months_dual = b.enrl_months_dual,
+	total_enrolled_months = b.total_enrolled_months
+from dw_staging.temp_enrolled_months_by_dual b
+where a.data_source = b.data_source
+	and a.fiscal_year = b.fiscal_year
+	and a.uth_member_id = b.uth_member_id;
+
+vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
 
 -- Drop temp table
 drop table if exists dw_staging.temp_member_enrollment_month;
 
-vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
-
---first clean gender_cd
---this is slightly different from other variables bc we want to disregard 'U'
-
+/************************************************
+ * Clean sex - not in do loop b/c we want to disregard 'U' where possible
+ ***********************************************/
 create table dw_staging.temp_enrl_gender_cd
 	 with (appendonly=true, orientation=column)
 	 as
-	 select count(*), max(month_year_id) as my, uth_member_id, gender_cd , fiscal_year, dual
+	 select count(*), max(month_year_id) as my, uth_member_id, gender_cd , fiscal_year,
 	 	max(case when gender_cd = 'U' then 0 else 1 end) as not_u
 	 from dw_staging.mcd_member_enrollment_monthly
-	 group by 3, 4, 5, 6;
+	 group by 3, 4, 5;
 
 create table dw_staging.final_enrl_gender_cd
 	 with (appendonly=true, orientation=column)
 	 as
-	 select * , row_number() over(partition by uth_member_id, fiscal_year, dual order by not_u desc, count desc, my desc) as my_grp
+	 select * , row_number() over(partition by uth_member_id, fiscal_year
+	 order by not_u desc, count desc, my desc) as rn
 	 from dw_staging.temp_enrl_gender_cd
 	 distributed by(uth_member_id);
 	
@@ -145,59 +174,54 @@ update dw_staging.member_enrollment_fiscal_yearly_v2 a set gender_cd = b.gender_
 	 from dw_staging.final_enrl_gender_cd b 
 	 where a.uth_member_id = b.uth_member_id
 	   and a.fiscal_year = b.fiscal_year
-	   and a.dual = b.dual
-	   and b.my_grp = 1;
+	   and b.rn = 1;
 
-drop table dw_staging.temp_enrl_gender_cd;
-drop table dw_staging.final_enrl_gender_cd;
+drop table if exists dw_staging.temp_enrl_gender_cd;
+drop table if exists dw_staging.final_enrl_gender_cd;
 
---clean all the rest of the variables
---XRZ took out employee_status 3/21/23 because... Medicaid doesn't have employee status
---XRZ took out htw and dual b/c they're getting split out
---also took out zip3 b/c it's easier to just update as substring(zip5), computationally cheaper
+/*****************************************************************
+ * Clean zip, and race using most frequent > most recent
+ ****************************************************************/
 do $$
 declare
-	col_list text[]:= array['state','zip5', 'race_cd'];
+	col_list text[]:= array['zip5', 'race_cd'];
 	col_list_len int = array_length(col_list,1);
 begin
 
------------------------------------------------------------------------------------------------------------------------
------************** logic for yearly rollup of various columns
--- all logic finds the most common occurence in a given year and assigns that value  28min
------------------------------------------------------------------------------------------------------------------------
 	for col_counter in 1.. col_list_len
 	loop
 
 		execute 'create table dw_staging.temp_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
 				 as
-				 select count(*) as count, max(month_year_id) as my, uth_member_id, ' || col_list[col_counter] || ',
-					fiscal_year, dual
+				 select data_source, fiscal_year, uth_member_id, ' || col_list[col_counter] || ',
+					count(*) as count, max(month_year_id) as my
 				 from dw_staging.mcd_member_enrollment_monthly
-				 group by 3, 4, 5;'
+				 where ' || col_list[col_counter] || ' is not null
+				 group by 1, 2, 3, 4;'
 		;
-	
-	    raise notice '1';
+		raise notice '% table 1 created', col_list[col_counter];
 		
 		execute 'create table dw_staging.final_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
 				 as
-				 select * , row_number() over(partition by uth_member_id, fiscal_year, dual 
-					order by count desc, my desc) as my_grp
+				 select * , row_number() over(partition by data_source, uth_member_id, fiscal_year
+					order by count desc, my desc) as rn
 				 from dw_staging.temp_enrl_' || col_list[col_counter] ||'
 				 distributed by(uth_member_id);'
 		;
 		
-		raise notice '2';
+		raise notice '% table 2 created', col_list[col_counter];
 	
-		execute 'update dw_staging.member_enrollment_fiscal_yearly_v2 a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
+		execute 'update dw_staging.member_enrollment_fiscal_yearly_v2 a
+				 set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
-				 where a.uth_member_id = b.uth_member_id
-				   and (a.'|| col_list[col_counter] ||' is null or
+				 where a.data_source = b.data_source
+					and a.uth_member_id = b.uth_member_id
+					and a.fiscal_year = b.fiscal_year
+				   	and (a.'|| col_list[col_counter] ||' is null or
 					a.'|| col_list[col_counter] ||' != b.' || col_list[col_counter] ||')
-				   and a.fiscal_year = b.fiscal_year
-				   and a.dual = b.dual
-				   and b.my_grp = 1;'
+				   and b.rn = 1;'
 		;
 		
 		execute 'drop table dw_staging.temp_enrl_' || col_list[col_counter] ||';';
@@ -208,15 +232,35 @@ begin
 
 end $$;
 
-update update dw_staging.member_enrollment_fiscal_yearly_v2
-set zip3 = substring(zip5, 1, 3);
-
---vacuum analyze again
+--vacuum after do loop
 vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
 
+/****************************************
+ * Sort out the rest of the variables: Dual, HTW, zip3
+ ****************************************/
+--set dual to 1 if enrl_months_dual >= enrl_months_nondual
+update dw_staging.member_enrollment_fiscal_yearly_v2
+set dual = case when enrl_months_dual >= enrl_months_nondual then 1
+	else 0 end,
+	htw = case when data_source = 'mhtw' then 1 else 0 end,
+	zip3 = substring(zip5, 1, 3)
+	;
 
+--set state according to zip code
+update dw_staging.member_enrollment_fiscal_yearly_v2 a
+set state = b.state
+from reference_tables.ref_zip_code b
+where a.zip5 = b.zip;
 
+--vacuum analyze
+vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
 
+/*check
+select * from dw_staging.member_enrollment_fiscal_yearly_v2;
+select count(*) from dw_staging.member_enrollment_fiscal_yearly_v2 where state is null; --50737
+select count(*) from dw_staging.member_enrollment_fiscal_yearly_v2 where state is not null; --61778636
+select 50737.0/61778636;
+*/
 
 
 

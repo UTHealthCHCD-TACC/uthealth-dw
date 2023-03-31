@@ -227,7 +227,7 @@ vacuum analyze dw_staging.medicaid_enroll_etl;
 
 /****************
 
-Fix: 
+Hot fix: 
 
 update dw_staging.medicaid_enroll_etl
 set plan_type = 'CHIP PERI'

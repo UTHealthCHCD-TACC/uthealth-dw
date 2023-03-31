@@ -227,6 +227,11 @@ grant all on all tables in schema truven_pay to uthealth_analyst;
 grant all privileges on all sequences in schema truven_pay to uthealth_analyst; 
 alter default privileges in schema truven_pay grant all on tables to uthealth_analyst; 
 
+--crosswalk (select only)
+grant usage on schema crosswalk to group uthealth_analyst; 
+grant select on all tables in schema crosswalk to group uthealth_analyst; 
+grant select on all sequences in schema crosswalk to uthealth_analyst;
+alter default privileges in schema crosswalk grant select on tables to group uthealth_analyst;
 
 /*******************************************************************
  * Role definition: uthealth_dev
@@ -290,6 +295,11 @@ grant all on all tables in schema public to uthealth_dev;
 grant all privileges on all sequences in schema public to uthealth_dev; 
 alter default privileges in schema public grant all on tables to uthealth_dev; 
 
+--uthealth_dev gets full access to crosswalk
+grant all on schema crosswalk to uthealth_dev; 
+grant all on all tables in schema crosswalk to uthealth_dev; 
+grant all privileges on all sequences in schema crosswalk to uthealth_dev; 
+alter default privileges in schema crosswalk grant all on tables to uthealth_dev; 
 
 /*******************************************************************
  * Role definition: uthealth_admin

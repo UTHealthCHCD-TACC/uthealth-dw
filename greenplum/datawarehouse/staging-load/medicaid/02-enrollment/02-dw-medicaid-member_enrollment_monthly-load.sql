@@ -42,7 +42,7 @@ alter table dw_staging.mcd_member_enrollment_monthly add column row_id bigserial
 alter sequence dw_staging.mcd_member_enrollment_monthly_row_id_seq cache 200;
 
 /********************************************
- * Load data in: General Medicaid
+ * Load data into monthly table
  *******************************************/
 insert into dw_staging.mcd_member_enrollment_monthly (
 	data_source, 
@@ -140,6 +140,8 @@ alter table dw_staging.mcd_member_enrollment_monthly drop column row_id;
 vacuum analyze dw_staging.mcd_member_enrollment_monthly;
 alter table dw_staging.mcd_member_enrollment_monthly owner to uthealth_dev;
 
---Joe W. added this to the script when Xiaorui had analyst permissions and needed to QA
---grant select on dw_staging.mcd_member_enrollment_monthly to uthealth_analyst;
+
+--check
+--select * from dw_staging.mcd_member_enrollment_monthly;
+
 
