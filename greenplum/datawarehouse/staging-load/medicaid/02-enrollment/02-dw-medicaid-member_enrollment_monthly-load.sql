@@ -11,6 +11,11 @@
  * Author: Xiaorui					Date: 03/28/23
  *********************************************************************/
 
+/*****************************
+ * Split age derived into 2 columns: age_fy and age_cy
+ */
+
+
 /**************************************************
  * Initialize empty monthly enrollment tables
  **************************************************/
@@ -42,24 +47,25 @@ alter table dw_staging.mcd_member_enrollment_monthly add column row_id bigserial
 alter sequence dw_staging.mcd_member_enrollment_monthly_row_id_seq cache 200;
 
 /********************************************
- * Load data in: General Medicaid
+ * Load data into monthly table
  *******************************************/
 insert into dw_staging.mcd_member_enrollment_monthly (
 	data_source, 
-	year, 
+	year,
+	fiscal_year, 
 	month_year_id, 
 	uth_member_id,
 	gender_cd, 
 	state, 
 	zip5, 
 	zip3,
-	age_derived, 
-	dob_derived, 
+	dob_derived,
+	age_cy,
+	age_fy,
 	death_date,
 	plan_type, 
 	bus_cd, 
 	rx_coverage, 
-	fiscal_year, 
 	race_cd,
 	dual,
 	htw,
@@ -72,20 +78,21 @@ insert into dw_staging.mcd_member_enrollment_monthly (
 	case when a.plan_type = 'CHIP PERI' then 'mcpp'
 		when a.me_code = 'W' then 'mhtw'
 		else 'mdcd' end as data_source,
-	year, 
+	year,
+	year_fy,
 	month_year_id,
 	b.uth_member_id,
 	a.sex,
 	a.state,
 	a.zip,
 	a.zip3,
-	extract( years from age(a.yr_end_date, dob)),
 	dob,
+	extract( years from age(a.yr_end_date, dob)) as age_cy,
+	extract( years from age(a.fy_end_date, dob)) as age_fy,
 	null as death_date,
 	a.plan_type,
 	null as bus_cd, 
 	1 as rx_coverage,
-	year_fy,
 	a.race,
 	case 
        	when a.smib = '1' then 1 else 0
@@ -140,6 +147,8 @@ alter table dw_staging.mcd_member_enrollment_monthly drop column row_id;
 vacuum analyze dw_staging.mcd_member_enrollment_monthly;
 alter table dw_staging.mcd_member_enrollment_monthly owner to uthealth_dev;
 
---Joe W. added this to the script when Xiaorui had analyst permissions and needed to QA
---grant select on dw_staging.mcd_member_enrollment_monthly to uthealth_analyst;
+
+--check
+--select * from dw_staging.mcd_member_enrollment_monthly;
+
 

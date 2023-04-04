@@ -2,15 +2,12 @@
 /* ******************************************************************************************************
  * This script contains several code blocks useful for controlling user access on the Greenplum Server
  * and contains definitions for user roles
+ * 
+ * This script focuses on apcd_dev
  * ******************************************************************************************************
  *  Author 			|| Date      	|| Notes
  * ******************************************************************************************************
- *  wallingTACC  	|| 1/1/2019 	|| script created
- * ******************************************************************************************************
- *  wcc001  		|| 9/09/2021 	|| organized uthealth_analyst and uthealthdev roles. cleaned up unused code. added comment block
- * -------------------------   script is divided into: Role Defintions, User Creation, & Audits/Misc
- * ******************************************************************************************************
- * Xiaorui Zhang	|| 03/08/2023	|| Updated, reformatted/reorganized, added user_role APCD
+ * Xiaorui Zhang	|| 03/31/2023	|| Created
  * 
  * ****************************************************************************************************** */
 
@@ -20,27 +17,11 @@
 
 --Granting user role to a user
 --syntax: grant role_name to user_name
-grant apcd_uthealth_analyst to lghosh1;
-grant apcd_uthealth_analyst to cms2;
-grant uthealth_analyst to cms2;
-grant uthealth_analyst to lghosh1;
-
---Grant specific user access to a specific schema
---note that grant select alone is insufficient
-grant usage on schema optum_zip to lghosh1; 
-grant select on all tables in schema optum_zip to lghosh1; 
-grant select on all sequences in schema optum_zip to lghosh1;
-alter default privileges in schema optum_zip grant select on tables to lghosh1;
-
---Grant superuser status
---Note that superusers do NOT have permission to grant superuser status
---regardless of what the error message says
-ALTER USER lghosh1 SUPERUSER;
+grant apcd_uthealth_dev to jharri66;
+grant apcd_uthealth_dev to aryan;
+grant apcd_uthealth_dev to nguyken;
 
 --Revokes roles from a user
-revoke uthealth_analyst from lghosh1;
-revoke uthealth_analyst from cms2;
-revoke uthealth_dev from lghosh1;
 revoke apcd_uthealth_analyst from cms2;
 
 --Revoke access to specific schema from user
@@ -69,21 +50,92 @@ FROM pg_catalog.pg_roles r
 WHERE r.rolname !~ '^pg_'
 ORDER BY 1;
 
---Lists the role name and privilege type for a specific table/schema
-select grantee, privilege_type, table_name , table_schema 
-from information_schema.role_table_grants 
-where table_schema = 'medicaid' --and table_name = 'claim_detail';
+/*******************************************************************
+ * Create schemas
+ *******************************************************************/
+--this is the read-only schema where test data goes
+create schema cdl_raw;
 
---Lists privileges for a specific grantee 
-select distinct grantee, privilege_type, table_schema, table_name
-from information_schema.role_table_grants 
-where grantee = 'lghosh1' and privilege_type = 'SELECT'
-order by table_schema;
+--this is the read/write schema where 
+create schema dev;
 
---check who has access to a specific schema
-SELECT *
-FROM pg_default_acl
-WHERE defaclobjtype = 'r' AND defaclnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'dev');
+/*******************************************************************
+ * Role definitions: apcd_uthealth_analyst
+ * 
+ * Purpose: Gives read/write access to mpr, dev
+ * 			Read-only access to cdl_raw
+ *******************************************************************/
+--run this code if you need to drop role
+--just make sure it doesn't take any tables with it
+drop owned by apcd_uthealth_analyst cascade;
+drop role apcd_uthealth_analyst;
+
+create role apcd_uthealth_analyst;
+
+grant connect on database apcd_dev to apcd_uthealth_analyst;  --allows connection to apcd_dev database
+grant temporary on database apcd_dev to apcd_uthealth_analyst; --allows creation of temp tables
+
+--Grant read/write on mpr
+grant all on schema mpr to apcd_uthealth_analyst; 
+grant all on all tables in schema mpr to apcd_uthealth_analyst; 
+grant all privileges on all sequences in schema mpr to apcd_uthealth_analyst; 
+alter default privileges in schema mpr grant all on tables to apcd_uthealth_analyst; 
+
+--Grant read/write on dev
+grant all on schema dev to apcd_uthealth_analyst; 
+grant all on all tables in schema dev to apcd_uthealth_analyst; 
+grant all privileges on all sequences in schema dev to apcd_uthealth_analyst; 
+alter default privileges in schema dev grant all on tables to apcd_uthealth_analyst;
+
+--Grant read only on cdl_raw
+grant usage on schema cdl_raw to group apcd_uthealth_analyst; 
+grant select on all tables in schema cdl_raw to group apcd_uthealth_analyst; 
+grant select on all sequences in schema cdl_raw to apcd_uthealth_analyst;
+alter default privileges in schema cdl_raw grant select on tables to group apcd_uthealth_analyst;
+
+/*******************************************************************
+ * Role definitions: apcd_uthealth_dev
+ * 
+ * Purpose: Inherits all permissions of apcd_uthealth_analyst
+ * 			Grants read/write access to cdl_raw
+ *******************************************************************/
+--run this code if you need to drop role
+--just make sure it doesn't take any tables with it
+drop owned by apcd_uthealth_dev cascade;
+drop role apcd_uthealth_dev;
+
+create role apcd_uthealth_dev;
+
+grant connect on database apcd_dev to apcd_uthealth_dev;  --allows connection to apcd_dev database
+grant temporary on database apcd_dev to apcd_uthealth_dev; --allows creation of temp tables
+
+--inherit permissions from apcd_uthealth_analyst
+grant apcd_uthealth_analyst to apcd_uthealth_dev;
+
+--Grant read/write on cdl_raw
+grant all on schema cdl_raw to apcd_uthealth_dev; 
+grant all on all tables in schema cdl_raw to apcd_uthealth_dev; 
+grant all privileges on all sequences in schema cdl_raw to apcd_uthealth_dev; 
+alter default privileges in schema cdl_raw grant all on tables to apcd_uthealth_dev;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*******************************************************************
  * Role definitions: apcd_uthealth_analyst
