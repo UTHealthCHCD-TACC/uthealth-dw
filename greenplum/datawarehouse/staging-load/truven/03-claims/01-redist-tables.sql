@@ -3,6 +3,10 @@
  * because of the raw data distribution keys, the etl scripts run slow
  * we make redistributed versions of them to help it run faster so joins work properly
  * 
+ * Author   || Date    ||  Comments
+ * *************************************************************************************
+ * xrzhang	|| 03/31/23 || Changed all mention of msclmid to claim_id_derv
+ * *************************************************************************************
  */
 
 

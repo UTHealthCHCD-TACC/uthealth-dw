@@ -76,7 +76,13 @@ knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 
 ```{r}
 # Define tables to compare
-tacc_table = "dw_staging.member_enrollment_fiscal_yearly_v2"
+
+#fiscal yearly tables
+#tacc_table = "dw_staging.mcd_member_enrollment_fiscal_yearly"
+#spc_table = "chcdwork.dbo.AGG_ENRL_MCD_FY_Upt"
+
+#calendar yearly tables
+tacc_table = "dw_staging.mcd_member_enrollment_fiscal_yearly"
 spc_table = "chcdwork.dbo.AGG_ENRL_MCD_FY_Upt"
 
 #Define the starting and ending years for checking (4-digit year)
@@ -136,12 +142,22 @@ spc_sql1 = "select a.member_id_src as member_id, a.fiscal_year,
 	case when b.CLIENT_NBR is null then 1 else 0 end as member_id_mismatch,
 	case when a.enrl_months_nondual != b.NON_DUAL_MONTHS then 1 else 0 end as em_nondual_mismatch,
 	case when a.enrl_months_dual != b.DUAL_MONTHS then 1 else 0 end as em_dual_mismatch,
-	case when a.total_enrolled_months != b.MONTHS then 1 else 0 end as em_mismatch,
+	case when a.total_enrolled_months != b.TOTAL_MONTHS then 1 else 0 end as em_mismatch,
 	case when a.gender_cd != b.sex then 1 else 0 end as sex_mismatch,
 	case when a.age_derived != b.age then 1 else 0 end as age_mismatch,
+	case when a.race_cd_src != b.race and b.race is not null then 1 else 0 end as race_mismatch,
 	case when a.zip5 != b.zip then 1 else 0 end as zip_mismatch,
 	case when a.plan_type != b.MCO_PROGRAM_NM then 1 else 0 end as plan_mismatch,
-	case when a.dual !=  b.smib then 1 else 0 end as dual_mismatch
+	case when a.dual !=  b.smib then 1 else 0 end as dual_mismatch,
+	a.enrl_months_nondual as tacc_em_nondual, b.NON_DUAL_MONTHS as spc_em_nondual,
+	a.enrl_months_dual as tacc_em_dual, b.DUAL_MONTHS as spc_em_dual,
+	a.total_enrolled_months as tacc_em_total, b.TOTAL_MONTHS as spc_em_total,
+	a.gender_cd as tacc_sex, b.sex as spc_sex,
+	a.age_derived as tacc_age, b.age as spc_age,
+	a.race_cd_src as tacc_race, b.race as spc_race,
+	a.zip5 as tacc_zip, b.zip as spc_zip,
+	a.plan_type as tacc_plan, b.MCO_PROGRAM_NM as spc_plan,
+	a.dual as tacc_dual, b.smib as spc_dual
 into chcdwork.dbo.xz_mcd_enrl_mismatches
 from chcdwork.dbo.xz_dwqa_temp1 a
 	left join @spc_table b
@@ -159,9 +175,8 @@ dbGetQuery(spc, spc_sql1.mod)
 # 	case when a.htw != b.htw then 1 else 0 end as htw_mismatch,
 # 	case when a.dob_derived != b.dob then 1 else 0 end as dob_mismatch,
 #	a.gender_cd as tacc_sex, b.sex as spc_sex,
-#	a.race_cd_src as tacc_race, b.race as spc_race,
-#	a.zip5 as tacc_zip, b.zip as spc_zip,
-#	a.plan_type as tacc_plan, b.mco as spc_plan
+#	
+#	
 
 ```
 
@@ -174,11 +189,11 @@ select sum(member_id_mismatch) as member_id_mismatches,
 	sum(em_mismatch) as em_mismatches,
 	sum(sex_mismatch) as sex_mismatches,
 	sum(age_mismatch) as age_mismatches,
+	sum(race_mismatch) as race_mismaches,
 	sum(zip_mismatch) as zip_mismatches,
 	sum(plan_mismatch) as plan_mismatches,
 	sum(dual_mismatch) as dual_mismatches
 from chcdwork.dbo.xz_mcd_enrl_mismatches;
-
 
 ```
 
@@ -189,36 +204,57 @@ from chcdwork.dbo.xz_mcd_enrl_mismatches;
 #SEX, RACE, ZIP, AND PLAN HAVE MISMATCHES
 #Pull lists of mismatches
 
-sex_mismatches = dbGetQuery(spc, 'select member_id, year
+em_dual_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
+              where em_dual_mismatch = 1;')
+
+em_nondual_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
+              where em_nondual_mismatch = 1;')
+
+em_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
+              where em_mismatch = 1;')
+
+sex_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
               from chcdwork.dbo.xz_mcd_enrl_mismatches
               where sex_mismatch = 1;')
 
-race_mismatches = dbGetQuery(spc, 'select member_id, year
+age_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
               from chcdwork.dbo.xz_mcd_enrl_mismatches
-              where race_mismatch = 1;')
+              where age_mismatch = 1;')
 
-zip_mismatches = dbGetQuery(spc, 'select member_id, year
+# race_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
+#              from chcdwork.dbo.xz_mcd_enrl_mismatches
+#              where race_mismatch = 1;')
+
+zip_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
               from chcdwork.dbo.xz_mcd_enrl_mismatches
               where zip_mismatch = 1;')
 
-plan_mismatches = dbGetQuery(spc, 'select member_id, year
+plan_mismatches = dbGetQuery(spc, 'select member_id, fiscal_year
               from chcdwork.dbo.xz_mcd_enrl_mismatches
               where plan_mismatch = 1;')
 
 ```
 
-## 3.2 Define base queries
+## 3.2 Setup to pull individual rows
 ```{r}
+#Define variables and corresponding variable names
+# Create the dataframe with 3 columns
+var_list <- data.frame(variable = c("em_dual", "em_nondual", "em", "sex", "age", "zip", "plan", "dual"),
+                 tacc = c("enrl_months_dual", "enrl_months_nondual", "total_enrolled_months", "gender_cd", "age_derived", "zip5", "plan_type", "dual"),
+                 spc = c("dual_months", "non_dual_months", "months", "sex", "age", "zip", "mco_program_nm", "smib"))
+
 #Define base queries
 
-mismatch_query = 'select member_id, year,tacc_sex, spc_sex, tacc_race, spc_race,
-  tacc_zip, spc_zip, tacc_plan, spc_plan
+mismatch_query = 'select member_id, fiscald_year,tacc_@variable, spc_@variable
   from chcdwork.dbo.xz_mcd_enrl_mismatches where member_id = \'@memid\' and year = \'@year\''
 
 tac_sql1 = 'with b as (select race_cd_src, race_cd from reference_tables.ref_race
 	where data_source = \'mdcd\' and race_cd_src is not null)
 
-select a.member_id_src, a.year, a.month_year_id, a.gender_cd, b.race_cd_src,
+select a. fiscal_year, a.member_id_src, a.year, a.month_year_id, a.gender_cd, b.race_cd_src,
 a.zip5, a.plan_type
 from dw_staging.member_enrollment_monthly a left join b
 	on a.race_cd = b.race_cd

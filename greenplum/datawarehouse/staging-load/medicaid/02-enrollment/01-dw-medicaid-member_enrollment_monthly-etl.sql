@@ -24,15 +24,16 @@ drop table if exists dw_staging.medicaid_enroll_all_rows;
 create table dw_staging.medicaid_enroll_all_rows (
 	client_nbr text null,
 	year int2 null,
+	year_fy int2 null,
 	month_year_id int4 null,
 	elig_date_month date null,
 	sex text null,
 	zip text null,
 	zip3 text null,
-	yr_end_date date null,
 	dob date null,
+	yr_end_date date null,
+	fy_end_date date null,
 	contract_id text null,
-	year_fy int2 null,
 	race text null,
 	smib text null,
 	me_code text null,
@@ -47,15 +48,16 @@ distributed by (client_nbr);
 insert into dw_staging.medicaid_enroll_all_rows 
 select trim(a.client_nbr) as client_nbr ,
        substring(trim(elig_date),1,4)::int as year, 
+       year_fy, 
        trim(elig_date)::int as month_year_id,
        (substring(trim(elig_date),5,6) || '-01-' || substring(trim(elig_date),1,4))::Date as elig_date_month,
        trim(a.sex) as sex, 
        trim(a.zip) as zip, 
        substring(a.zip,1,3) as zip3, 
-       ('12-31-' || substring(elig_date,1,4))::Date as yr_end_date,
-       trim(a.dob)::date as dob, 
+       trim(a.dob)::date as dob,
+       null as yr_end_date,
+       null as fy_end_date,      
        trim(a.contract_id) as contract_id, 
-       year_fy, 
        trim(a.race) as race,
        trim(a.smib) as smib ,
        trim(a.me_code) as me_code,
@@ -72,16 +74,17 @@ analyze dw_staging.medicaid_enroll_all_rows;
 --insert from CHIP enrollment tables
 insert into dw_staging.medicaid_enroll_all_rows 
 select trim(a.client_nbr) as client_nbr ,
-       substring(trim(elig_month),1,4)::int as year, 
+       substring(trim(elig_month),1,4)::int as year,
+       year_fy, 
        trim(elig_month)::int as month_year_id,
        (substring(trim(elig_month),5,6) || '-01-' || substring(trim(elig_month),1,4))::Date as elig_month_month,
        trim(a.gender_cd) as sex, 
        substring(trim(a.mailing_zip),1,5) as zip, 
        substring(a.mailing_zip,1,3) as zip3, 
-       ('12-31-' || substring(elig_month,1,4))::Date as yr_end_date,
-       to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob, 
+       to_date( substring(date_of_birth,6,4) || substring(date_of_birth,3,3) || substring(date_of_birth,1,2) ,'YYYYMonDD') as dob,
+       null as yr_end_date,
+       null as fy_end_date,     
        null as contract_id, 
-       year_fy, 
        trim(a.ethnicity) as race,
        null as smib,
        null as me_code,
@@ -96,20 +99,21 @@ analyze dw_staging.medicaid_enroll_all_rows;
 --- insert from htw enrollment tables
 insert into dw_staging.medicaid_enroll_all_rows 
 select trim(a.client_nbr) as client_nbr ,
-       substring(trim(elig_date),1,4)::int as year, 
-       trim(elig_date)::int as month_year_id,
-       (substring(trim(elig_date),5,6) || '-01-' || substring(trim(elig_date),1,4))::Date as elig_date_month,
-       trim(a.sex) as sex, 
-       trim(a.zip) as zip, 
-       substring(a.zip,1,3) as zip3, 
-       ('12-31-' || substring(elig_date,1,4))::Date as yr_end_date,
-       trim(a.dob)::date as dob, 
-       trim(a.contract_id) as contract_id, 
+       substring(trim(elig_date),1,4)::int as year,
        case 
        		when substring(elig_date,5,2)::int >= 9 
        		then substring(elig_date,1,4)::int + 1
        		else substring(elig_date,1,4)::int
        	end as fiscal_year, 
+       trim(elig_date)::int as month_year_id,
+       (substring(trim(elig_date),5,6) || '-01-' || substring(trim(elig_date),1,4))::Date as elig_date_month,
+       trim(a.sex) as sex, 
+       trim(a.zip) as zip, 
+       substring(a.zip,1,3) as zip3, 
+       trim(a.dob)::date as dob,
+       null as yr_end_date,
+       null as fy_end_date,
+       trim(a.contract_id) as contract_id, 
        trim(a.race) as race,
        trim(a.smib) as smib ,
        trim(a.me_code) as me_code,
@@ -122,7 +126,7 @@ select trim(a.client_nbr) as client_nbr ,
 vacuum analyze dw_staging.medicaid_enroll_all_rows;
 
 /*******************************************
- * Pull in data from various reference tables
+ * Update columns that weren't filled in properly on the first pass
  *******************************************/
 --get plan_type
 update dw_staging.medicaid_enroll_all_rows a 
@@ -225,6 +229,17 @@ drop table dw_staging.final_enrl_dob;
 
 vacuum analyze dw_staging.medicaid_enroll_etl;
 
+/***************************
+ * Set the last days of the fiscal year and calendar year to calculate age
+ ***************************/
+
+--set fy_end_date to the last day of the fiscal year, which is 08-31-FY
+--set yr_end_date to the last day of the calendar year, 12-31-YR
+update dw_staging.medicaid_enroll_etl
+	set yr_end_date = ('12-31-' || "year")::date,
+	fy_end_date = ('08-31-' || year_fy):: date;
+
+vacuum analyze dw_staging.medicaid_enroll_etl;
 /****************
 
 Hot fix: 

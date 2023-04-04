@@ -77,7 +77,7 @@ select distinct on(data_source, year, uth_member_id)
        data_source, 
        year, 
        uth_member_id, 
-	   age_derived, 
+	   age_cy, 
 	   dob_derived, 
 	   death_date,
        bus_cd,

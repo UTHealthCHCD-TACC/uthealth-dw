@@ -12,9 +12,9 @@
 /***************************
  * INITIALIZE TABLE
  ****************************/
-drop table if exists dw_staging.member_enrollment_fiscal_yearly_v2;
+drop table if exists dw_staging.mcd_member_enrollment_fiscal_yearly;
 
-create table dw_staging.member_enrollment_fiscal_yearly_v2 
+create table dw_staging.mcd_member_enrollment_fiscal_yearly 
 (like data_warehouse.member_enrollment_yearly including defaults) 
 with (
 		appendonly=true, 
@@ -24,29 +24,24 @@ with (
 	 )
 distributed by (uth_member_id)
 partition by list(data_source)
- (partition optz values ('optz'),
-  partition optd values ('optd'),
-  partition truv values ('truv'),
-  partition mdcd values ('mdcd'),
-  partition mcrt values ('mcrt'),
-  partition mcrn values ('mcrn'),
+ (partition mdcd values ('mdcd'),
   partition mhtw values ('mhtw'),
   partition mcpp values ('mcpp')
  )
 ;
 
 --add enrl_month_dual and enrl_months_nondual
-alter table dw_staging.member_enrollment_fiscal_yearly_v2
+alter table dw_staging.mcd_member_enrollment_fiscal_yearly
 	add column enrl_months_nondual int2,
 	add column enrl_months_dual int2;
 
 --drop year column; this is the fiscal_year table, dagnabit
-alter table dw_staging.member_enrollment_fiscal_yearly_v2 drop column "year";
+alter table dw_staging.mcd_member_enrollment_fiscal_yearly drop column "year";
 
 /*********************************
  * Insert data from monthly table
  ********************************/
-insert into dw_staging.member_enrollment_fiscal_yearly_v2 (
+insert into dw_staging.mcd_member_enrollment_fiscal_yearly (
          data_source,
          uth_member_id, 
 		 age_derived, 
@@ -64,7 +59,7 @@ insert into dw_staging.member_enrollment_fiscal_yearly_v2 (
 select distinct on( data_source, fiscal_year, uth_member_id)
        data_source, 
        uth_member_id, 
-	   age_derived, 
+	   age_fy, 
 	   dob_derived, 
 	   death_date,
        bus_cd,
@@ -108,7 +103,7 @@ begin
 	for i in 1..12
 	loop
 	execute
-	'update dw_staging.member_enrollment_fiscal_yearly_v2 y
+	'update dw_staging.mcd_member_enrollment_fiscal_yearly y
 		set ' || my_update_column[i] || '= case when exists(
 		select 1 from dw_staging.temp_member_enrollment_month m
 		where y.uth_member_id = m.uth_member_id
@@ -137,7 +132,7 @@ distributed by(uth_member_id);
 analyze dw_staging.temp_enrolled_months_by_dual;
 
 --merge numbers into yearly enrollment table
-update dw_staging.member_enrollment_fiscal_yearly_v2 a
+update dw_staging.mcd_member_enrollment_fiscal_yearly a
 set enrl_months_nondual = b.enrl_months_nondual,
 	enrl_months_dual = b.enrl_months_dual,
 	total_enrolled_months = b.total_enrolled_months
@@ -146,7 +141,7 @@ where a.data_source = b.data_source
 	and a.fiscal_year = b.fiscal_year
 	and a.uth_member_id = b.uth_member_id;
 
-vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
+vacuum analyze dw_staging.mcd_member_enrollment_fiscal_yearly;
 
 -- Drop temp table
 drop table if exists dw_staging.temp_member_enrollment_month;
@@ -170,7 +165,7 @@ create table dw_staging.final_enrl_gender_cd
 	 from dw_staging.temp_enrl_gender_cd
 	 distributed by(uth_member_id);
 	
-update dw_staging.member_enrollment_fiscal_yearly_v2 a set gender_cd = b.gender_cd 
+update dw_staging.mcd_member_enrollment_fiscal_yearly a set gender_cd = b.gender_cd 
 	 from dw_staging.final_enrl_gender_cd b 
 	 where a.uth_member_id = b.uth_member_id
 	   and a.fiscal_year = b.fiscal_year
@@ -213,7 +208,7 @@ begin
 		
 		raise notice '% table 2 created', col_list[col_counter];
 	
-		execute 'update dw_staging.member_enrollment_fiscal_yearly_v2 a
+		execute 'update dw_staging.mcd_member_enrollment_fiscal_yearly a
 				 set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from dw_staging.final_enrl_' || col_list[col_counter] ||' b 
 				 where a.data_source = b.data_source
@@ -233,13 +228,13 @@ begin
 end $$;
 
 --vacuum after do loop
-vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
+vacuum analyze dw_staging.mcd_member_enrollment_fiscal_yearly;
 
 /****************************************
  * Sort out the rest of the variables: Dual, HTW, zip3
  ****************************************/
 --set dual to 1 if enrl_months_dual >= enrl_months_nondual
-update dw_staging.member_enrollment_fiscal_yearly_v2
+update dw_staging.mcd_member_enrollment_fiscal_yearly
 set dual = case when enrl_months_dual >= enrl_months_nondual then 1
 	else 0 end,
 	htw = case when data_source = 'mhtw' then 1 else 0 end,
@@ -247,18 +242,18 @@ set dual = case when enrl_months_dual >= enrl_months_nondual then 1
 	;
 
 --set state according to zip code
-update dw_staging.member_enrollment_fiscal_yearly_v2 a
+update dw_staging.mcd_member_enrollment_fiscal_yearly a
 set state = b.state
 from reference_tables.ref_zip_code b
 where a.zip5 = b.zip;
 
 --vacuum analyze
-vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
+vacuum analyze dw_staging.mcd_member_enrollment_fiscal_yearly;
 
 /*check
-select * from dw_staging.member_enrollment_fiscal_yearly_v2;
-select count(*) from dw_staging.member_enrollment_fiscal_yearly_v2 where state is null; --50737
-select count(*) from dw_staging.member_enrollment_fiscal_yearly_v2 where state is not null; --61778636
+select * from dw_staging.mcd_member_enrollment_fiscal_yearly;
+select count(*) from dw_staging.mcd_member_enrollment_fiscal_yearly where state is null; --50737
+select count(*) from dw_staging.mcd_member_enrollment_fiscal_yearly where state is not null; --61778636
 select 50737.0/61778636;
 */
 

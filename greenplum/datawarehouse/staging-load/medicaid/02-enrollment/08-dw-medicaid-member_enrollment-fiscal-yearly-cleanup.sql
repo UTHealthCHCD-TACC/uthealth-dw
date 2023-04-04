@@ -65,7 +65,7 @@ select a.data_source, a.uth_member_id, fiscal_year, b.plan_type, row_number ()
 --------------  
 --select * from dw_staging.mdcd_plan_rn;
 
-update dw_staging.member_enrollment_fiscal_yearly_v2 a 
+update dw_staging.mcd_member_enrollment_fiscal_yearly a 
    set plan_type = b.plan_type 
   from dw_staging.mdcd_plan_rn  b 
  where a.data_source = b.data_source
@@ -78,13 +78,13 @@ update dw_staging.member_enrollment_fiscal_yearly_v2 a
  * FINALIZE
  */
 
-vacuum analyze dw_staging.member_enrollment_fiscal_yearly_v2;
-alter table dw_staging.member_enrollment_fiscal_yearly_v2 owner to uthealth_dev;
-grant select on dw_staging.member_enrollment_fiscal_yearly_v2 to uthealth_analyst;
+vacuum analyze dw_staging.mcd_member_enrollment_fiscal_yearly;
+alter table dw_staging.mcd_member_enrollment_fiscal_yearly owner to uthealth_dev;
+grant select on dw_staging.mcd_member_enrollment_fiscal_yearly to uthealth_analyst;
 
 
 /*check
-select * from dw_staging.member_enrollment_fiscal_yearly_v2;
+select * from dw_staging.mcd_member_enrollment_fiscal_yearly;
 
 If pass check then can drop tables
 
