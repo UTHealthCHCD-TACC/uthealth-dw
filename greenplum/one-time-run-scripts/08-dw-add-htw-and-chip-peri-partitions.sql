@@ -50,9 +50,12 @@ add partition mhtw values ('mhtw');
 alter table data_warehouse.claim_icd_proc
 add partition mcpp values ('mcpp');
 
-/*******************
- * YOU STOPPED HERE, NEED TO RELABEL CLAIMS
- */
+--pharmacy claims
+alter table data_warehouse.pharmacy_claims
+add partition mhtw values ('mhtw');
+
+alter table data_warehouse.pharmacy_claims
+add partition mcpp values ('mcpp');
 
 
 
