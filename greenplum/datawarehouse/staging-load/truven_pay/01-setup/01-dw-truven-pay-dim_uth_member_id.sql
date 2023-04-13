@@ -17,3 +17,6 @@ from cte_distinct_member
 
 --Run date 03-15-23 XRZ after truven_pay was loaded
 --Updated Rows	1207736
+
+-- Run date 04-12-23 IP after truven was loaded
+-- Updated Rows	2886539
