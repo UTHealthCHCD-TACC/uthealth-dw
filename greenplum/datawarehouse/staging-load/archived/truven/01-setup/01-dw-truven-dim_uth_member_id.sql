@@ -14,6 +14,3 @@ with cte_distinct_member as (
 select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
 from cte_distinct_member 
 ;
-
---Run date 03-15-23 XRZ after truven_pay was loaded
---Updated Rows	1207736

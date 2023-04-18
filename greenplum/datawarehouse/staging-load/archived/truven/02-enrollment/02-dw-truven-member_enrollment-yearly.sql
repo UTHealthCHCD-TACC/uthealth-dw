@@ -14,24 +14,17 @@
  * ******************************************************************************************************
  * wc003  || 11/11/2021 || run as single script
  * ******************************************************************************************************
- * xrzhang || 03/20/2023 || Edited script to include MSA column, fixed the issue with enrl_months,
- * 							added in current_date for load_date, other small changes
- * ******************************************************************************************************
- * 
- *  */
+ */
 
---note that for truven, 2011-2018 have zip3 ONLY, no MSA
---and 2019 onwards have ONLY MSA, no zip3
 
---Get distinct enrolids + clean demographics per member per year
---note that many variables in Truven are already cleaned such as DOB
+--insert recs from monthly 
+
 insert into dw_staging.member_enrollment_yearly  (
          data_source, 
          year, 
          uth_member_id, 
 		 age_derived, 
-		 dob_derived,
-		 msa,
+		 dob_derived, 
 		 death_date,
 		 bus_cd, 
 		 claim_created_flag, 
@@ -40,7 +33,6 @@ insert into dw_staging.member_enrollment_yearly  (
 		 fiscal_year, 
          family_id,
 		 behavioral_coverage,
-		 load_date,
          member_id_src,
          table_id_src)
 select distinct on( year, uth_member_id )
@@ -48,8 +40,7 @@ select distinct on( year, uth_member_id )
         year, 
         uth_member_id, 
 	    age_derived, 
-	    dob_derived,
-	    msa,
+	    dob_derived, 
 	    death_date,
         bus_cd,
 	    claim_created_flag, 
@@ -58,15 +49,17 @@ select distinct on( year, uth_member_id )
 	    fiscal_year, 
 	    family_id,
 	    behavioral_coverage,
-	    current_date,
 	    member_id_src,
 	    table_id_src 
 from dw_staging.member_enrollment_monthly_1_prt_truv;
 
---analyze yearly table
+
+
 analyze dw_staging.member_enrollment_yearly_1_prt_truv;
 
---create table with the year and month each member was enrolled in
+
+
+
 drop table if exists staging_clean.temp_member_enrollment_month;
 
 create table staging_clean.temp_member_enrollment_month
@@ -76,57 +69,63 @@ select distinct uth_member_id, year, month_year_id, month_year_id % year as mont
 from dw_staging.member_enrollment_monthly_1_prt_truv
 distributed by(uth_member_id);
 
---analyze it
 analyze staging_clean.temp_member_enrollment_month;
 
-/**************************************************
- * Loop that will iterate through each month and assign 1
- * if member was enrolled in that month that year and 0 otherwise
- *************************************************/
+/*
+ * Enrollment Months 
+ */
 
 do $$
 declare 
-	--month_counter integer := 1;
-	i int;
+month_counter integer := 1;
 	my_update_column text[]:= array['enrolled_jan','enrolled_feb','enrolled_mar',
 	'enrolled_apr','enrolled_may','enrolled_jun','enrolled_jul','enrolled_aug',
 	'enrolled_sep','enrolled_oct','enrolled_nov','enrolled_dec'];
+	col_list text[]:= array['state','zip5','zip3','gender_cd','dual','htw','employee_status'];
+	col_list_len int = array_length(col_list,1);
 begin
 
 --Add month flags
-	for i in 1..12
+	for array_counter in 1..12
 	loop
 	execute
 	'update dw_staging.member_enrollment_yearly_1_prt_truv y
-		set ' || my_update_column[i] || '= case when exists(
-		select 1 from staging_clean.temp_member_enrollment_month m
-		where y.uth_member_id = m.uth_member_id
-		and y.year = m.year
-		and m.month = ' || i || ') then 1 else 0 end';
-	raise notice 'Month of %', my_update_column[i];
-    --month_counter = month_counter + 1;
-	--i = month_counter + 1;
+			set ' || my_update_column[array_counter] || '= 1
+			from staging_clean.temp_member_enrollment_month m
+			where y.uth_member_id = m.uth_member_id
+			  and y.year = m.year
+			  and m.month = ' || month_counter || ';';
+	raise notice 'Month of %', my_update_column[array_counter];
+  month_counter = month_counter + 1;
+	array_counter = month_counter + 1;
 	end loop;
 
-end $$;
 
 --Calculate total_enrolled_months
 update dw_staging.member_enrollment_yearly_1_prt_truv
-set total_enrolled_months=enrolled_jan + enrolled_feb + enrolled_mar + enrolled_apr + 
-	enrolled_may + enrolled_jun + enrolled_jul + enrolled_aug + 
-	enrolled_sep + enrolled_oct + enrolled_nov + enrolled_dec;
-                         
---vacuum analyze
+set total_enrolled_months=enrolled_jan::int+enrolled_feb::int+enrolled_mar::int+enrolled_apr::int+enrolled_may::int+enrolled_jun::int+
+                          enrolled_jul::int+enrolled_aug::int+enrolled_sep::int+enrolled_oct::int+enrolled_nov::int+enrolled_dec::int;
+
+
+-- Drop temp table
+drop table if exists staging_clean.temp_member_enrollment_month;
+
+
+
+
+end $$;
+--might want to raise notice here 
+
+
 vacuum analyze dw_staging.member_enrollment_yearly_1_prt_truv;
 
-/****************************************************
- * Clean member demographics
- ****************************************************/
---DOB is 1-1 with member_id_src and does not require cleaning
+/*
+ * Personal Variables
+ */
 
 do $$
 declare
-	col_list text[]:= array['state', 'zip3', 'msa','gender_cd','plan_type','employee_status'];
+	col_list text[]:= array['state','zip3','gender_cd','plan_type','employee_status'];
 	col_list_len int = array_length(col_list,1);
 begin
 
@@ -145,7 +144,7 @@ begin
 				 group by 3, 4, 5;'
 		;
 	
-	    raise notice 'staging_clean.temp_enrl_% created', col_list[col_counter];
+	    raise notice '1';
 		
 		execute 'create table staging_clean.final_enrl_' || col_list[col_counter] ||'
 				 with (appendonly=true, orientation=column)
@@ -155,8 +154,7 @@ begin
 				 distributed by(uth_member_id);'
 		;
 		
-		raise notice 'staging_clean.final_enrl_% created', col_list[col_counter];
-	
+		raise notice '2';
 	
 		execute 'update dw_staging.member_enrollment_yearly_1_prt_truv a set ' || col_list[col_counter] ||' = b.' || col_list[col_counter] ||'
 				 from staging_clean.final_enrl_' || col_list[col_counter] ||' b 
@@ -173,19 +171,5 @@ begin
 
 end $$;
 
---vacuum analyze
 vacuum analyze dw_staging.member_enrollment_yearly;
-
-/**************************
- * Hot fix for load_date - this code exist bc the original code didn't include load_date
- * It's since been changed so theoretically this shouldn't need to be run anymore
- * 
-UPDATE dw_staging.member_enrollment_yearly
-SET load_date = CURRENT_DATE;
- */
-
--- Drop temp table we created earlier
-drop table if exists staging_clean.temp_member_enrollment_month;
-
-
 

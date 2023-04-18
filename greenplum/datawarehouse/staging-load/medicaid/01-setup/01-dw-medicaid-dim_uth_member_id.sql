@@ -1,3 +1,11 @@
+/**********************************************
+ * Purpose: Generate UTH_MEMBER_IDs for client_nbrs in Medicaid
+ * 
+ * Author | Date | Change
+ * Will/David/Joe | ?? | Wrote this script
+ * Xiaorui | 04/07/2023 | Edited for chip_enrl
+ *********************************************/
+
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id )
 with cte_distinct_member as ( 
    select distinct client_nbr as v_member_id, 'mdcd' as v_raw_data 
@@ -6,7 +14,7 @@ with cte_distinct_member as (
 	   		from medicaid.enrl  
 	   	union
 	   		select client_nbr
-   			from medicaid.chip_uth
+   			from medicaid.chip_enrl
    		union
    			select client_nbr 
    			  from medicaid.htw_enrl 

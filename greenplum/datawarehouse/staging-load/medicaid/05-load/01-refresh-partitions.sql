@@ -29,6 +29,30 @@ vacuum analyze data_warehouse.member_enrollment_monthly_1_prt_mdcd;
 vacuum analyze data_warehouse.member_enrollment_monthly_1_prt_mcpp;
 vacuum analyze data_warehouse.member_enrollment_monthly_1_prt_mhtw;
 
+/********************************
+ * change update_log
+ *******************************/
+
+update data_warehouse.update_log
+set data_last_updated = current_date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly';
+
+update data_warehouse.update_log
+set data_last_updated = current_date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mcpp';
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mhtw';
+
 /*******************************
  * Yearly Enrollment
  ******************************/
@@ -53,6 +77,30 @@ select * from dw_staging.mcd_member_enrollment_yearly_1_prt_mhtw;
 vacuum analyze data_warehouse.member_enrollment_yearly_1_prt_mdcd;
 vacuum analyze data_warehouse.member_enrollment_yearly_1_prt_mcpp;
 vacuum analyze data_warehouse.member_enrollment_yearly_1_prt_mhtw;
+
+/********************************
+ * change update_log
+ *******************************/
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_yearly';
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_yearly_1_prt_mcpp';
+
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_yearly_1_prt_mhtw';
 
 /*******************************
  * Fiscal Yearly Enrollment'
@@ -84,74 +132,27 @@ select * from dw_staging.mcd_member_enrollment_fiscal_yearly;
 
 vacuum analyze data_warehouse.member_enrollment_fiscal_yearly;
 
-/*********code below here not run by XRZ**********/
+/********************************
+ * change update_log
+ *******************************/
 
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_fiscal_yearly';
 
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_fiscal_yearly_1_prt_mdcd';
 
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_fiscal_yearly_1_prt_mcpp';
 
+update data_warehouse.update_log
+set data_last_updated = '04-03-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_fiscal_yearly_1_prt_mhtw';
 
-
-
-
-
-
-
-
-
-
-
-
-
-/*claim header*/
-
-delete from data_warehouse.claim_header_1_prt_mdcd;
-
-vacuum analyze data_warehouse.claim_header_1_prt_mdcd;
-
-insert into data_warehouse.claim_header_1_prt_mdcd
-select * 
-  from dw_staging.claim_header ;
- 
-vacuum analyze data_warehouse.claim_header_1_prt_mdcd;
-
-
-/*claim proc*/
-
-delete from data_warehouse.claim_icd_proc_1_prt_mdcd ;
-
-vacuum analyze data_warehouse.claim_icd_proc_1_prt_mdcd;
-vacuum full analyze dw_staging.claim_icd_proc ;
-
-
-insert into data_warehouse.claim_icd_proc_1_prt_mdcd
-select * 
-  from dw_staging.claim_icd_proc  ;
- 
-vacuum analyze data_warehouse.claim_icd_proc_1_prt_mdcd;
-
-
-/*claim diag*/
-
-delete from data_warehouse.claim_diag_1_prt_mdcd  ;
-
-vacuum full analyze data_warehouse.claim_diag_1_prt_mdcd;
-vacuum full analyze dw_staging.claim_diag_1_prt_mdcd;
-
-
-insert into data_warehouse.claim_diag_1_prt_mdcd
-select * 
-  from dw_staging.claim_diag_1_prt_mdcd;
- 
-vacuum analyze data_warehouse.claim_diag_1_prt_mdcd;
-
-
-/*claim detail*/
-delete from data_warehouse.claim_detail_1_prt_mdcd  ;
-
-vacuum full data_warehouse.claim_detail_1_prt_mdcd;
-
-insert into data_warehouse.claim_detail_1_prt_mdcd
-select * 
-  from dw_staging.claim_detail  ;
- 
-vacuum analyze data_warehouse.claim_detail_1_prt_mdcd;

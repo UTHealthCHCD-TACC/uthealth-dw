@@ -9,6 +9,125 @@
  * 
  * ****************************************************************************************************** */
 
+--04/12/23
+
+--Check Youngran's status
+
+--check access for youngran - she is uthealth_analyst
+SELECT r.rolname, 
+  ARRAY(SELECT b.rolname
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+        WHERE m.member = r.oid) as memberof
+, r.rolsuper
+FROM pg_catalog.pg_roles r
+WHERE r.rolname !~ '^pg_'
+ORDER BY 1;
+
+--check access for truven.mdcrt
+select grantee, privilege_type, table_name , table_schema 
+from information_schema.role_table_grants 
+where table_schema = 'truven' and table_name = 'mdcrt'
+and grantee = 'uthealth_analyst';
+
+--truven
+grant usage on schema truven to group uthealth_analyst; 
+grant select on all tables in schema truven to group uthealth_analyst; 
+alter default privileges in schema truven grant select on tables to group uthealth_analyst;
+
+--grant uthealth_analyst to youngran;
+grant uthealth_analyst to judyk277;
+
+--hotfix while we work this out
+--actually we didn't need it, I think the Truven data refresh did something weird to MDCRT
+
+--04/05/2023
+
+--Femi's unable to alter tables in conditions schema bc he's not owner.
+--It looks like owners are uthealth_admin because of what I did with David Walling and Will's tables before
+--I'm gonna change all tables in schemas conditions and reference_tables to uthealth_dev
+
+select 'alter table ' || table_schema || '.' || table_name ||
+	' owner to uthealth_dev;'
+from information_schema."tables"
+where table_type = 'BASE TABLE'
+	and table_schema = 'reference_tables'
+order by table_name;
+
+alter table reference_tables.condition_desc owner to uthealth_dev;
+alter table reference_tables.cpt_hcpc owner to uthealth_dev;
+alter table reference_tables.medicaid_lu_contract owner to uthealth_dev;
+alter table reference_tables.medicaid_me_enrl owner to uthealth_dev;
+alter table reference_tables.methodist_pos_temp owner to uthealth_dev;
+alter table reference_tables.mrconso_cpt_hcpcs_hcpt owner to uthealth_dev;
+alter table reference_tables.mrconso_en_pref owner to uthealth_dev;
+alter table reference_tables.ndc_tier_map owner to uthealth_dev;
+alter table reference_tables.nppes_2021 owner to uthealth_dev;
+alter table reference_tables.nppes_provider_taxonomies owner to uthealth_dev;
+alter table reference_tables.optum_zip_provider_categories owner to uthealth_dev;
+alter table reference_tables.public_health_regions owner to uthealth_dev;
+alter table reference_tables.redbook owner to uthealth_dev;
+alter table reference_tables.ref_admit_source owner to uthealth_dev;
+alter table reference_tables.ref_admit_type owner to uthealth_dev;
+alter table reference_tables.ref_bill_type_cd owner to uthealth_dev;
+alter table reference_tables.ref_bill_type_classification owner to uthealth_dev;
+alter table reference_tables.ref_bill_type_frequency owner to uthealth_dev;
+alter table reference_tables.ref_bill_type_institution owner to uthealth_dev;
+alter table reference_tables.ref_bus_cd owner to uthealth_dev;
+alter table reference_tables.ref_cms_codes owner to uthealth_dev;
+alter table reference_tables.ref_cms_icd_cm_codes owner to uthealth_dev;
+alter table reference_tables.ref_cms_icd_pcs_codes owner to uthealth_dev;
+alter table reference_tables.ref_data_source owner to uthealth_dev;
+alter table reference_tables.ref_discharge_status owner to uthealth_dev;
+alter table reference_tables.ref_drg_mdcd owner to uthealth_dev;
+alter table reference_tables.ref_employee_status owner to uthealth_dev;
+alter table reference_tables.ref_gender owner to uthealth_dev;
+alter table reference_tables.ref_medicare_entlmt_buyin owner to uthealth_dev;
+alter table reference_tables.ref_medicare_ptd_cntrct owner to uthealth_dev;
+alter table reference_tables.ref_medicare_state_codes owner to uthealth_dev;
+alter table reference_tables.ref_month_year owner to uthealth_dev;
+alter table reference_tables.ref_ndc_package owner to uthealth_dev;
+alter table reference_tables.ref_ndc_product owner to uthealth_dev;
+alter table reference_tables.ref_optum_cost_factor owner to uthealth_dev;
+alter table reference_tables.ref_optum_type_of_service owner to uthealth_dev;
+alter table reference_tables.ref_place_of_service owner to uthealth_dev;
+alter table reference_tables.ref_plan_type owner to uthealth_dev;
+alter table reference_tables.ref_provider_specialty owner to uthealth_dev;
+alter table reference_tables.ref_race owner to uthealth_dev;
+alter table reference_tables.ref_regions owner to uthealth_dev;
+alter table reference_tables.ref_revenue_code owner to uthealth_dev;
+alter table reference_tables.ref_truven_state_codes owner to uthealth_dev;
+alter table reference_tables.ref_tx_county_regions owner to uthealth_dev;
+alter table reference_tables.ref_type_of_service owner to uthealth_dev;
+alter table reference_tables.ref_zip_code owner to uthealth_dev;
+alter table reference_tables.ref_zip_crosswalk owner to uthealth_dev;
+alter table reference_tables.rx_va_formulary owner to uthealth_dev;
+alter table reference_tables.truven_prov_specialty_cds owner to uthealth_dev;
+alter table reference_tables.zcta_county_2020 owner to uthealth_dev;
+
+select 'alter table ' || table_schema || '.' || table_name ||
+	' owner to uthealth_dev;'
+from information_schema."tables"
+where table_type = 'BASE TABLE'
+	and table_schema = 'conditions'
+order by table_name;
+
+alter table conditions.codeset owner to uthealth_dev;
+alter table conditions.condition_desc owner to uthealth_dev;
+alter table conditions.condition_ndc owner to uthealth_dev;
+alter table conditions.conditions_member_enrollment_yearly owner to uthealth_dev;
+alter table conditions.diagnosis_codes_list owner to uthealth_dev;
+alter table conditions.person_profile_stage owner to uthealth_dev;
+alter table conditions.person_profile_work_table owner to uthealth_dev;
+alter table conditions.xl_condition_asthma_dx_1 owner to uthealth_dev;
+alter table conditions.xl_condition_asthma_dx_2 owner to uthealth_dev;
+alter table conditions.xl_condition_asthma_dx_3 owner to uthealth_dev;
+alter table conditions.xl_condition_asthma_dx_4 owner to uthealth_dev;
+alter table conditions.xl_condition_asthma_dx_output owner to uthealth_dev;
+alter table conditions.xl_condition_diabetes_1 owner to uthealth_dev;
+alter table conditions.xl_condition_diabetes_3 owner to uthealth_dev;
+alter table conditions.xl_condition_diabetes_output owner to uthealth_dev;
+
 --03/30/2023:
 --grant uthealth_dev privileges to Lopita so she can access
 --new medicaid fiscal yearly table after chip perinatal and htw split out

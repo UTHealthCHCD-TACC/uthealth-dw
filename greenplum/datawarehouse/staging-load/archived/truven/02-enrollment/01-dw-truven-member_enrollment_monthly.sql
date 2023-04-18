@@ -23,11 +23,6 @@
  * ******************************************************************************************************
  *  wc005  || 11/06/2021 || moved table creation to new script. formatting. changed bus_cd mapping
  *  ******************************************************************************************************
- *  jwozny || 01/15/2023 || Split Truven-specific script off + updated
- *  ******************************************************************************************************
- *  xrzhang || 03/20/2023 || Edited script to include MSA column
- * 
- * 
 */
 
 
@@ -37,7 +32,6 @@
 
 drop table if exists staging_clean.ccaet;
 
---note that there are no NULL enrolids in ccaet
 create table staging_clean.ccaet with (
 	appendonly=true,
 	orientation=column,
@@ -56,8 +50,7 @@ as select m.enrolid::text,
        m.empzip,
        m.dobyr,
        m.eestatu ,
-       m.year, 
-       m.msa
+       m.year
   from truven.ccaet m
   distributed by (enrolid)
   ;
@@ -74,7 +67,6 @@ insert into dw_staging.member_enrollment_monthly  (
 	state, 
 	zip5, 
 	zip3,
-	msa,
 	age_derived, 
 	dob_derived, 
 	death_date,
@@ -96,7 +88,6 @@ select 'truv',
        a.uth_member_id, 
        c.gender_cd, 
        case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'), 
-       m.msa,
        m.year - dobyr as age_derived, 
        (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
        null, 
@@ -125,7 +116,7 @@ select 'truv',
   and d.plan_type_src::int = m.plantyp  
 ;
 
- analyze dw_staging.member_enrollment_monthly_1_prt_truv;
+ analyze dw_staging.member_enrollment_monthly_1_prt_truv;  
 ---------------------------------------------------------------------------------------------------
 
 /*
@@ -133,7 +124,6 @@ select 'truv',
  */
 drop table if exists staging_clean.mdcrt;
 
---note that there are no NULL enrolids in mdcrt
 create table staging_clean.mdcrt with (
 	appendonly=true,
 	orientation=column,
@@ -152,8 +142,7 @@ as select m.enrolid::text,
        m.empzip,
        m.dobyr,
        m.eestatu ,
-       m.year,
-       m.msa
+       m.year
   from truven.mdcrt m
   distributed by (enrolid)
   ;
@@ -170,7 +159,6 @@ insert into dw_staging.member_enrollment_monthly  (
 	state, 
 	zip5, 
 	zip3,
-	msa,
 	age_derived, 
 	dob_derived, 
 	death_date,
@@ -193,7 +181,6 @@ select
        a.uth_member_id,
        c.gender_cd, 
        case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'),
-       m.msa,
        m.year - dobyr as age_derived, 
        (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
        null,
@@ -261,9 +248,6 @@ drop table if exists staging_clean.ccaet;
 
 alter table dw_staging.member_enrollment_monthly drop column row_id;
 
-vacuum analyze dw_staging.member_enrollment_monthly;
-
-
-
+vacuum analyze dw_staging.member_enrollment_monthly_1_prt_truv;
 
 
