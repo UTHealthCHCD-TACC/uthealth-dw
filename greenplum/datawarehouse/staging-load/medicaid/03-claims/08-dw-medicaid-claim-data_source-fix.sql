@@ -106,6 +106,44 @@ where a.data_source = 'mdcd' and
 vacuum analyze data_warehouse.pharmacy_claims;
 
 
+/********************************
+ * change update_log
+ *******************************/
+
+--update main tables - not partitioned tables
+update data_warehouse.update_log
+set data_last_updated = '04-04-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and
+	(table_name like 'claim%' or 
+	table_name = 'pharmacy_claims') and
+	table_name not like '%1%';
+
+--update partitioned tables
+update data_warehouse.update_log
+set data_last_updated = '04-04-2023'::date,
+	details = 'CHIP Perinatal and HTW split out to their own partitions'
+where schema_name = 'data_warehouse' and
+	(table_name like 'claim%' or 
+	table_name like 'pharmacy%') and
+	(table_name like '%mdcd' or
+	table_name like '%mcpp' or 
+	table_name like '%mhtw');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

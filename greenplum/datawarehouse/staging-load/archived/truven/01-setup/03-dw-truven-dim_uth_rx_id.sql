@@ -51,9 +51,3 @@ left join data_warehouse.dim_uth_rx_claim_id c
 where c.uth_rx_claim_id is null 
   and  a.enrolid::text is not null 
 ;
-
---Run date 03-20-23 XRZ after truven_pay was loaded
---Updated Rows 52087965
-
-
-
