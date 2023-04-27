@@ -12,6 +12,8 @@
 * assigning a yearly plan type requires logic about the hierarchy of plan types
 */
 
+--NEXT UPDATE CHANGE PRIORITY LIST TO FFS>MCCP/PCCM
+
 drop table if exists dw_staging.mdcd_plan_priority;
 
 create table dw_staging.mdcd_plan_priority (

@@ -1,3 +1,14 @@
+/* ******************************************************************************************************
+ *  Truven RX tables : make claims table
+ * ******************************************************************************************************
+ *  Author  || Date       || Notes
+ * ******************************************************************************************************
+ *  various || <Apr 2023  ||  Created script
+ * ****************************************************************************************************** 
+ *  xzhang  || 04/19/2023 || Added flags
+ * */
+
+select 'Truven RX claims script started at ' || current_timestamp as message;
 
 --truven medicare adv
 insert into dw_staging.pharmacy_claims (
@@ -154,3 +165,4 @@ from staging_clean.ccaed_etl a
 
 analyze dw_staging.pharmacy_claims_1_prt_truv;
 
+select 'Truven RX claims script completed at ' || current_timestamp as message;

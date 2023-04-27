@@ -8,7 +8,11 @@
  * ********************************************************************
  * Xiaorui || 03/23/2023 || Changed mapping of pay to match what's on
  * 							the ERD column map (verified by Lopita)
+ * --------------------------------------------------------------------
+ * Xiaorui || 04/18/2023 || Changed msclmid to claim_id_derv
  ***********************************************************************/
+
+select 'Truven Claim Detail script started at ' || current_timestamp as message;
 
 drop table if exists dw_staging.claim_detail;
 
@@ -76,17 +80,17 @@ select  'truv' as data_source,
         null as cfy,
         'ccaes', 
         null, null, null, null, null, null,
-		a.msclmid::text,
+		a.claim_id_derv,
 		a.enrolid::text,
 		current_date,
 		a.stdprov
   from staging_clean.ccaes_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
-   and b.claim_id_src = a.msclmid 
+   and b.claim_id_src = a.claim_id_derv 
   left outer join  staging_clean.truv_ccaef_etl f
     on f.enrolid = a.enrolid 
-   and f.msclmid  = a.msclmid 
+   and f.claim_id_derv  = a.claim_id_derv 
  ;
 
 analyze dw_staging.claim_detail_1_prt_truv;
@@ -131,17 +135,17 @@ select  'truv',
         null as cfy,
         'mdcrs', 
         null, null, null, null, null, null,
-		a.msclmid::text,
+		a.claim_id_derv,
 		a.enrolid::text,
 		current_date ,
 		a.stdprov
   from staging_clean.mdcrs_etl  a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
-   and b.claim_id_src = a.msclmid 
+   and b.claim_id_src = a.claim_id_derv 
   left outer join  staging_clean.truv_mdcrf_etl f
     on f.enrolid = a.enrolid 
-   and f.msclmid = a.msclmid 
+   and f.claim_id_derv = a.claim_id_derv 
  ;
 
 analyze dw_staging.claim_detail_1_prt_truv;
@@ -195,17 +199,17 @@ select  'truv',
         null as cfy,
         'mdcro', 
         null, null, null, null, null, null,
-		a.msclmid::text,
+		a.claim_id_derv,
 		a.enrolid::text,
 		current_date ,
 		a.stdprov
   from staging_clean.mdcro_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
-   and b.claim_id_src = a.msclmid 
+   and b.claim_id_src = a.claim_id_derv 
   left outer join  staging_clean.truv_mdcrf_etl f 
     on f.enrolid = a.enrolid 
-   and f.msclmid  = a.msclmid  
+   and f.claim_id_derv  = a.claim_id_derv  
    ;
  
 analyze dw_staging.claim_detail_1_prt_truv;
@@ -250,19 +254,22 @@ select  'truv',
         null as cfy,
         'ccaeo', 
         null, null, null, null, null, null,
-		a.msclmid::text,
+		a.claim_id_derv,
 		a.enrolid::text,
 		current_date , 
 		a.stdprov
   from staging_clean.ccaeo_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
-   and b.claim_id_src = a.msclmid 
+   and b.claim_id_src = a.claim_id_derv 
   left outer join  staging_clean.truv_ccaef_etl f 
     on f.enrolid = a.enrolid 
-   and f.msclmid = a.msclmid 
+   and f.claim_id_derv = a.claim_id_derv 
    ;
 
 analyze dw_staging.claim_detail_1_prt_truv;
 
-----cleanup
+select 'Truven Claim Detail script completed at ' || current_timestamp as message;
+
+
+

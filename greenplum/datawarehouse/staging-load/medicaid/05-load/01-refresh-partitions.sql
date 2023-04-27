@@ -2,6 +2,12 @@
  * Note that attach/detach are for PostgreSQL version 11+... so we can't do it on GP
  */
 
+--backup update_log
+drop table if exists backup.update_log;
+
+create table backup.update_log as
+select * from data_warehouse.update_log;
+
 
 /*******************************
  * Monthly Enrollment
@@ -34,12 +40,12 @@ vacuum analyze data_warehouse.member_enrollment_monthly_1_prt_mhtw;
  *******************************/
 
 update data_warehouse.update_log
-set data_last_updated = current_date,
+set data_last_updated = '04-03-2023'::date,
 	details = 'CHIP Perinatal and HTW split out to their own partitions'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly';
 
 update data_warehouse.update_log
-set data_last_updated = current_date,
+set data_last_updated = '04-03-2023'::date,
 	details = 'CHIP Perinatal and HTW split out to their own partitions'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
 

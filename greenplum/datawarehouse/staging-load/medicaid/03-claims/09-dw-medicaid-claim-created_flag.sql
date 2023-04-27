@@ -323,14 +323,19 @@ drop table if exists dw_staging.claim_created_unmapped_claims;
 /********************************
  * change update_log
  *******************************/
+--backup update_log
+drop table if exists backup.update_log;
+
+create table backup.update_log as
+select * from data_warehouse.update_log;
 
 update data_warehouse.update_log
-set data_last_updated = current_date,
+set data_last_updated = '04-07-2023'::date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly';
 
 update data_warehouse.update_log
-set data_last_updated = current_date,
+set data_last_updated = '04-07-2023'::date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
 

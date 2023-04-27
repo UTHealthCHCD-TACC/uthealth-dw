@@ -110,6 +110,13 @@ vacuum analyze data_warehouse.pharmacy_claims;
  * change update_log
  *******************************/
 
+--backup update_log
+drop table if exists backup.update_log;
+
+create table backup.update_log as
+select * from data_warehouse.update_log;
+
+
 --update main tables - not partitioned tables
 update data_warehouse.update_log
 set data_last_updated = '04-04-2023'::date,

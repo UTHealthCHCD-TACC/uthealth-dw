@@ -9,8 +9,15 @@
  * 
  * ****************************************************************************************************** */
 
---04/12/23
+--04/25/23
+--grant uthealth_dev to Caroline
+grant uthealth_dev to cms2;
 
+--04/25/23
+--give covid analyst to Lopita
+grant covid_analyst to lghosh1;
+
+--04/12/23
 --Check Youngran's status
 
 --check access for youngran - she is uthealth_analyst
@@ -40,6 +47,7 @@ grant uthealth_analyst to judyk277;
 
 --hotfix while we work this out
 --actually we didn't need it, I think the Truven data refresh did something weird to MDCRT
+--granting permissoins on truven to uthealth_analyst did the trick
 
 --04/05/2023
 
