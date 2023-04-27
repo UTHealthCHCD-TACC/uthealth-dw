@@ -14,8 +14,36 @@
  * ******************************************************************************************************
  *  iperez  || 09/30/2022 || removed claim id source and member id source to columns
  * ******************************************************************************************************
+ *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
  * */
 
+select 'Truven Claim Diag script started' as message;
+
+drop table if exists dw_staging.claim_diag;
+
+--create empty table
+create table dw_staging.claim_diag
+(like data_warehouse.claim_diag including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
+partition by list(data_source)
+ (partition optz values ('optz'),
+  partition optd values ('optd'),
+  partition truv values ('truv'),
+  partition mdcd values ('mdcd'),
+  partition mcrt values ('mcrt'),
+  partition mcrn values ('mcrn')
+ )
+;
+
+alter table dw_staging.claim_diag owner to uthealth_dev;
+
+vacuum analyze dw_staging.claim_diag;
 
  -------------------------------- truven commercial inpatient ------
 insert into dw_staging.claim_diag 
@@ -36,7 +64,7 @@ load_date
 with diag_agg as (
 select  'truv', 
          enrolid,
-         msclmid,
+         claim_id_derv,
          min(svcdate) as svcdate,
 		 min(year) as year,
 		 min(dxver) as dxver,
@@ -46,7 +74,7 @@ select  'truv',
 		 min(dx3) as dx3,
 		 min(dx4) as dx4
    from staging_clean.ccaes_etl  	 
-  group by enrolid, msclmid 
+  group by enrolid, claim_id_derv 
   )
  select * from (
   select 
@@ -59,13 +87,13 @@ select  'truv',
 	 unnest(array[1,2,3,4,5]) as dx_pos,
      null,
      a.dxver,
-     a.msclmid::text,
+     a.claim_id_derv,
      a.enrolid::text,
      current_date
 from diag_agg a
 join staging_clean.truv_dim_id  b 
   on b.member_id_src = a.enrolid 
- and b.claim_id_src = a.msclmid 
+ and b.claim_id_src = a.claim_id_derv 
  ) dx where dx_cd is not null
 ;
 
@@ -91,7 +119,7 @@ load_date
 with diag_agg as (
 select  'truv', 
          enrolid,
-         msclmid,
+         claim_id_derv,
          min(svcdate) as svcdate,
 		 min(year) as year,
 		 min(dxver) as dxver,
@@ -101,7 +129,7 @@ select  'truv',
 		 min(dx3) as dx3,
 		 min(dx4) as dx4
    from staging_clean.mdcrs_etl 	 
-  group by enrolid, msclmid 
+  group by enrolid, claim_id_derv 
   )
   select * from (
 	  select 
@@ -114,13 +142,13 @@ select  'truv',
 		 unnest(array[1,2,3,4,5]) as dx_pos,
 	     null,
 	     a.dxver,
-	     a.msclmid::text,
+	     a.claim_id_derv,
 	     a.enrolid::text,
 	     current_date
 	from diag_agg a
 	join staging_clean.truv_dim_id  b 
 	  on b.member_id_src = a.enrolid 
-	 and b.claim_id_src = a.msclmid 
+	 and b.claim_id_src = a.claim_id_derv 
  ) dx where dx_cd is not null
 ;
 
@@ -148,7 +176,7 @@ load_date
 with diag_agg as (
 select  'truv', 
          enrolid,
-         msclmid,
+         claim_id_derv,
          min(svcdate) as svcdate,
 		 min(year) as year,
 		 min(dxver) as dxver,
@@ -157,7 +185,7 @@ select  'truv',
 		 min(dx3) as dx3,
 		 min(dx4) as dx4
    from staging_clean.mdcro_etl  	 
-  group by enrolid, msclmid 
+  group by enrolid, claim_id_derv 
   )
   select * from (
 	  select 
@@ -170,13 +198,13 @@ select  'truv',
 		 unnest(array[1,2,3,4]) as dx_pos,
 	     null,
 	     a.dxver,
-	     a.msclmid::text,
+	     a.claim_id_derv,
 	     a.enrolid::text,
 	     current_date
 	from diag_agg a
 	join staging_clean.truv_dim_id  b 
 	  on b.member_id_src = a.enrolid 
-	 and b.claim_id_src = a.msclmid 
+	 and b.claim_id_src = a.claim_id_derv 
  ) dx where dx_cd is not null
 ;
 
@@ -201,7 +229,7 @@ load_date
 with diag_agg as (
 select  'truv', 
          enrolid,
-         msclmid,
+         claim_id_derv,
          min(svcdate) as svcdate,
 		 min(year) as year,
 		 min(dxver) as dxver,
@@ -210,7 +238,7 @@ select  'truv',
 		 min(dx3) as dx3,
 		 min(dx4) as dx4
    from staging_clean.ccaeo_etl  	 
-  group by enrolid, msclmid 
+  group by enrolid, claim_id_derv 
   )
 select * from (
 	  select 
@@ -223,15 +251,16 @@ select * from (
 		 unnest(array[1,2,3,4]) as dx_pos,
 	     null,
 	     a.dxver,
-	     a.msclmid::text,
+	     a.claim_id_derv,
 	     a.enrolid::text,
 	     current_date
 	from diag_agg a
 	join staging_clean.truv_dim_id  b 
 	  on b.member_id_src = a.enrolid 
-	 and b.claim_id_src = a.msclmid 
+	 and b.claim_id_src = a.claim_id_derv 
  ) dx where dx_cd is not null
 ;
 
 analyze dw_staging.claim_diag_1_prt_truv;
 
+select 'Truven Claim Diag script completed' as message;

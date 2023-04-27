@@ -3,6 +3,8 @@
  * because of the raw data distribution keys, the etl scripts run slow
  * we make redistributed versions of them to help it run faster so joins work properly
  * 
+ * 04/18/2023: Xiaorui changed claim_id_derv to claim_id_derv
+ * 
  */
 
 
@@ -15,7 +17,7 @@ drop table if exists staging_clean.truv_dim_id;
 create table staging_clean.truv_dim_id as    
 select member_id_src::bigint, claim_id_src, 
        uth_claim_id, uth_member_id 
-  from dw_staging.dim_uth_claim_id 
+  from data_warehouse.dim_uth_claim_id 
  where data_source = 'truv'
 distributed by (member_id_src, claim_id_src);
 
@@ -34,8 +36,8 @@ select enrolid::bigint,
 	   max(billtyp) as billtyp,
 	   max(stdprov) as stdprov 
   from truven.mdcrf  
-group by enrolid, msclmid 
-distributed by (enrolid, msclmid);
+group by enrolid, claim_id_derv 
+distributed by (enrolid, claim_id_derv);
 
 analyze staging_clean.truv_mdcrf_etl;
 
@@ -48,8 +50,8 @@ select enrolid::bigint,
 	   max(billtyp) as billtyp,
 	   max(stdprov) as stdprov 
   from truven.ccaef 
-group by enrolid, msclmid
-distributed by (enrolid, msclmid);
+group by enrolid, claim_id_derv
+distributed by (enrolid, claim_id_derv);
 
 analyze staging_clean.truv_ccaef_etl;
 
@@ -98,7 +100,7 @@ select enrolid::bigint,
        dx4,
        stdprov 
   from truven.mdcrs  
-  distributed by (enrolid, msclmid);
+  distributed by (enrolid, claim_id_derv);
 
  analyze staging_clean.mdcrs_etl;
 
@@ -142,7 +144,7 @@ select enrolid::bigint,
        dx4,
        stdprov 
   from truven.ccaes 
-  distributed by (enrolid, msclmid);
+  distributed by (enrolid, claim_id_derv);
  
 analyze staging_clean.ccaes_etl;
 
@@ -182,7 +184,7 @@ select enrolid::bigint,
        dx4,
        stdprov 
   from truven.mdcro 
- distributed by (enrolid, msclmid);
+ distributed by (enrolid, claim_id_derv);
 
 analyze staging_clean.mdcro_etl;
 
@@ -223,7 +225,7 @@ select enrolid::bigint,
        dx4,
        stdprov 
   from truven.ccaeo
- distributed by (enrolid, msclmid);
+ distributed by (enrolid, claim_id_derv);
 
 analyze staging_clean.ccaeo_etl;
 

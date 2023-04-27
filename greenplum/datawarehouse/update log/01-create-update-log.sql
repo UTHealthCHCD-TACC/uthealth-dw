@@ -16,7 +16,8 @@ create table data_warehouse.update_log (
 	schema_name text,
 	table_name text,
 	data_last_updated date,
-	last_vacuum_analyze date
+	last_vacuum_analyze date,
+	details text
 )
 distributed by (table_name);
 
@@ -32,7 +33,8 @@ where schemaname in ('data_warehouse', 'medicaid', 'medicare_national',
 --Niall/Lopita added truven_pay data 3/3/23 (includes new column: MSA)
 --this is only for the base tables - p (population) tables were not updated
 update data_warehouse.update_log
-set data_last_updated = '3/3/23'::date
+set data_last_updated = '4/10/23'::date,
+	details = 'Truven 2022 Q1 and Q2 updated'
 where schema_name = 'truven' and
  ((table_name like 'ccae%' and table_name != 'ccaep') or
   (table_name like 'mdcr%' and table_name != 'mdcrp'));
@@ -40,16 +42,6 @@ where schema_name = 'truven' and
 --see table
 select * from data_warehouse.update_log
 order by schema_name, table_name;
-
---add details column
-alter table data_warehouse.update_log add column details text;
-
---Explain latest Truven update
-update data_warehouse.update_log
-set details = 'Truven CY 2021 updated with pay column and MSA'
-where schema_name = 'truven' and
- ((table_name like 'ccae%' and table_name != 'ccaep') or
-  (table_name like 'mdcr%' and table_name != 'mdcrp'));
 
 --vacuum analyze because why not
  vacuum analyze data_warehouse.update_log;
