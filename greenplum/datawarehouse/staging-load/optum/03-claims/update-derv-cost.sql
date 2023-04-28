@@ -71,8 +71,6 @@ update optum_zip.rx a
 from reference_tables.ref_optum_cost_factor b
 where a.std_cost_yr::int = b.standard_price_year and b.service_type = 'PHARM';
 
-vacuum analyze optum_zip.medical;
-vacuum analyze optum_zip.confinement;
 vacuum analyze optum_zip.rx;
 
 /************************
