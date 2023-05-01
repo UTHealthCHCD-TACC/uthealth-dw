@@ -182,6 +182,76 @@ where total_enrolled_months is null
 group by "year"
 order by "year";
 
+/************************************************
+ * ISSUE: Truven has a lot of null MSAs in 2021/2022
+ * 
+ * My first assumption was that aggregating data on the yearly table
+ * is why we have those nulls - it is true that if there is a null
+ * for a month, then that member will be null for the whole year.
+ * 
+ * So I fixed the code and... rescued like, a tenth of a percent of records.
+ * Two tenths of a percent if I'm being generous
+ ************************************************/
+
+--code to find the percent of missing zips and missing MSAs by year
+select year, count(case when zip3 is null then 1 end) as null_zip_count,
+	count(case when zip3 is not null then 1 end) as not_null_zip_count,
+	count(case when zip3 is null then 1 end)/count(*)::float as zip_null_pct,
+	count(case when msa is null then 1 end) as null_msa_count,
+	count(case when msa is not null then 1 end) as not_null_msa_count,
+	count(case when msa is null then 1 end)/count(*)::float as msa_null_pct
+from dw_staging.truv_member_enrollment_yearly
+group by year
+order by year;
+
+--BEFORE FIXING CODE
+year	nullzip	notnullzip	nullzippct			nullmsa		notnullmsa	nullmsapct
+2011	1771240	58690188	0.02929537158798168	60461428	0			1.0
+2012	1324844	59191201	0.0218924419135454	60516045	0			1.0
+2013	1266720	46459314	0.02654148886538529	47726034	0			1.0
+2014	1183887	49681293	0.02327499873194197	50865180	0			1.0
+2015	85053	30333486	0.0027960908970677	30418539	0			1.0
+2016	91991	30633650	0.00299394893014599	0725641		0			1.0
+2017	3618673	23911937	0.1314418024155658	27530610	0			1.0
+2018	2989369	25159062	0.10620019993299093	28148431	0			1.0
+2019	26942865	0		1.0					3080287		23862578	0.1143266315590417
+2020	24929462	0		1.0					2848618		22080844	0.11426712698412826
+2021	24150915	0		1.0					4362506		19788409	0.18063522645001234
+2022	20831493	0		1.0					4017536	1	6813957		0.19285876437180954
+
+--AFTER FIXING CODE
+year	nullzip	notnullzip	nullzippct			nullmsa		notnullmsa	nullmsapct
+2011	1645950	58815478	0.02722314133897069	60461428	0			1.0
+2012	1223328	59292717	0.02021493638587915	60516045	0			1.0
+2013	1098874	46627160	0.02302462425434302	47726034	0			1.0
+2014	1117056	49748124	0.02196111367344026	50865180	0			1.0
+2015	79199	30339340	0.00260364246948218	30418539	0			1.0
+2016	88123	30637518	0.00286806058822336	30725641	0			1.0
+2017	3543177	23987433	0.12869954570567088	27530610	0			1.0
+2018	2942804	25205627	0.10454593366145346	28148431	0			1.0
+2019	26942865	0		1.0					3029716		23913149	0.11244965967798896
+2020	24929462	0		1.0					2776861		22152601	0.11138872551682022
+2021	24150915	0		1.0					4309994		19840921	0.17846089889347877
+2022	20831493	0		1.0	3				987121		16844372	0.1913987153969233
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

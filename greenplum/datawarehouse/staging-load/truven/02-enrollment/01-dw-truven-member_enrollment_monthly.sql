@@ -26,111 +26,37 @@
  *  jwozny || 01/15/2023 || Split Truven-specific script off + updated
  *  ******************************************************************************************************
  *  xrzhang || 03/20/2023 || Edited script to include MSA column
- * 
+ *  ******************************************************************************************************
+ *  xrzhang || 04/28/2023 || Added fresh table creation
+							 changed table name to truv_member_enrollment_monthly
+							 changed age_derived to age_cy
+ *  ******************************************************************************************************
  * 
 */
+---Drop existing table
+drop table if exists dw_staging.truv_member_enrollment_monthly;
 
+--Create empty member enrollment monthly
+create table dw_staging.truv_member_enrollment_monthly
+(like data_warehouse.member_enrollment_monthly including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id);
+
+alter table  dw_staging.truv_member_enrollment_monthly add column row_id bigserial;
+alter sequence dw_staging.truv_member_enrollment_monthly_row_id_seq cache 200;
+
+alter table dw_staging.truv_member_enrollment_monthly owner to uthealth_dev;
 
 /*
  * Because there are several billion rows, we need to redistribute the enrollment table on a key with the right data type to speed up the join with dim in the DW
  */
 
-drop table if exists staging_clean.ccaet;
-
---note that there are no NULL enrolids in ccaet
-create table staging_clean.ccaet with (
-	appendonly=true,
-	orientation=column,
-	compresstype=zlib
-) 
-as select m.enrolid::text,
-       m.medadv,
-       m.rx,
-       m.efamid,
-       m.mhsacovg,
-       m.egeoloc,
-       m.dtstart,
-       m.sex,
-       m.dtend,
-       m.plantyp,
-       m.empzip,
-       m.dobyr,
-       m.eestatu ,
-       m.year, 
-       m.msa
-  from truven.ccaet m
-  distributed by (enrolid)
-  ;
- 
- analyze staging_clean.ccaet;
-
--- Truven Commercial ----------------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly  (
-	data_source, 
-	year, 
-	month_year_id, 
-	uth_member_id,
-	gender_cd, 
-	state, 
-	zip5, 
-	zip3,
-	msa,
-	age_derived, 
-	dob_derived, 
-	death_date,
-	plan_type, 
-	bus_cd, 
-	employee_status, 
-	rx_coverage, 
-	fiscal_year, 
-	race_cd,
-	family_id,
-	behavioral_coverage,
-	load_date,
-	table_id_src,
-	member_id_src
-	)		
-select 'truv', 
-       m.year,
-       (extract (year from m.dtstart)::text || lpad(extract (month from m.dtstart)::text , 2, '0'))::int, 
-       a.uth_member_id, 
-       c.gender_cd, 
-       case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'), 
-       m.msa,
-       m.year - dobyr as age_derived, 
-       (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
-       null, 
-       d.plan_type, 
-       case when m.medadv = '1' then 'MA' else 'COM' end as bus_cd, 
-       eestatu, 
-       m.rx, 
-       null, 
-       '0' as race, 
-       m.efamid::text, 
-       coalesce(m.mhsacovg,0),
-       current_date,
-       'ccaet',
-       enrolid 
-  from staging_clean.ccaet m
-  join data_warehouse.dim_uth_member_id  a 
-    on a.member_id_src = m.enrolid
- and a.data_source = 'truv'
-  left outer join reference_tables.ref_truven_state_codes s 
-    on m.egeoloc=s.truven_code
-  left outer join reference_tables.ref_gender c
-    on c.data_source = 'trv' 
-   and c.gender_cd_src = m.sex::text 
-  left outer join reference_tables.ref_plan_type d 
-    on d.data_source = 'trv' 
-  and d.plan_type_src::int = m.plantyp  
-;
-
- analyze dw_staging.member_enrollment_monthly_1_prt_truv;
----------------------------------------------------------------------------------------------------
-
-/*
- * Create re-distributed source table 
- */
+--redistrib mdcrt first, it's smaller
 drop table if exists staging_clean.mdcrt;
 
 --note that there are no NULL enrolids in mdcrt
@@ -160,8 +86,42 @@ as select m.enrolid::text,
  
 analyze staging_clean.mdcrt;
 
+--then redistrib ccaet
+drop table if exists staging_clean.ccaet;
+
+--note that there are no NULL enrolids in ccaet
+create table staging_clean.ccaet with (
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select m.enrolid::text,
+       m.medadv,
+       m.rx,
+       m.efamid,
+       m.mhsacovg,
+       m.egeoloc,
+       m.dtstart,
+       m.sex,
+       m.dtend,
+       m.plantyp,
+       m.empzip,
+       m.dobyr,
+       m.eestatu ,
+       m.year, 
+       m.msa
+  from truven.ccaet m
+  distributed by (enrolid)
+  ;
+ 
+ analyze staging_clean.ccaet;
+
+/****************************
+ * Insert into monthly enrollment table
+ ****************************/
+
 -- Truven Medicare Advantage ----------------------------------------------------------------------
-insert into dw_staging.member_enrollment_monthly  (
+insert into dw_staging.truv_member_enrollment_monthly  (
 	data_source, 
 	year, 
 	month_year_id, 
@@ -171,7 +131,7 @@ insert into dw_staging.member_enrollment_monthly  (
 	zip5, 
 	zip3,
 	msa,
-	age_derived, 
+	age_cy, 
 	dob_derived, 
 	death_date,
 	plan_type, 
@@ -194,7 +154,7 @@ select
        c.gender_cd, 
        case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'),
        m.msa,
-       m.year - dobyr as age_derived, 
+       m.year - dobyr as age_cy, 
        (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
        null,
        d.plan_type, 
@@ -222,11 +182,73 @@ select
   and d.plan_type_src::int = m.plantyp
 ;
 
+-- Truven Commercial ----------------------------------------------------------------------------
+insert into dw_staging.truv_member_enrollment_monthly  (
+	data_source, 
+	year, 
+	month_year_id, 
+	uth_member_id,
+	gender_cd, 
+	state, 
+	zip5, 
+	zip3,
+	msa,
+	age_cy, 
+	dob_derived, 
+	death_date,
+	plan_type, 
+	bus_cd, 
+	employee_status, 
+	rx_coverage, 
+	fiscal_year, 
+	race_cd,
+	family_id,
+	behavioral_coverage,
+	load_date,
+	table_id_src,
+	member_id_src
+	)		
+select 'truv', 
+       m.year,
+       (extract (year from m.dtstart)::text || lpad(extract (month from m.dtstart)::text , 2, '0'))::int, 
+       a.uth_member_id, 
+       c.gender_cd, 
+       case when length(s.abbr) > 2 then '' else s.abbr end, null, rpad((trunc(m.empzip,0)::text),3,'0'), 
+       m.msa,
+       m.year - dobyr as age_cy, 
+       (trunc(dobyr,0)::varchar || '-12-31')::date as dob_derived, 
+       null, 
+       d.plan_type, 
+       case when m.medadv = '1' then 'MA' else 'COM' end as bus_cd, 
+       eestatu, 
+       m.rx, 
+       null, 
+       '0' as race, 
+       m.efamid::text, 
+       coalesce(m.mhsacovg,0),
+       current_date,
+       'ccaet',
+       enrolid 
+  from staging_clean.ccaet m
+  join data_warehouse.dim_uth_member_id  a 
+    on a.member_id_src = m.enrolid
+ and a.data_source = 'truv'
+  left outer join reference_tables.ref_truven_state_codes s 
+    on m.egeoloc=s.truven_code
+  left outer join reference_tables.ref_gender c
+    on c.data_source = 'trv' 
+   and c.gender_cd_src = m.sex::text 
+  left outer join reference_tables.ref_plan_type d 
+    on d.data_source = 'trv' 
+  and d.plan_type_src::int = m.plantyp  
+;
+
+ analyze dw_staging.truv_member_enrollment_monthly;
+---------------------------------------------------------------------------------------------------
+
 /*
  * Get consecutive enrollment 
  */
-
-analyze dw_staging.member_enrollment_monthly_1_prt_truv;
 
 drop table if exists dev.temp_consec_enrollment;
 
@@ -239,7 +261,7 @@ from (
 	         ,a.month_year_id
 	         ,a.uth_member_id
 	         ,b.my_row_counter - row_number() over(partition by a.uth_member_id order by a.month_year_id) as my_grp
-	   from dw_staging.member_enrollment_monthly_1_prt_truv 	 a 
+	   from dw_staging.truv_member_enrollment_monthly 	 a 
 	     join reference_tables.ref_month_year b 
 	       on a.month_year_id = b.month_year_id 	   		    
 	 ) inr    
@@ -248,7 +270,7 @@ distributed by (row_id);
 analyze dev.temp_consec_enrollment;
 
 --update consec enrolled months  9m 
-update dw_staging.member_enrollment_monthly_1_prt_truv a 
+update dw_staging.truv_member_enrollment_monthly a 
    set consecutive_enrolled_months = b.in_streak 
   from dev.temp_consec_enrollment b 
  where a.row_id = b.row_id
@@ -259,9 +281,9 @@ drop table if exists dev.temp_consec_enrollment;
 drop table if exists staging_clean.mdcrt;
 drop table if exists staging_clean.ccaet;
 
-alter table dw_staging.member_enrollment_monthly drop column row_id;
+alter table dw_staging.truv_member_enrollment_monthly drop column row_id;
 
-vacuum analyze dw_staging.member_enrollment_monthly;
+vacuum analyze dw_staging.truv_member_enrollment_monthly;
 
 
 
