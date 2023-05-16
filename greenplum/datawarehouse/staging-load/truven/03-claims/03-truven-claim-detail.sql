@@ -10,6 +10,12 @@
  * 							the ERD column map (verified by Lopita)
  * --------------------------------------------------------------------
  * Xiaorui || 04/18/2023 || Changed msclmid to claim_id_derv
+ * --------------------------------------------------------------------
+ * Xiaorui || 05/03/2023 || Fixed the way that stdprov converts to text
+ * 							stdprov is stored as int and converts like 40 -> 40.0
+							to_char(stdprov, 'FM999D') gets rid of decimals and crops to 4 digits
+							note that stdprov only goes up to 3 digits (I think) but I just
+							didn't want issues
  ***********************************************************************/
 
 select 'Truven Claim Detail script started at ' || current_timestamp as message;
@@ -83,7 +89,7 @@ select  'truv' as data_source,
 		a.claim_id_derv,
 		a.enrolid::text,
 		current_date,
-		a.stdprov
+		to_char(a.stdprov, 'FM9999D') --stdprov converts to text funny (see note)
   from staging_clean.ccaes_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -138,7 +144,7 @@ select  'truv',
 		a.claim_id_derv,
 		a.enrolid::text,
 		current_date ,
-		a.stdprov
+		to_char(a.stdprov, 'FM9999D')
   from staging_clean.mdcrs_etl  a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -202,7 +208,7 @@ select  'truv',
 		a.claim_id_derv,
 		a.enrolid::text,
 		current_date ,
-		a.stdprov
+		to_char(a.stdprov, 'FM9999D')
   from staging_clean.mdcro_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 
@@ -257,7 +263,7 @@ select  'truv',
 		a.claim_id_derv,
 		a.enrolid::text,
 		current_date , 
-		a.stdprov
+		to_char(a.stdprov, 'FM9999D')
   from staging_clean.ccaeo_etl a 
   join staging_clean.truv_dim_id  b 
     on b.member_id_src = a.enrolid 

@@ -9,6 +9,20 @@
  * 
  * ****************************************************************************************************** */
 
+--05/02/2023
+--grant uthealth_dev to Kenneth, Aryan, Joe H (Garret is already uthealth_dev)
+grant uthealth_dev to nguyken;
+grant uthealth_dev to aryan;
+grant uthealth_dev to jharri66;
+
+--make their tables read-only for uthealth_analyst
+alter default privileges for user gmunoz1 in schema crosswalk grant select on tables to uthealth_analyst;
+alter default privileges for user nguyken in schema crosswalk grant select on tables to uthealth_analyst;
+alter default privileges for user aryan in schema crosswalk grant select on tables to uthealth_analyst;
+alter default privileges for user jwozny in schema crosswalk grant select on tables to uthealth_analyst;
+alter default privileges for user aryan in schema crosswalk grant select on tables to uthealth_analyst;
+alter default privileges for user jharri66 in schema crosswalk grant select on tables to uthealth_analyst;
+
 --04/25/23
 --grant uthealth_dev to Caroline
 grant uthealth_dev to cms2;
