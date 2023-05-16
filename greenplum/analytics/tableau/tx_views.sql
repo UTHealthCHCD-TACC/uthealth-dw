@@ -30,11 +30,15 @@ drop view if exists tableau.tx_covid_view;
   
 create or replace view tableau.tx_covid_view
 as
-select data_source, uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state
+select data_source, uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state,
+		case 
+			when data_source = 'mdcd' then 'Medicaid'
+			when data_source = 'mcrt' then 'Medicare'
+		end as insurance
   from tableau.master_enrollment
  where year >= 2020 and state = 'TX' and data_source in ('mdcd', 'mcrt')
 union
-select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state
+select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state, 'Commercial'
   from tableau.master_enrollment
  where year >= 2020 
   and state = 'TX' 
