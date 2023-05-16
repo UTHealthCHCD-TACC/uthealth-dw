@@ -66,7 +66,7 @@ here::i_am("02-truven-schema-counts.Rmd")
 #this is the list of tables to look in and count
 list_of_tables = c("ccaes", "ccaeo", "mdcrs", "mdcro")
 
-#this is the lsit of tables to look in and count for icd_proc
+#this is the list of tables to look in and count for icd_proc
 list_of_tables2 = c("ccae", "mdcr")
 
 #sql query to count distinct msclmids

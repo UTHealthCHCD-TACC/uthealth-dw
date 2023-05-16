@@ -5,8 +5,8 @@
  * 
  * 04/18/2023: Xiaorui changed claim_id_derv to claim_id_derv
  * 
+ * 
  */
-
 
 /*
  * 1) Copy the claims dimension table but distributed on source values
@@ -98,7 +98,7 @@ select enrolid::bigint,
 	   dx2,
        dx3,
        dx4,
-       stdprov 
+       stdprov::text
   from truven.mdcrs  
   distributed by (enrolid, claim_id_derv);
 

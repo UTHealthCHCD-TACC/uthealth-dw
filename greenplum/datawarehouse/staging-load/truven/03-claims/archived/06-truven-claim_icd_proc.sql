@@ -5,7 +5,7 @@
  *  Author || Date      || Notes
  * ******************************************************************************************************
  * ******************************************************************************************************
- *  jw001   || 1/3/2022   ||  removed year, fiscal_year, icd_type
+ *  jw001  || 1/3/2022  ||  removed year, fiscal_year, icd_type
  * ****************************************************************************************************** 
  *  iperez  || 09/28/2022 || added claim id source and member id source to columns
  * ******************************************************************************************************
@@ -13,13 +13,7 @@
  * ******************************************************************************************************
  *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
  
- Note on ICD PROC codes:
- 
- ICD PROC codes only live in the 'f' tables (there are 6)
-	and 's' tables (PPROC)
- There are no ICD PROC codes in 'o' tables (no PPROC column)
- the PPROC column in 'i' tables are the PROC code that contributed most to the DRG assignment
- 	and are NOT ICD PROC codes.
+ Note: next load, change proc_pos to 2-7 for proc1-6 (b/c pproc is 1)
  * */
 
 select 'Truven Claim ICD Proc script started' as message;

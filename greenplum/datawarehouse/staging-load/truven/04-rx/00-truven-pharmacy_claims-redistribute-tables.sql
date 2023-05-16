@@ -70,4 +70,8 @@ analyze staging_clean.ccaed_etl;
 select 'Truven RX ETL script completed at ' || current_timestamp as message;
 
 
+select count(*) from staging_clean.mdcrd_etl;
+--665986858
 
+select count(*) from truven.mdcrd;
+--665986858 so this part is right

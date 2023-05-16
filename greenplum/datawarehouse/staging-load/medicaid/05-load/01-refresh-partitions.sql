@@ -96,7 +96,7 @@ where schema_name = 'data_warehouse' and table_name = 'member_enrollment_yearly'
 update data_warehouse.update_log
 set data_last_updated = '04-03-2023'::date,
 	details = 'CHIP Perinatal and HTW split out to their own partitions'
-where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
+where schema_name = 'data_warehouse' and table_name = 'member_enrollment_yearly_1_prt_mdcd';
 
 update data_warehouse.update_log
 set data_last_updated = '04-03-2023'::date,

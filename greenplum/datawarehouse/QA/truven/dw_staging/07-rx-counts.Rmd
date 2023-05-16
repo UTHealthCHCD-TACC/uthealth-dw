@@ -9,6 +9,9 @@ output: html_document
 This R markdown script examines the accuracy of conversions from raw source tables to
 data_warehouse tables
 
+Version control:
+5/15/23: changed pharmacy_claims to truv_pharmacy_claims
+
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -88,7 +91,7 @@ list_of_tables_rx = c("ccaed", "mdcrd")
 
 #sql query to get rx_claim_id_src from dw to a temp table by table_id_src (dw)
 dw_sql1 = "create table dev.xz_dwqa_temp as
-  select year, table_id_src, rx_claim_id_src as rx_id from dw_staging.pharmacy_claims
+  select year, table_id_src, rx_claim_id_src as rx_id from dw_staging.truv_pharmacy_claims
   where table_id_src = '@table'
   distributed by (rx_id);"
 
