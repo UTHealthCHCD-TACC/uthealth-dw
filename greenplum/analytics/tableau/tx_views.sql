@@ -12,6 +12,8 @@ select 'cmrc', "year", uth_member_id, gender_cd, race_cd, age_derived, state, pl
   and data_source in ('optz', 'truv')
   and bus_cd = 'COM';
  
+ 
+ 
 -- tx claims
  
 create or replace view tableau.tx_claim_view
@@ -24,20 +26,25 @@ select  b.data_source, b."year" , b.uth_member_id ,total_enrolled_months, gender
    and a."year" = b."year";
 
 -- tx covid severity 
+drop view if exists tableau.tx_covid_view;  
   
 create or replace view tableau.tx_covid_view
 as
-select data_source, uth_member_id, year, cov_severity
+select data_source, uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state,
+		case 
+			when data_source = 'mdcd' then 'Medicaid'
+			when data_source = 'mcrt' then 'Medicare'
+		end as insurance
   from tableau.master_enrollment
  where year >= 2020 and state = 'TX' and data_source in ('mdcd', 'mcrt')
 union
-select 'cmrc', uth_member_id, year, cov_severity
+select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state, 'Commercial'
   from tableau.master_enrollment
  where year >= 2020 
   and state = 'TX' 
   and data_source in ('optz', 'truv')
   and bus_cd = 'COM';
-  
+ 
 -- tx conditions   
 
 create or replace view tableau.tx_member_condition_view
@@ -110,4 +117,10 @@ left join tableau.master_enrollment b
   and b.data_source in ('optz', 'truv')
   and bus_cd = 'COM';
 
-
+-- granting permissions
+ 
+grant select on tableau.tx_covid_view to uthealth_analyst; 
+grant select on tableau.tx_crg_risk_view to uthealth_analyst; 
+grant select on tableau.tableau.tx_member_condition_view to uthealth_analyst; 
+grant select on tableau.tableau.tx_claim_view to uthealth_analyst; 
+grant select on tableau.tableau.tx_enrollment_view to uthealth_analyst; 
