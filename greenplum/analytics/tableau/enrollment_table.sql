@@ -1,13 +1,24 @@
-drop table if exists tableau.master_enrollment;
+drop table if exists dev.master_enrollment_temp;
 
-create table tableau.master_enrollment
+create table dev.master_enrollment_temp
+(like tableau.master_enrollment including defaults)
 with (appendoptimized=true, orientation=column, compresstype=zlib)
-as
+distributed by (uth_member_id)
+partition by list(data_source)
+    (partition optz values ('optz'),
+    partition truv values ('truv'),
+    partition mcrt values ('mcrt'),
+    partition mcrn values ('mcrn'),
+    partition mdcd values ('mdcd'),
+    partition mhtw values ('mhtw'),
+    partition mcpp values ('mcpp')
+    );
+
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
 from data_warehouse.member_enrollment_yearly a 
-where a.year between 2014 and 2021
-  and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
+where a.year between 2014 and 2022
+  and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd', 'mhtw', 'mcpp')
 ),
 cond  as (
 select a.data_source, a."year" , a.uth_member_id,
@@ -15,7 +26,7 @@ select a.data_source, a."year" , a.uth_member_id,
        a.dep, a.epi, a.fbm, a.hemo, a.hep,  a.hiv, a.ihd,  a.lbp, 
       a.lymp, a.ms, a.nicu, a.pain, a.park, a.pneu,a.ra, a.scd, a.smi, a.str, a.tbi, a.trans, a.trau
 from data_warehouse.conditions_member_enrollment_yearly a 
-where a.year between 2014 and 2021
+where a.year between 2014 and 2022
   and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 ),
 crg as (
@@ -29,7 +40,7 @@ from data_warehouse.crg_risk cr
 inner join data_warehouse.member_enrollment_yearly mey 
   on  mey.uth_member_id = cr.uth_member_id
 	and mey."year" = cr.crg_year 
-where mey.year between 2014 and 2021
+where mey.year between 2014 and 2022
   and mey.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 ),
 covid as (
@@ -37,6 +48,7 @@ select *
   from tableau.dw_severity_2020
  where data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd')
 )
+insert into dev.master_enrollment_temp
 select e.*, c.aimm, c.ami,  c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, c.cysf, 
        c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, c.ihd, c.lbp, 
       c.lymp, c.ms, c.nicu, c.pain, c.park, c.pneu,c.ra, c.scd, c.smi, c.str, c.tbi, c.trans, c.trau,
@@ -52,7 +64,7 @@ select e.*, c.aimm, c.ami,  c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, c.cysf,
  left join covid cs
    on e.uth_member_id = cs.uth_member_id
   and e.year = cs.year
-distributed by (uth_member_id);
+;
 
 
 

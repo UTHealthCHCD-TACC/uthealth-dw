@@ -5,7 +5,25 @@ import sys
 sys.path.append('H:/uth_helpers/')
 from db_utils import get_dsn
 
-def create_tables(cursor, data_source):
+def create_temp_table(cursor, data_source):
+    temp_table = f'''drop table if exists dev.ip_master_temp_{data_source};
+
+create table dev.ip_master_temp_{data_source}
+(like tableau.master_claims including defaults)
+with (
+		appendonly=true, 
+		orientation=column, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 );
+	
+analyze dev.ip_master_temp_{data_source};	
+    '''
+
+    
+    cursor.execute(temp_table)
+
+def create_dx_table(cursor, data_source):
     temp_dx = f'''drop table if exists dev.ip_dx_temp_{data_source};
 
 create table dev.ip_dx_temp_{data_source}
@@ -76,7 +94,7 @@ def fill_claims_table(connection, data_source, year):
 
     with connection.cursor() as cursor:
         insert_query = f'''
-insert into tableau.master_claims 
+insert into dev.ip_master_temp_{data_source}
 (data_source, year, uth_member_id, uth_claim_id, claim_type,
 total_charge_amount, total_allowed_amount, total_paid_amount, 
 {columns[0]})
@@ -90,30 +108,42 @@ select e.data_source, e.year, e.uth_member_id, h.uth_claim_id, claim_type,
   left join dev.ip_pivot_dx_temp_{data_source} d1
     on h.uth_claim_id = d1.uth_claim_id;
 
-    analyze tableau.master_claims;
+    analyze dev.ip_master_temp_{data_source};
     '''
 
         cursor.execute(insert_query)
+
+def swap_partitions(cursor, data_source):
+    swap_query = f'''
+    alter table tableau.master_claims
+    exchange partition {data_source}
+    with table dev.ip_master_temp_{data_source}
+    ;
+    '''
+
+    cursor.execute(swap_query)
 
 def drop_temp_tables(cursor, data_source):
 
     cursor.execute(f'drop table if exists dev.ip_dx_temp_{data_source};')
     cursor.execute(f'drop table if exists dev.ip_pivot_dx_temp_{data_source};')
+    # cursor.execute(f'drop table if exists dev.ip_master_temp_{data_source};')
 
 if __name__ == '__main__':
 
     connection = psycopg2.connect(get_dsn())
     connection.autocommit = True
     # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd'
-    data_sources = ['optz']
-    years = tqdm(range(2016, 2022)) #{'start_year':2012, 'end_year':2021}
+    data_sources = ['truv']
+    years = tqdm(range(2014, 2022)) #{'start_year':2012, 'end_year':2021}
     
     print('Creating Tables')
     
 
     for data_source in data_sources:
         with connection.cursor() as cursor:
-            create_tables(cursor, data_source)
+            create_temp_table(cursor, data_source)
+            create_dx_table(cursor, data_source)
         print(data_source)
         for year in years:
             years.set_description(str(year))
@@ -123,4 +153,5 @@ if __name__ == '__main__':
             fill_claims_table(connection, data_source, year)
 
         with connection.cursor() as cursor:
+            swap_partitions(cursor, data_source)
             drop_temp_tables(cursor, data_source)
