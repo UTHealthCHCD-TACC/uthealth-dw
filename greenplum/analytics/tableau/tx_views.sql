@@ -1,10 +1,16 @@
+-- order in which to drop views before creating them again
+drop view tableau.tx_crg_risk_view;
+drop view tableau.tx_covid_view;
+drop view tableau.tx_member_condition_view;
+drop view tableau.tx_claim_view;
+drop view tableau.tx_enrollment_view;
+
 -- tx enrollment
- 
 create or replace view tableau.tx_enrollment_view
 as
 select data_source, "year", uth_member_id, gender_cd, race_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
   from tableau.master_enrollment
-  where state = 'TX' and data_source in ('mdcd', 'mcrt')
+  where state = 'TX' and data_source in ('mdcd', 'mcrt', 'mhtw', 'mcpp')
 union
 select 'cmrc', "year", uth_member_id, gender_cd, race_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
   from tableau.master_enrollment
@@ -15,7 +21,6 @@ select 'cmrc', "year", uth_member_id, gender_cd, race_cd, age_derived, state, pl
  
  
 -- tx claims
- 
 create or replace view tableau.tx_claim_view
 as
 select  b.data_source, b."year" , b.uth_member_id ,total_enrolled_months, gender_cd, age_derived , state, plan_type, bus_cd,
@@ -26,17 +31,17 @@ select  b.data_source, b."year" , b.uth_member_id ,total_enrolled_months, gender
    and a."year" = b."year";
 
 -- tx covid severity 
-drop view if exists tableau.tx_covid_view;  
-  
 create or replace view tableau.tx_covid_view
 as
 select data_source, uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state,
 		case 
 			when data_source = 'mdcd' then 'Medicaid'
 			when data_source = 'mcrt' then 'Medicare'
+			when data_source = 'mhtw' then 'HTW'
+			when data_source = 'mcpp' then 'Chip Perinatal'
 		end as insurance
   from tableau.master_enrollment
- where year >= 2020 and state = 'TX' and data_source in ('mdcd', 'mcrt')
+ where year >= 2020 and state = 'TX' and data_source in ('mdcd', 'mcrt', 'mhtw', 'mcpp')
 union
 select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan_type, bus_cd, state, 'Commercial'
   from tableau.master_enrollment
@@ -50,35 +55,33 @@ select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan
 create or replace view tableau.tx_member_condition_view
 as 
 select b.*,
-aimm, ami, ca, cfib, chf,
-ckd, cliv, copd, cysf, dep,
-epi, fbm, hemo, hep, hiv,
-ihd, lbp, lymp, ms, nicu,
-pain, park, pneu, ra, scd,
-smi, str, tbi, trans, trau
+		aimm, ami, ca, cfib, chf, ckd, cliv, copd, 
+		cysf, dep, epi, fbm, hemo, hep, hiv, 
+		ihd, lbp, lymp, ms, nicu, pain, park, 
+		pneu, ra, scd, smi, str, tbi, trans, 
+		trau, asth, dem, diab, htn, opi, tob
 from tableau.master_enrollment a
 join tableau.tx_enrollment_view b
  on a.uth_member_id = b.uth_member_id
 and a.year = b.year;
 
 -- tx crg risk
- 
- create or replace view tableau.tx_crg_risk_view
+create or replace view tableau.tx_crg_risk_view
 as
 select b.data_source, 
-	b.year as crg_year,
-    b.uth_member_id,
-    b.gender_cd,
-    b.age_derived,
-    b.plan_type,
-    b.bus_cd,
-    b.state,
-    b.race_cd,
-    b.total_enrolled_months,
-    b.crg,
-    b.crg_abbreviated,
-	a.condition_name,
-    a.condition_flag,
+		b.year as crg_year,
+	    b.uth_member_id,
+	    b.gender_cd,
+	    b.age_derived,
+	    b.plan_type,
+	    b.bus_cd,
+	    b.state,
+	    b.race_cd,
+	    b.total_enrolled_months,
+	    b.crg,
+	    b.crg_abbreviated,
+		a.condition_name,
+	    a.condition_flag,
         CASE
             WHEN a.condition_name = 'N/A'::text THEN 'Without Condition'::text
             ELSE 'With Condition'::text
@@ -88,22 +91,23 @@ left join tableau.master_enrollment b
   on a.uth_member_id = b.uth_member_id
  and a.data_source = b.data_source
  and a.year = b.year
- where state = 'TX' and b.data_source in ('mdcd', 'mcrt')
+where a.state = 'TX' 
+ and b.data_source in ('mdcd', 'mcrt', 'mhtw', 'mcpp')
 union
 select 'cmrc',
-	b.year as crg_year,
-    b.uth_member_id,
-    b.gender_cd,
-    b.age_derived,
-    b.plan_type,
-    b.bus_cd,
-    b.state,
-    b.race_cd,
-    b.total_enrolled_months,
-    b.crg,
-    b.crg_abbreviated,
-	a.condition_name,
-    a.condition_flag,
+		b.year as crg_year,
+	    b.uth_member_id,
+	    b.gender_cd,
+	    b.age_derived,
+	    b.plan_type,
+	    b.bus_cd,
+	    b.state,
+	    b.race_cd,
+	    b.total_enrolled_months,
+	    b.crg,
+	    b.crg_abbreviated,
+		a.condition_name,
+	    a.condition_flag,
         CASE
             WHEN a.condition_name = 'N/A'::text THEN 'Without Condition'::text
             ELSE 'With Condition'::text
@@ -113,12 +117,11 @@ left join tableau.master_enrollment b
   on a.uth_member_id = b.uth_member_id
  and a.data_source = b.data_source
  and a.year = b.year
- where state = 'TX' 
+ where a.state = 'TX' 
   and b.data_source in ('optz', 'truv')
-  and bus_cd = 'COM';
+  and a.bus_cd = 'COM';
 
 -- granting permissions
- 
 grant select on tableau.tx_covid_view to uthealth_analyst; 
 grant select on tableau.tx_crg_risk_view to uthealth_analyst; 
 grant select on tableau.tableau.tx_member_condition_view to uthealth_analyst; 
