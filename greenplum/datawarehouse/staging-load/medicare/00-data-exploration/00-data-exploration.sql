@@ -64,7 +64,14 @@ select * from medicare_texas.mbsf_abcd_summary where bene_id = 'Ggggggggangnuuw'
 
 --nothing!
 
+select * from medicare_texas.mbsf_abcd_summary;
 
+
+/*****************
+ * what's up w/ the death date eh
+ */
+
+select bene_birth_dt, bene_death_dt from medicare_texas.mbsf_abcd_summary;
 
 
 
