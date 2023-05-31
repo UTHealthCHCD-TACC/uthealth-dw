@@ -69,9 +69,54 @@ select * from medicare_texas.mbsf_abcd_summary;
 
 /*****************
  * what's up w/ the death date eh
+ * 
+ * --oh what's up is that the dob was on the same line of code as
+ * something unrelated
+ * 
+ * who codes like that
  */
 
 select bene_birth_dt, bene_death_dt from medicare_texas.mbsf_abcd_summary;
+
+/*****************
+ * Did I clean sex right
+ * 
+ * --turns out it won't matter, there are like 2 people with 'U' and they're uniformly unknown gender code
+ * 
+ * --no one in mcrn has gender_cd = 'U'
+ */
+
+select * from dw_staging.mcrt_member_enrollment_monthly where gender_cd = 'U';
+select * from dw_staging.mcrn_member_enrollment_monthly where gender_cd = 'U';
+
+/**************
+ * Isrrael found issues where there's a some number differences for A and B plans
+ * 
+ * so apparently plan types are based on buying codes
+C	AB
+A	A
+3	AB
+0	
+B	B
+1	A
+2	B
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
