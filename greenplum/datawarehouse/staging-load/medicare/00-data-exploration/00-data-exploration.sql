@@ -102,17 +102,29 @@ B	B
 2	B
  */
 
+/********************
+ * Are there null years?
+ * 
+ * --no
+ */
 
+select * from medicare_texas.mbsf_abcd_summary where year is null;
 
+/***********************
+ * Is Medicare enrollment one row = 1 person per year?
+ */
 
+select bene_id, bene_enrollmt_ref_yr, count(*)
+from medicare_texas.mbsf_abcd_summary
+group by bene_id, bene_enrollmt_ref_yr
+having count(*) > 1;
+--nothing!
 
-
-
-
-
-
-
-
+select bene_id, bene_enrollmt_ref_yr, count(*)
+from medicare_national.mbsf_abcd_summary
+group by bene_id, bene_enrollmt_ref_yr
+having count(*) > 1;
+--also nothing
 
 
 

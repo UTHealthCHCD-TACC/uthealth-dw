@@ -19,6 +19,8 @@
  * 							sex is cleaned separately, though it's unnecessary b/c medicare is pretty clean
  * 							zip3 is updated separately (for speed)
  * ******************************************************************************************************
+ * xzhang || 06/01/2023 || Removed columns from cleanup that don't need to be cleaned up
+ * ******************************************************************************************************
  */
 
 /***************************
@@ -44,25 +46,31 @@ insert into dw_staging.mcrt_member_enrollment_yearly (
          data_source, 
          year, 
          uth_member_id, 
+         gender_cd,
+         race_cd,
 		 age_derived, 
-		 dob_derived, 
+		 dob_derived,
+		 state,
+		 zip5,
+		 zip3,
 		 death_date,
 		 bus_cd, 
-		 claim_created_flag, 
-		 rx_coverage, 
 		 load_date,
          member_id_src,
          table_id_src)
 select distinct on(data_source, year, uth_member_id)
        data_source, 
        year, 
-       uth_member_id, 
+       uth_member_id,
+       gender_cd,
+       race_cd,
 	   age_cy, 
-	   dob_derived, 
+	   dob_derived,
+	   state,
+	   zip5,
+	   zip3,
 	   death_date,
        bus_cd,
-	   claim_created_flag, 
-	   rx_coverage, 
 	   load_date,
 	   member_id_src,
 	   table_id_src
@@ -121,47 +129,16 @@ set total_enrolled_months = enrolled_jan + enrolled_feb + enrolled_mar +
 
 vacuum analyze dw_staging.mcrt_member_enrollment_yearly;
 
-/************************************************
- * Clean sex - not in do loop b/c we want to disregard 'U' where possible
- * 
- * this is actually useless for mdcrt b/c there are 2 people with
- * gender_cd = 'U' and they're uniformly unknown
- * but we'll keep this code here in case it comes up in the future
- ***********************************************/
-drop table if exists dw_staging.temp_enrl_gender_cd;
-drop table if exists dw_staging.final_enrl_gender_cd;
-
-create table dw_staging.temp_enrl_gender_cd
-	 with (appendonly=true, orientation=column)
-	 as
-	 select count(*), max(month_year_id) as my, uth_member_id, gender_cd , year,
-	 	max(case when gender_cd = 'U' then 0 else 1 end) as not_u
-	 from dw_staging.mcrt_member_enrollment_monthly
-	 group by 3, 4, 5;
-
-create table dw_staging.final_enrl_gender_cd
-	 with (appendonly=true, orientation=column)
-	 as
-	 select * , row_number() over(partition by uth_member_id, year
-	 order by not_u desc, count desc, my desc) as rn
-	 from dw_staging.temp_enrl_gender_cd
-	 distributed by (uth_member_id);
-	
-update dw_staging.mcrt_member_enrollment_yearly a set gender_cd = b.gender_cd 
-	 from dw_staging.final_enrl_gender_cd b 
-	 where a.uth_member_id = b.uth_member_id
-	   and a.year = b.year
-	   and b.rn = 1;
-
-drop table if exists dw_staging.temp_enrl_gender_cd;
-drop table if exists dw_staging.final_enrl_gender_cd;
-
 /*****************************************************************
  * Clean variables using most frequent > most recent
+ * Note that original Medicare enrollment tables have 1 row per member per year
+ * and the monthly table is expanded from that data
+ * so it's impossible for sex, race, etc. to differ within a year.
+ * However, plan_type and rx_coverage are recorded on a monthly basis
  ****************************************************************/
 do $$
 declare
-	col_list text[]:= array['state', 'zip5', 'race_cd', 'plan_type'];
+	col_list text[]:= array['plan_type', 'rx_coverage'];
 	col_list_len int = array_length(col_list,1);
 begin
 
@@ -211,17 +188,6 @@ end $$;
 
 --vacuum after do loop
 vacuum analyze dw_staging.mcrt_member_enrollment_yearly;
-
-/****************************************
- * Update zip3 based on zip
- ****************************************/
---set dual to 1 if enrl_months_dual >= enrl_months_nondual
-update dw_staging.mcrt_member_enrollment_yearly
-set zip3 = substring(zip5, 1, 3);
-
---vacuum analyze
-vacuum analyze dw_staging.mcrt_member_enrollment_yearly;
-
 
 
 
