@@ -26,14 +26,79 @@
  * 							added age_months, age_fy, table_id_src, member_id_src, load_date
  * 							added consecutive enrolled months
  * 							added a vacuum analyze
- * 
+ *  ******************************************************************************************************
+ *  xzhang || 05/31/23   || There was an issue with a join and I didn't want to try to troubleshoot the legacy code
+ * 							so I re-wrote it so that an ETL is generated first (make enrollment table long
+ * 							rather than wide) and THEN the final table is generated
+ * 						
 */
 
 /******************************
  * MEDICARE TEXAS
  ******************************/
 
---create empty enrollment table for mdcrt
+--Medicare enrollment tables are wide rather than long, so let's fix that
+--First, rearrange enrollment table into a long table
+drop table if exists dw_staging.mcrt_member_enrollment_monthly_etl;
+
+create table dw_staging.mcrt_member_enrollment_monthly_etl (
+	year int2,
+	bene_id text,
+	dob date,
+	dod date,
+	sex text,
+	state text,
+	zip text,
+	race text,
+	month_year_id varchar(8),
+	mdcr_status_code varchar(8),
+	mdcr_entlmt_buyin_ind varchar(8),
+	ptd_cntrct_id varchar(8)
+)
+distributed by (bene_id);
+
+do $$
+declare
+	i int := 1;
+	month char(2);
+begin
+	raise notice 'Elongating Medicare Texas enrollment table...';
+	
+	for i in 1..12
+	loop
+	    month := lpad(i::text, 2, '0');
+		execute 'insert into dw_staging.mcrt_member_enrollment_monthly_etl
+			select bene_enrollmt_ref_yr::int, bene_id,
+				bene_birth_dt::date, bene_death_dt::date,
+				sex_ident_cd, state_code, zip_cd, bene_race_cd,
+				year || ''' || month || ''' as month_year_id,
+				mdcr_status_code_' || month || ',
+				mdcr_entlmt_buyin_ind_' || month || ',
+				ptd_cntrct_id_' || month || '
+			from medicare_texas.mbsf_abcd_summary
+			where mdcr_status_code_' || month || ' in (''10'',''11'',''20'',''21'',''31'');'
+					;
+		raise notice 'Month % completed', month;
+	end loop;
+
+	raise notice 'Medicare Texas enrollment table elongation completed!';
+end $$;
+
+vacuum analyze dw_staging.mcrt_member_enrollment_monthly_etl;
+
+--select * from dw_staging.mcrt_member_enrollment_monthly_etl order by year, bene_id limit 10;
+
+/************
+ * Make monthly enrollment table
+ *   - Join in dim_uth_member_id
+ *   - Join in ref_month_year (to calculate ages, etc)
+ * 	 - Join in sex code
+ *   - Join in race code
+ *   - Join in state code
+ * 	 - Join in entitlement buy-in table (determines plan_type)
+ *   - Join in part D coverage (ptd - rx_coverage)
+ */
+
 drop table if exists dw_staging.mcrt_member_enrollment_monthly;
 
 create table dw_staging.mcrt_member_enrollment_monthly 
@@ -47,7 +112,6 @@ with (
 distributed by (uth_member_id)
 ;
 
--- *** Medicare  Texas--------------------------------------------------------------------------------------
 insert into dw_staging.mcrt_member_enrollment_monthly (
 	data_source, 
 	year, 
@@ -71,88 +135,69 @@ insert into dw_staging.mcrt_member_enrollment_monthly (
 	member_id_src,
 	age_fy
 	)		
-select 'mcrt',
-	   b.year_int, 
-	   b.month_year_id, 
-	   a.uth_member_id,
-	   c.gender_cd,
-	   case when e.state_cd is null then 'XX' else e.state_cd end, 
-	   m.zip_cd, 
-	   substring(m.zip_cd,1,3),
-  	   extract( years from age(b.cy_end, bene_birth_dt::date)) as age_cy,
-	   bene_birth_dt::date as dob_derived, 
-	   bene_death_dt::date as death_date,
-	   ent.plan_type, 
-	   null as bus, 
-	   ptd.ptd_coverage as rx_coverage, 
-	   b.fy_ut as fiscal_year, 
-	   case when r.race_cd is null then '0' else r.race_cd end,
+select 'mcrt' as data_source,
+	   a.year, 
+	   c.month_year_id, 
+	   b.uth_member_id,
+	   d.gender_cd,
+	   e.state_cd as state,
+	   a.zip as zip5, 
+	   substring(a.zip,1,3) as zip3,
+  	   extract(years from age(c.cy_end, a.dob)) as age_cy,
+	   a.dob as dob_derived, 
+	   a.dod as death_date,
+	   g.plan_type, 
+	   null as bus_cd, 
+	   case when h.ptd_coverage is null then 0 else h.ptd_coverage end as rx_coverage,
+	   c.fy_ut as fiscal_year, 
+	   f.race_cd,
 	   current_date as load_date,
-	   extract(years from age(to_date(b.month_year_id::text, 'YYYYMM'), bene_birth_dt::date)) * 12 + 
-	   extract(months from age(to_date(b.month_year_id::text, 'YYYYMM'), bene_birth_dt::date)) as age_months,
+	   extract(years from age(to_date(a.month_year_id::text, 'YYYYMM'), a.dob)) * 12 + 
+	   extract(months from age(to_date(a.month_year_id::text, 'YYYYMM'), a.dob)) as age_months,
 	   'medicare_texas.mbsf_abcd_summary' as table_id_src,
-	   m.bene_id as member_id_src,
-  	   extract( years from age(b.fy_end, bene_birth_dt::date)) as age_fy
-from medicare_texas.mbsf_abcd_summary m
-  join data_warehouse.dim_uth_member_id a
-    on a.member_id_src = m.bene_id::text
-   and a.data_source = 'mcrt'
-  left outer join reference_tables.ref_gender c
-    on c.data_source = 'mcr'
-   and c.gender_cd_src = m.sex_ident_cd
-  left outer join reference_tables.ref_medicare_state_codes e 
-     on e.medicare_state_cd = m.state_code   
-  left outer join reference_tables.ref_race r 
-     on r.race_cd_src = m.bene_race_cd 
-    and r.data_source = 'mcrt'
-  join reference_tables.ref_month_year b
-    on b.year_int = bene_enrollmt_ref_yr::int
-   and 
-   (	month_int = case when m.mdcr_status_code_01 in ('10','11','20','21','31') then 1 else 0 end
-     or month_int = case when m.mdcr_status_code_02 in ('10','11','20','21','31') then 2 else 0 end
-     or month_int = case when m.mdcr_status_code_03 in ('10','11','20','21','31') then 3 else 0 end
-     or month_int = case when m.mdcr_status_code_04 in ('10','11','20','21','31') then 4 else 0 end
-     or month_int = case when m.mdcr_status_code_05 in ('10','11','20','21','31') then 5 else 0 end
-     or month_int = case when m.mdcr_status_code_06 in ('10','11','20','21','31') then 6 else 0 end
-     or month_int = case when m.mdcr_status_code_07 in ('10','11','20','21','31') then 7 else 0 end
-     or month_int = case when m.mdcr_status_code_08 in ('10','11','20','21','31') then 8 else 0 end
-     or month_int = case when m.mdcr_status_code_09 in ('10','11','20','21','31') then 9 else 0 end
-     or month_int = case when m.mdcr_status_code_10 in ('10','11','20','21','31') then 10 else 0 end
-     or month_int = case when m.mdcr_status_code_11 in ('10','11','20','21','31') then 11 else 0 end
-     or month_int = case when m.mdcr_status_code_12 in ('10','11','20','21','31') then 12 else 0 end
-    )
-  join reference_tables.ref_medicare_entlmt_buyin ent 
-    on ent.buyin_cd = case when b.month_int = 1 then m.mdcr_entlmt_buyin_ind_01 
-                           when b.month_int = 2 then m.mdcr_entlmt_buyin_ind_02 
-                           when b.month_int = 3 then m.mdcr_entlmt_buyin_ind_03 
-                           when b.month_int = 4 then m.mdcr_entlmt_buyin_ind_04 
-                           when b.month_int = 5 then m.mdcr_entlmt_buyin_ind_05 
-                           when b.month_int = 6 then m.mdcr_entlmt_buyin_ind_06 
-                           when b.month_int = 7 then m.mdcr_entlmt_buyin_ind_07 
-                           when b.month_int = 8 then m.mdcr_entlmt_buyin_ind_08
-                           when b.month_int = 9 then m.mdcr_entlmt_buyin_ind_09 
-                           when b.month_int = 10 then m.mdcr_entlmt_buyin_ind_10 
-                           when b.month_int = 11 then m.mdcr_entlmt_buyin_ind_11 
-                           when b.month_int = 12 then m.mdcr_entlmt_buyin_ind_12 
-                           else null end      
-  join reference_tables.ref_medicare_ptd_cntrct ptd 
-    on ptd.ptd_first_char = case when b.month_int = 1 then substring(m.ptd_cntrct_id_01,1,1)
-                                 when b.month_int = 2 then substring(m.ptd_cntrct_id_02,1,1)
-                                 when b.month_int = 3 then substring(m.ptd_cntrct_id_03,1,1)
-                                 when b.month_int = 4 then substring(m.ptd_cntrct_id_04,1,1)
-                                 when b.month_int = 5 then substring(m.ptd_cntrct_id_05,1,1)
-                                 when b.month_int = 6 then substring(m.ptd_cntrct_id_06,1,1)
-                                 when b.month_int = 7 then substring(m.ptd_cntrct_id_07,1,1)
-                                 when b.month_int = 8 then substring(m.ptd_cntrct_id_08,1,1)
-                                 when b.month_int = 9 then substring(m.ptd_cntrct_id_09,1,1)
-                                 when b.month_int = 10 then substring(m.ptd_cntrct_id_10,1,1)
-                                 when b.month_int = 11 then substring(m.ptd_cntrct_id_11,1,1)
-                                 when b.month_int = 12 then substring(m.ptd_cntrct_id_12,1,1)
-                           else null end
+	   a.bene_id as member_id_src,
+  	   extract(years from age(c.fy_end, a.dob)) as age_fy
+from dw_staging.mcrt_member_enrollment_monthly_etl a
+  left join data_warehouse.dim_uth_member_id b
+    on a.bene_id::text = b.member_id_src
+   and b.data_source = 'mcrt'
+  left join reference_tables.ref_month_year c
+  	on a.month_year_id::int = c.month_year_id
+  left join reference_tables.ref_gender d
+    on d.data_source = 'mcr'
+   and a.sex = d.gender_cd_src
+  left join reference_tables.ref_medicare_state_codes e
+     on a.state = e.medicare_state_cd
+  left join reference_tables.ref_race f 
+     on f.race_cd_src = a.race 
+    and f.data_source = 'mcrt'
+  left join reference_tables.ref_medicare_entlmt_buyin g 
+    on g.buyin_cd = a.mdcr_entlmt_buyin_ind
+  left join reference_tables.ref_medicare_ptd_cntrct h 
+    on h.ptd_first_char = substring(a.ptd_cntrct_id,1,1)
 ;
 
 analyze dw_staging.mcrt_member_enrollment_monthly;
 
+/****************
+ * CHECKPOINT: did the table joins generate a lot of nulls?
+ */
+
+select count(*), sum(case when uth_member_id is null then 1 else 0 end) as uth_memid,
+	sum(case when month_year_id is null then 1 else 0 end) as monyr_id,
+	sum(case when gender_cd is null then 1 else 0 end) as sex,
+	sum(case when state is null then 1 else 0 end) as state,
+	sum(case when race_cd is null then 1 else 0 end) as race,
+	sum(case when plan_type is null then 1 else 0 end) as plan,
+	sum(case when rx_coverage is null then 1 else 0 end) as rx_cvg,
+	sum(case when uth_member_id is null then 1 else 0 end)*1.0/count(*) as uth_memid_pct,
+	sum(case when month_year_id is null then 1 else 0 end)*1.0/count(*) as monyr_id_pct,
+	sum(case when gender_cd is null then 1 else 0 end)*1.0/count(*) as sex_pct,
+	sum(case when state is null then 1 else 0 end)*1.0/count(*) as state_pct,
+	sum(case when race_cd is null then 1 else 0 end)*1.0/count(*) as race_pct,
+	sum(case when plan_type is null then 1 else 0 end)*1.0/count(*) as plan_pct,
+	sum(case when rx_coverage is null then 1 else 0 end)*1.0/count(*) as rx_cvg_pct
+from dw_staging.mcrt_member_enrollment_monthly;
 
 ---**script to build consecutive enrolled months	
 drop table if exists dw_staging.temp_mcrt_consec_enrollment;
