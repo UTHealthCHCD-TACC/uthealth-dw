@@ -3,75 +3,6 @@
  * Unlike with the master_claims table, we can create this table without splitting up into multiple steps (by year, data_source)
  */
 
-drop table if exists dev.master_enrollment_temp;
-
-create table dev.master_enrollment_temp
-(
-data_source bpchar(4),
-year int,
-uth_member_id int,
-gender_cd bpchar(1),
-race_cd bpchar(1),
-age_derived int,
-state text,
-msa int,
-plan_type text,
-bus_cd bpchar(4),
-total_enrolled_months int,
-aimm int,
-ami int,
-ca int,
-cfib int,
-chf int,
-ckd int,
-cliv int,
-copd int,
-cysf int,
-dep int,
-epi int,
-fbm int,
-hemo int,
-hep int,
-hiv int,
-ihd int,
-lbp int,
-lymp int,
-ms int,
-nicu int,
-pain int,
-park int,
-pneu int,
-ra int,
-scd int,
-smi int,
-str int,
-tbi int,
-trans int,
-trau int,
-asth int,
-dem int,
-diab int,
-htn int,
-opi int,
-tob int,
-crg text,
-crg_abbreviated bpchar(2),
-covid_severity int
-)
-with (appendoptimized=true, orientation=column, compresstype=zlib)
-distributed by (uth_member_id)
-partition by list(data_source)
-(
-    partition optz values ('optz'),
-    partition truv values ('truv'),
-    partition mcrt values ('mcrt'),
-    partition mcrn values ('mcrn'),
-    partition mdcd values ('mdcd'),
-    partition mhtw values ('mhtw'),
-    partition mcpp values ('mcpp')
-)
-;
-
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, 
 		state, msa, plan_type, bus_cd, total_enrolled_months
@@ -128,8 +59,6 @@ select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd,
    on e.uth_member_id = cs.uth_member_id
   and e.year = cs.year
 ;
-
-
 
 ----- Counts for QA
 select *
@@ -194,6 +123,6 @@ alter table tableau.master_enrollment owner to uthealth_dev;
 
 grant select on tableau.master_enrollment to uthealth_analyst;
 
-analyze tableau.master_enrollment;
+vacuum analyze tableau.master_enrollment;
 
 select * from tableau.master_enrollment;
