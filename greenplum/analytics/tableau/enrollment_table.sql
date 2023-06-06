@@ -5,7 +5,7 @@
 
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, 
-		state, msa, plan_type, bus_cd, total_enrolled_months
+		state, plan_type, bus_cd, total_enrolled_months
 from data_warehouse.member_enrollment_yearly a 
 where a.year >= 2014
   and a.data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd', 'mhtw', 'mcpp')
@@ -40,7 +40,7 @@ select *
   from data_warehouse.covid_severity
  where data_source in ('optz', 'truv','mcrt','mcrn', 'mdcd', 'mhtw', 'mcpp')
 )
-insert into dev.master_enrollment_temp
+insert into dev.ip_master_enrollment
 select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, 
 		c.cysf, c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, 
 		c.ihd, c.lbp, c.lymp, c.ms, c.nicu, c.pain, c.park, 

@@ -129,11 +129,10 @@ def fill_claims_table(connection, data_source, year):
     and h.year = e.year
     left join dev.ip_pivot_dx_temp_{data_source} d1
     on h.uth_claim_id = d1.uth_claim_id;
-
-    vacuum analyze dev.ip_master_temp_{data_source};
     '''
 
         cursor.execute(insert_query)
+        cursor.execute(f'vacuum analyze dev.ip_master_temp_{data_source};')
 
 def swap_partitions(cursor, data_source):
     # once we gotten the refreshed data into a seperate table, swap current partition with our new table
@@ -142,16 +141,15 @@ def swap_partitions(cursor, data_source):
     exchange partition {data_source}
     with table dev.ip_master_temp_{data_source}
     ;
-
-    vacuum analyze tableau.master_claims;
     '''
 
     cursor.execute(swap_query)
+    cursor.execute('vacuum analyze tableau.master_claims;')
 
 def drop_temp_tables(cursor, data_source):
     cursor.execute(f'drop table if exists dev.ip_dx_temp_{data_source};')
     cursor.execute(f'drop table if exists dev.ip_pivot_dx_temp_{data_source};')
-    cursor.execute(f'drop table if exists dev.ip_master_temp_{data_source};')
+    # cursor.execute(f'drop table if exists dev.ip_master_temp_{data_source};')
 
 if __name__ == '__main__':
 
@@ -161,8 +159,8 @@ if __name__ == '__main__':
     data_sources = ['truv']
     years = tqdm(range(2014, 2022)) #{'start_year':2012, 'end_year':2021}
     
-
     for data_source in data_sources:
+        print(data_source)
         with connection.cursor() as cursor:
             create_temp_table(cursor, data_source)
             create_dx_table(cursor, data_source)
@@ -175,5 +173,5 @@ if __name__ == '__main__':
             fill_claims_table(connection, data_source, year)
 
         with connection.cursor() as cursor:
-            swap_partitions(cursor, data_source)
+            # swap_partitions(cursor, data_source)
             drop_temp_tables(cursor, data_source)
