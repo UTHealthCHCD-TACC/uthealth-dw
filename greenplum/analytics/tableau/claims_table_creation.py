@@ -156,7 +156,7 @@ if __name__ == '__main__':
     connection = psycopg2.connect(get_dsn())
     connection.autocommit = True
     # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd'
-    data_sources = ['truv']
+    data_sources = ['mcrn']
     years = tqdm(range(2014, 2022)) #{'start_year':2012, 'end_year':2021}
     
     for data_source in data_sources:
