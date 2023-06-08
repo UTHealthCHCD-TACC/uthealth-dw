@@ -51,7 +51,6 @@ revoke all on all tables in schema medicaid from lghosh1;
 revoke all on database uthealth FROM lghosh1;
 
 --This code set in theory lets other people access the tables that this person makes in dev
-set role oaborisa;
 alter default privileges for user oaborisa in schema dev grant all on tables to uthealth_analyst;
 
 /*******************************************************************

@@ -1,0 +1,101 @@
+---
+title: "Upload Medicare Provider Specialty Codes to Greenplum"
+author: "XRZ"
+date: '2023-06-06'
+output: html_document
+---
+
+#Purpose:
+This R markdown script uploads Medicare provider specialty codes to reference_tables.medicaid_lu_contracts
+
+Source table: See reference table on https://resdac.org/cms-data/variables/claim-or-revenue-center-rendering-physician-specialty-code
+
+Target table: Greenplum: reference_tables.medicare_provider_specialty_codes
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment, eval=FALSE}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
+```
+
+## 0.5 Declare root directory and set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("upload-medicare-prvdr-specialty-codes.rmd")
+
+```
+
+# SECTION 1: Upload to TACC
+
+```{r}
+# Read files in
+filename = 'provider_specialty_codes.xlsx'
+importfile = here(filename)
+
+to_upload = read.xlsx(importfile, "Sheet1")
+
+# make names lowercase
+names(to_upload) = tolower(names(to_upload))
+
+# trims whitespace
+to_upload[] <- lapply(to_upload, trimws)
+
+# uploads to GP
+tac = connect_to_tacc()
+dbWriteTable(tac, SQL("reference_tables.medicare_provider_specialty_codes"), to_upload, overwrite = TRUE)
+
+```
+
+# SECTION 99: Close connections and clean-up
+
+```{r close-connections, eval=FALSE}
+# closes connections if they are open
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval=FALSE}
+# clears R environment
+rm(list=ls())
+```
+
+
+

@@ -4,6 +4,14 @@
  * 
  * 05/23/23: Xiaorui added timestamps and auto-updating the update_log (with backup!)
  * Original code is from Will/Joe W
+ * 06/01/23: XZ tried to add a blurb to address the same bene_id in both mcrt and mcrn
+ * generating two uth_member_ids but... there's a uniqueness constraint for uth_member_id
+ * so we had to roll the script back to previous version. No changes.
+ * 
+ * ***********NOTE**************
+ * There's an issue where the same bene_id is assigned a second uth_member_id if the person
+ * is in both the TX and National tables. Xiaorui 'fixed' the code but it hasn't been tested yet.
+ * Needs to be texted with the next Medicare data update
  * 
  * This script is lightning-fast, btw
  * 
@@ -30,7 +38,7 @@ select 'Medicare Texas dim_uth_member_id script finished, Medicare National star
 --- ***** Medicare National ***** 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
-	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data
+	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data, b.uth_member_id
 	from medicare_national.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
       on b.data_source in ('mcrn','mcrt')
