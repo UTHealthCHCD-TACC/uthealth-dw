@@ -126,11 +126,115 @@ group by bene_id, bene_enrollmt_ref_yr
 having count(*) > 1;
 --also nothing
 
+/******************************
+ * How well do Medicare claim table pairs match up?
+ */
+
+--DME
+select count(*) from ( select bene_id, clm_id from medicare_texas.dme_claims_k group by bene_id, clm_id) t;
+--27049702
+select count(*) from ( select bene_id, clm_id from medicare_texas.dme_line_k group by bene_id, clm_id) t;
+--27049702
+
+--they are exact. Try another one
+
+--inpatient
+select count(*) from ( select bene_id, clm_id from medicare_texas.inpatient_base_claims_k group by bene_id, clm_id) t;
+--5577182
+select count(*) from ( select bene_id, clm_id from medicare_texas.inpatient_revenue_center_k group by bene_id, clm_id) t;
+--5577182
+
+--good enough for me
+
+/*********************
+ * Check behavior of these columns:
+ * 
+ * clm_bene_pd_amt
+line_bene_ptb_ddctbl_amt
+line_coinsrnc_amt
+ */
+
+select bene_id, clm_id, line_sbmtd_chrg_amt, line_alowd_chrg_amt, 
+	line_bene_pmt_amt, line_bene_ptb_ddctbl_amt, line_coinsrnc_amt from medicare_texas.bcarrier_line_k;
+
+select bene_id, clm_id, count(*) from medicare_texas.inpatient_revenue_center_k
+group by clm_id, bene_id
+having count(*) > 2;
+
+gggggggjynjwawn	gggggnnyfwuwyyg	17
+ggggggByjwfByyy	gggggnAuyuAyyag	15
+ggggggggnjnfAnu	gggggnayygwBafa	20
+
+--Case study 1: gggggggjynjwawn	gggggnnyfwuwyyg	17
+select bene_id, clm_id, rev_cntr_tot_chrg_amt, rev_cntr_ncvrd_chrg_amt
+from medicare_texas.inpatient_revenue_center_k
+where bene_id = 'gggggggjynjwawn' and clm_id = 'gggggnnyfwuwyyg';
+--all under tot_chrg_amt, nothing under not covered
+
+select bene_id, clm_id, sum(rev_cntr_tot_chrg_amt::float), sum(rev_cntr_ncvrd_chrg_amt::float)
+from medicare_texas.inpatient_revenue_center_k
+where bene_id = 'gggggggjynjwawn' and clm_id = 'gggggnnyfwuwyyg'
+group by 1, 2;
+--30,345.32
+
+select bene_id, clm_id, clm_pmt_amt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt,
+	clm_tot_chrg_amt::float + (clm_pass_thru_per_diem_amt::float * clm_utlztn_day_cnt::int) as real_total_cost
+from medicare_texas.inpatient_base_claims_k
+where bene_id = 'gggggggjynjwawn' and clm_id = 'gggggnnyfwuwyyg';
+gggggggjynjwawn	gggggnnyfwuwyyg	12087.89	15172.66	0.00	8	15172.66
+
+-- :/ wtf?
+
+--Case study 2: ggggggByjwfByyy	gggggnAuyuAyyag	15
+select bene_id, clm_id, rev_cntr_tot_chrg_amt, rev_cntr_ncvrd_chrg_amt
+from medicare_texas.inpatient_revenue_center_k
+where bene_id = 'ggggggByjwfByyy' and clm_id = 'gggggnAuyuAyyag';
+--all under tot_chrg_amt, nothing under not covered
+
+select *
+from medicare_texas.inpatient_revenue_center_k
+where bene_id = 'ggggggByjwfByyy' and clm_id = 'gggggnAuyuAyyag'
+order by clm_line_num::int;
+
+select bene_id, clm_id, sum(rev_cntr_tot_chrg_amt::float), sum(rev_cntr_ncvrd_chrg_amt::float)
+from medicare_texas.inpatient_revenue_center_k
+where bene_id = 'ggggggByjwfByyy' and clm_id = 'gggggnAuyuAyyag'
+group by 1, 2;
+--49756.4
+
+select bene_id, clm_id, clm_pmt_amt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt,
+	clm_tot_chrg_amt::float + (clm_pass_thru_per_diem_amt::float * clm_utlztn_day_cnt::int) as real_total_cost,
+	nch_prmry_pyr_clm_pd_amt, nch_bene_ip_ddctbl_amt, nch_bene_pta_coinsrnc_lblty_am, nch_bene_blood_ddctbl_lblty_am,
+	nch_ip_tot_ddctn_amt
+from medicare_texas.inpatient_base_claims_k
+where bene_id = 'ggggggByjwfByyy' and clm_id = 'gggggnAuyuAyyag';
+ggggggByjwfByyy	gggggnAuyuAyyag	7421.32	24878.20	0.00	2	24878.2
+
+--are there diag codes in DW that aren't capitalized?
+select data_source, count(diag_cd)
+from data_warehouse.claim_diag
+where diag_cd ~ '[a-z]'
+group by data_source;
+
+--get column names AND data type
+select column_name, udt_name ||
+	case when character_maximum_length is not null then '(' || character_maximum_length || ')'
+	else '' end
+from information_schema.columns
+where table_schema = 'data_warehouse' and table_name = 'claim_detail'
+order by ordinal_position;
 
 
+/**********************
+ * Check for agreement between year and bene_enrollmt_ref_yr
+ * in mbsf_abcd_summary
+ */
 
+select "year", bene_enrollmt_ref_yr
+from medicare_texas.mbsf_abcd_summary
+where year != bene_enrollmt_ref_yr;
 
-
+--WHEW perfect agreement
 
 
 

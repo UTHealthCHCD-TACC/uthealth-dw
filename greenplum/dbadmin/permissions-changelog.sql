@@ -9,6 +9,24 @@
  * 
  * ****************************************************************************************************** */
 
+--06/06/2023
+grant uthealth_dev to lghosh1;
+
+
+--06/02/2023
+--Yesterday's code didn't fix the issue where Femi couldn't delete Joe W's tables so let's try this
+grant delete on all tables in schema dev to oaborisa;
+grant uthealth_dev to oaborisa;
+
+--06/01/2023
+--grant permissions to uth_analyst for future tables created in dev schema for most active users
+alter default privileges for user oaborisa in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user jwozny in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user cms2 in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user ctruong in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user xrzhang in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user iperez9 in schema dev grant all on tables to uthealth_analyst;
+
 --05/02/2023
 --grant uthealth_dev to Kenneth, Aryan, Joe H (Garret is already uthealth_dev)
 grant uthealth_dev to nguyken;
