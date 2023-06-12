@@ -41,9 +41,9 @@ partition by list(data_source)
 )
 ;
 
-drop table if exists dev.ip_master_enrollment;
+drop table if exists tableau.master_enrollment;
 
-create table dev.ip_master_enrollment
+create table tableau.master_enrollment
 (
 data_source bpchar(4),
 year int,

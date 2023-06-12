@@ -3,7 +3,7 @@
  * Unlike with the master_claims table, we can create this table without splitting up into multiple steps (by year, data_source)
  */
 
-delete from dev.ip_master_enrollment;
+delete from tableau.master_enrollment;
 
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, 
@@ -35,7 +35,7 @@ covid as (
 select *
   from data_warehouse.covid_severity
 )
-insert into dev.ip_master_enrollment
+insert into tableau.master_enrollment
 select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, 
 		c.cysf, c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, 
 		c.ihd, c.lbp, c.lymp, c.ms, c.nicu, c.pain, c.park, 
@@ -58,13 +58,15 @@ select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd,
   and e.data_source = cs.data_source
 ;
 
-vacuum analyze dev.ip_master_enrollment;
+vacuum analyze tableau.master_enrollment;
+
+select * from tableau.master_enrollment;
 
 ----- Counts for QA
 select *
 from (
 select 'master_enrollment' as table, data_source, year, count(distinct uth_member_id), count(*)
-  from dev.ip_master_enrollment
+  from tableau.master_enrollment
  group by 2,3
 union
 select 'enrollment_only' as table, data_source, year, count(distinct uth_member_id), count(*)
@@ -77,7 +79,7 @@ order by 3,2,1;
 select *
 from (
 select 'master_enrollment' as table, data_source, year, count(distinct uth_member_id) , count(*)
-  from dev.ip_master_enrollment 
+  from tableau.master_enrollment 
  where covid_severity is not null 
  group by 2,3
 union
@@ -90,7 +92,7 @@ order by 3,2,1;
 select *
 from (
 select 'master_enrollment' as table, data_source, year, count(distinct uth_member_id), count(*) 
- from dev.ip_master_enrollment 
+ from tableau.master_enrollment 
 group by 2,3
 union
 select 'conditions' as table, data_source, year, count(distinct uth_member_id), count(*) 
@@ -103,7 +105,7 @@ order by 3,2,1;
 select *
 from (
 select 'master_enrollment' as table, data_source, year, count(distinct uth_member_id), count(*) 
- from dev.ip_master_enrollment
+ from tableau.master_enrollment
 where crg is not null
 group by 2,3
 union

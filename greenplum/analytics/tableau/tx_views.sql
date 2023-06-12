@@ -124,6 +124,6 @@ left join tableau.master_enrollment b
 -- granting permissions
 grant select on tableau.tx_covid_view to uthealth_analyst; 
 grant select on tableau.tx_crg_risk_view to uthealth_analyst; 
-grant select on tableau.tableau.tx_member_condition_view to uthealth_analyst; 
-grant select on tableau.tableau.tx_claim_view to uthealth_analyst; 
-grant select on tableau.tableau.tx_enrollment_view to uthealth_analyst; 
+grant select on tableau.tx_member_condition_view to uthealth_analyst; 
+grant select on tableau.tx_claim_view to uthealth_analyst; 
+grant select on tableau.tx_enrollment_view to uthealth_analyst; 
