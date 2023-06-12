@@ -23,7 +23,6 @@ def create_temp_table(cursor, data_source):
     analyze dev.ip_master_temp_{data_source};	
     '''
 
-    
     cursor.execute(temp_table)
 
 def create_dx_table(cursor, data_source):
@@ -48,7 +47,6 @@ def create_dx_table(cursor, data_source):
     analyze dev.ip_dx_temp_{data_source};	
     '''
 
-    
     cursor.execute(temp_dx)
 
 def create_dx_pivot_table(cursor, data_source, year):
@@ -155,9 +153,11 @@ if __name__ == '__main__':
 
     connection = psycopg2.connect(get_dsn())
     connection.autocommit = True
-    # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd'
-    data_sources = ['mcrn']
-    years = tqdm(range(2014, 2022)) #{'start_year':2012, 'end_year':2021}
+    # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd', 'mhtw', 'mcpp'
+    data_sources = ['optd']
+
+    #note that not all data sources have data for the same years. example: mcpp starts at 2015
+    years = tqdm(range(2015, 2022)) #{'start_year':2012, 'end_year':2021}
     
     for data_source in data_sources:
         print(data_source)
@@ -169,7 +169,7 @@ if __name__ == '__main__':
             years.set_description(str(year))
             with connection.cursor() as cursor:
                 create_dx_pivot_table(cursor, data_source, year)
-
+        
             fill_claims_table(connection, data_source, year)
 
         with connection.cursor() as cursor:

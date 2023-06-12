@@ -120,7 +120,3 @@ order by 3,2,1;
 alter table tableau.master_enrollment owner to uthealth_dev;
 
 grant select on tableau.master_enrollment to uthealth_analyst;
-
-vacuum analyze tableau.master_enrollment;
-
-select * from tableau.master_enrollment;

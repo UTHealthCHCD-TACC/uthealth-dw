@@ -69,7 +69,7 @@ SELECT data_source, year, uth_member_id, gender_cd, race_cd,
     a.cysf, a.dep, a.epi, a.fbm, a.hemo, a.hep, a.hiv, 
     a.ihd, a.lbp, a.lymp, a.ms, a.nicu, a.pain, a.park, 
     a.pneu, a.ra, a.scd, a.smi, a.str, a.tbi, a.trans, 
-    a.trau, a.asth, a.dem, a.diab, a.htn, a.opi, a.tob, 
+    a.trau, a.asth, a.dem, a.diab, a.htn, a.opi, a.tob
 FROM tableau.master_enrollment a
 ; 
 
