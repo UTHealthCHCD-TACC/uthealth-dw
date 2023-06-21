@@ -9,9 +9,14 @@
  * 
  * ****************************************************************************************************** */
 
+--06/12/2023
+--Jeff needs to access new tables created in conditions by Femi
+grant uthealth_dev to jfu2; --jeff already has role uthealth_dev
+alter default privileges for user oaborisa in schema conditions grant all on tables to uthealth_analyst;
+--also refreshed permissions on schema conditions to uthealth_analyst and uthealth_dev
+
 --06/06/2023
 grant uthealth_dev to lghosh1;
-
 
 --06/02/2023
 --Yesterday's code didn't fix the issue where Femi couldn't delete Joe W's tables so let's try this
