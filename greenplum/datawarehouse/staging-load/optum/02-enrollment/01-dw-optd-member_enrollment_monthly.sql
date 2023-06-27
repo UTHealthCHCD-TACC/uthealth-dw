@@ -164,3 +164,19 @@ alter table dw_staging.optd_member_enrollment_monthly drop column row_id;
 
 --vacuum analyze
 vacuum analyze dw_staging.optd_member_enrollment_monthly;
+
+-- updating age in months and fy age
+
+update dw_staging.optd_member_enrollment_monthly
+   set age_months = extract(years from age(to_date(month_year_id::text, 'YYYYMM'), dob_derived)) * 12 + 
+	   				extract(months from age(to_date(month_year_id::text, 'YYYYMM'), dob_derived))
+;
+
+update dw_staging.optd_member_enrollment_monthly a
+   set age_fy = extract(years from age(c.fy_end, dob_derived))
+ from reference_tables.ref_month_year c
+ where a.month_year_id = c.month_year_id
+;
+
+--vacuum analyze
+vacuum analyze dw_staging.optd_member_enrollment_monthly;
