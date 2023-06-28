@@ -9,6 +9,16 @@
  * 
  * ****************************************************************************************************** */
 
+--06/023/2023
+--made staging_clean accessible to devs
+grant all on schema staging_clean to uthealth_dev; 
+grant all on all tables in schema staging_clean to uthealth_dev; 
+grant all privileges on all sequences in schema staging_clean to uthealth_dev; 
+alter default privileges in schema staging_clean grant all on tables to uthealth_dev; 
+
+--made Femi a dev so he could access staging_clean
+grant uthealth_dev to oaborisa;
+
 --06/12/2023
 --Jeff needs to access new tables created in conditions by Femi
 grant uthealth_dev to jfu2; --jeff already has role uthealth_dev

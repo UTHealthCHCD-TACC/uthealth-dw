@@ -21,6 +21,8 @@
  * ******************************************************************************************************
  * xzhang || 06/01/2023 || Removed columns from cleanup that don't need to be cleaned up
  * ******************************************************************************************************
+ * xzhang || 06/23/2023 || Added Dual to columns to clean up to reflect changes in monthly table
+ * ******************************************************************************************************
  */
 
 /***************************
@@ -138,7 +140,7 @@ vacuum analyze dw_staging.mcrt_member_enrollment_yearly;
  ****************************************************************/
 do $$
 declare
-	col_list text[]:= array['plan_type', 'rx_coverage'];
+	col_list text[]:= array['plan_type', 'rx_coverage', 'dual'];
 	col_list_len int = array_length(col_list,1);
 begin
 
