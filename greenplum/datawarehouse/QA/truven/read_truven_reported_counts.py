@@ -161,23 +161,23 @@ if __name__ == '__main__':
 
     # print('Updating Truven counts table in Greenplum')
 
-    # connection = psycopg2.connect(get_dsn())
-    # connection.autocommit = True
+    connection = psycopg2.connect(get_dsn())
+    connection.autocommit = True
 
-    # with connection.cursor() as cursor:
-    #     for index in tqdm(counts_df.index):
-    #         query = f'''
-    #         update dev.ip_truven_counts
-    #         set reported_row_count = %s
-    #         where year = {counts_df.loc[index, 'YEAR']}
-    #         and table_name = '{counts_df.loc[index, 'table_name']}'; '''
+    with connection.cursor() as cursor:
+        for index in tqdm(counts_df.index):
+            query = f'''
+            update dev.ip_truven_counts
+            set reported_row_count = %s
+            where year = {counts_df.loc[index, 'YEAR']}
+            and table_name = '{counts_df.loc[index, 'table_name']}'; '''
 
-    #         cursor.execute(query, (counts_df.loc[index, 'Frequency'],))
+            cursor.execute(query, (counts_df.loc[index, 'Frequency'],))
 
-    # with connection.cursor() as cursor:  
-    #     cursor.execute('update dev.ip_truven_counts set row_count_difference = row_count - reported_row_count;')
-    #     cursor.execute('update dev.ip_truven_counts set row_percent_difference = 100. * abs(row_count - reported_row_count) / reported_row_count;')
-    #     cursor.execute('update dev.ip_truven_counts set last_updated = now();')
+    with connection.cursor() as cursor:  
+        cursor.execute('update dev.ip_truven_counts set row_count_difference = row_count - reported_row_count;')
+        cursor.execute('update dev.ip_truven_counts set row_percent_difference = 100. * abs(row_count - reported_row_count) / reported_row_count;')
+        cursor.execute('update dev.ip_truven_counts set last_updated = now();')
     
 
     
