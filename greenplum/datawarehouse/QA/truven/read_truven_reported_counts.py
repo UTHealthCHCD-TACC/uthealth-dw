@@ -1,3 +1,5 @@
+from calendar import c
+from itertools import count
 import os
 import pandas as pd
 import sys
@@ -98,8 +100,11 @@ def read_txt_files(directory):
 
     # Identify all updates available in the directory
     for path in updates_subpaths:
-        if 'MScan' in path and ('.zip' not in path and 'HPM' not in path):
+        if ('MScan' in path or path == 'Docs') and ('.zip' not in path and 'HPM' not in path):
             valid_paths.append(path)
+
+    # Adding this path due to inconsistent directory structure
+    valid_paths.append('2014 CCAE-MDCR/Docs')
 
     report_files = []
 
@@ -132,19 +137,21 @@ def read_txt_files(directory):
         report_files.set_description_str(file)
         with open(file_path, 'r') as f:
             for line in f:
-                if 'Dataset' in line:
+                if 'Number of Observations in Dataset' in line:
                     row_count = int(re.search(r'([0-9]{1,3}[,]{0,1}){1,4}', line).group(0).replace(',',''))
                     
-                    rows.append((file, file[:5], f'20{file[5:7]}', file[7], row_count))
+                    rows.append((file, file[:5], f'20{file[5:7]}', int(file[7]), row_count))
                     break
 
     columns = ['File Name', 'Table Name', 'Year', 'Version Number', 'Row Count']
 
     df = pd.DataFrame(rows, columns=columns)
+    df.to_csv('H:/truven_all_report_counts.csv')
+ 
+    # Identify latest versions
+    latest_version = df.groupby(['Table Name', 'Year'])['Version Number'].idxmax()
     
-    df_agg = df.groupby(['Table Name', 'Year']).max('Version Number')
-
-    return df_agg.reset_index()
+    return df.loc[latest_version]
 
 if __name__ == '__main__':
     read_txt = True
@@ -159,25 +166,58 @@ if __name__ == '__main__':
 
     counts_df.to_csv('H:/truven_reported_counts.csv', index=False)
 
-    # print('Updating Truven counts table in Greenplum')
+    print('Updating Truven counts table in Greenplum')
 
     connection = psycopg2.connect(get_dsn())
     connection.autocommit = True
+    # counts_df = counts_df[counts_df['Table Name'] == 'mdcrt']
 
     with connection.cursor() as cursor:
+        # Make sure that versions of the data in greenplum match with the version of the data the reports are based off
+        # Can be used to determine if the most updated version is on Greenplum and we have the data quality reports for this version
+
+        query = '''
+        alter table qa_reporting.truven_counts add column db_version int;
+        alter table qa_reporting.truven_counts add column report_version int;
+        '''
+        
+        cursor.execute(query)
+
+        for table in tqdm(counts_df['Table Name'].unique()):
+            query = f'''update qa_reporting.truven_counts b
+            set db_version = a.version
+            from (select distinct '{table}' as table_name, year, version from truven.{table}) a
+            where b.table_name = a.table_name
+            and a.year = b.year
+            ;
+            '''
+
+            cursor.execute(query)
+
         for index in tqdm(counts_df.index):
             query = f'''
-            update dev.ip_truven_counts
-            set reported_row_count = %s
-            where year = {counts_df.loc[index, 'YEAR']}
-            and table_name = '{counts_df.loc[index, 'table_name']}'; '''
+            update qa_reporting.truven_counts
+            set reported_row_count = {counts_df.loc[index, 'Row Count']}
+            where year = {counts_df.loc[index, 'Year']}
+            and table_name = '{counts_df.loc[index, 'Table Name']}'
+            ; '''
 
-            cursor.execute(query, (counts_df.loc[index, 'Frequency'],))
+            cursor.execute(query)
 
+            query = f'''
+            update qa_reporting.truven_counts
+            set report_version = {counts_df.loc[index, 'Version Number']}
+            where year = {counts_df.loc[index, 'Year']}
+            and table_name = '{counts_df.loc[index, 'Table Name']}';
+            '''
+
+            cursor.execute(query)
+
+    # Calculate differences 
     with connection.cursor() as cursor:  
-        cursor.execute('update dev.ip_truven_counts set row_count_difference = row_count - reported_row_count;')
-        cursor.execute('update dev.ip_truven_counts set row_percent_difference = 100. * abs(row_count - reported_row_count) / reported_row_count;')
-        cursor.execute('update dev.ip_truven_counts set last_updated = now();')
+        cursor.execute('update qa_reporting.truven_counts set row_count_difference = row_count - reported_row_count;')
+        cursor.execute('update qa_reporting.truven_counts set row_percent_difference = 100. * abs(row_count - reported_row_count) / reported_row_count;')
+        cursor.execute('update qa_reporting.truven_counts set last_updated = current_date;')
     
 
     
