@@ -1,4 +1,5 @@
 from calendar import c
+from ensurepip import version
 from itertools import count
 import os
 import pandas as pd
@@ -134,13 +135,16 @@ def read_txt_files(directory):
     report_files = tqdm(report_files)
 
     for file_path, file in report_files:
+        version_number = int(file[7])
         report_files.set_description_str(file)
         with open(file_path, 'r') as f:
             for line in f:
+                if 'Version' in line:
+                    pat = re.search(r'([0-9][.][0-9])', line)
+                    version_number  = float(pat.group(0)) if pat is not None else version_number
                 if 'Number of Observations in Dataset' in line:
                     row_count = int(re.search(r'([0-9]{1,3}[,]{0,1}){1,4}', line).group(0).replace(',',''))
-                    
-                    rows.append((file, file[:5], f'20{file[5:7]}', int(file[7]), row_count))
+                    rows.append((file, file[:5], f'20{file[5:7]}', version_number, row_count))
                     break
 
     columns = ['File Name', 'Table Name', 'Year', 'Version Number', 'Row Count']
@@ -178,10 +182,10 @@ if __name__ == '__main__':
 
         query = '''
         alter table qa_reporting.truven_counts add column db_version int;
-        alter table qa_reporting.truven_counts add column report_version int;
+        alter table qa_reporting.truven_counts add column report_version numeric;
         '''
         
-        cursor.execute(query)
+        # cursor.execute(query)
 
         for table in tqdm(counts_df['Table Name'].unique()):
             query = f'''update qa_reporting.truven_counts b
@@ -192,7 +196,7 @@ if __name__ == '__main__':
             ;
             '''
 
-            cursor.execute(query)
+            # cursor.execute(query)
 
         for index in tqdm(counts_df.index):
             query = f'''
