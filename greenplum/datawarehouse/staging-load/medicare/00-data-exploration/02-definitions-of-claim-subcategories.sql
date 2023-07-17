@@ -1,0 +1,15 @@
+/*******************
+ * Definitions of claim-subcategories
+ */
+
+
+
+
+
+
+
+
+
+
+
+
