@@ -1,92 +1,58 @@
-/* ******************************************************************************************************
- *  Truven RX tables : make claims table
- * ******************************************************************************************************
- *  Author  || Date       || Notes
- * ******************************************************************************************************
- *  various || <Apr 2023  ||  Created script
- * ****************************************************************************************************** 
- *  xzhang  || 04/19/2023 || Added flags
- * ******************************************************************************************************
- *  xzhang  || 05/15/2023 || Added drop table/fresh table creation
- * */
 
-select 'ccaed started at ' || current_timestamp as message;
+select 'Inserting from mdcro: ' || current_timestamp as message;
 
----truv commercial
-insert into dw_staging.truv_pharmacy_claims (
-		data_source,
-		year,
-		uth_rx_claim_id,
-		uth_member_id,
-		fill_date,
-		ndc,
-		days_supply,
-		script_id,
-		refill_count,
-		month_year_id,
-		generic_ind,
-		generic_name,
-		brand_name,
-		quantity,
-		provider_npi,
-		pharmacy_id,
-		total_charge_amount, total_allowed_amount, total_paid_amount,
-		deductible, copay, coins, cob,
-		fiscal_year,
-		therapeutic_class,
-		ahfs_class,
-		first_fill,
-		rx_claim_id_src,
-		member_id_src,
-		table_id_src,
-		retail_or_mail_indicator,--new
-		dispensed_as_written,--new
-		dose,--new
-		strength,--new
-		formulary_ind,--new
-		special_drug_ind,--new
-		load_date 
-		)
-select 'truv',
-	   a."year" ,
-	   b.uth_rx_claim_id,
-	   b.uth_member_id,
-	   a.svcdate,
-       lpad(a.ndcnum::text,11,'0'),
-       a.daysupp,
-       null as script_id,
-       a.refill,
-	   get_my_from_date(a.svcdate) as month_year_id,
-	   a.genind,
-	   a.generid::text,
-	   null,
-       a.qty,
-       a.ntwkprov,
-       a.pharmid,
-       null, a.pay, a.netpay,
-       a.deduct, a.copay, a.coins, a.cob,
-       dev.fiscal_year_func(a.svcdate) as fiscal_year,
-       a.thercls,
-       null as ahfs,
-       null as first_fill,
-       a.rx_id_src,
-       a.enrolid::text,
-       'ccaed' as table_id_src,
-			 a.rxmr,--new
-			 coalesce(a.dawind,'00'),--new
-			 r.mstfmds,--new
-			 r.strngth,--new
-			 null,--new
-			 null, --new
-			 current_date
-from staging_clean.ccaed_etl a
-  join staging_clean.truven_rx_claim_id b
-     on b.member_id_src = a.enrolid 
-    and b.rx_claim_id_src = a.rx_id_src 
-   left outer join reference_tables.redbook r -- new
-     on r.ndcnum = lpad(a.ndcnum::text,11,'0')
-;
+insert into dw_staging.trum_claim_detail
+select  'trum',
+		a.year, 
+		b.uth_member_id, 
+		b.uth_claim_id,
+		null as claim_seq,
+		a.svcdate,
+		a.tsvcdat,
+		null,
+		substr(a.stdplac::text,1,2), 
+		a.ntwkprov::bool, 
+		a.paidntwk::bool, 
+        null as admit, 
+        null as discharge_dt,
+        null as discharge_status,
+        a.proc1 as cpt_hcpcs, 
+        null,
+        a.procmod, 
+        null as proc_mod_2, 
+        null as drg,
+        lpad(a.revcode::text,4,'0'), 
+        null as charge_amount,
+        a.pay as allowed_amt,
+        a.netpay as paid_amt,
+        a.copay,
+        a.deduct,
+        a.coins, 
+        a.cob,
+        substring(f.billtyp,1,1) as billtypeinst,
+        substring(f.billtyp,2,1) as billtypeclass, 
+        substring(f.billtyp,3,1) as billtypefreq, 
+        trunc(a.qty,0) as units,  
+        dev.fiscal_year_func(a.svcdate),
+        null as cfy,
+        'mdcro', 
+        null, null, null, null, null, null,
+		a.claim_id_derv,
+		a.enrolid::text,
+		current_date ,
+		a.stdprov,
+		f.billtyp as bill
+  from staging_clean.mdcro_etl a 
+  join staging_clean.trum_dim_id  b 
+    on b.member_id_src = a.enrolid 
+   and b.claim_id_src = a.claim_id_derv 
+  left outer join  staging_clean.truv_mdcrf_etl f 
+    on f.enrolid = a.enrolid 
+   and f.claim_id_derv  = a.claim_id_derv  
+   ;
 
-analyze dw_staging.truv_pharmacy_claims;
+select 'Analyze dw_staging.trum_claim_detail: ' || current_timestamp as message;
+  
+analyze dw_staging.trum_claim_detail;
 
-select 'Truven RX claims script completed at ' || current_timestamp as message;
+select 'Truven MDCRO Claim Detail script completed at ' || current_timestamp as message;

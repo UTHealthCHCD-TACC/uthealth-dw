@@ -11,6 +11,8 @@
  * -------------------------   script is divided into: Role Defintions, User Creation, & Audits/Misc
  * ******************************************************************************************************
  * Xiaorui Zhang	|| 03/08/2023	|| Updated, reformatted/reorganized, added user_role APCD
+ * ******************************************************************************************************
+ * Xiaorui Zhang	|| 06/23/2023	|| Granted read/write to staging_clean to uthealth_dev
  * 
  * ****************************************************************************************************** */
 
@@ -239,6 +241,7 @@ alter default privileges in schema crosswalk grant select on tables to group uth
  * 		Write access to:
  * 				data_warehouse
  *  			dw_staging
+ * 				staging_clean
  *  			qa_reporting
  *   			reference_tables
  *   			conditions
@@ -268,6 +271,12 @@ grant all on schema dw_staging to uthealth_dev;
 grant all on all tables in schema dw_staging to uthealth_dev; 
 grant all privileges on all sequences in schema dw_staging to uthealth_dev; 
 alter default privileges in schema dw_staging grant all on tables to uthealth_dev; 
+
+--staging_clean (all access)
+grant all on schema staging_clean to uthealth_dev; 
+grant all on all tables in schema staging_clean to uthealth_dev; 
+grant all privileges on all sequences in schema staging_clean to uthealth_dev; 
+alter default privileges in schema staging_clean grant all on tables to uthealth_dev; 
 
 --qa_reporting (all access)
 grant all on schema qa_reporting to uthealth_dev; 

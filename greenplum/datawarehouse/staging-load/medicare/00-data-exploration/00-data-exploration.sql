@@ -431,8 +431,255 @@ from medicare_texas.bcarrier_line_k
 where abs(line_nch_pmt_amt::float - (line_prvdr_pmt_amt::float + line_bene_pmt_amt::float)) > 0.01;
 
 
+/***************
+ * Enrollment table - part C contracts - what possible permutations are there?
+ */
+
+--first look at distribution of part c contract id
+
+--get denom first
+select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl;
+--333982790
+
+select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl
+where ptc_cntrct_id is null;
+--0 no nulls!
+
+select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl
+where ptc_cntrct_id != 'N';
+--119845962
+
+select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl
+where length(trim(ptc_cntrct_id)) > 1;
+--119845962
+
+select length(trim(ptc_cntrct_id)), count(*) from dw_staging.mcrt_member_enrollment_monthly_etl
+group by length(trim(ptc_cntrct_id));
+/*
+5	119845962
+1	214136828
+*/
+
+--ptc_contract_id be clean af
+
+select mdcr_entlmt_buyin_ind, count(*) as count,
+	count(*) * 1.0/(select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl where ptc_cntrct_id != 'N') as pct
+from dw_staging.mcrt_member_enrollment_monthly_etl
+where ptc_cntrct_id != 'N'
+group by mdcr_entlmt_buyin_ind;
 
 
+
+--what percent of columns are null for state?
+select count(*) from medicare_texas.mbsf_abcd_summary
+where state_code is null;
+
+--what about after it's joined to the state table
+select count(*)
+from medicare_texas.mbsf_abcd_summary a left join reference_tables.ref_medicare_state_codes b
+     on a.state_code = b.medicare_state_cd
+where b.medicare_state_cd is null;
+--2492
+
+select a.state_code, count(*)
+from medicare_texas.mbsf_abcd_summary a left join reference_tables.ref_medicare_state_codes b
+     on a.state_code = b.medicare_state_cd
+where b.medicare_state_cd is null
+and a.state_code is not null
+group by a.state_code
+order by a.state_code;
+
+--RESDAC documentation says that state_code = '74' = Texas, an alternative to '45' - how many?
+select count(*)
+from medicare_texas.mbsf_abcd_summary where state_code = '74';
+--none
+
+--check medicare_national
+select count(*)
+from medicare_national.mbsf_abcd_summary where state_code = '74';
+--also none
+
+/*************
+ * Running into some null uth_member_ids for mcrn
+ */
+
+select * from dw_staging.mcrn_member_enrollment_monthly where uth_member_id is null;
+
+select * from medicare_national.mbsf_abcd_summary where bene_id = 'gggggggjaAgujnu';
+
+select * from data_warehouse.dim_uth_member_id where member_id_src = 'gggggggjaAgujnu' and data_source = 'mcrn';
+--none
+
+select * from data_warehouse.dim_uth_member_id where member_id_src = 'gggggggjaAgujnu' and data_source = 'mcrt';
+
+--ah needed to run the dim script again, and take out a in ('mcrn', 'mcrt') blurb
+
+/***************
+ * How clean is dual status code
+ */
+
+select dual_stus_cd, count(*) from dw_staging.mcrn_member_enrollment_monthly_etl
+group by dual_stus_cd
+order by dual_stus_cd;
+--CLEAN. that'll do, pig.
+
+/***************
+ * Issue with counts not lining up between raw tables and dw_staging tables for mcrt only
+ */
+
+select count(*) from medicare_texas.mbsf_abcd_summary;
+--29270230
+
+select count(*) from dw_staging.mcrt_member_enrollment_yearly;
+--29268186
+
+select 29268186.0/29270230; --0.99993016795563273674
+
+select count(*) from medicare_texas.mbsf_abcd_summary where bene_enrollmt_ref_yr = '2020';
+--4538440
+
+select count(*) from dw_staging.mcrt_member_enrollment_yearly where year = 2020;
+--4538294
+
+select count(*) from dw_staging.mcrt_member_enrollment_monthly_etl where year = 2020;
+--51868937
+
+
+select count(*) from medicare_national.mbsf_abcd_summary;
+--21938353
+
+select count(*) from dw_staging.mcrn_member_enrollment_yearly;
+--23476855
+
+select 23476855.0/21938353; --0.99993016795563273674
+
+select count(*) from dw_staging.mcrn_member_enrollment_monthly_etl where year = 2020;
+--38770661
+
+select count(*) from dw_staging.mcrn_member_enrollment_monthly where year = 2020;
+--38770661
+
+select count(*) from dw_staging.mcrn_member_enrollment_yearly;
+--21935699
+
+select count(*) from medicare_national.mbsf_abcd_summary;
+--21938353
+
+select 21935699.0/21938353;
+
+
+select usename, pid, state, waiting, query_start , query, *
+from pg_catalog.pg_stat_activity where
+usename in ('xrzhang') and ---- put your username
+state = 'active'
+order by state, usename;
+
+select  pg_terminate_backend(186518);
+
+
+vacuum analyze data_warehouse.claim_detail;
+
+
+/***********************
+ * 6-29-23 some exploration done after ResDAC sent us stuff
+ * 
+ * Looks like finding the allowed amount gets split depending on the type of claim
+ * 
+ * Method 1: CLM_TOT_CHRG_AMT - NCH_IP_NCVR_CHRG_AMT
+ * Method 2: CLM_PMT_AMT + NCH_PRMRY_PYR_CLM_PD_AMT + NCH_IP_TOT_DDCTN_AMT
+ *
+ * */
+
+--let's take a look at the difference between method 1 and method 2 across tables
+drop table if exists dev.xz_mcr_costs_exploration;
+
+--inpatient
+create table dev.xz_mcr_costs_exploration as
+select 'inpatient'::text as src_table, 2020::int as year, sum(clm_tot_chrg_amt::float - nch_ip_ncvrd_chrg_amt::float) as method_1,
+	sum(clm_pmt_amt::float + (clm_pass_thru_per_diem_amt::float * clm_utlztn_day_cnt::float)
+	+ nch_prmry_pyr_clm_pd_amt::float + nch_ip_tot_ddctn_amt::float) as method_2
+from medicare_texas.inpatient_base_claims_k
+where "year" = '2020';
+
+insert into dev.xz_mcr_costs_exploration
+select 'inpatient'::text as src_table, 2016::int as year, sum(clm_tot_chrg_amt::float - nch_ip_ncvrd_chrg_amt::float) as method_1,
+	sum(clm_pmt_amt::float + (clm_pass_thru_per_diem_amt::float * clm_utlztn_day_cnt::float)
+	+ nch_prmry_pyr_clm_pd_amt::float + nch_ip_tot_ddctn_amt::float) as method_2
+from medicare_texas.inpatient_base_claims_k
+where "year" = '2016';
+
+--outpatient
+--nch_ip_ncvrd_chrg_amt does not exist
+--nch_ip_tot_ddctn_amt does not exist
+insert into dev.xz_mcr_costs_exploration
+select 'outpatient'::text as src_table, 2020::int as year, null as method_1,
+	sum(clm_pmt_amt::float + nch_prmry_pyr_clm_pd_amt::float + nch_ip_tot_ddctn_amt::float) as method_2
+from medicare_texas.outpatient_base_claims_k
+where "year" = '2020';
+
+insert into dev.xz_mcr_costs_exploration
+select 'outpatient'::text as src_table, 2016::int as year, null as method_1,
+	sum(clm_pmt_amt::float + nch_prmry_pyr_clm_pd_amt::float + nch_ip_tot_ddctn_amt::float) as method_2
+from medicare_texas.outpatient_base_claims_k
+where "year" = '2016';
+
+
+
+
+--Population rates
+
+--inpatient
+select sum(case when clm_pmt_amt is not null and abs(clm_pmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_pmt_amt,
+	sum(case when clm_tot_chrg_amt is not null and abs(clm_tot_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_tot_chrg_amt,
+	sum(case when nch_ip_ncvrd_chrg_amt is not null and abs(nch_ip_ncvrd_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_ip_ncvrd_chrg_amt,
+	sum(case when nch_ip_tot_ddctn_amt is not null and abs(nch_ip_tot_ddctn_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_ip_tot_ddctn_amt,
+	sum(case when nch_prmry_pyr_clm_pd_amt is not null and abs(nch_prmry_pyr_clm_pd_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_prmry_pyr_clm_pd_amt
+from medicare_texas.inpatient_base_claims_k;
+
+--snf
+select sum(case when clm_pmt_amt is not null and abs(clm_pmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_pmt_amt,
+	sum(case when clm_tot_chrg_amt is not null and abs(clm_tot_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_tot_chrg_amt,
+	sum(case when nch_ip_ncvrd_chrg_amt is not null and abs(nch_ip_ncvrd_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_ip_ncvrd_chrg_amt,
+	sum(case when nch_ip_tot_ddctn_amt is not null and abs(nch_ip_tot_ddctn_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_ip_tot_ddctn_amt,
+	sum(case when nch_prmry_pyr_clm_pd_amt is not null and abs(nch_prmry_pyr_clm_pd_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_prmry_pyr_clm_pd_amt
+from medicare_texas.snf_base_claims_k;
+
+--hha
+select sum(case when clm_pmt_amt is not null and abs(clm_pmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_pmt_amt,
+	sum(case when clm_tot_chrg_amt is not null and abs(clm_tot_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_tot_chrg_amt,
+	null as nch_ip_ncvrd_chrg_amt, --column does not exist
+	null as nch_ip_tot_ddctn_amt, --column does not exist
+	sum(case when nch_prmry_pyr_clm_pd_amt is not null and abs(nch_prmry_pyr_clm_pd_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_prmry_pyr_clm_pd_amt
+from medicare_texas.hha_base_claims_k;
+
+--hha - look at its payment columns
+select clm_id, clm_pmt_amt,
+	clm_tot_chrg_amt,
+	nch_prmry_pyr_clm_pd_amt,
+	pps_std_val_pymt_amt, --standard payment amount - standard amount w/o geographical payment adjustments
+	finl_std_amt --applies additional standardization requirements, not sued for payments, used for comparisons
+from medicare_texas.hha_base_claims_k;
+
+--hha - population rate
+
+select sum(case when clm_pmt_amt is not null and abs(clm_pmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_pmt_amt,
+	sum(case when clm_tot_chrg_amt is not null and abs(clm_tot_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_tot_chrg_amt,
+	sum(case when nch_prmry_pyr_clm_pd_amt is not null and abs(nch_prmry_pyr_clm_pd_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_prmry_pyr_clm_pd_amt,
+	sum(case when pps_std_val_pymt_amt is not null and abs(pps_std_val_pymt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as pps_std_val_pymt_amt, --standard payment amount - standard amount w/o geographical payment adjustments
+	sum(case when finl_std_amt is not null and abs(finl_std_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as finl_std_amt --applies additional standardization requirements, not sued for payments, used for comparisons
+from medicare_texas.hha_base_claims_k;
+
+--hospice?
+select clm_pmt_amt, nch_prmry_pyr_clm_pd_amt, clm_tot_chrg_amt, clm_model_reimbrsmt_amt
+	--clm_model_reimbrsmt_amt = net reimbursement amount of what medicare would have paid for global budget services
+from medicare_texas.hospice_base_claims_k;
+
+--hospice
+select sum(case when clm_pmt_amt is not null and abs(clm_pmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_pmt_amt,
+	sum(case when nch_prmry_pyr_clm_pd_amt is not null and abs(nch_prmry_pyr_clm_pd_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as nch_prmry_pyr_clm_pd_amt,
+	sum(case when clm_tot_chrg_amt is not null and abs(clm_tot_chrg_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_tot_chrg_amt,
+	sum(case when clm_model_reimbrsmt_amt is not null and abs(clm_model_reimbrsmt_amt::float) > 0.01 then 1 else 0 end)*1.0 / count(*) as clm_model_reimbrsmt_amt
+from medicare_texas.hospice_base_claims_k;
 
 
 

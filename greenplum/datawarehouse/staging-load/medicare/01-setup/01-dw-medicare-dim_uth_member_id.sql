@@ -6,14 +6,11 @@
  * Original code is from Will/Joe W
  * 06/01/23: XZ tried to add a blurb to address the same bene_id in both mcrt and mcrn
  * generating two uth_member_ids but... there's a uniqueness constraint for uth_member_id
- * so we had to roll the script back to previous version. No changes.
+ * so right now a member who is in both mcrn and mcrt will have TWO distinct uth_member_ids.
+ *
  * 
- * ***********NOTE**************
- * There's an issue where the same bene_id is assigned a second uth_member_id if the person
- * is in both the TX and National tables. Xiaorui 'fixed' the code but it hasn't been tested yet.
- * Needs to be texted with the next Medicare data update
  * 
- * This script is lightning-fast, btw
+ * This script is pretty fast, btw
  * 
  **************************************/
 
@@ -41,7 +38,7 @@ with cte_distinct_member as (
 	select distinct bene_id as v_member_id, 'mcrn' as v_raw_data, b.uth_member_id
 	from medicare_national.mbsf_abcd_summary
 	 left outer join data_warehouse.dim_uth_member_id b 
-      on b.data_source in ('mcrn','mcrt')
+      on b.data_source = 'mcrn'
      and b.member_id_src = bene_id::text
     where b.member_id_src is null 
 )
@@ -76,4 +73,26 @@ where a.schema_name = b.schemaname and a.table_name = b.relname
 and schema_name = 'data_warehouse' and table_name = 'dim_uth_member_id';
 
 vacuum analyze data_warehouse.update_log;
+
+/*************
+ * QA: make sure that there's only one instance per bene_id per data_source
+ */
+
+select data_source, member_id_src, count(*)
+from data_warehouse.dim_uth_member_id
+where data_source = 'mcrt'
+group by data_source, member_id_src
+having count(distinct uth_member_id) > 1
+;
+--none
+
+select data_source, member_id_src, count(*)
+from data_warehouse.dim_uth_member_id
+where data_source = 'mcrn'
+group by data_source, member_id_src
+having count(distinct uth_member_id) > 1
+;
+--none
+
+
 

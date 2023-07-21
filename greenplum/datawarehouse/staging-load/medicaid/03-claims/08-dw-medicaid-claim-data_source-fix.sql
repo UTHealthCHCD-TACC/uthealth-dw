@@ -14,13 +14,6 @@
  * CURRENT VERSION OF CODE MAKES CHANGES TO LIVE DW TABLES DIRECTLY!
  **********************/
 
-
-
-
-
-
-
-
 /*********************
  * Create master list of member_ids and year-months based on monthly enrollment table
  * ******************/
@@ -30,7 +23,8 @@ create table dw_staging.mcpp_mhtw_client_nbr_yrmonth as
 select data_source, member_id_src, month_year_id,
 	to_date((month_year_id*100+01)::text, 'yyyymmdd') as month_start,
 	(to_date((month_year_id*100+01)::text, 'yyyymmdd') + interval '1 month - 1 day')::date as month_end
-from dw_staging.mcd_member_enrollment_monthly
+--from dw_staging.mcd_member_enrollment_monthly
+from data_warehouse.member_enrollment_monthly
 where data_source in ('mcpp', 'mhtw')
 distributed by (member_id_src);
 

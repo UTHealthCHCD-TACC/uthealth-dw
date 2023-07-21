@@ -15,6 +15,10 @@
  * 	Clean DOB using most frequent > most recent rule
  * 	
  ***************************************************************/
+ 
+ /***************
+ 6/23/23 - XZ changed data type of dual to bpchar(1) to accomodate Medicare, next time run code need to tweak code accordingly
+ */
 
 /***********************************
  * Pull enrollment data into an ETL

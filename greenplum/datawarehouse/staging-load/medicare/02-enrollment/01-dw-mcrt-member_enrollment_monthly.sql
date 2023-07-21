@@ -30,8 +30,26 @@
  *  xzhang || 05/31/23   || There was an issue with a join and I didn't want to try to troubleshoot the legacy code
  * 							so I re-wrote it so that an ETL is generated first (make enrollment table long
  * 							rather than wide) and THEN the final table is generated
+ * *******************************************************************************************************
+ *  xzhang || 06/23/23	 || After some discussion with Lopita/TMK, we're going to make the following changes:
+ * 							Medicare part C - add in PTC_CNTRCT_ID ('N' = no part C, otherwise there is a contract id which means yes part C)
+ * 							Change part D contract b/c it works the same way as part C, there's no need
+ * 							to join on the first letter. Null/N/0 = not enrolled, otherwise yes enrolled
+ * 							Fill in Dual column - this necessitates a data_type change for the base table from int -> bpchar(1)
+ * 							And duals will be divided into non-dual, full dual, and partial dual as per
+ * 							RESDAC's documentation
  * 						
 */
+
+/* Change dual column from int to bpchar(1)
+alter table data_warehouse.member_enrollment_yearly alter column dual type bpchar(1);
+alter table data_warehouse.member_enrollment_fiscal_yearly alter column dual type bpchar(1);
+alter table data_warehouse.member_enrollment_monthly alter column dual type bpchar(1);
+
+vacuum analyze data_warehouse.member_enrollment_monthly;
+vacuum analyze data_warehouse.member_enrollment_yearly;
+vacuum analyze data_warehouse.member_enrollment_fiscal_yearly;
+ */
 
 /******************************
  * MEDICARE TEXAS
@@ -51,9 +69,11 @@ create table dw_staging.mcrt_member_enrollment_monthly_etl (
 	zip text,
 	race text,
 	month_year_id varchar(8),
-	mdcr_status_code varchar(8),
-	mdcr_entlmt_buyin_ind varchar(8),
-	ptd_cntrct_id varchar(8)
+	mdcr_status_code varchar(8), --determines if member is enrolled in Medicare
+	mdcr_entlmt_buyin_ind varchar(8), --determines coverage - A, B, or A&B
+	ptc_cntrct_id varchar(8), --determines if member has Medicare part C
+	ptd_cntrct_id varchar(8), --determines if member has Medicare part D
+	dual_stus_cd varchar(8) --determines if member is dually-enrolled with Medicaid
 )
 distributed by (bene_id);
 
@@ -74,7 +94,9 @@ begin
 				year || ''' || month || ''' as month_year_id,
 				mdcr_status_code_' || month || ',
 				mdcr_entlmt_buyin_ind_' || month || ',
-				ptd_cntrct_id_' || month || '
+				ptc_cntrct_id_' || month || ',
+				ptd_cntrct_id_' || month || ',
+				dual_stus_cd_' || month || '
 			from medicare_texas.mbsf_abcd_summary
 			where mdcr_status_code_' || month || ' in (''10'',''11'',''20'',''21'',''31'');'
 					;
@@ -92,11 +114,8 @@ vacuum analyze dw_staging.mcrt_member_enrollment_monthly_etl;
  * Make monthly enrollment table
  *   - Join in dim_uth_member_id
  *   - Join in ref_month_year (to calculate ages, etc)
- * 	 - Join in sex code
  *   - Join in race code
  *   - Join in state code
- * 	 - Join in entitlement buy-in table (determines plan_type)
- *   - Join in part D coverage (ptd - rx_coverage)
  */
 
 drop table if exists dw_staging.mcrt_member_enrollment_monthly;
@@ -131,6 +150,7 @@ insert into dw_staging.mcrt_member_enrollment_monthly (
 	race_cd,
 	load_date,
 	age_months,
+	dual,
 	table_id_src,
 	member_id_src,
 	age_fy
@@ -139,21 +159,30 @@ select 'mcrt' as data_source,
 	   a.year, 
 	   c.month_year_id, 
 	   b.uth_member_id,
-	   d.gender_cd,
+	   case when a.sex = '0' then 'U'
+	   		when a.sex = '1' then 'M'
+	   		when a.sex = '2' then 'F' end as gender_cd,
 	   e.state_cd as state,
 	   a.zip as zip5, 
 	   substring(a.zip,1,3) as zip3,
   	   extract(years from age(c.cy_end, a.dob)) as age_cy,
 	   a.dob as dob_derived, 
 	   a.dod as death_date,
-	   g.plan_type, 
-	   null as bus_cd, 
-	   case when h.ptd_coverage is null then 0 else h.ptd_coverage end as rx_coverage,
+	   --plan type
+	   case when ptc_cntrct_id = 'N' then g.plan_type
+	   		else 'C' end as plan_type, 
+	   null as bus_cd,
+	   --part D coverage
+	   case when ptd_cntrct_id is null or ptd_cntrct_id in ('0', 'N') then 0 else 1
+			end as rx_coverage,
 	   c.fy_ut as fiscal_year, 
 	   f.race_cd,
 	   current_date as load_date,
 	   extract(years from age(to_date(a.month_year_id::text, 'YYYYMM'), a.dob)) * 12 + 
 	   extract(months from age(to_date(a.month_year_id::text, 'YYYYMM'), a.dob)) as age_months,
+	   case when a.dual_stus_cd in ('02', '04', '08') then '1'
+	   		when a.dual_stus_cd in ('01', '03', '05', '06') then 'P'
+	   		else '0' end as dual,
 	   'medicare_texas.mbsf_abcd_summary' as table_id_src,
 	   a.bene_id as member_id_src,
   	   extract(years from age(c.fy_end, a.dob)) as age_fy
@@ -163,9 +192,6 @@ from dw_staging.mcrt_member_enrollment_monthly_etl a
    and b.data_source = 'mcrt'
   left join reference_tables.ref_month_year c
   	on a.month_year_id::int = c.month_year_id
-  left join reference_tables.ref_gender d
-    on d.data_source = 'mcr'
-   and a.sex = d.gender_cd_src
   left join reference_tables.ref_medicare_state_codes e
      on a.state = e.medicare_state_cd
   left join reference_tables.ref_race f 
@@ -173,8 +199,6 @@ from dw_staging.mcrt_member_enrollment_monthly_etl a
     and f.data_source = 'mcrt'
   left join reference_tables.ref_medicare_entlmt_buyin g 
     on g.buyin_cd = a.mdcr_entlmt_buyin_ind
-  left join reference_tables.ref_medicare_ptd_cntrct h 
-    on h.ptd_first_char = substring(a.ptd_cntrct_id,1,1)
 ;
 
 analyze dw_staging.mcrt_member_enrollment_monthly;

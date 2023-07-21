@@ -1,6 +1,16 @@
 /*********************************************************
  * This adds the column CLAIM_ID_DERV to F, O, and S tables in Truven 
  * which is the concatenation of ENROLID || MSCLMID || FACPROF
+ * 
+ * 7/13/23: QA'd - When re-building DIM tables, wanted to QA this column.
+ * Findings: FACPROF is never left null, but ENROLID and MSCLMID can be null
+ * As we are concatenating these columns, the column will be null if EITHER of these fields
+ * is null.
+ * 
+ * I think this is okay as
+ * 		1) if ENROLID is null, the claim is useless to us
+ * 		2) if CLMID is null, there's some usage but it's impossible to link it to anything else
+ * 		3) The percentage is VERY SMALL. Less than 0.1%
 ***********************************************************/
 
 /**************************************
@@ -38,6 +48,23 @@ vacuum analyze truven.ccaef;
  * S tables
  **************************************/
 
+/*QA
+ * 
+select sum(case when enrolid is null then 1 else 0 end) as enrolid_null,
+	sum(case when msclmid is null then 1 else 0 end) as msclmid_null,
+	sum(case when facprof is null then 1 else 0 end) as facprof_null
+from truven.mdcrs;
+
+--31937	18349	0
+
+select sum(case when enrolid is null then 1 else 0 end) as enrolid_null,
+	sum(case when msclmid is null then 1 else 0 end) as msclmid_null,
+	sum(case when facprof is null then 1 else 0 end) as facprof_null
+from truven.ccaes;
+
+--788441	373925	0
+ */
+
 --mdcrs table
 --add column claim_id_derv
 alter table truven.mdcrs
@@ -69,6 +96,23 @@ vacuum analyze truven.ccaes;
 /**************************************
  * O tables
  **************************************/
+
+/*QA
+ * 
+select sum(case when enrolid is null then 1 else 0 end) as enrolid_null,
+	sum(case when msclmid is null then 1 else 0 end) as msclmid_null,
+	sum(case when facprof is null then 1 else 0 end) as facprof_null
+from truven.mdcro;
+
+--221137	88837	0
+
+select sum(case when enrolid is null then 1 else 0 end) as enrolid_null,
+	sum(case when msclmid is null then 1 else 0 end) as msclmid_null,
+	sum(case when facprof is null then 1 else 0 end) as facprof_null
+from truven.ccaeo;
+
+--5175542	2121423	0
+ */
 
 --mdcro table
 --add column claim_id_derv

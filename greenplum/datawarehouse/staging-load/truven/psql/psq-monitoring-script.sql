@@ -28,13 +28,36 @@ where schemaname = 'data_warehouse'
 order by case when last_vacuum is not null then last_vacuum else last_analyze end desc;
 
 --see what queries are running, periodt
-select usename, pid, state, waiting, query_start , query, *
+select usename, pid, state, waiting, query_start , query
 from pg_catalog.pg_stat_activity where
 state = 'active'
+order by state, usename;
+
+--any query
+select usename, pid, state, waiting, query_start , query, *
+from pg_catalog.pg_stat_activity
 order by state, usename;
 
 /******************
  * Kill Query
  ******************/
-select  pg_terminate_backend(315723);
+select pg_terminate_backend(61866);
+
+
+/****************
+ * See server activity
+ */
+
+select * from pg_stat_activity;
+
+--semi useful
+select * from pg_stat_database;
+
+select * from pg_stat_user_tables;
+
+select * from pg_stat_user_indexes;
+
+select * from pg_stat_bgwriter;
+
+
 
