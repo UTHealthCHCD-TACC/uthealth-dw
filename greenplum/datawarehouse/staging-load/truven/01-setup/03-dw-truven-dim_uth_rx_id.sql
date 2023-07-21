@@ -25,7 +25,7 @@ vacuum analyze data_warehouse.dim_uth_rx_claim_id;
  */
 
 
-select 'Truven dim uth rx id script started at ' || current_timestamp as message;
+select 'Truven dim uth rx id script (trum) started at ' || current_timestamp as message;
 
 --truven medicare
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -53,7 +53,7 @@ from ( select distinct a.year, a.enrolid, a.ndcnum, a.svcdate, b.uth_member_id
 		where c.uth_rx_claim_id is null 
 		  and a.enrolid::text is not null ) t;
 		 
-select 'Truven dim uth rx id script mdcrd completed, starting ccaed at ' || current_timestamp as message;
+select 'Truven dim uth rx id script (trum) completed, starting truc at ' || current_timestamp as message;
 
 ---truven commercial
 insert into data_warehouse.dim_uth_rx_claim_id (
@@ -83,7 +83,7 @@ from ( select distinct a.year, a.enrolid, a.ndcnum, a.svcdate, b.uth_member_id
 		 
 --select count(*) from data_warehouse.dim_uth_rx_claim_id where data_source = 'truc';
 
-select 'RX claims refreshed, vacuum analyze/backup started at ' || current_timestamp as message;
+select 'Truven dim uth rx id script (truc) completed, vacuum analyze/backup started at ' || current_timestamp as message;
 		 
 vacuum analyze data_warehouse.dim_uth_rx_claim_id;
 

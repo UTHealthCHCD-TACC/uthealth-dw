@@ -19,4 +19,50 @@ and enter password when prompted. Then, execute each row individually.
 
 --------or if you prefer, as a one-liner---------
 
+--01-setup
 psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\01-setup\02-dw-truven-dim_uth_claim_id.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\01-setup\03-dw-truven-dim_uth_rx_id.sql"
+
+
+--02-enrollment
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\02-enrollment\01-dw-trum-member_enrollment_monthly.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\02-enrollment\02-dw-truc-member_enrollment_monthly.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\02-enrollment\03-dw-trum-member_enrollment_yearly.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\02-enrollment\04-dw-truc-member_enrollment_yearly.sql"
+
+--03-claims
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\01-fill-in-claim-id-derv.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\02-redist-tables.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\03-trum-claim-detail.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\04-truc-claim-detail.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\05-trum-claim-header.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\06-truc-claim-header.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\07-trum-claim-diag.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\08-truc-claim-diag.sql"
+
+
+
+
+--temp script for when you just want to run a piece of a script
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/psql/temp.sql"
+
+
+
+
+
+
+
+
+
+

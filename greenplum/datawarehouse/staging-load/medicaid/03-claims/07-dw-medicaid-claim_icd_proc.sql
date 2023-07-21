@@ -170,7 +170,7 @@ select distinct * from dw_staging.mdcd_icd_proc_etl;
 
 --change ICD 9 proc codes to be either 3 or 4 digits
 update dw_staging.mdcd_icd_proc_etl
-set proc_cd_trimmed = case when length(ltrim(proc_cd, '0')) < 3 then substring(proc_cd, 3, 3)
+set proc_cd_trimmed = case when length(ltrim(proc_cd, '0')) < 3 then right(proc_cd, 3)
 		else ltrim(proc_cd, '0') end
 where icd_version = '9';
 
@@ -178,6 +178,12 @@ where icd_version = '9';
 update dw_staging.mdcd_icd_proc_etl
 set icd_version = null where icd_version not in ('0', '9');
 */
+
+/*check out some anomalies
+
+select * from dw_staging.mdcd_icd_proc_etl
+where icd_version = '9' and length(proc_cd_trimmed) not between 3 and 5;
+ */
 
 /*********************************
  * Build final table
@@ -225,33 +231,15 @@ select * from dw_staging.mdcd_claim_icd_proc where table_id_src = 'htw_clm_proc'
 select * from dw_staging.mdcd_claim_icd_proc where data_source = 'mcpp' and table_id_src = 'enc_proc';
 select count(*) from dw_staging.mdcd_icd_proc_etl; --15848444
 select count(*) from dw_staging.mdcd_claim_icd_proc; --15848444
-*/
 
-
-
-
-update dw_staging.claim_icd_proc set load_date = current_date;
-update dw_staging.claim_icd_proc set icd_version = null where icd_version not in ('0','9');
-vacuum analyze dw_staging.claim_icd_proc;
-
-
-
-
-
---create empty etl table
-drop table if exists dw_staging.mdcd_claim_icd_proc;
-
-create table dw_staging.mdcd_claim_icd_proc
-(like data_warehouse.claim_icd_proc including defaults) 
-with (
-		appendonly=true, 
-		orientation=row, 
-		compresstype=zlib, 
-		compresslevel=5 
-	 )
-distributed by (uth_member_id)
-;
-
+select length(proc_cd), count(*) from dw_staging.mdcd_claim_icd_proc
+where icd_version = '9'
+group by length(proc_cd) order by length(proc_cd);
 
 */
+
+vacuum analyze dw_staging.mdcd_claim_icd_proc;
+
+
+
 

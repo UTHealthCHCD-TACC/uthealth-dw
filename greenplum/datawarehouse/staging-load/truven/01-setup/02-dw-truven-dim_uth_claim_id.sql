@@ -106,8 +106,7 @@ select 'claims refreshed, vacuum analyze and updating update_log: ' || current_t
 
 vacuum analyze data_warehouse.dim_uth_claim_id;
 
-select * from data_warehouse.dim_uth_claim_id
-where data_source = 'truc';
+--select * from data_warehouse.dim_uth_claim_id where data_source = 'truc';
 
 /*check last vacuum analyze to see if it worked
 

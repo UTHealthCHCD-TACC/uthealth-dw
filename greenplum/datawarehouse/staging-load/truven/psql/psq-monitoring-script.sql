@@ -41,5 +41,23 @@ order by state, usename;
 /******************
  * Kill Query
  ******************/
-select pg_terminate_backend(294682);
+select pg_terminate_backend(61866);
+
+
+/****************
+ * See server activity
+ */
+
+select * from pg_stat_activity;
+
+--semi useful
+select * from pg_stat_database;
+
+select * from pg_stat_user_tables;
+
+select * from pg_stat_user_indexes;
+
+select * from pg_stat_bgwriter;
+
+
 
