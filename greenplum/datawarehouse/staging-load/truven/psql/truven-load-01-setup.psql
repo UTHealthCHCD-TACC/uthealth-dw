@@ -51,6 +51,16 @@ psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitH
 
 psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\08-truc-claim-diag.sql"
 
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\09-trum-claim_icd_proc.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\03-claims\10-truc-claim_icd_proc.sql"
+
+--04-rx
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\04-rx\00-truven-pharmacy_claims-redistribute-tables.sql"
+
+psql -h greenplum01.corral.tacc.utexas.edu -d uthealth -U xrzhang -W -f "H:\GitHub\UTH-CHCD\uthealth-dw\greenplum\datawarehouse\staging-load\truven\04-rx\01-truven-pharmacy_claims.sql"
+
 
 
 

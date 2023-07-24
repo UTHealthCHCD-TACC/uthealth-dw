@@ -8,13 +8,16 @@
  *  xzhang  || 04/19/2023 || Added flags
  * ******************************************************************************************************
  *  xzhang  || 05/15/2023 || Added drop table/fresh table creation
+ * ****************************************************************************************************** 
+ *  xzhang  || 07/21/2023 || Split Truven into trum and truc
  * */
 
 select 'Truven RX claims script started at ' || current_timestamp as message;
 
-drop table if exists dw_staging.truv_pharmacy_claims;
+select 'Creating empty trum_pharmacy_claims: ' || current_timestamp as message;
+drop table if exists dw_staging.trum_pharmacy_claims;
 
-create table dw_staging.truv_pharmacy_claims 
+create table dw_staging.trum_pharmacy_claims 
 (like data_warehouse.pharmacy_claims including defaults) 
 with (
 		appendonly=true, 
@@ -24,8 +27,9 @@ with (
 	 )
 distributed by (uth_member_id);
 
+select 'Inserting from mdcrd_etl: ' || current_timestamp as message;
 --truven medicare adv
-insert into dw_staging.truv_pharmacy_claims (
+insert into dw_staging.trum_pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -59,7 +63,7 @@ insert into dw_staging.truv_pharmacy_claims (
 		special_drug_ind, --new,
 		load_date 
 		)
-select 'truv',
+select 'trum',
 	   a."year" ,
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
@@ -92,18 +96,36 @@ select 'truv',
 			 null, --new
 			 current_date
 from staging_clean.mdcrd_etl a 
-  join staging_clean.truven_rx_claim_id b
+  join staging_clean.trum_rx_claim_id b
      on b.member_id_src = a.enrolid
     and b.rx_claim_id_src = a.rx_id_src 
    left outer join reference_tables.redbook r --new
 	 on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-analyze dw_staging.truv_pharmacy_claims;
+select 'Analyze: ' || current_timestamp as message;
+analyze dw_staging.trum_pharmacy_claims;
 
+/*********************
+ * CCAED
+ */
 
+select 'Creating empty truc_pharmacy_claims: ' || current_timestamp as message;
+drop table if exists dw_staging.truc_pharmacy_claims;
+
+create table dw_staging.truc_pharmacy_claims 
+(like data_warehouse.pharmacy_claims including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id);
+
+select 'Inserting from ccaed_etl: ' || current_timestamp as message;
 ---truv commercial
-insert into dw_staging.truv_pharmacy_claims (
+insert into dw_staging.truc_pharmacy_claims (
 		data_source,
 		year,
 		uth_rx_claim_id,
@@ -137,7 +159,7 @@ insert into dw_staging.truv_pharmacy_claims (
 		special_drug_ind,--new
 		load_date 
 		)
-select 'truv',
+select 'truc',
 	   a."year" ,
 	   b.uth_rx_claim_id,
 	   b.uth_member_id,
@@ -170,13 +192,14 @@ select 'truv',
 			 null, --new
 			 current_date
 from staging_clean.ccaed_etl a
-  join staging_clean.truven_rx_claim_id b
+  join staging_clean.truc_rx_claim_id b
      on b.member_id_src = a.enrolid 
     and b.rx_claim_id_src = a.rx_id_src 
    left outer join reference_tables.redbook r -- new
      on r.ndcnum = lpad(a.ndcnum::text,11,'0')
 ;
 
-analyze dw_staging.truv_pharmacy_claims;
+select 'Analyze: ' || current_timestamp as message;
+analyze dw_staging.truc_pharmacy_claims;
 
 select 'Truven RX claims script completed at ' || current_timestamp as message;

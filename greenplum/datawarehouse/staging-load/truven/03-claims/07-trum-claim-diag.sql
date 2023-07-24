@@ -16,7 +16,7 @@
  * ******************************************************************************************************
  *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
  * ******************************************************************************************************
- *  xzhang  || 07/20/2023 || Split into trum and truc
+ *  xzhang  || 07/20/2023 || Split into trum and truc, added table_id_src
  * */
 
 select 'Truven MDCR Claim Diag script started at ' || current_timestamp as message;
@@ -53,7 +53,8 @@ poa_src,
 icd_version,
 claim_id_src,
 member_id_src,
-load_date
+load_date,
+table_id_src
 )  					
 with diag_agg as (
 select  'trum', 
@@ -83,7 +84,8 @@ select  'trum',
 	     a.dxver,
 	     a.claim_id_derv,
 	     a.enrolid::text,
-	     current_date
+	     current_date,
+	     'mdcrs' as table_id_src
 	from diag_agg a
 	join staging_clean.trum_dim_id  b 
 	  on b.member_id_src = a.enrolid 
@@ -113,7 +115,8 @@ poa_src,
 icd_version,
 claim_id_src,
 member_id_src,
-load_date
+load_date,
+table_id_src
 )  					
 with diag_agg as (
 select  'trum', 
@@ -142,7 +145,8 @@ select  'trum',
 	     a.dxver,
 	     a.claim_id_derv,
 	     a.enrolid::text,
-	     current_date
+	     current_date,
+	     'mdcro' as table_id_src
 	from diag_agg a
 	join staging_clean.trum_dim_id  b 
 	  on b.member_id_src = a.enrolid 
