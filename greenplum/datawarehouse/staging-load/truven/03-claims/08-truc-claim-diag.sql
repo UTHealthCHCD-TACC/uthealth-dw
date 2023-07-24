@@ -16,7 +16,7 @@
  * ******************************************************************************************************
  *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
  * ******************************************************************************************************
- *  xzhang  || 07/20/2023 || Split into trum and truc
+ *  xzhang  || 07/20/2023 || Split into trum and truc, added table_id_src
  * */
 
 select 'Truven CCAE Claim Diag script started at ' || current_timestamp as message;
@@ -53,7 +53,8 @@ poa_src,
 icd_version,
 claim_id_src,
 member_id_src,
-load_date
+load_date,
+table_id_src
 )  					
 with diag_agg as (
 select  'truc', 
@@ -72,18 +73,19 @@ select  'truc',
   )
  select * from (
   select 
-   'truc', 
+ 	 'truc' as data_source,
 	 year,
      b.uth_member_id, 
      b.uth_claim_id, 
 	 a.svcdate,
      unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
 	 unnest(array[1,2,3,4,5]) as dx_pos,
-     null,
-     a.dxver,
-     a.claim_id_derv,
-     a.enrolid::text,
-     current_date
+     null as poa_src,
+     a.dxver as icd_version,
+     a.claim_id_derv as claim_id_src,
+     a.enrolid::text as member_id_src,
+     current_date as load_date,
+     'ccaes' as table_id_src
 from diag_agg a
 join staging_clean.truc_dim_id  b 
   on b.member_id_src = a.enrolid 
@@ -111,7 +113,8 @@ poa_src,
 icd_version,
 claim_id_src,
 member_id_src,
-load_date
+load_date,
+table_id_src
 )  					
 with diag_agg as (
 select  'truc', 
@@ -140,7 +143,8 @@ select * from (
 	     a.dxver,
 	     a.claim_id_derv,
 	     a.enrolid::text,
-	     current_date
+	     current_date,
+	     'ccaeo' as table_id_src
 	from diag_agg a
 	join staging_clean.truc_dim_id  b 
 	  on b.member_id_src = a.enrolid 
@@ -153,3 +157,24 @@ select 'Analyze: ' || current_timestamp as message;
 analyze dw_staging.truc_claim_diag;
 
 select 'Truven CCAE Claim Diag script completed at ' || current_timestamp as message;
+
+/*************
+ * QA:
+ * 
+select table_id_src, count(*) from dw_staging.truc_claim_diag group by table_id_src;
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
