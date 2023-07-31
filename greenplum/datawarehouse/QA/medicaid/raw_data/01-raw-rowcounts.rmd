@@ -1,0 +1,243 @@
+---
+title: "raw-rowcounts"
+author: "XRZ"
+date: '2023-07-31'
+output: html_document
+---
+
+#Purpose:
+This R markdown script counts how many rows of data there are in the raw Medicaid 
+data on SPC side and Greenplum side and compares them
+
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
+```
+
+## 0.5 Declare root directory and set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("01-raw-rowcounts.rmd")
+```
+
+# SECTION 1: Initialization
+
+## 1.1 Define global variables
+```{r}
+#Define the starting and ending years for checking (4-digit year)
+starting_year = 2016
+ending_year = 2022
+
+#convert to 2-digit year
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+```
+
+## 1.2 Read in table names
+```{r}
+importfile = here("table_names.xlsx")
+
+table_names = read.xlsx(importfile, "Sheet1")
+
+
+```
+
+## 1.3 Declare base queries
+```{r}
+
+spc_sql = "select count(*) from medicaid.dbo.@base_table; "
+
+
+gp_sql = "select year_fy, '@base_table' as table, count(*)::int as gp from medicaid.@base_table group by 1 order by 1;"
+
+```
+
+## 1.4 Initialize DF for holding all information
+```{r}
+
+empty_df = data.frame(matrix(ncol=3, nrow=0))
+empty_df = rbind(empty_df, c(0, "", 0))
+spc_counts = empty_df
+gp_counts = empty_df
+colnames(spc_counts) = c("year_fy", "table", "spc")
+colnames(gp_counts) = c("year_fy", "table", "gp")
+
+
+```
+
+# SECTION 2: Count rows
+
+## 2.1 Count rows on SPC-side
+```{r}
+
+for (i in 1:nrow(table_names)){
+  
+  base_table = table_names[i,1]
+
+  tic(paste("Count from", table_names[i,2]))
+  
+  #substitute in the table
+
+  spc_sql.mod1 = spc_sql %>% gsub("@base_table", base_table, .)
+  
+  for (yr in starting_yr:ending_yr){
+    #substitute in the year
+    spc_sql.mod2 = spc_sql.mod1 %>% gsub('@YY', yr, .)
+    
+    #get count
+    count = dbGetQuery(spc, spc_sql.mod2)
+  
+    #rbind it in
+    spc_counts = rbind(spc_counts, c(2000+yr, table_names[i,2], count[1,1]))
+    }
+  
+  toc()
+  
+}
+
+
+```
+
+## 2.2 Count rows on GP-side
+```{r}
+
+tac = connect_to_tacc()
+
+for (i in 1:nrow(table_names)){
+  
+  base_table = table_names[i,2]
+
+  tic(paste("Count from", table_names[i,2]))
+  
+  #substitute in the table
+
+  gp_sql.mod = gp_sql %>% gsub("@base_table", base_table, .)
+  
+  #get count
+  count = dbGetQuery(tac, gp_sql.mod)
+
+  #rbind it in
+  gp_counts = rbind(gp_counts, count)
+
+  toc()
+  
+}
+
+
+```
+# SECTION 3: Merge data, find differences
+```{r}
+#spc_counts = spc_counts %>% distinct()
+
+#make merged df
+merged_counts = spc_counts %>%
+  filter(year_fy != 0) %>%
+  full_join(gp_counts, by=c("year_fy", "table")) %>%
+  filter(year_fy >= starting_year, year_fy<=ending_year) %>%
+  mutate (spc = as.integer(spc),
+          gp = as.integer(gp)) %>%
+  mutate(diff = spc - gp) %>%
+  arrange(table, year_fy)
+
+```
+
+
+# SECTION 4: Outputs results
+
+## 4.1 Write to xlsx
+```{r eval=false}
+output = merged_counts
+
+wb = createWorkbook()
+dir = here("outputs")
+path = here("outputs", "medicaid-raw-rowcounts.xlsx")
+
+addWorksheet(wb, sheetName = "rowcounts")
+
+writeData(wb, sheet = 1, "Raw rowcounts from SPC server and GP server", startCol=1, startRow=1)
+writeData(wb, sheet = 1, paste("Run time:", Sys.time()), startCol=1, startRow=2)
+
+writeData(wb, sheet = 1, output, startCol=1, startRow=4)
+
+setColWidths(wb, sheet = 1, cols=1:ncol(output)+1, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=10)
+
+dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
+saveWorkbook(wb, file=path, overwrite=TRUE)
+
+```
+
+#SECTION 99: Delete temp tables, Close connections, clear R environment
+
+```{sql, connection = spc, eval = FALSE}
+drop table if exists work.dbo.xz_dwqa_temp1;
+drop table if exists work.dbo.xz_dwqa_temp2;
+drop table if exists work.dbo.xz_dwqa_temp3;
+```
+
+```{sql, connection = tac, eval = FALSE}
+drop table if exists dev.xz_dwqa_temp1;
+drop table if exists dev.xz_dwqa_temp2;
+drop table if exists dev.xz_dwqa_temp3;
+```
+
+```{r close-connections, eval = FALSE}
+# closes connections if they are open
+if (dbIsValid(spc)) {dbDisconnect(spc)}
+
+if (dbIsValid(tac)) {dbDisconnect(tac)} 
+
+```
+
+```{r clear-all-env, eval = FALSE}
+# clears R environment
+rm(list=ls())
+```
