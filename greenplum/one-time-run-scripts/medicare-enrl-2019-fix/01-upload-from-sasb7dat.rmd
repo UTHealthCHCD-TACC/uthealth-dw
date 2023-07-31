@@ -1,0 +1,94 @@
+---
+title: "Medicare Enrollment Table 2019 to GP"
+author: "Xiaorui"
+date: '2023-07-26'
+output: html_document
+---
+
+#Purpose:
+This R markdown script fixes the issue where the old version of the Medicare enrollment table
+for 2019 was uploaded to GP and newer version was not.
+
+
+# SECTION 0: Loading required packages, making connections, the usual
+
+## 0.1 Load packages
+```{r package-loading, warning = FALSE}
+# Package installs/loading 
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here, haven)
+
+```
+
+## 0.2 Connect to TACC
+```{r connect-to-tacc}
+#PREREQUISITE: Set up your username/password in Keyring
+# Instructions: replace indicated areas in code below with your username/password for TACC server
+# Run it once, and delete from code - code will not need to be run more than once per user per computer
+# Keyring will save your username/password to your OS credential store, and the service/user/password combo
+# can be retrieved without hardcoding a password or requring user input.
+# key_set_with_value(service = "Greenplum", 
+#                   username = "-----------", #replace with your username
+#                   password = "-----------") #replace with your password
+
+# Function for connecting to TACC/Greenplum
+# TACC kicks you out for inactivity so just call function before connections
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
+	 host = "greenplum01.corral.tacc.utexas.edu",
+	 port = 5432)
+}
+
+```
+
+## 0.3 Connect to SPC
+```{r connect-to-spcdedpwpvs1, eval=FALSE}
+#PREREQUISITE: Set up connection to SPCDEDPWPVS1 in ODBC Data sources
+#Make sure the default schema is correct! This one is set to medicaid
+
+#Connect to SPCDEDPWPVS1
+spc <- dbConnect(odbc::odbc(),
+	 dsn = "medicaid")
+```
+
+## 0.4 Clear R environment (except for DB connections)
+```{r clear-environment}
+# clears R environment except for DB connections
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
+```
+
+## 0.5 Declare root directory and set misc R options
+```{r}
+knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("prepare/penguins.R")
+```
+
+# SECTION 1: Read data in from sas7bdat
+## 1.1 Read in data
+```{r}
+data = haven::read_sas("R:/2019/TX/mbsf_abcd_summary.sas7bdat")
+
+```
+
+## 1.2 Clear attributes and convert column names to lowercase
+```{r}
+names(data) = tolower(names(data))
+
+```
+
+# SECTION 2: Upload to GP
+
+```{r}
+tac = connect_to_tacc()
+
+dbWriteTable(tac, SQL("dev.medicare_tx_mbsf_2019_temp"), data, overwite = TRUE)
+
+
+```
+
+

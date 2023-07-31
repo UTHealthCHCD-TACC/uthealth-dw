@@ -60,4 +60,24 @@ select * from pg_stat_user_indexes;
 select * from pg_stat_bgwriter;
 
 
+select count(*) from medicare_texas.mbsf_abcd_summary where year::int = 2019;
+
+
+--get column names AND data type
+select column_name, udt_name ||
+	case when character_maximum_length is not null then '(' || character_maximum_length || ')'
+	else '' end
+from information_schema.columns
+where table_schema = 'medicaid' and table_name = 'enrl'
+order by ordinal_position;
+
+
+
+
+
+
+
+
+
+
 
