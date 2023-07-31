@@ -839,6 +839,298 @@ where bill in ('111', '112', '113', '114')
 group by bill
 order by bill;
 
+/**************************
+ * Get some encounters for continuing bills
+ */
+
+select *
+from data_warehouse.admission_acute_ip_claims
+where uth_claim_id in (
+	select uth_claim_id from data_warehouse.claim_detail_1_prt_mcrn
+	where bill = '114'
+);
+
+--check out these claims
+532482626-000-2020
+532686669-004-2020
+533147398-000-2020
+530942645-001-2016
+533333760-000-2015
+532428739-002-2016
+
+--532482626-000-2020
+select * from data_warehouse.admission_acute_ip_claims
+where derived_uth_admission_id = '532482626-000-2020';
+ggggguwBnnBfAfa
+ggggBwnnungyuyn
+
+select * from data_warehouse.claim_detail_1_prt_mcrn
+where claim_id_src = 'ggggguwBnnBfAfa'; --114, inpatient_revenue_center
+
+select * from data_warehouse.claim_detail_1_prt_mcrn
+where claim_id_src = 'ggggBwnnungyuyn'; --no bill, bcarrier
+
+--532686669-004-2020
+select * from data_warehouse.admission_acute_ip_claims
+where derived_uth_admission_id = '532686669-004-2020';
+ggggBwwnwwgBaga
+ggggBwwjgfAajwy
+ggggBwwfufBByBy
+ggggBwwwBBuywgn
+ggggguyfuyyfAwa --the only F claim type on here
+ggggBwwwBBuywgj
+ggggBwwngyBgaaA
+ggggBwwnwwgBafg
+ggggBwwjgfAajwa
+ggggBwwfufBByBa
+ggggBwwwBBuywgB
+ggggBwwABfBaAjw
+ggggBwwjgfAajww
+ggggBwwnwwgBagy
+
+select * from data_warehouse.claim_detail_1_prt_mcrn
+where claim_id_src = 'ggggguyfuyyfAwa'; --114, inpatient_revenue_center
+--member id src is gggggggfnAwujBf, year is 2020, June 09-July 10
+
+select clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill from medicare_national.inpatient_base_claims_k
+where year = '2020' and bene_id = 'gggggggfnAwujBf';
+ggggguAyfggBuAw	111
+ggggguwanAnwygn	112
+ggggguyfuyyfAwa	114
+
+select clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt,
+	ptnt_dschrg_stus_cd
+from medicare_national.inpatient_base_claims_k
+where year = '2020' and bene_id = 'gggggggfnAwujBf';
+ggggguAyfggBuAw	111	21DEC2019	16JAN2020	37330.46	0.00	26	32589.08
+ggggguwanAnwygn	112	11MAY2020	08JUN2020	60440.22	0.00	29	54351.13
+ggggguyfuyyfAwa	114	09JUN2020	10JUL2020	53312.15	0.00	31	49202.18
+
+
+
+
+--check out some more
+select year, bene_id, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill from medicare_national.inpatient_base_claims_k
+where clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd = '114';
+2014	gggggggjjwjuynA	gggggnfanfyugnw	114
+2015	gggggggBAfjwwwn	gggggnnjfffAgnA	114
+2019	gggggggjffgBawu	ggggguAjwaAjfaw	114
+2020	ggggggggAjABBaj	ggggguwwjwjafwg	114
+2018	ggggggjyAgjaugA	gggggujajanfnBB	114
+
+select year, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt
+from medicare_national.inpatient_base_claims_k
+where year = '2014' and bene_id = 'gggggggjjwjuynA';
+--this one is consecutive
+2014 gggggnfanfyugnw	114	17APR2014	20MAY2014	0.00	33	33445.05
+2014 gggggnfwnyuufwu	111	08APR2014	17APR2014	0.00	9	10288.20
+
+select year, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt
+from medicare_national.inpatient_base_claims_k
+where year = '2015' and bene_id = 'gggggggBAfjwwwn'
+order by clm_from_dt::date;
+2015	gggggnnfgyynngf	111	18MAR2015	23MAR2015	0.00	5	11101.53
+2015	gggggnngyuugaAw	112	23MAR2015	31MAR2015	0.00	9	7868.07
+2015	gggggnnjfffAgnA	114	01APR2015	21APR2015	0.00	20	20474.29
+2015	gggggnufgwnajAn	111	09AUG2015	13AUG2015	0.00	4	13194.60
+
+select year, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt
+from medicare_national.inpatient_base_claims_k
+where year = '2019' and bene_id = 'gggggggjffgBawu'
+order by clm_from_dt::date;
+2019	ggggguuggByjnuw	111	15APR2019	19APR2019	0.00	4	20130.14
+2019	ggggguABufAuajA	112	30SEP2019	30SEP2019	0.00	1	4528.13		<--112 and 114 should be one single admission
+2019	ggggguAjwaAjfaw	114	01OCT2019	04OCT2019	0.00	3	17594.55
+2019	ggggguAAwBAafyA	111	09DEC2019	16DEC2019	0.00	7	41053.94
+
+select year, derived_uth_admission_id, admit_date, discharge_date, from_date_of_service, to_date_of_service, 
+	charge_amount, member_id_src, claim_id_src
+from data_warehouse.admission_acute_ip_claims
+where derived_uth_admission_id in (
+	select derived_uth_admission_id from data_warehouse.admission_acute_ip_claims
+	where claim_id_src = 'ggggguAjwaAjfaw'
+);
+2019	532783167-001-2019	2019-10-01	2019-10-04	2019-10-01	2019-10-01	8.32	gggggggjffgBawu	ggggBwgaagAfwuA
+2019	532783167-001-2019	2019-10-01	2019-10-04	2019-10-01	2019-10-04	278.18	gggggggjffgBawu	ggggBwgaagAfwuw
+2019	532783167-001-2019	2019-10-01	2019-10-04	2019-10-01	2019-10-04	0.00	gggggggjffgBawu	ggggguAjwaAjfaw
+
+--check out some more
+select year, bene_id, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill from medicare_national.inpatient_base_claims_k
+where clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd = '113';
+2015	ggggggggaufawwu	gggggnAjufwfffu	113
+2018	ggggggjyBAwfuBn	gggggujnBwAauBy	113
+2020	ggggggBygAwwygj	ggggguanunnafBf	113
+2015	ggggggguwajfjgu	gggggnufauBawyA	113
+
+select year, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt,
+	ptnt_dschrg_stus_cd
+from medicare_national.inpatient_base_claims_k
+where year in ('2018', '2019') and bene_id = 'ggggggjyBAwfuBn'
+	and clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd in ('112', '113', '114')
+order by clm_from_dt::date;
+2018	ggggguBwByfAwwa	112	13MAR2018	11APR2018	473176.15	0.00	30	118438.19	30
+2018	gggggujnBwAauBy	113	12APR2018	11MAY2018	323941.31	0.00	30	110659.74	30
+2018	gggggujufBnBjAA	114	12MAY2018	17MAY2018	34801.92	0.00	5	17239.52	01
+
+/**********
+ * isrrael built 2018 medicare national admits so let's check
+ */
+select * from dev.gm_dw_ip_admit_claim where member_id_src = 'ggggggjyBAwfuBn' and claim_id_src = 'ggggguBwByfAwwa';
+--admit id 666515635-001-2018
+
+select admit_id, admit_date, discharge_date, member_id_src, claim_id_src
+from dev.gm_dw_ip_admit_claim where member_id_src = 'ggggggjyBAwfuBn' and claim_type = 'F' order by admit_date;
+
+--what about when there's no 113
+select year, bene_id, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt,
+	ptnt_dschrg_stus_cd
+from medicare_national.inpatient_base_claims_k
+where year in ('2018') 
+	and clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd = '114';
+2018	gggggggfgByBBBy	ggggguBwafAaBAB	114	01JUL2018
+2018	gggggggfnnwfguw	ggggguBujawjyfy	114	12JUN2018
+2018	gggggggunuwBuaB	gggggujgawBwjay	114	30APR2018
+2018	gggggggfuawnABA	ggggguBygBjBjBn	114	01JUL2018
+2018	ggggggByggfnujf	gggggujjajAnnju	114	01SEP2018
+
+select year, clm_id, clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+	clm_from_dt, clm_thru_dt, clm_tot_chrg_amt, clm_pass_thru_per_diem_amt, clm_utlztn_day_cnt, clm_pmt_amt,
+	ptnt_dschrg_stus_cd
+from medicare_national.inpatient_base_claims_k
+where year in ('2018') and bene_id = 'gggggggfgByBBBy'
+	and clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd in ('112', '113', '114')
+order by clm_from_dt::date;
+2018	ggggguBAyfAnguB	112	27JUN2018	30JUN2018	7327.57	0.00	4	5436.95	30
+2018	ggggguBwafAaBAB	114	01JUL2018	02JUL2018	1507.68	0.00	1	1388.87	06
+
+--112-114 works just fine
+select admit_id, admit_date, discharge_date, member_id_src, claim_id_src
+from dev.gm_dw_ip_admit_claim where member_id_src = 'gggggggfgByBBBy' and claim_type = 'F' order by admit_date;
+
+/**************************
+ * bcarrier/dme tables - where is the coinsurance hiding?
+ * 	carr_clm_cash_ddctbl_apld_amt should = sum(deductible)
+ *  clm_bene_pd_amt = ???
+ */
+
+select year, bene_id, clm_id, carr_clm_cash_ddctbl_apld_amt, clm_bene_pd_amt
+from medicare_national.bcarrier_claims_k
+where carr_clm_cash_ddctbl_apld_amt != '0.00' and clm_bene_pd_amt != '0.00'
+and year = '2020';
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	101.11	80.01
+2020	gggggggfguuunyg	ggggBwjaffagyBB	79.24	15.00
+
+select year, bene_id, clm_id, line_bene_ptb_ddctbl_amt, line_bene_prmry_pyr_pd_amt, line_coinsrnc_amt,
+	line_othr_apld_amt1
+from medicare_national.bcarrier_line_k
+where clm_id = 'ggggBwjnBAfgjgn';
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	101.11	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+2020	ggggggjnaaAgAgj	ggggBwjnBAfgjgn	0.00	0.00
+--wow that does not match up at 
+
+--while we're here let's look at line_alowd_chrg_amt vs car_line_cl_chrg_amt
+/*from dictionary:
+ * 	line allowed charge amount = amt of lallowed charges for line item, used to compute pay to providers or reimbursement to beneficiaries
+ *  car_line_cl_chrg_amt = clinical lab charge amount on the carrier line
+ * 
+ * uh-oh... so do we need to add up charge amounts?
+ * 
+ * Answer: NO - it's a duplication when there's a carrier line clinic charge amount
+ */
+
+select line_sbmtd_chrg_amt, carr_line_cl_chrg_amt from medicare_national.bcarrier_line_k
+where carr_line_cl_chrg_amt != '0.00';
+75.00	75.00
+50.00	50.00
+90.00	90.00
+20.00	20.00
+4.31	4.31
+14.37	14.37
+
+
+
+
+/****************************************************
+ * Part D exploration
+ */
+
+--what columns we got?
+
+select column_name, ordinal_position
+from information_schema.columns
+where table_schema = 'medicare_national' and table_name = 'pde_file'
+and (column_name like '%amt' or column_name like '%rptd_gap%')
+order by ordinal_position;
+
+gdc_blw_oopt_amt	26
+gdc_abv_oopt_amt	27
+ptnt_pay_amt	28
+othr_troop_amt	29
+lics_amt	30
+plro_amt	31
+cvrd_d_plan_pd_amt	32
+ncvrd_plan_pd_amt	33
+tot_rx_cst_amt	34
+rptd_gap_dscnt_num	44
+
+--ok so... what's positive, what's negative, and what's null?
+
+select sum(case when ncvrd_plan_pd_amt = '0.00' then 1 else 0 end) *1.0 / count(*) as zero,
+	sum(case when ncvrd_plan_pd_amt::float > 0.005 then 1 else 0 end) *1.0 / count(*) as positive,
+	sum(case when ncvrd_plan_pd_amt::float < -0.005 then 1 else 0 end) *1.0 / count(*) as negative, 
+	count(*)
+from medicare_national.pde_file
+where year = '2019';
+
+select ncvrd_plan_pd_amt, case when ncvrd_plan_pd_amt = '0.00' then 1 else 0 end as zero
+from medicare_national.pde_file;
+
+select count(*) from medicare_national.pde_file where ncvrd_plan_pd_amt is null and year = '2020';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
