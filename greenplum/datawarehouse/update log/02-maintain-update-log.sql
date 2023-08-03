@@ -28,5 +28,40 @@ where a.schema_name = b.schemaname and a.table_name = b.relname;
 --vacuum analyze because why not
  vacuum analyze data_warehouse.update_log;
 
+--look at it
+select * from data_warehouse.update_log
+
+/*******************
+ * Remove dead tables that no longer exist
+ */
+
+--backup update_log
+drop table if exists backup.update_log;
+
+create table backup.update_log as
+select * from data_warehouse.update_log;
+
+--delete dead tables
+delete from data_warehouse.update_log
+where not exists (
+	select 1 from pg_catalog.pg_stat_all_tables
+	where schemaname in ('data_warehouse', 'medicaid', 'medicare_national',
+	'medicare_texas', 'optum_dod', 'optum_zip', 'reference_tables', 'truven')
+	and schemaname || relname = update_log.schema_name || update_log.table_name
+);
+
+/****
+ * Check what tables got deleted
+
+select a.* from backup.update_log a left join data_warehouse.update_log b
+on a.table_name = b.table_name and a.schema_name = b.schema_name
+where b.table_name is null;
+ */
+
+
+
+
+
+
 
 

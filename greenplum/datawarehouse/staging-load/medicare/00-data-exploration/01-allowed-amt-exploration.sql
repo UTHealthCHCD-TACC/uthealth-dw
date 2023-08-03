@@ -165,6 +165,10 @@ select "year", bene_id, clm_id, rev_cntr, rev_cntr_tot_chrg_amt, rev_cntr_ncvrd_
 from medicare_national.inpatient_revenue_center_k
 where clm_id = 'gggggugyuyjawgn';
 
+--proof for powerpoint
+select clm_id, clm_line_num, rev_cntr, rev_cntr_tot_chrg_amt from medicare_national.inpatient_revenue_center_k
+where year = '2020' order by clm_id, clm_line_num::int;
+
 
 --do all claim_ids have rev_cntr = '0001' - inpatient tables
 with cte as (
