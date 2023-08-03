@@ -11,9 +11,10 @@
  * Date		|| Programmer 	|| Notes
  * ********************************************
  * 05/09/23	|| Xiaorui		|| Created
+ * ********************************************
+ * 08/03/23 || Xiaorui 		|| Modified to accomodate truc and trum - note that on next data refresh,
+ * 								we'll have to modify the backup portion of the scripts
  * 
- * Note: I haven't unified table names and stuff. That's on the to-do list,
- * but Truven's just kind of an annoying beast of a DB so running 
  * 
  ***********************************/
 
@@ -78,14 +79,6 @@ alter table backup.truv_claim_header owner to uthealth_dev;
 alter table backup.truv_claim_icd_proc owner to uthealth_dev;
 alter table backup.truv_pharmacy_claims owner to uthealth_dev;
 
-alter table dw_staging.truv_member_enrollment_monthly owner to uthealth_dev;
-alter table dw_staging.truv_member_enrollment_yearly owner to uthealth_dev;
-alter table dw_staging.truv_claim_detail owner to uthealth_dev;
-alter table dw_staging.truv_claim_diag owner to uthealth_dev;
-alter table dw_staging.truv_claim_header owner to uthealth_dev;
-alter table dw_staging.truv_claim_icd_proc owner to uthealth_dev;
-alter table dw_staging.truv_pharmacy_claims owner to uthealth_dev;
-
 alter table data_warehouse.member_enrollment_monthly owner to uthealth_dev;
 alter table data_warehouse.member_enrollment_yearly owner to uthealth_dev;
 alter table data_warehouse.claim_detail owner to uthealth_dev;
@@ -93,6 +86,22 @@ alter table data_warehouse.claim_diag owner to uthealth_dev;
 alter table data_warehouse.claim_header owner to uthealth_dev;
 alter table data_warehouse.claim_icd_proc owner to uthealth_dev;
 alter table data_warehouse.pharmacy_claims owner to uthealth_dev;
+
+alter table dw_staging.truc_member_enrollment_monthly owner to uthealth_dev;
+alter table dw_staging.truc_member_enrollment_yearly owner to uthealth_dev;
+alter table dw_staging.truc_claim_detail owner to uthealth_dev;
+alter table dw_staging.truc_claim_diag owner to uthealth_dev;
+alter table dw_staging.truc_claim_header owner to uthealth_dev;
+alter table dw_staging.truc_claim_icd_proc owner to uthealth_dev;
+alter table dw_staging.truc_pharmacy_claims owner to uthealth_dev;
+
+alter table dw_staging.trum_member_enrollment_monthly owner to uthealth_dev;
+alter table dw_staging.trum_member_enrollment_yearly owner to uthealth_dev;
+alter table dw_staging.trum_claim_detail owner to uthealth_dev;
+alter table dw_staging.trum_claim_diag owner to uthealth_dev;
+alter table dw_staging.trum_claim_header owner to uthealth_dev;
+alter table dw_staging.trum_claim_icd_proc owner to uthealth_dev;
+alter table dw_staging.trum_pharmacy_claims owner to uthealth_dev;
 
 /********************
  * Move current DW tables to backup
@@ -132,52 +141,95 @@ exchange partition truv
 with table backup.truv_pharmacy_claims;
 
 /********************
- * Meat and Potatoes: Move new tables into DW
+ * Meat and Potatoes: Move new tables into DW - trum
  *******************/
 
 alter table data_warehouse.member_enrollment_monthly
-exchange partition truv
-with table dw_staging.truv_member_enrollment_monthly;
+exchange partition trum
+with table dw_staging.trum_member_enrollment_monthly;
 
 alter table data_warehouse.member_enrollment_yearly
-exchange partition truv
-with table dw_staging.truv_member_enrollment_yearly;
+exchange partition trum
+with table dw_staging.trum_member_enrollment_yearly;
 
 alter table data_warehouse.claim_detail
-exchange partition truv
-with table dw_staging.truv_claim_detail;
+exchange partition trum
+with table dw_staging.trum_claim_detail;
 
 alter table data_warehouse.claim_diag
-exchange partition truv
-with table dw_staging.truv_claim_diag;
+exchange partition trum
+with table dw_staging.trum_claim_diag;
 
 alter table data_warehouse.claim_header
-exchange partition truv
-with table dw_staging.truv_claim_header;
+exchange partition trum
+with table dw_staging.trum_claim_header;
 
 alter table data_warehouse.claim_icd_proc
-exchange partition truv
-with table dw_staging.truv_claim_icd_proc;
+exchange partition trum
+with table dw_staging.trum_claim_icd_proc;
 
 alter table data_warehouse.pharmacy_claims
-exchange partition truv
-with table dw_staging.truv_pharmacy_claims;
+exchange partition trum
+with table dw_staging.trum_pharmacy_claims;
+
+/********************
+ * Meat and Potatoes: Move new tables into DW - truc
+ *******************/
+
+alter table data_warehouse.member_enrollment_monthly
+exchange partition truc
+with table dw_staging.truc_member_enrollment_monthly;
+
+alter table data_warehouse.member_enrollment_yearly
+exchange partition truc
+with table dw_staging.truc_member_enrollment_yearly;
+
+alter table data_warehouse.claim_detail
+exchange partition truc
+with table dw_staging.truc_claim_detail;
+
+alter table data_warehouse.claim_diag
+exchange partition truc
+with table dw_staging.truc_claim_diag;
+
+alter table data_warehouse.claim_header
+exchange partition truc
+with table dw_staging.truc_claim_header;
+
+alter table data_warehouse.claim_icd_proc
+exchange partition truc
+with table dw_staging.truc_claim_icd_proc;
+
+alter table data_warehouse.pharmacy_claims
+exchange partition truc
+with table dw_staging.truc_pharmacy_claims;
 
 /*******
  * QA: Did things swap over properly?
 
-select month_year_id, count(*) from data_warehouse.member_enrollment_monthly
+select month_year_id, count(*) from data_warehouse.member_enrollment_monthly_1_prt_truc
 group by month_year_id
 having count(*) > 100
 order by month_year_id desc limit 5;
 
---goes up to June 2022 so good, it worked
+--goes up to Sept 2022 so good, it worked
 
-202206	19183907
-202205	19212620
-202204	19148240
-202203	19148870
-202202	19148477
+202209	18034853
+202208	18075137
+202207	18084648
+202206	18131623
+202205	18151353
+
+select month_year_id, count(*) from data_warehouse.member_enrollment_monthly_1_prt_trum
+group by month_year_id
+having count(*) > 100
+order by month_year_id desc limit 5;
+
+202209	1444491
+202208	1479933
+202207	1480737
+202206	1481554
+202205	1481130
 
  */
 
@@ -191,12 +243,12 @@ drop table if exists backup.update_log;
 create table backup.update_log as
 select * from data_warehouse.update_log;
 
---05/16/2023: Truven data updated for Q2 2022
+--08/03/2023: Truven data updated for Q3 2022
 
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Truven data updated for Q2 2022',
+	details = 'Truven data updated for Q3 2022, split into truc and trum',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
@@ -204,7 +256,7 @@ and schema_name = 'data_warehouse'
 	and (table_name like 'claim%' or 
 		table_name like 'member_enrollment%' or 
 		table_name like 'pharmacy_claims%')
-	and (table_name not like '%_1_%' or table_name like '%truv')
+	and (table_name not like '%_1_%' or table_name like '%truc' or table_name like '%trum')
 	and table_name not like '%fiscal%'
 	;
 
@@ -215,7 +267,7 @@ where schema_name = 'data_warehouse'
 	and (table_name like 'claim%' or 
 		table_name like 'member_enrollment%' or 
 		table_name like 'pharmacy_claims%')
-	and (table_name not like '%_1_%' or table_name like '%truv')
+	and (table_name not like '%_1_%' or table_name like '%truc' or table_name like '%trum')
 	and table_name not like '%fiscal%'
 order by table_name;
 */
