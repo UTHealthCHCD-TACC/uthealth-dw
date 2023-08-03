@@ -15,8 +15,6 @@
  * 08/03/23 || Xiaorui 		|| Modified to accomodate truc and trum - note that on next data refresh,
  * 								we'll have to modify the backup portion of the scripts
  * 
- * Note: I haven't unified table names and stuff. That's on the to-do list,
- * but Truven's just kind of an annoying beast of a DB so running 
  * 
  ***********************************/
 
