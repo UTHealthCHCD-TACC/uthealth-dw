@@ -152,18 +152,9 @@ select clm_id, rowcount
 from cte
 where rowcount = 2;
 
-gggggugyuyjawgn	2
-gggggugjfgAnffy	2
-ggggguufBuggBjB	2
-ggggguyjBgjgwfB	2
-ggggguaBfuajgAn	2
-ggggguujggaujAu	2
-gggggnujjjanwnw	2
-gggggujgBnfguaf	2
-
 select "year", bene_id, clm_id, rev_cntr, rev_cntr_tot_chrg_amt, rev_cntr_ncvrd_chrg_amt
 from medicare_national.inpatient_revenue_center_k
-where clm_id = 'gggggugyuyjawgn';
+where clm_id = '';
 
 --proof for powerpoint
 select clm_id, clm_line_num, rev_cntr, rev_cntr_tot_chrg_amt from medicare_national.inpatient_revenue_center_k
@@ -815,6 +806,20 @@ select sum(clm_pmt_amt::float) as clm_pmt_amt,
 	sum(coalesce(ehr_pymt_adjstmt_amt::float, 0)) as ehr_pymt_adjstmt_amt
 from medicare_national.inpatient_base_claims_k
 where year = '2020';
+
+--what about for BCarrier
+select sum(clm_pmt_amt::float) as clm_pmt_amt,
+	sum(coalesce(carr_clm_prmry_pyr_pd_amt::float, 0)) as carr_clm_prmry_pyr_pd_amt,
+	sum(coalesce(nch_carr_clm_alowd_amt::float, 0)) as nch_carr_clm_alowd_amt,
+	sum(coalesce(carr_clm_cash_ddctbl_apld_amt::float, 0)) as carr_clm_cash_ddctbl_apld_amt
+from medicare_national.bcarrier_claims_k
+where year = '2020';
+
+--get the coinsurance from BCarrier - does it fill in the gap?
+select sum(coalesce(line_coinsrnc_amt::float, 0)) as sum_coinsurance
+from medicare_national.bcarrier_line_k
+where year = '2020';
+1102335244.5699763
 
 /*****************
  * Question: do continuing claims really not have a discharge date

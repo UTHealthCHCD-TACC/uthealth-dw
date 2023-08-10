@@ -19,10 +19,9 @@
  * 						  
  *********************************************************************/
 
-/*****************************
- * Split age derived into 2 columns: age_fy and age_cy
- */
+--TWEAKED FOR PSQL
 
+select 'Medicaid Monthly Enroll Load script started at ' || current_timestamp as message;
 
 /**************************************************
  * Initialize empty monthly enrollment table
@@ -45,6 +44,8 @@ alter table dw_staging.mcd_member_enrollment_monthly add column row_id bigserial
 alter sequence dw_staging.mcd_member_enrollment_monthly_row_id_seq cache 200;
 
 vacuum analyze dw_staging.mcd_member_enrollment_monthly;
+
+select 'Loading data in: ' || current_timestamp as message;
 
 --select * from dw_staging.mcd_member_enrollment_monthly;
 
@@ -104,18 +105,28 @@ insert into dw_staging.mcd_member_enrollment_monthly (
     current_date as load_date
 from dw_staging.medicaid_enroll_etl;
 
+select 'Vacuum analyze: ' || current_timestamp as message;
+vacuum analyze dw_staging.mcd_member_enrollment_monthly;
+
+
+select 'Updating uth_member_id: ' || current_timestamp as message;
+
 --insert in uth_member_id
 update dw_staging.mcd_member_enrollment_monthly a
 set uth_member_id = b.uth_member_id
 from data_warehouse.dim_uth_member_id b
-where a.data_source = b.data_source and
+where b.data_source in ('mdcd', 'mhtw', 'mcpp') and
+	a.data_source = b.data_source and
 	a.member_id_src = b.member_id_src;
+
+select 'Vacuum analyze: ' || current_timestamp as message;
 
 vacuum analyze dw_staging.mcd_member_enrollment_monthly;
 
 --check to see if that worked
-select * from dw_staging.mcd_member_enrollment_monthly
-where uth_member_id is null;
+--select * from dw_staging.mcd_member_enrollment_monthly where uth_member_id is null;
+
+select 'Build consecutive months: ' || current_timestamp as message;
 
 ---**script to build consecutive enrolled months	
 drop table if exists dev.temp_consec_enrollment;
@@ -144,6 +155,8 @@ update dw_staging.mcd_member_enrollment_monthly a
    set consecutive_enrolled_months = b.in_streak 
   from dev.temp_consec_enrollment b 
  where a.row_id = b.row_id;
+
+select 'Cleanup and final vacuum analyze: ' || current_timestamp as message;
 
 --**cleanup
 drop table if exists dev.temp_consec_enrollment;
