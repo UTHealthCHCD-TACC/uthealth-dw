@@ -54,7 +54,7 @@ insert into dev.dim_uth_rx_claim_id (
 			,member_id_src )
 select 'mdcd', 
        year_fy ,
-       nextval('dev.dim_uth_rx_claim_id_uth_rx_claim_id_seq'),
+       nextval('data_warehouse.dim_uth_rx_claim_id_uth_rx_claim_id_seq'),
        a.rx_claim_id_src ,
        b.uth_member_id, 
        a.member_id_src

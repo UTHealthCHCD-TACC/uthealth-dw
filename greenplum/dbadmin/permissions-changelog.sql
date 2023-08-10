@@ -9,6 +9,11 @@
  * 
  * ****************************************************************************************************** */
 
+--08/09/2023
+--Give Sharrah access to qa_reporting
+grant all on schema qa_reporting to sharrah17; 
+grant all on all tables in schema qa_reporting to sharrah17; 
+
 --06/023/2023
 --made staging_clean accessible to devs
 grant all on schema staging_clean to uthealth_dev; 

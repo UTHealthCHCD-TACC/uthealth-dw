@@ -195,11 +195,11 @@ vacuum analyze dw_staging.medicaid_enroll_etl;
  * Little bit of QA to see how many rows we removed
  ****************************/
 /*
-select count(*) from dw_staging.medicaid_enroll_etl; --586823622
-select count(*) from dw_staging.medicaid_enroll_all_rows; --587515219
+select count(*) from dw_staging.medicaid_enroll_etl; --660865553
+select count(*) from dw_staging.medicaid_enroll_all_rows; --661623206
 
-select (587515219 - 586823622); --691597
-select 691597.0/587515219; --0.00117715588913110351
+select (661623206 - 660865553); --757653
+select 757653.0/661623206; --0.00114514272342497007
 
 *So approx 0.1%, not too shabby*/
 
@@ -244,6 +244,9 @@ update dw_staging.medicaid_enroll_etl
 	fy_end_date = ('08-31-' || year_fy):: date;
 
 vacuum analyze dw_staging.medicaid_enroll_etl;
+
+--select * from dw_staging.medicaid_enroll_etl;
+--select count(*) from dw_staging.medicaid_enroll_etl;
 /****************
 
 Hot fix: 
@@ -254,3 +257,4 @@ where plan_type = 'CHIP Perinatal';
 
 
  */
+
