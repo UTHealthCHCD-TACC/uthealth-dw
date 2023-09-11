@@ -502,7 +502,7 @@ if __name__ == '__main__':
 
             data_sources = ['mdcd', 
                             'mcpp', 'mhtw', 
-                            'mdcrt', 'mdcrn',
+                            'mcrt', 'mcrn',
                             'optz', 'optd',
                             'truc', 'trum'
                             ]
