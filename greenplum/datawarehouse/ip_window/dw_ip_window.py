@@ -3,10 +3,10 @@ import pandas as pd
 import psycopg2
 import psycopg2.extras
 import sys
-sys.path.append('H:/chcd_py')
-from chcd_py.helpers.sql_logger import db_logger, std_out_logger, pipeline_runner, create_log_table
-from chcd_py.helpers.db_utils import get_dsn, io_copy_from
-from chcd_py.ip_window.dw_ip_window_step_2 import ip_window_wrapper
+sys.path.append('H:/')
+from uth_helpers.sql_logger import db_logger, std_out_logger, pipeline_runner, create_log_table
+from uth_helpers.db_utils import get_dsn, io_copy_from
+from dw_ip_window_step_2 import ip_window_wrapper
 log_name = 'dev.ip_dw_ip_log'
 
 # add flags to delete certain tables?
@@ -323,11 +323,11 @@ def insert_ip_admit_claims(cursor, data_source, output_table, **kwargs):
         from_date_of_service,
         to_date_of_service,
         claim_type,
-        member_id_src,
+        dia.member_id_src,
         claim_id_src,
-        total_charge_amount,
-        total_allowed_amount,
-        total_paid_amount,
+        ch.total_charge_amount,
+        ch.total_allowed_amount,
+        ch.total_paid_amount
     from dev.gm_dw_ip_admit dia
     inner join data_warehouse.claim_header ch 
     on dia.uth_member_id = ch.uth_member_id
@@ -486,10 +486,6 @@ def run_step_three(variable_dict):
 
 
 if __name__ == '__main__':
-    # df_con = psycopg2.connect(get_dsn())
-    # df_con.autocommit = True
-    # create_log_table(df_con.cursor(), 'dev', 'ip_dw_ip_log')
-    # df_con.close()
 
     # step two: runs the python logic
     # see script dw_ip_window_step_2.py
@@ -504,16 +500,16 @@ if __name__ == '__main__':
             # clears tables from step 1
             run_step_zero()
 
-            data_sources = ['mdcd', 'mcpp', 'mhtw', 
-                            # 'mdcrt', 'mdcrn',
-                            # 'optz', 'optd',
-                            # 'truc', 'trum'
+            data_sources = ['mdcd', 
+                            'mcpp', 'mhtw', 
+                            'mdcrt', 'mdcrn',
+                            'optz', 'optd',
+                            'truc', 'trum'
                             ]
 
             for data_source in data_sources:
                 print(data_source)
 
-                
                 # inserts all inpatient claims; adds a group identifier
                 run_step_one(data_source)
 

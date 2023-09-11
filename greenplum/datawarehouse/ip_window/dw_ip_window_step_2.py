@@ -4,8 +4,8 @@ import pandas as pd
 import psycopg2
 import psycopg2.extras
 import sys
-sys.path.append('H:/chcd_py/chcd_py')
-from helpers.db_utils import get_dsn, io_copy_from
+sys.path.append('H:/')
+from uth_helpers.db_utils import get_dsn, io_copy_from
 
 
 def transfer_dt_adjuster(df):
@@ -203,7 +203,8 @@ def ip_window_wrapper(clm_df):
                                                       admit_id=('admit_id', 'first'),
                                                       data_source=('data_source', 'first'),
                                                       min_bill_type=('bill_type', 'min'),
-                                                      max_bill_type=('bill_type', 'max'))
+                                                      max_bill_type=('bill_type', 'max'),
+                                                      member_id_src=('member_id_src', 'first'))
     
     final_ip_group['missing_terminal_status'] = (final_ip_group['min_bill_type'].isin(['111', '114', '117'])) & (final_ip_group['max_bill_type'].isin(['111', '114', '117']))
     final_ip_group['missing_terminal_status_117'] = (final_ip_group['min_bill_type'] != final_ip_group['max_bill_type']) & (final_ip_group['max_bill_type'] == '117')
