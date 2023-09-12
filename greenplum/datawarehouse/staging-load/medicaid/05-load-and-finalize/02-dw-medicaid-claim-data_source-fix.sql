@@ -9,10 +9,10 @@
  * 							as they already have the partitions and such
  */
 /**********************
- * NOTE: IF YOU ARE RUNNING THIS CODE AFTER A MEDICAID DW REFRESH, 
- * TABLE NAMES MAY NEED TO BE CHANGED
- * 
- * CURRENT VERSION OF CODE MAKES CHANGES TO LIVE DW TABLES DIRECTLY!
+ * NOTE: This by necessity makes changes to live tables.
+ * The reason for this is because the Medicaid data is all mixed in, so it's easier
+ * to deal with it as one big table... but one big table can't be loaded into 3 different partitions,
+ * SO just leave it as one table and then alter the data source afterwards
  **********************/
 
 /*********************
@@ -21,7 +21,7 @@
 drop table if exists dw_staging.mcpp_mhtw_client_nbr_yrmonth;
 
 create table dw_staging.mcpp_mhtw_client_nbr_yrmonth as
-select data_source, member_id_src, month_year_id,
+select data_source, uth_member_id, member_id_src, month_year_id,
 	to_date((month_year_id*100+01)::text, 'yyyymmdd') as month_start,
 	(to_date((month_year_id*100+01)::text, 'yyyymmdd') + interval '1 month - 1 day')::date as month_end
 --from dw_staging.mcd_member_enrollment_monthly
