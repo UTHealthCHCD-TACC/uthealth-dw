@@ -7,6 +7,10 @@
  * ******************************************************************************************************
  * xrzhang || 03/30/2023 || HTW and CHIP PERI are distinct data sources now, added columns enrl_months_nondual
  * 							and enrl_months_dual
+ * ******************************************************************************************************
+ * xzhang  || 09/05/2023 || Mod to accomodate dual as char instead of int + commented out add columns
+ * 							Removed partitions from table initialization
+ * 							changed dropping of "year" column to rename as "fiscal_year"
  */
 
 /***************************
@@ -23,20 +27,16 @@ with (
 		compresslevel=5 
 	 )
 distributed by (uth_member_id)
-partition by list(data_source)
- (partition mdcd values ('mdcd'),
-  partition mhtw values ('mhtw'),
-  partition mcpp values ('mcpp')
- )
 ;
 
---add enrl_month_dual and enrl_months_nondual
+/* add enrl_month_dual and enrl_months_nondual
 alter table dw_staging.mcd_member_enrollment_fiscal_yearly
 	add column enrl_months_nondual int2,
 	add column enrl_months_dual int2;
+*/
 
 --drop year column; this is the fiscal_year table, dagnabit
-alter table dw_staging.mcd_member_enrollment_fiscal_yearly drop column "year";
+alter table dw_staging.mcd_member_enrollment_fiscal_yearly rename column "year" to fiscal_year;
 
 /*********************************
  * Insert data from monthly table
@@ -122,8 +122,8 @@ drop table if exists dw_staging.temp_enrolled_months_by_dual;
 create table dw_staging.temp_enrolled_months_by_dual
 with (appendonly=true, orientation=column) as
 select data_source, uth_member_id, fiscal_year,
-	sum(case when dual = 0 then 1 else 0 end) as enrl_months_nondual,
-	sum(case when dual = 1 then 1 else 0 end) as enrl_months_dual,
+	sum(case when dual = '0' then 1 else 0 end) as enrl_months_nondual,
+	sum(case when dual = '1' then 1 else 0 end) as enrl_months_dual,
 	count(*) as total_enrolled_months
 from dw_staging.temp_member_enrollment_month
 group by data_source, fiscal_year, uth_member_id

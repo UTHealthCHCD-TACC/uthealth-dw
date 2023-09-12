@@ -10,14 +10,22 @@ This R markdown script examines the accuracy of conversions from raw source tabl
 data_warehouse tables
 
 It counts:
-  disctinct members
-  disctinct member-year-month combinations
+  distinct members
+  distinct member-year-month combinations
   
 Counted from:
   SPCDEDPWPVS1 server
   TACC server medicaid schema
-  TACC server dw_staging.member_enrollment_monthly
-  TACC server dw_staging.member_enrollment_yearly
+  TACC server dw_staging.mcd_member_enrollment_monthly
+  TACC server dw_staging.mcd_member_enrollment_yearly
+  TACC server dw_staging.mcd_member_enrollment_fiscal_yearly
+  
+09/05/2023: Updated for changed table names (added mcd prefix)
+            TACC connection is now a function
+            Converted to RPostgres but in the process broke some stuff
+            It's fine nbd I fixed it
+            Added code for fiscal yearly table
+            Updated for 2022
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -26,7 +34,7 @@ Counted from:
 # Package installs/loading 
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc, here)
+pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
 ```
 
@@ -43,13 +51,14 @@ pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, ticto
 
 
 #Connect to Greenplum
-tac <- dbConnect(odbc::odbc(),
-	 dsn = "PostgreSQL30",
-	 database = "uthealth",
-	 UID = "xrzhang",
-	 PWD = key_get("Greenplum", "xrzhang"),
+connect_to_tacc <- function() {
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "xrzhang",
+	 password = key_get("Greenplum", "xrzhang"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
+}
 ```
 
 ## 0.3 Connect to SPC
@@ -65,12 +74,13 @@ spc <- dbConnect(odbc::odbc(),
 ## 0.4 Clear R environment (except for DB connections)
 ```{r clear-environment}
 # clears R environment except for DB connections
-rm(list=setdiff(ls(), c("tac", "spc")))
+rm(list=setdiff(ls(), c("tac", "spc", "connect_to_tacc")))
 ```
 
-## 0.5 Set print to 25 rows
+## 0.5 Set misc options
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+here::i_am("00-dw-enrollment-qa.rmd")
 
 ```
 
@@ -79,75 +89,114 @@ knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 ```{r}
 #Define the starting and ending years for checking (4-digit year)
 
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
+
+starting_yr = starting_year - 2000
+ending_yr = ending_year - 2000
+
+starting_fymon = (starting_year-1)*100+9
+ending_fymon = ending_year*100+8
 
 ```
 
 # SECTION 2: Build tables of distinct member-year-month combos
-
-## 2.1 Build table from data_warehouse monthly table
-```{sql, connection = tac}
-drop table if exists dev.xz_dwqa_temp1;
-
-select distinct member_id_src, month_year_id
-into dev.xz_dwqa_temp1
-from dw_staging.member_enrollment_monthly;
+## 2.0 Initialize TACC connection
+```{r}
+tac = connect_to_tacc()
 
 ```
+
+
+## 2.1 Build table from data_warehouse monthly table
+```{r}
+dbExecute(tac, "drop table if exists dev.xz_dwqa_temp1;")
+dbExecute(tac, "select distinct member_id_src, month_year_id
+into dev.xz_dwqa_temp1
+from dw_staging.mcd_member_enrollment_monthly;")
+```
+
 
 ## 2.2 Build table from data_warehouse yearly table
 
 ```{sql, connection = tac}
 drop table if exists dev.xz_dwqa_temp2;
-
+```
+```{sql, connection = tac}
 select *
 into dev.xz_dwqa_temp2
 from
-	(select member_id_src, year::text || '01' from dw_staging.member_enrollment_yearly where enrolled_jan = 1
-	union select member_id_src, year::text || '02' from dw_staging.member_enrollment_yearly where enrolled_feb = 1
-	union select member_id_src, year::text || '03' from dw_staging.member_enrollment_yearly where enrolled_mar = 1
-	union select member_id_src, year::text || '04' from dw_staging.member_enrollment_yearly where enrolled_apr = 1
-	union select member_id_src, year::text || '05' from dw_staging.member_enrollment_yearly where enrolled_may = 1
-	union select member_id_src, year::text || '06' from dw_staging.member_enrollment_yearly where enrolled_jun = 1
-	union select member_id_src, year::text || '07' from dw_staging.member_enrollment_yearly where enrolled_jul = 1
-	union select member_id_src, year::text || '08' from dw_staging.member_enrollment_yearly where enrolled_aug = 1
-	union select member_id_src, year::text || '09' from dw_staging.member_enrollment_yearly where enrolled_sep = 1
-	union select member_id_src, year::text || '10' from dw_staging.member_enrollment_yearly where enrolled_oct = 1
-	union select member_id_src, year::text || '11' from dw_staging.member_enrollment_yearly where enrolled_nov = 1
-	union select member_id_src, year::text || '12' from dw_staging.member_enrollment_yearly where enrolled_dec = 1) z;
+	(select member_id_src, year::text || '01' from dw_staging.mcd_member_enrollment_yearly as month_year_id where enrolled_jan = 1
+	union select member_id_src, year::text || '02' from dw_staging.mcd_member_enrollment_yearly where enrolled_feb = 1
+	union select member_id_src, year::text || '03' from dw_staging.mcd_member_enrollment_yearly where enrolled_mar = 1
+	union select member_id_src, year::text || '04' from dw_staging.mcd_member_enrollment_yearly where enrolled_apr = 1
+	union select member_id_src, year::text || '05' from dw_staging.mcd_member_enrollment_yearly where enrolled_may = 1
+	union select member_id_src, year::text || '06' from dw_staging.mcd_member_enrollment_yearly where enrolled_jun = 1
+	union select member_id_src, year::text || '07' from dw_staging.mcd_member_enrollment_yearly where enrolled_jul = 1
+	union select member_id_src, year::text || '08' from dw_staging.mcd_member_enrollment_yearly where enrolled_aug = 1
+	union select member_id_src, year::text || '09' from dw_staging.mcd_member_enrollment_yearly where enrolled_sep = 1
+	union select member_id_src, year::text || '10' from dw_staging.mcd_member_enrollment_yearly where enrolled_oct = 1
+	union select member_id_src, year::text || '11' from dw_staging.mcd_member_enrollment_yearly where enrolled_nov = 1
+	union select member_id_src, year::text || '12' from dw_staging.mcd_member_enrollment_yearly where enrolled_dec = 1) z;
 ```
 
-## 2.3 Build table from medicaid schema (TACC)
+## 2.2 Build table from data_warehouse fiscal yearly table
+
 ```{sql, connection = tac}
 drop table if exists dev.xz_dwqa_temp3;
-select distinct client_nbr, elig_date
+```
+```{sql, connection = tac}
+select *
 into dev.xz_dwqa_temp3
+from
+	(select member_id_src, fiscal_year::text || '01' as month_year_id from dw_staging.mcd_member_enrollment_fiscal_yearly  where enrolled_jan = 1
+	union select member_id_src, fiscal_year::text || '02' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_feb = 1
+	union select member_id_src, fiscal_year::text || '03' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_mar = 1
+	union select member_id_src, fiscal_year::text || '04' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_apr = 1
+	union select member_id_src, fiscal_year::text || '05' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_may = 1
+	union select member_id_src, fiscal_year::text || '06' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_jun = 1
+	union select member_id_src, fiscal_year::text || '07' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_jul = 1
+	union select member_id_src, fiscal_year::text || '08' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_aug = 1
+	union select member_id_src, (fiscal_year-1)::text || '09' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_sep = 1
+	union select member_id_src, (fiscal_year-1)::text || '10' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_oct = 1
+	union select member_id_src, (fiscal_year-1)::text || '11' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_nov = 1
+	union select member_id_src, (fiscal_year-1)::text || '12' from dw_staging.mcd_member_enrollment_fiscal_yearly where enrolled_dec = 1) z;
+```
+
+
+## 2.4 Build table from medicaid schema (TACC)
+```{sql, connection = tac}
+drop table if exists dev.xz_dwqa_temp4;
+```
+```{sql, connection = tac}
+select distinct client_nbr, elig_date
+into dev.xz_dwqa_temp4
 from (select client_nbr, elig_date from medicaid.enrl union
-    select client_nbr, elig_month from medicaid.chip_uth union
+    select client_nbr, elig_month from medicaid.chip_enrl union
     select client_nbr, elig_date from medicaid.htw_enrl) z;
 ```
 
-## 2.4 Build table from SPC
+## 2.5 Build table from SPC
 ```{r}
 
-sql1 = 'insert into work.dbo.xz_dwqa_temp1 select distinct client_nbr, elig_date
+sql1 = 'insert into chcdwork.dbo.xz_dwqa_temp1 select distinct client_nbr, elig_date
       from medicaid.dbo.enrl_@year;'
 
-sql2 = 'insert into work.dbo.xz_dwqa_temp1 select distinct client_nbr, elig_month
-      from medicaid.dbo.CHIP_UTH_SFY@year_Final;'
+sql2 = 'insert into chcdwork.dbo.xz_dwqa_temp1 select distinct client_nbr, elig_month
+      from medicaid.dbo.CHIP_ENRL_FY@yr;'
 
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;') #drop table if exists
-dbGetQuery(spc, 'select * into work.dbo.xz_dwqa_temp1
+dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa_temp1;') #drop table if exists
+dbGetQuery(spc, 'select * into chcdwork.dbo.xz_dwqa_temp1
     from (select client_nbr, elig_date from medicaid.dbo.ENRL_2018_HTW union
     select client_nbr, elig_date from medicaid.dbo.ENRL_2019_HTW) z;') #initialize using HTW tables
 
 for (year in starting_year:ending_year){
+  yr = year - 2000
   
   print(paste('Processing', year))
   
   sql1.mod = sql1 %>% gsub('@year', year, .)
-  sql2.mod = sql2 %>% gsub('@year', year, .)
+  sql2.mod = sql2 %>% gsub('@yr', yr, .)
   
   dbGetQuery(spc, sql1.mod)
   dbGetQuery(spc, sql2.mod)
@@ -160,18 +209,53 @@ for (year in starting_year:ending_year){
 
 ## 3.1 Do the actual counting
 ```{r}
-#do the counting
+#base TACC queries
+tac_sql1 = "select count(distinct member_id_src) from dev.xz_dwqa_temp1
+            where month_year_id between @starting_fymon and @ending_fymon;"
 
-dw_monthly_memcount = dbGetQuery(tac, 'select count(distinct member_id_src) from dev.xz_dwqa_temp1;')
-dw_yearly_memcount = dbGetQuery(tac, 'select count(distinct member_id_src) from dev.xz_dwqa_temp2;')
-tac_monthly_memcount = dbGetQuery(tac, 'select count(distinct client_nbr) from dev.xz_dwqa_temp3;')
-spc_monthly_memcount = dbGetQuery(spc, 'select count(distinct client_nbr) from work.dbo.xz_dwqa_temp1;')
+tac_sql2 = "select count(distinct member_id_src) from dev.xz_dwqa_temp2
+            where month_year_id::int between @starting_fymon and @ending_fymon;"
 
-dw_monthly_combocount = dbGetQuery(tac, 'select count(*) from dev.xz_dwqa_temp1;')
-dw_yearly_combocount = dbGetQuery(tac, 'select count(*) from dev.xz_dwqa_temp2;')
-tac_monthly_combocount = dbGetQuery(tac, 'select count(*) from dev.xz_dwqa_temp3;')
-spc_monthly_combocount = dbGetQuery(spc, 'with cte as (select distinct client_nbr, elig_date from work.dbo.xz_dwqa_temp1)
-                                    select count(*) from cte;')
+tac_sql3 = "select count(distinct member_id_src) from dev.xz_dwqa_temp3
+            where month_year_id::int between @starting_fymon and @ending_fymon;"
+
+tac_sql4 = "select count(distinct client_nbr) from dev.xz_dwqa_temp4
+            where elig_date::int between @starting_fymon and @ending_fymon;"
+
+tac_sql5 = "select count(*) from dev.xz_dwqa_temp1
+          where month_year_id between @starting_fymon and @ending_fymon;"
+
+tac_sql6 = "select count(*) from dev.xz_dwqa_temp2
+          where month_year_id::int between @starting_fymon and @ending_fymon;"
+
+tac_sql7 = "select count(*) from dev.xz_dwqa_temp3
+          where month_year_id::int between @starting_fymon and @ending_fymon;"
+
+tac_sql8 = "select count(*) from dev.xz_dwqa_temp4
+          where elig_date::int between @starting_fymon and @ending_fymon;"
+
+#mod TACC queries so they only count the years of interest
+tac_sql1.mod = tac_sql1 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql2.mod = tac_sql2 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql3.mod = tac_sql3 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql4.mod = tac_sql4 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql5.mod = tac_sql5 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql6.mod = tac_sql6 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql7.mod = tac_sql7 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+tac_sql8.mod = tac_sql8 %>% gsub("@starting_fymon", starting_fymon, .) %>% gsub("@ending_fymon", ending_fymon, .)
+
+dw_monthly_memcount = dbGetQuery(tac, tac_sql1.mod)
+dw_yearly_memcount = dbGetQuery(tac, tac_sql2.mod)
+dw_fyearly_memcount = dbGetQuery(tac, tac_sql3.mod)
+tac_monthly_memcount = dbGetQuery(tac, tac_sql4.mod)
+spc_monthly_memcount = dbGetQuery(spc, "select count(distinct client_nbr) from chcdwork.dbo.xz_dwqa_temp1;")
+
+dw_monthly_combocount = dbGetQuery(tac, tac_sql5.mod)
+dw_yearly_combocount = dbGetQuery(tac, tac_sql6.mod)
+dw_fyearly_combocount = dbGetQuery(tac, tac_sql7.mod)
+tac_monthly_combocount = dbGetQuery(tac, tac_sql8.mod)
+spc_monthly_combocount = dbGetQuery(spc, "with cte as (select distinct client_nbr, elig_date from chcdwork.dbo.xz_dwqa_temp1)
+                                    select count(*) from cte;")
 
 ```
 
@@ -180,15 +264,16 @@ spc_monthly_combocount = dbGetQuery(spc, 'with cte as (select distinct client_nb
 #list sources
 source_list = c("Data_warehouse Monthly Enrollment Table",
                 "Data_warehouse Yearly Enrollment Table",
+                "Data_warehouse Fiscal Yearly Enrollment Table",
                 "TACC server medicaid schema",
                 "SPC server medicaid schema")
 
 #compose numbers into table (distinct members)
-distinct_members = c(dw_monthly_memcount[1,1], dw_yearly_memcount[1,1],
+distinct_members = c(dw_monthly_memcount[1,1], dw_yearly_memcount[1,1], dw_fyearly_memcount[1,1],
                      tac_monthly_memcount[1,1], spc_monthly_memcount[1,1])
 
 #compose numbers into table (distinct member-year-month combos)
-distinct_combos = c(dw_monthly_combocount[1,1], dw_yearly_combocount[1,1],
+distinct_combos = c(dw_monthly_combocount[1,1], dw_yearly_combocount[1,1], dw_fyearly_combocount[1,1],
                      tac_monthly_combocount[1,1], spc_monthly_combocount[1,1])
 
 colnames = c("Distinct Members", "Distinct Member-Year-Month combinations")
@@ -204,6 +289,7 @@ output_table = data.frame(source_list, distinct_members, distinct_combos)
 wb = createWorkbook()
 dir = here("outputs")
 path = here("outputs", "dw-enrollment-qa.xlsx")
+here()
 
 addWorksheet(wb, sheetName = "dw enrollment qa")
 
@@ -222,7 +308,7 @@ saveWorkbook(wb, file=path, overwrite=TRUE)
 # SECTION 99: Close connections and clean-up
 
 ```{sql connection = spc, eval=FALSE}
-drop table if exists work.dbo.xz_dwqa_temp1;
+drop table if exists chcdwork.dbo.xz_dwqa_temp1;
 
 ```
 

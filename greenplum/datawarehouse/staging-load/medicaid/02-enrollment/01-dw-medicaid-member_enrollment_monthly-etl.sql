@@ -172,7 +172,7 @@ update dw_staging.medicaid_enroll_all_rows
 
 vacuum analyze dw_staging.medicaid_enroll_all_rows;
 
-select * from dw_staging.medicaid_enroll_all_rows limit 10;
+--select * from dw_staging.medicaid_enroll_all_rows limit 10;
 /*******************************************
  * Get 1 row per member based on heirarchy
  *******************************************/
@@ -246,7 +246,9 @@ update dw_staging.medicaid_enroll_etl
 vacuum analyze dw_staging.medicaid_enroll_etl;
 
 --select * from dw_staging.medicaid_enroll_etl;
---select count(*) from dw_staging.medicaid_enroll_etl;
+--select count(*) from dw_staging.medicaid_enroll_etl; --660865553
+--select count(*) from medicaid.enrl; --600276992
+--select count(*) from medicaid.chip_enrl; --55060245
 /****************
 
 Hot fix: 

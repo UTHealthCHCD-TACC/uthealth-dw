@@ -119,12 +119,3 @@ select count(*) from reference_tables.ref_zip_code; --42488
 
 
 
-
-
-
-
-
-
-
-
-

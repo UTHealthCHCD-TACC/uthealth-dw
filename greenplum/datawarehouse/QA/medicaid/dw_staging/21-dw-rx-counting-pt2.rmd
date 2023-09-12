@@ -8,6 +8,10 @@ output: html_document
 #PURPOSE
 This R markdown script counts distinct rx from TACC tables
 
+9/12/23: Edited for 2022, changed
+  pharmacy_claims -> mcd_pharmacy_claims
+  work.dbo -> chcdwork.dbo
+
 # SECTION 0: Loading required packages, making connections, the usual
 
 ## 0.1 Load packages
@@ -62,7 +66,7 @@ rm(list=setdiff(ls(), c("tac", "spc")))
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 options("scipen"=100, "digits" = 4) #avoid scientific notation
-
+here::i_am("21-dw-rx-counting-pt2.rmd")
 ```
 
 # SECTION 1: Read in runs from previous code
@@ -102,7 +106,7 @@ ending_yr = ending_year - 2000
 
 --gets rx claim ids by year
 select fiscal_year::text, table_id_src, count(distinct rx_claim_id_src) as src_id, count(distinct uth_rx_claim_id) as uth_id
-from dw_staging.pharmacy_claims
+from dw_staging.mcd_pharmacy_claims
 group by fiscal_year, table_id_src
 order by table_id_src, fiscal_year; 
 

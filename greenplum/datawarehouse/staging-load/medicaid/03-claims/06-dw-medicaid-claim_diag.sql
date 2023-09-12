@@ -1,5 +1,5 @@
 /* ******************************************************************************************************
- * Loads dw_staging.claim_diag with medicaid data
+ * Loads dw_staging.mcd_claim_diag with medicaid data
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
@@ -8,12 +8,15 @@
  *  wallingTACC || 8/23/2021 || updated comments.
  * ******************************************************************************************************
  *  wcough	    || 1/07/2022 || add icd_version back to table
- * ****************************************************************************************************** */
+ * ****************************************************************************************************** 
+ * xzhang  		|| 09/05/2023 || Changed table name from claim_diag to mcd_claim_diag
+ * 
+ * */
 
-drop table if exists dw_staging.claim_diag;
+drop table if exists dw_staging.mcd_claim_diag;
 
 --claim diag
-create table dw_staging.claim_diag
+create table dw_staging.mcd_claim_diag
 (like data_warehouse.claim_diag including defaults) 
 with (
 		appendonly=true, 
@@ -22,14 +25,10 @@ with (
 		compresslevel=5 
 	 )
 distributed by (uth_member_id)
-partition by list(data_source)
-(
-  partition mdcd values ('mdcd')
- )
 ;
 
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  claim_id_src, member_id_src,
+insert into dw_staging.mcd_claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  claim_id_src, member_id_src,
                                        from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
@@ -61,9 +60,9 @@ from (
 ) inr where dx_cd <> ''
  ;
 
-analyze dw_staging.claim_diag;
+analyze dw_staging.mcd_claim_diag;
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  claim_id_src, member_id_src,
+insert into dw_staging.mcd_claim_diag (data_source, year, uth_member_id, fiscal_year, uth_claim_id,  claim_id_src, member_id_src,
                                        from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
 from ( 
@@ -95,10 +94,10 @@ from (
 ) inr where dx_cd <> ''
  ;
 
-vacuum analyze dw_staging.claim_diag;
+vacuum analyze dw_staging.mcd_claim_diag;
 
 
-insert into dw_staging.claim_diag (data_source, year, uth_member_id, fiscal_year, 
+insert into dw_staging.mcd_claim_diag (data_source, year, uth_member_id, fiscal_year, 
 								   uth_claim_id, claim_id_src, member_id_src,
                                    from_date_of_service, diag_cd, diag_position, poa_src, icd_version)
 select * 
@@ -132,10 +131,10 @@ from (
 ) inr where dx_cd <> ''
  ;
  
-update dw_staging.claim_diag set icd_version = null where icd_version not in ('0','9');
-update dw_staging.claim_diag set load_date = current_date;
-vacuum full analyze dw_staging.claim_diag;
-grant select on dw_staging.claim_diag to uthealth_analyst;
-alter table dw_staging.claim_diag owner to uthealth_dev;
+update dw_staging.mcd_claim_diag set icd_version = null where icd_version not in ('0','9');
+update dw_staging.mcd_claim_diag set load_date = current_date;
+vacuum full analyze dw_staging.mcd_claim_diag;
+grant select on dw_staging.mcd_claim_diag to uthealth_analyst;
+alter table dw_staging.mcd_claim_diag owner to uthealth_dev;
 
 
