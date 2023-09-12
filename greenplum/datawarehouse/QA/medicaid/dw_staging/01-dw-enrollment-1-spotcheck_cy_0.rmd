@@ -6,8 +6,14 @@ output: html_document
 ---
 
 #Purpose:
-This R markdown script examines the accuracy of conversions from raw source tables to
-data_warehouse tables
+This R markdown script is one of three scripts that checks data warehouse loading
+against SPC server.
+
+This script creates a calendar-year-based enrollment table on the SPC server
+for comparison against data warehouse table.
+
+9/12/23: updated for FY22, changed work -> chcdwork
+    chip_uth_fy -> chip_enrl
 
 
 # SECTION 0: Loading required packages, making connections, the usual
@@ -69,8 +75,8 @@ knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 
 ```{r}
 #Define the starting and ending years for checking (4-digit year)
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
 
 #Define how many rows to check per year
 rows_to_check = '100000'
@@ -87,8 +93,8 @@ ending_yr = ending_year - 2000
 ### 2.11 Initialize table to hold data from yearly enrollment tables
 ```{sql, connection = spc}
 --Initialize table
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_etl;
-create table work.dbo.xz_mcd_reconciliation_cy_etl (
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_etl;
+create table chcdwork.dbo.xz_mcd_reconciliation_cy_etl (
 	CLIENT_NBR varchar(50),
   CY varchar(4),
 	elig_date varchar(20),
@@ -107,24 +113,24 @@ create table work.dbo.xz_mcd_reconciliation_cy_etl (
 ```{r}
 #Pull all relevant variables into an ETL
 
-spc_sql1 = 'insert into work.dbo.xz_mcd_reconciliation_cy_etl
+spc_sql1 = "insert into chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 select a.CLIENT_NBR, substring(a.ELIG_DATE, 1, 4) as CY, a.elig_date, try_cast(a.DOB as date) as dob, 
 a.SEX, b.MCO_PROGRAM_NM as MCO, a.RACE, a.ZIP, a.SMIB,
-case when a.me_code = \'W\' then 1 else 0 end as HTW
-from medicaid.dbo.enrl_@year a left join medicaid.dbo.LU_Contract as b on a.CONTRACT_ID = b.PLAN_CD;'
+case when a.me_code = 'W' then 1 else 0 end as HTW
+from medicaid.dbo.enrl_@year a left join medicaid.dbo.LU_Contract as b on a.CONTRACT_ID = b.PLAN_CD;"
 
-spc_sql2 = 'insert into work.dbo.xz_mcd_reconciliation_cy_etl
+spc_sql2 = "insert into chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 select CLIENT_NBR, substring(elig_month, 1, 4) as CY, elig_month, 
 try_cast(substring(date_of_birth, 1, 9) as date) as dob, 
-gender_cd, \'CHIP\' as MCO, ethnicity as race, substring(MAILING_ZIP, 1, 5) as zip, \'0\' as SMIB,
-\'0\' as HTW
-from medicaid.dbo.CHIP_UTH_SFY@year_Final;'
+gender_cd, 'CHIP' as MCO, ethnicity as race, substring(MAILING_ZIP, 1, 5) as zip, '0' as SMIB,
+'0' as HTW
+from medicaid.dbo.CHIP_ENRL_FY@yr;"
 
-spc_sql3 = 'insert into work.dbo.xz_mcd_reconciliation_cy_etl
+spc_sql3 = "insert into chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 select a.CLIENT_NBR, substring(a.ELIG_DATE, 1, 4) as CY, a.elig_date, try_cast(a.DOB as date) as dob, 
 a.SEX, b.MCO_PROGRAM_NM as MCO, a.RACE, a.ZIP, a.SMIB,
-case when a.me_code = \'W\' then 1 else 0 end as HTW
-from medicaid.dbo.ENRL_@year_HTW a left join medicaid.dbo.LU_Contract as b on a.CONTRACT_ID = b.PLAN_CD;'
+case when a.me_code = 'W' then 1 else 0 end as HTW
+from medicaid.dbo.ENRL_@year_HTW a left join medicaid.dbo.LU_Contract as b on a.CONTRACT_ID = b.PLAN_CD;"
 
 ```
 
@@ -133,12 +139,13 @@ from medicaid.dbo.ENRL_@year_HTW a left join medicaid.dbo.LU_Contract as b on a.
 
 #run query for all years
 for (year in starting_year:ending_year){
+  yr = year - 2000
   
   print(paste('Processing ENRL', year))
   spc_sql1.mod = spc_sql1 %>% gsub('@year', year, .)
   
   print(paste('Processing CHIP', year))
-  spc_sql2.mod = spc_sql2 %>% gsub('@year', year, .)
+  spc_sql2.mod = spc_sql2 %>% gsub('@yr', yr, .)
   
   dbGetQuery(spc, spc_sql1.mod)
   dbGetQuery(spc, spc_sql2.mod)
@@ -159,61 +166,61 @@ for (year in 2018:2019){
 We don't necessarily need to make this table, it should be identical to the cy table
 ```{sql, connection = spc}
 --clean dob
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_dob_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_dob_t;
 select client_nbr, dob, count(distinct elig_date) as count, max(elig_date) as recent
-into work.dbo.xz_mcd_reconciliation_cy_dob_t
-from work.dbo.xz_mcd_reconciliation_cy_etl
+into chcdwork.dbo.xz_mcd_reconciliation_cy_dob_t
+from chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 group by client_nbr, dob;
 
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_dob;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_dob;
 with cte as (select *,
   	    row_number() over (partition by client_nbr order by count desc, recent desc) as row_num
-	from work.dbo.xz_mcd_reconciliation_cy_dob_t)
+	from chcdwork.dbo.xz_mcd_reconciliation_cy_dob_t)
 
 select client_nbr, dob
-into work.dbo.xz_mcd_reconciliation_cy_dob
+into chcdwork.dbo.xz_mcd_reconciliation_cy_dob
 from cte
 where row_num = 1;
 
 --delete temp table
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_dob_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_dob_t;
 ```
 
 ### 2.22 Clean SEX on an cy basis
 ```{sql, connection = spc}
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_sex_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_sex_t;
 select client_nbr, cy, sex, count(distinct elig_date) as count, max(elig_date) as recent
-into work.dbo.xz_mcd_reconciliation_cy_sex_t
-from work.dbo.xz_mcd_reconciliation_cy_etl
+into chcdwork.dbo.xz_mcd_reconciliation_cy_sex_t
+from chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 where sex in ('F', 'M') --clean out U or J
 group by client_nbr, cy, sex;
 
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_sex;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_sex;
 with cte as (select *,
   	    row_number() over (partition by client_nbr, cy order by count desc, recent desc) as row_num
-	from work.dbo.xz_mcd_reconciliation_cy_sex_t)
+	from chcdwork.dbo.xz_mcd_reconciliation_cy_sex_t)
 
 select client_nbr, cy, sex
-into work.dbo.xz_mcd_reconciliation_cy_sex
+into chcdwork.dbo.xz_mcd_reconciliation_cy_sex
 from cte
 where row_num = 1;
 
 --delete temp table
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_sex_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_sex_t;
 ```
 
 ### 2.23 Clean MCO (plan_type)
 ```{sql, connection = spc}
 --Make MCO priority table
-drop table if exists work.dbo.xz_mcd_mco_priority;
+drop table if exists chcdwork.dbo.xz_mcd_mco_priority;
 
-CREATE TABLE work.dbo.xz_mcd_mco_priority (
+CREATE TABLE chcdwork.dbo.xz_mcd_mco_priority (
   plan_type varchar(20) NOT NULL,
   priority int NOT NULL
 );
 
 --add values to it
-INSERT INTO work.dbo.xz_mcd_mco_priority(plan_type, priority)
+INSERT INTO chcdwork.dbo.xz_mcd_mco_priority(plan_type, priority)
   VALUES ('CHIP', 1 ),
 	('STAR Kids', 2 ),
 	('STAR+PLUS', 2 ),
@@ -224,24 +231,24 @@ INSERT INTO work.dbo.xz_mcd_mco_priority(plan_type, priority)
 	('PCCM', 4 );
 
 --clean MCO
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_mco_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_mco_t;
 select a.client_nbr, a.cy, a.mco, b.priority, count(distinct a.elig_date) as count, max(a.elig_date) as recent
-into work.dbo.xz_mcd_reconciliation_cy_mco_t
-from work.dbo.xz_mcd_reconciliation_cy_etl a left join work.dbo.xz_mcd_mco_priority b on a.mco = b.plan_type
+into chcdwork.dbo.xz_mcd_reconciliation_cy_mco_t
+from chcdwork.dbo.xz_mcd_reconciliation_cy_etl a left join chcdwork.dbo.xz_mcd_mco_priority b on a.mco = b.plan_type
 group by a.client_nbr, a.cy, a.mco, b.priority;
 
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_mco;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_mco;
 with cte as (select *,
   	    row_number() over (partition by client_nbr, cy order by count desc, priority, recent desc) as row_num
-	from work.dbo.xz_mcd_reconciliation_cy_mco_t)
+	from chcdwork.dbo.xz_mcd_reconciliation_cy_mco_t)
 
 select client_nbr, cy, mco
-into work.dbo.xz_mcd_reconciliation_cy_mco
+into chcdwork.dbo.xz_mcd_reconciliation_cy_mco
 from cte
 where row_num = 1;
 
 --delete temp table
-drop table if exists work.dbo.xz_mcd_reconciliation_cy_mco_t;
+drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_mco_t;
 ```
 
 ## 2.3 Clean variables that do not need special treatment: RACE, ZIP, SMIB, HTW
@@ -250,24 +257,24 @@ drop table if exists work.dbo.xz_mcd_reconciliation_cy_mco_t;
 ```{r}
 variables_to_clean = c("race", "zip", "smib", "htw")
 
-spc_sql4 = 'drop table if exists work.dbo.xz_mcd_reconciliation_cy_@var_t;
-            drop table if exists work.dbo.xz_mcd_reconciliation_cy_@var;'
+spc_sql4 = 'drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_@var_t;
+            drop table if exists chcdwork.dbo.xz_mcd_reconciliation_cy_@var;'
 
 spc_sql5 = 'select client_nbr, cy, @var, count(distinct elig_date) as count, max(elig_date) as recent
-into work.dbo.xz_mcd_reconciliation_cy_@var_t
-from work.dbo.xz_mcd_reconciliation_cy_etl
+into chcdwork.dbo.xz_mcd_reconciliation_cy_@var_t
+from chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 group by client_nbr, cy, @var;
 
 with cte as (select *,
   	    row_number() over (partition by client_nbr, cy order by count desc, recent desc) as row_num
-	from work.dbo.xz_mcd_reconciliation_cy_@var_t)
+	from chcdwork.dbo.xz_mcd_reconciliation_cy_@var_t)
 
 select client_nbr, cy, @var
-into work.dbo.xz_mcd_reconciliation_cy_@var
+into chcdwork.dbo.xz_mcd_reconciliation_cy_@var
 from cte
 where row_num = 1;'
 
-spc_sql6 = 'drop table if exists work.dbo.xz_mcd_reconcilation_cy_@var_t;'
+spc_sql6 = 'drop table if exists chcdwork.dbo.xz_mcd_reconcilation_cy_@var_t;'
 ```
 
 ###2.32 Cycle through variables to clean
@@ -293,34 +300,34 @@ for (i in 1:length(variables_to_clean)){
 ```{sql, connection = spc}
 
 --calculate enrolled_months and condense down to one row per client_nbr per cy
-drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled_t;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t;
 select CLIENT_NBR as mem_id, cy, count(distinct elig_date) as enrolled_months
-into work.dbo.xz_mcd_enrl_cy_reconciled_t
-from work.dbo.xz_mcd_reconciliation_cy_etl
+into chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t
+from chcdwork.dbo.xz_mcd_reconciliation_cy_etl
 group by client_nbr, cy;
 
 --join in half the data (do it in 2 operations to decrease server load)
-drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled_t1;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t1;
 select a.*, b.dob, c.sex, d.race
-into work.dbo.xz_mcd_enrl_cy_reconciled_t1
-from  work.dbo.xz_mcd_enrl_cy_reconciled_t a
-	left join work.dbo.xz_mcd_reconciliation_cy_dob b on a.mem_id  = b.client_nbr
-	left join work.dbo.xz_mcd_reconciliation_cy_sex c on a.mem_id = c.client_nbr and a.cy = c.cy
-	left join work.dbo.xz_mcd_reconciliation_cy_race d on a.mem_id = d.client_nbr and a.cy = d.cy;
+into chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t1
+from  chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t a
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_dob b on a.mem_id  = b.client_nbr
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_sex c on a.mem_id = c.client_nbr and a.cy = c.cy
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_race d on a.mem_id = d.client_nbr and a.cy = d.cy;
 
 --join in other half of the data
-drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_cy_reconciled;
 select a.*, e.zip, f.mco, g.smib, h.htw
-into work.dbo.xz_mcd_enrl_cy_reconciled
-from work.dbo.xz_mcd_enrl_cy_reconciled_t1 a
-	left join work.dbo.xz_mcd_reconciliation_cy_zip e on a.mem_id = e.client_nbr and a.cy = e.cy
-	left join work.dbo.xz_mcd_reconciliation_cy_mco f on a.mem_id = f.client_nbr and a.cy = f.cy
-	left join work.dbo.xz_mcd_reconciliation_cy_smib g on a.mem_id = g.client_nbr and a.cy = g.cy
-	left join work.dbo.xz_mcd_reconciliation_cy_htw h on a.mem_id = h.client_nbr and a.cy = h.cy;
+into chcdwork.dbo.xz_mcd_enrl_cy_reconciled
+from chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t1 a
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_zip e on a.mem_id = e.client_nbr and a.cy = e.cy
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_mco f on a.mem_id = f.client_nbr and a.cy = f.cy
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_smib g on a.mem_id = g.client_nbr and a.cy = g.cy
+	left join chcdwork.dbo.xz_mcd_reconciliation_cy_htw h on a.mem_id = h.client_nbr and a.cy = h.cy;
 
 --drop temp tables
-drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled_t;
-drop table if exists work.dbo.xz_mcd_enrl_cy_reconciled_t1;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_cy_reconciled_t1;
 
 ```
 

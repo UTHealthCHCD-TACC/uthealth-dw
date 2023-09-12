@@ -57,6 +57,7 @@ order by count(a.*) * 1.0 / b.total_count desc
 ;
 
 top rev_codes
+rev		denial_status	cnt	tot	percentage
 0994	3 - all denied	263	263	1.00000000000000000000 	--patient convenience item tv/radio
 0999	3 - all denied	85	85	1.00000000000000000000	--patient convenience item other
 0993	3 - all denied	247	247	1.00000000000000000000	--patient convenience item telephone/telegraph
@@ -72,7 +73,7 @@ top rev_codes
 0001	2 - partially denied	8348	454122	0.01838272534693320297		--total charge
 0110	2 - partially denied	1482	82365	0.01799307958477508651		--private medical or general - general classification
 0111	2 - partially denied	495	49437	0.01001274349171673038			--private medical or genreal - medical/surgical/gyn
-0124	2 - partially denied	130	17927	0.00725163161711385062			--senmi-private 2 bed (medical or general) - psychiatric
+0124	2 - partially denied	130	17927	0.00725163161711385062			--semi-private 2 bed (medical or general) - psychiatric
 0250	2 - partially denied	1764	504661	0.00349541573452277866		--pharmacy - general classification
 
 /***********************

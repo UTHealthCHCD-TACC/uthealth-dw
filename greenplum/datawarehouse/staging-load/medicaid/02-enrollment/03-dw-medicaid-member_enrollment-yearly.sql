@@ -18,6 +18,7 @@
  * ******************************************************************************************************
  * xzhang  || 03/30/2023 || modified to accomodate htw and chip perinatal
  * ******************************************************************************************************
+ * xzhang  || 09/05/2023 || Mod to accomodate dual as char instead of int + commented out add columns
  */
 
 /***************************
@@ -36,10 +37,11 @@ with (
 distributed by (uth_member_id)
 ;
 
---add enrl_month_dual and enrl_months_nondual
+/*add enrl_month_dual and enrl_months_nondual
 alter table dw_staging.mcd_member_enrollment_yearly
 	add column enrl_months_nondual int2,
 	add column enrl_months_dual int2;
+*/
 
 --get rid of fiscal year, we don't need it!
 alter table dw_staging.mcd_member_enrollment_yearly
@@ -128,8 +130,8 @@ drop table if exists dw_staging.temp_enrolled_months_by_dual;
 create table dw_staging.temp_enrolled_months_by_dual
 with (appendonly=true, orientation=column) as
 select data_source, uth_member_id, year,
-	sum(case when dual = 0 then 1 else 0 end) as enrl_months_nondual,
-	sum(case when dual = 1 then 1 else 0 end) as enrl_months_dual,
+	sum(case when dual = '0' then 1 else 0 end) as enrl_months_nondual,
+	sum(case when dual = '1' then 1 else 0 end) as enrl_months_dual,
 	count(*) as total_enrolled_months
 from dw_staging.temp_member_enrollment_month
 group by data_source, year, uth_member_id

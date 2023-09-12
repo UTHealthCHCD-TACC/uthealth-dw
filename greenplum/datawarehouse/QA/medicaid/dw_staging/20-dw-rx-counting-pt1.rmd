@@ -9,6 +9,11 @@ output: html_document
 This R markdown script counts distinct pharmacy rx for medicaid in
 dw_staging and SPCDEDPWPVS1
 
+9/12/23: Edited for 2022, changed
+  pharmacy_claims -> mcd_pharmacy_claims
+  work.dbo -> chcdwork.dbo
+  added here::i_am
+
 # SECTION 0: Loading required packages, making connections, the usual
 
 ## 0.1 Load packages
@@ -63,6 +68,7 @@ rm(list=setdiff(ls(), c("tac", "spc")))
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 options("scipen"=100, "digits" = 4) #avoid scientific notation
+here::i_am("20-dw-rx-counting-pt1.rmd")
 
 ```
 
@@ -89,7 +95,7 @@ print("No previous output exists, proceeding...")
 ```{r}
 #Declare the year range
 starting_year = 2012
-ending_year = 2021
+ending_year = 2022
 
 #get the 2-digit version of years
 starting_yr = starting_year - 2000
@@ -105,32 +111,32 @@ ending_yr = ending_year - 2000
 
 #initialize tables
 sql0 = 'select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
-into work.dbo.xz_dwqa_chiprx
+into chcdwork.dbo.xz_dwqa_chiprx
 from medicaid.dbo.chip_rx_fy@yr
 where pcn != \'000000000\';
 
 select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
-into work.dbo.xz_dwqa_ffsrx
+into chcdwork.dbo.xz_dwqa_ffsrx
 from medicaid.dbo.ffs_rx_fy@yr
 where pcn != \'000000000\';
 
 select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
-into work.dbo.xz_dwqa_mcorx
+into chcdwork.dbo.xz_dwqa_mcorx
 from medicaid.dbo.mco_rx_fy@yr
 where pcn != \'000000000\';'
 
 #run for each year
-sql1 = 'insert into work.dbo.xz_dwqa_chiprx
+sql1 = 'insert into chcdwork.dbo.xz_dwqa_chiprx
 select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
 from medicaid.dbo.chip_rx_fy@yr
 where pcn != \'000000000\';
 
-insert into work.dbo.xz_dwqa_ffsrx
+insert into chcdwork.dbo.xz_dwqa_ffsrx
 select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
 from medicaid.dbo.ffs_rx_fy@yr
 where pcn != \'000000000\';
 
-insert into work.dbo.xz_dwqa_mcorx
+insert into chcdwork.dbo.xz_dwqa_mcorx
 select \'20@yr\' as fy, concat(pcn, ndc, replace(rx_fill_dt, \'-\', \'\')) as rx_id
 from medicaid.dbo.mco_rx_fy@yr
 where pcn != \'000000000\';'
@@ -139,9 +145,9 @@ where pcn != \'000000000\';'
 
 ## 2.2 Run it for each year
 ```{r}
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_chiprx;')
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_ffsrx;')
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_mcorx;')
+dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa_chiprx;')
+dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa_ffsrx;')
+dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa_mcorx;')
 
 for (yr in starting_yr:ending_yr){
   
@@ -173,21 +179,21 @@ tic("Aggregate numbers")
 
 ```{sql, connection = spc}
 
-drop table if exists work.dbo.xz_dwqa_rxtemp2;
+drop table if exists chcdwork.dbo.xz_dwqa_rxtemp2;
 
-with a as (select fy, count(distinct rx_id) as chip from work.dbo.xz_dwqa_chiprx group by fy),
-b as (select fy, count(distinct rx_id) as ffs from work.dbo.xz_dwqa_ffsrx group by fy),
-c as (select fy, count(distinct rx_id) as mco from work.dbo.xz_dwqa_mcorx group by fy)
+with a as (select fy, count(distinct rx_id) as chip from chcdwork.dbo.xz_dwqa_chiprx group by fy),
+b as (select fy, count(distinct rx_id) as ffs from chcdwork.dbo.xz_dwqa_ffsrx group by fy),
+c as (select fy, count(distinct rx_id) as mco from chcdwork.dbo.xz_dwqa_mcorx group by fy)
 
 select a.fy, a.chip, b.ffs, c.mco, (a.chip + b.ffs + c.mco) as sum
-into work.dbo.xz_dwqa_rxtemp2
+into chcdwork.dbo.xz_dwqa_rxtemp2
 from a left join b on a.fy = b.fy left join c on a.fy = c.fy;
 
 ```
 
 ```{sql, connection = spc, output.var = spc_counts}
 
-select * from work.dbo.xz_dwqa_rxtemp2 order by fy;
+select * from chcdwork.dbo.xz_dwqa_rxtemp2 order by fy;
 
 ```
 

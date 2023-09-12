@@ -14,6 +14,11 @@ them to a table that is created using (mostly) the same logic from the SPC-side 
 
 Spotcheck1 runs in the dw -> spc direction (Spotcheck2 runs in the reverse direction)
 
+9/12/23: updated for FY22, changed work -> chcdwork
+  dw_staging.member_enrollment_yearly -> dw_staging.mcd_member_enrollment_yearly
+  dw_staging.member_enrollment_monthly -> dw_staging.mcd_member_enrollment_monthly
+  added here::i_am statement
+
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -64,9 +69,10 @@ spc <- dbConnect(odbc::odbc(),
 rm(list=setdiff(ls(), c("tac", "spc")))
 ```
 
-## 0.5 Set print to 25 rows
+## 0.5 Set R options
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
+here::i_am("02-dw-enrollment-spotcheck_1.rmd")
 
 ```
 
@@ -74,10 +80,10 @@ knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 
 ```{r}
 #Define the starting and ending years for checking (4-digit year)
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
 
-#Define how many rows to check per year
+#Define how many rows to to import from TACC
 rows_to_check = '500000'
 
 #Define how many sets of errors to print out per year
@@ -96,22 +102,25 @@ tac_sql = 'with b as (select race_cd_src, race_cd from reference_tables.ref_race
 
 select a.data_source, a.member_id_src, a.year, a.total_enrolled_months, a.gender_cd,
 b.race_cd_src, a.age_derived, a.dob_derived, a.zip5, a.plan_type, a.dual, a.htw
-from dw_staging.member_enrollment_yearly a left join b
+from dw_staging.mcd_member_enrollment_yearly a left join b
 	on a.race_cd = b.race_cd
+where year between @starting_year and @ending_year
 order by random()
 limit @rows_to_check;'
 
-tac_sql.mod = tac_sql %>% gsub('@rows_to_check', rows_to_check, .)
+tac_sql.mod = tac_sql %>% gsub('@rows_to_check', rows_to_check, .) %>%
+  gsub("@starting_year", starting_year, .) %>%
+  gsub("@ending_year", ending_year, .)
 tac_selection = dbGetQuery(tac, tac_sql.mod)
 
-dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
-dbWriteTable(spc, SQL('work.dbo.xz_dwqa_temp1'), tac_selection)
+dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa_temp1;')
+dbWriteTable(spc, SQL('chcdwork.dbo.xz_dwqa_temp1'), tac_selection)
 
 ```
 ## 2.2 Make boolean table of mismatches
 ```{sql, connection = spc}
 --Make boolean table of matches
-drop table if exists work.dbo.xz_mcd_enrl_mismatches;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_mismatches;
 
 select a.member_id_src as member_id, a.year,
 	case when b.mem_id is null then 1 else 0 end as member_id_mismatch,
@@ -127,10 +136,12 @@ select a.member_id_src as member_id, a.year,
 	a.race_cd_src as tacc_race, b.race as spc_race,
 	a.zip5 as tacc_zip, b.zip as spc_zip,
 	a.plan_type as tacc_plan, b.mco as spc_plan
-into work.dbo.xz_mcd_enrl_mismatches
-from work.dbo.xz_dwqa_temp1 a
-	left join work.dbo.xz_mcd_enrl_cy_reconciled b
-	on a.member_id_src = b.mem_id and a.year = b.cy;
+into chcdwork.dbo.xz_mcd_enrl_mismatches
+from chcdwork.dbo.xz_dwqa_temp1 a
+	left join chcdwork.dbo.xz_mcd_enrl_cy_reconciled b
+	on a.member_id_src = b.mem_id and a.year = b.cy
+	where a.year between 2016 and 2022
+	and b.cy between 2016 and 2022;
 
 ```
 
@@ -146,10 +157,28 @@ select sum(member_id_mismatch) as member_id_mismatches,
 	sum(plan_mismatch) as plan_mismatches,
 	sum(dual_mismatch) as dual_mismatches,
 	sum(htw_mismatch) as htw_mismatches
-from work.dbo.xz_mcd_enrl_mismatches;
+from chcdwork.dbo.xz_mcd_enrl_mismatches;
 
 
 ```
+
+##2.4 Calculate the error rate
+```{r}
+
+#get the percentages
+rows_checked = dbGetQuery(spc, "select count(*) from chcdwork.dbo.xz_dwqa_temp1;")
+percent_row = sum_errors %>% summarize_all(~./rows_checked[1,1])
+
+#rbind counts and percents
+error_output = bind_rows(sum_errors, percent_row)
+
+#add row labels
+error_output = error_output %>%
+  mutate(category = c("count", "percent")) %>%
+  select(category, everything())
+
+```
+
 
 
 # SECTION 3: Closer look at what's going wrong
@@ -159,19 +188,19 @@ from work.dbo.xz_mcd_enrl_mismatches;
 #Pull lists of mismatches
 
 sex_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
               where sex_mismatch = 1;')
 
 race_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
               where race_mismatch = 1;')
 
 zip_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
               where zip_mismatch = 1;')
 
 plan_mismatches = dbGetQuery(spc, 'select member_id, year
-              from work.dbo.xz_mcd_enrl_mismatches
+              from chcdwork.dbo.xz_mcd_enrl_mismatches
               where plan_mismatch = 1;')
 
 ```
@@ -182,19 +211,19 @@ plan_mismatches = dbGetQuery(spc, 'select member_id, year
 
 mismatch_query = 'select member_id, year,tacc_sex, spc_sex, tacc_race, spc_race,
   tacc_zip, spc_zip, tacc_plan, spc_plan
-  from work.dbo.xz_mcd_enrl_mismatches where member_id = \'@memid\' and year = \'@year\''
+  from chcdwork.dbo.xz_mcd_enrl_mismatches where member_id = \'@memid\' and year = \'@year\''
 
 tac_sql1 = 'with b as (select race_cd_src, race_cd from reference_tables.ref_race
 	where data_source = \'mdcd\' and race_cd_src is not null)
 
 select a.member_id_src, a.year, a.month_year_id, a.gender_cd, b.race_cd_src,
 a.zip5, a.plan_type
-from dw_staging.member_enrollment_monthly a left join b
+from dw_staging.mcd_member_enrollment_monthly a left join b
 	on a.race_cd = b.race_cd
 	where member_id_src = \'@memid\' and year = \'@year\'
   order by a.month_year_id;'
 
-spc_sql1 = 'select client_nbr, cy, elig_date, sex, race, zip, mco from work.dbo.xz_mcd_reconciliation_cy_etl
+spc_sql1 = 'select client_nbr, cy, elig_date, sex, race, zip, mco from chcdwork.dbo.xz_mcd_reconciliation_cy_etl
   where client_nbr = \'@memid\' and cy = \'@year\'
   order by elig_date;'
 
@@ -271,7 +300,8 @@ writeData(wb, sheet = 1, paste("Run date:", Sys.time()), startCol=1, startRow=2)
 writeData(wb, sheet = 1, "Direction: Records selected from TACC server, checked against SPC server",
                               startCol=1, startRow=3)
 writeData(wb, sheet = 1, paste("Rows checked:", rows_to_check), startCol = 1, startRow = 4)
-writeData(wb, sheet = 1, sum_errors, startCol=1, startRow=6)
+writeData(wb, sheet = 1, error_output, startCol=1, startRow=6)
+writeData(wb, sheet = 1, "Note: XZ checked, the mismatches are primarily due to splitting HTW and CHIP Perinatal into their own data sources", startCol = 1, startRow = 10)
 
 #write headers for all other sheets
 writeData(wb, sheet = 2, "Sex Mismatches", startCol=1, startRow=1)
@@ -279,29 +309,35 @@ writeData(wb, sheet = 3, "Race Mismatches", startCol=1, startRow=1)
 writeData(wb, sheet = 4, "Zip Mismatches", startCol=1, startRow=1)
 writeData(wb, sheet = 5, "Plan Type Mismatches", startCol=1, startRow=1)
 
-print("Writing mismatches for sex")
 
 
 #Write mismatches for sex
-next_row = 3 #reset next_row
-for (i in 1:min(nrow(sex_mismatches), records_to_print)){
-  current_mismatch = sex_mismatches[i,]
-  output = get_mismatch_info(current_mismatch)
-  
-  writeData(wb, sheet = 2, "Mismatch details from yearly tables", startCol = 1, startRow = next_row)
-  writeData(wb, sheet = 2, output$mismatch_details, startCol = 1, startRow = next_row + 1)
-  next_row = next_row + nrow(output$mismatch_details) + 3
-  
-  writeData(wb, sheet = 2, "Mismatch details from TACC dw_staging monthly table",
-            startCol = 1, startRow = next_row)
-  writeData(wb, sheet = 2, output$tacc_details, startCol = 1, startRow = next_row+1)
-  next_row = next_row + nrow(output$tacc_details) + 3
-  
-  writeData(wb, sheet = 2, "Mismatch details from SPC monthly tables", startCol = 1, startRow = next_row)
-  writeData(wb, sheet = 2, output$spc_details, startCol = 1, startRow = next_row+1)
-  next_row = next_row + nrow(output$spc_details) + 4
-}
 
+next_row = 3 #reset next_row
+if (nrow(sex_mismatches) > 0) {
+  print("Writing mismatches for sex")
+  for (i in 1:min(nrow(sex_mismatches), records_to_print)){
+    current_mismatch = sex_mismatches[i,]
+    output = get_mismatch_info(current_mismatch)
+    
+    writeData(wb, sheet = 2, "Mismatch details from yearly tables", startCol = 1, startRow = next_row)
+    writeData(wb, sheet = 2, output$mismatch_details, startCol = 1, startRow = next_row + 1)
+    next_row = next_row + nrow(output$mismatch_details) + 3
+    
+    writeData(wb, sheet = 2, "Mismatch details from TACC dw_staging monthly table",
+              startCol = 1, startRow = next_row)
+    writeData(wb, sheet = 2, output$tacc_details, startCol = 1, startRow = next_row+1)
+    next_row = next_row + nrow(output$tacc_details) + 3
+    
+    writeData(wb, sheet = 2, "Mismatch details from SPC monthly tables", startCol = 1, startRow = next_row)
+    writeData(wb, sheet = 2, output$spc_details, startCol = 1, startRow = next_row+1)
+    next_row = next_row + nrow(output$spc_details) + 4
+  }
+} else {
+  print("No sex mismatches to print")
+  writeData(wb, sheet = 2, "No sex mismatches to print", startCol = 1, startRow = next_row)
+}
+  
 print("Writing mismatches for race")
 
 #Write mismatches for race
@@ -370,6 +406,7 @@ for (i in 1:min(nrow(plan_mismatches), records_to_print)){
 
 
 setColWidths(wb, sheet = 1, cols=1:10, widths="auto")
+setColWidths(wb, sheet = 1, cols=1, widths=20)
 
 dir.create(file.path(dir), showWarnings = FALSE) #create directory if it does not exist
 saveWorkbook(wb, file=path, overwrite=TRUE)
@@ -379,8 +416,8 @@ saveWorkbook(wb, file=path, overwrite=TRUE)
 # SECTION 99: Close connections and clean-up
 
 ```{sql connection = spc, eval=FALSE}
-drop table if exists work.dbo.xz_dwqa_temp1;
-drop table if exists work.dbo.xz_mcd_enrl_mismatches;
+drop table if exists chcdwork.dbo.xz_dwqa_temp1;
+drop table if exists chcdwork.dbo.xz_mcd_enrl_mismatches;
 
 ```
 
