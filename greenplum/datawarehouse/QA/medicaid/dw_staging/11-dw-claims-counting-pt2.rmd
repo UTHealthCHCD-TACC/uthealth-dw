@@ -8,11 +8,20 @@ output: html_document
 #PURPOSE
 This R markdown script counts distinct claims from TACC tables
 
-Last modified 11/31/22:
+
+11/31/22 Modifications:
   * changed connection method for Greenplum from odbc to RPostgres
   * Modified SQL sections so that each section only contains 1 statement
     (this is required after changing connection method to RPostgres)
   * Other misc sequelae of changing connection method
+  
+09/12/23 Modifications:
+  * In section 4.2, the code to prep dw_staging for joining was modified to use 
+    dwstage_head_comb and dwstage_det_comb instead of dwstage_head and dwstage_det. 
+    Additionally, the location to place 'Total' within the dwstage_head_prep df and 
+    dwstage_det_prep df was changed. 
+  
+
 
 # SECTION 0: Loading required packages, making connections, the usual
 
@@ -42,8 +51,8 @@ pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc
 #Connect to Greenplum
 tac <- dbConnect(RPostgres::Postgres(),
 	 dbname = "uthealth",
-	 user = "xrzhang",
-	 password = key_get("Greenplum", "xrzhang"),
+	 user = "sharrah17",
+	 password = key_get("Greenplum", "sharrah17"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
 ```
@@ -93,8 +102,8 @@ spc_counts = read.xlsx(path, sheet=1, startRow = 4)
 ## 1.2 Define global variables
 ```{r}
 #define starting and ending year
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
 
 #conver to 2-digit year
 starting_yr = starting_year - 2000
@@ -191,7 +200,7 @@ from (select icn from medicaid.clm_detail
 
 --gets distinct ICNs from data_warehouse by year
 select fiscal_year::text, count(distinct claim_id_src)
-from dw_staging.claim_header
+from dw_staging.mcd_claim_header
 group by fiscal_year
 order by fiscal_year; 
 
@@ -200,7 +209,7 @@ order by fiscal_year;
 ```{sql, connection = tac, output.var = dwstage_head_total}
 --gets distinct ICNs from data_warehouse (Total)
 select 'all' as fiscal_year, count(distinct claim_id_src)
-from dw_staging.claim_header;
+from dw_staging.mcd_claim_header;
 
 ```
 
@@ -209,7 +218,7 @@ from dw_staging.claim_header;
 
 --gets distinct ICNs from data_warehouse by year
 select fiscal_year::text, count(distinct claim_id_src)
-from dw_staging.claim_detail
+from dw_staging.mcd_claim_detail
 group by fiscal_year
 order by fiscal_year; 
 
@@ -219,7 +228,7 @@ order by fiscal_year;
 ```{sql, connection = tac, output.var = dwstage_det_total}
 --gets distinct ICNs from data_warehouse (Total)
 select 'all' as fiscal_year, count(distinct claim_id_src)
-from dw_staging.claim_detail;
+from dw_staging.mcd_claim_detail;
 
 ```
 
@@ -230,7 +239,6 @@ from dw_staging.claim_detail;
 
 dwstage_det_comb = rbind(dwstage_det, dwstage_det_total)
 dwstage_head_comb = rbind(dwstage_head, dwstage_head_total)
-
 
 ```
 
@@ -266,10 +274,10 @@ claim_counts_TACCmcd = claim_counts_TACCmcd %>%
   rbind(., claim_counts_TACCmcd_total)
 
 #prep dw_staging for joining
-dwstage_head_prep = dwstage_head
-dwstage_det_prep = dwstage_det
-dwstage_head_prep[11,1] = 'Total'
-dwstage_det_prep[11,1] = 'Total'
+dwstage_head_prep = dwstage_head_comb
+dwstage_det_prep = dwstage_det_comb
+dwstage_head_prep[length(dwstage_head_prep$fiscal_year),1] = 'Total'
+dwstage_det_prep[length(dwstage_det_prep$fiscal_year),1] = 'Total'
 colnames(dwstage_head_prep)=c('year_fy', 'DW_HEAD')
 colnames(dwstage_det_prep)=c('year_fy', 'DW_DET')
 

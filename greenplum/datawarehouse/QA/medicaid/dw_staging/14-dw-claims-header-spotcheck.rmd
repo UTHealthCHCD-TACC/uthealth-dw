@@ -8,6 +8,20 @@ output: html_document
 # PURPOSE
 This R markdown script spot checks for matching header information in dw_staging
 
+
+09/13/23 Modifications:
+  * Modified tac SQL sections to only contain 1 statement per section. 
+  * Added two additional queries (spc_sql4 and spc_sql5) to section 2.1 to 
+    alter a column's data type and allow a column to accept NULLs. Additionally, 
+    section 2.2 was modified to call these new queries.  
+  * In section 2.1, spc_sql queries 1, 2, and 3 were modified to set
+    provider_type as null when ''. 
+  * In section 3.1, SQL statement was modified to set the value in the mismatch 
+    columns to 0 when both claim_type between tables a and b and provider_type between 
+    tables a and b are both NULL.
+    
+  
+    
 # SECTION 0: Loading required packages, making connections, the usual
 
 ## 0.1 Load packages
@@ -34,8 +48,8 @@ pacman::p_load(RPostgres, DBI, odbc, keyring, openxlsx, tidyverse, beepr, tictoc
 #Connect to Greenplum
 tac <- dbConnect(RPostgres::Postgres(),
 	 dbname = "uthealth",
-	 user = "xrzhang",
-	 password = key_get("Greenplum", "xrzhang"),
+	 user = "sharrah17",
+	 password = key_get("Greenplum", "sharrah17"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
 ```
@@ -66,8 +80,8 @@ options("scipen"=100, "digits" = 4) #avoid scientific notation
 # SECTION 1: Declare global variables
 ```{r}
 #Define the starting and ending years for checking (4-digit year)
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
 
 #Define how many rows to check - will check this many rows 
 #from each of the clm_proc table and enc_proc table so double this number
@@ -87,7 +101,7 @@ ending_yr = ending_year - 2000
 rows_to_sample = as.integer(rows_to_check) * 1.2
 
 #select random rows from the claims table
-spc_sql1 = 'with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_@yr group by icn)
+spc_sql1 = "with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_@yr group by icn)
 
 select top @rows_to_check a.hdr_frm_dos as from_dos,
 	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
@@ -99,12 +113,12 @@ select top @rows_to_check a.hdr_frm_dos as from_dos,
 	a.BILL_PROV_NPI as bill_provider,
 	a.atd_prov_npi as perf_at_provider,
 	a.icn as icn,
-	a.hdr_txm_cd as provider_type
-into work.dbo.xz_dwqa_temp1
+	case when a.hdr_txm_cd  = '' then null else a.hdr_txm_cd end as provider_type
+into CHCDWORK.dbo.xz_dwqa_temp1
 from medicaid.dbo.clm_header_@yr a tablesample(@rows_to_sample rows)
-	left join p on a.icn = p.icn;'
+	left join p on a.icn = p.icn;"
 
-spc_sql2 = 'insert into work.dbo.xz_dwqa_temp1
+spc_sql2 = "insert into CHCDWORK.dbo.xz_dwqa_temp1
   select top @rows_to_check FRM_DOS,
 	case when TX_CD = \'P\' then \'P\'
 		when TX_CD = \'I\' then \'F\'
@@ -117,11 +131,11 @@ spc_sql2 = 'insert into work.dbo.xz_dwqa_temp1
 	BILL_PROV_NPI as bill_provider,
 	ATTD_PHY_NPI as perf_at_provider,
 	DERV_ENC as icn,
-	BILL_PROV_TAX_CD as provider_type
-from medicaid.dbo.enc_header_@yr tablesample(@rows_to_sample rows);'
+	case when BILL_PROV_TAX_CD = '' then null else BILL_PROV_TAX_CD end as provider_type
+from medicaid.dbo.enc_header_@yr tablesample(@rows_to_sample rows);"
 
-spc_sql3 = 'with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_1819_htw group by icn)
-
+spc_sql3 = "with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_1819_htw group by icn)
+\
 select top @rows_to_check a.hdr_frm_dos as from_dos,
 	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
 	a.tot_bill_amt as tot_charge_amt,
@@ -132,10 +146,15 @@ select top @rows_to_check a.hdr_frm_dos as from_dos,
 	a.BILL_PROV_NPI as bill_provider,
 	a.atd_prov_npi as perf_at_provider,
 	a.icn as icn,
-	a.hdr_txm_cd as provider_type
-into work.dbo.xz_dwqa_temp1
+	case when a.hdr_txm_cd = '' then null else a.hdr_txm_cd end as provider_type
+into CHCDWORK.dbo.xz_dwqa_temp1
 from medicaid.dbo.CLM_header_1819_HTW a tablesample(@rows_to_sample rows)
-	left join p on a.icn = p.icn;'
+	left join p on a.icn = p.icn;"
+
+
+spc_sql4 = "alter table CHCDWORK.dbo.xz_dwqa_temp1 alter column claim_type varchar(1) NULL;"
+
+spc_sql5 = "alter table CHCDWORK.dbo.xz_dwqa_temp1 alter column icn varchar(75);"
 
 ```
 
@@ -148,7 +167,7 @@ dbGetQuery(tac, 'drop table if exists dev.xz_dwqa_temp1;')
 for (yr in starting_yr:ending_yr){
   
   #clear tables
-  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  dbGetQuery(spc, 'drop table if exists CHCDWORK.dbo.xz_dwqa_temp1;')
   
   if (yr == 12){
     print("Sampling records for 2012, the special year")
@@ -185,13 +204,22 @@ for (yr in starting_yr:ending_yr){
     tic("sample from claims")
     dbGetQuery(spc, spc_sql1.mod)
     toc()
+      
+    dbGetQuery(spc, spc_sql4)
+    
+    if (yr == 22){
+      
+      dbGetQuery(spc, spc_sql5)
+      
+    }
+    
     tic("sample from encounters")
     dbGetQuery(spc, spc_sql2.mod)
     toc()
     
   }
 
-  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  spc_selection = dbGetQuery(spc, 'select * from CHCDWORK.dbo.xz_dwqa_temp1;')
   #make all names lowercase bc GP gets case-sensitive
   names(spc_selection) = tolower(names(spc_selection))
   
@@ -203,7 +231,7 @@ for (yr in starting_yr:ending_yr){
   #Sample HTW claims
 
   #clear tables
-  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  dbGetQuery(spc, 'drop table if exists CHCDWORK.dbo.xz_dwqa_temp1;')
   
   spc_sql3.mod = spc_sql3 %>% gsub('@rows_to_check', rows_to_check, .) %>%
   gsub('@rows_to_sample', rows_to_sample, .)
@@ -212,7 +240,7 @@ for (yr in starting_yr:ending_yr){
   dbGetQuery(spc, spc_sql3.mod)
   toc()
 
-  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  spc_selection = dbGetQuery(spc, 'select * from CHCDWORK.dbo.xz_dwqa_temp1;')
   #make all names lowercase bc GP gets case-sensitive
   names(spc_selection) = tolower(names(spc_selection))
   
@@ -238,7 +266,7 @@ select a.*, b.from_date_of_service, b.claim_type as dw_claim_type, b.total_charg
 	case when b.fiscal_year is null then 1 when b.fiscal_year::text != trim(a.fy)::text then 1 else 0 end as fy_mismatch,
 	case when b.from_date_of_service is null then 1 when b.from_date_of_service::text != trim(a.from_dos)::text then 1 else 0 end as from_dos_mismatch,
 	case when b.to_date_of_service is null then 1 when b.to_date_of_service::text != trim(a.to_dos)::text then 1 else 0 end as to_dos_mismatch,
-	case when b.claim_type is null then 1 when b.claim_type::text != trim(a.claim_type)::text then 1 else 0 end as claim_type_mismatch,
+	case when b.claim_type is null and a.claim_type is null then 0 when b.claim_type is null then 1 when b.claim_type::text != trim(a.claim_type)::text then 1 else 0 end as claim_type_mismatch,
 	case when b.total_charge_amount is null then 1 when b.total_charge_amount::float != trim(a.tot_charge_amt)::float then 1 else 0 end as tot_charge_amt_mismatch,
 	case when b.total_allowed_amount is null then 1 when b.total_allowed_amount::float != trim(a.tot_allowed_amt)::float then 1 else 0 end as tot_allowed_amt_mismatch,
 	case when b.total_paid_amount is null and a.tot_paid_amt is not null then 1 when b.total_paid_amount::float != trim(a.tot_paid_amt)::float then 1 else 0 end as tot_paid_amt_mismatch,
@@ -248,9 +276,9 @@ select a.*, b.from_date_of_service, b.claim_type as dw_claim_type, b.total_charg
 	case when b.perf_at_provider is null and trim(a.perf_at_provider) = '' then 0
 		when b.perf_at_provider is null and trim(a.perf_at_provider) != '' then 1
 		when b.perf_at_provider::text != trim(a.perf_at_provider)::text then 1 else 0 end as perf_at_provider_mismatch,
-	case when b.provider_type is null then 1 when b.provider_type::text != trim(a.provider_type)::text then 1 else 0 end as provider_type_mismatch
+	case when b.provider_type is null and a.provider_type is null then 0 when b.provider_type is null then 1 when b.provider_type::text != trim(a.provider_type)::text then 1 else 0 end as provider_type_mismatch
 into dev.xz_dwqa_temp2
-from dev.xz_dwqa_temp1 a left join dw_staging.claim_header b on a.icn = b.claim_id_src;
+from dev.xz_dwqa_temp1 a left join dw_staging.mcd_claim_header b on a.icn = b.claim_id_src;
 
 ```
 
@@ -315,7 +343,13 @@ drop table if exists work.dbo.xz_dwqa_temp3;
 
 ```{sql, connection = tac, eval = FALSE}
 drop table if exists dev.xz_dwqa_temp1;
+```
+
+```{sql, connection = tac, eval = FALSE}
 drop table if exists dev.xz_dwqa_temp2;
+```
+
+```{sql, connection = tac, eval = FALSE}
 drop table if exists dev.xz_dwqa_temp3;
 ```
 
