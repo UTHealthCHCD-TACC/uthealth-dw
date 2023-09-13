@@ -132,24 +132,26 @@ def ip_acute_insert_step_1(cursor, data_source, start_year, end_year, **kwargs):
     '''inserts acute inpatient claims from start_year to end_year'''
     cursor.execute(f"""
 with ip_data as (
-    select data_source,
-        uth_member_id,
-        uth_claim_id ,
-        claim_sequence_number,
-        from_date_of_service,
-        to_date_of_service,
+    select ch.data_source,
+        ch.uth_member_id,
+        ch.uth_claim_id,
+        ch.from_date_of_service,
+        ch.to_date_of_service,
         admit_date,
         discharge_date,
         discharge_status,
         concat(bill_type_inst, bill_type_class, bill_type_freq) as bill_type,
-        member_id_src,
-        claim_id_src
-    from data_warehouse.claim_detail ch
+        ch.member_id_src,
+        ch.claim_id_src
+    from data_warehouse.claim_detail cd
+    join data_warehouse.claim_header ch
+    on cd.uth_member_id = ch.uth_member_id
+    and cd.uth_claim_id = ch.uth_claim_id
     where bill_type_inst = '1'
     and bill_type_class = '1'
     and bill_type_freq in ('1', '2', '3', '4', '7')
-    and year between {start_year} and {end_year}
-    and data_source = '{data_source}'
+    and ch.year between {start_year} and {end_year}
+    and ch.data_source = '{data_source}'
 )
 insert into dev.gm_dw_ip_window_step_1
 select
@@ -251,7 +253,7 @@ def run_step_one(data_source):
                          ip_acute_insert_step_2,
                          ip_acute_admit_tables_delete_datasource]
 
-    variable_dict = {'start_year': 2014,
+    variable_dict = {'start_year': 2015,
                      'end_year': 2022,
                      'data_source': data_source}
 
@@ -500,11 +502,14 @@ if __name__ == '__main__':
             # clears tables from step 1
             run_step_zero()
 
-            data_sources = ['mdcd', 
+            data_sources = [
+                            'mdcd',
                             'mcpp', 'mhtw', 
                             'mcrt', 'mcrn',
-                            'optz', 'optd',
-                            'truc', 'trum'
+                            'optz',
+                            'optd',
+                            'truc', 
+                            'trum',
                             ]
 
             for data_source in data_sources:

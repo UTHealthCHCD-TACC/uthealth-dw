@@ -226,8 +226,8 @@ def ip_window_wrapper(clm_df):
     ]
 
     final_ip_group = final_ip_group.reset_index()
-    # print(list(final_ip_group.columns))
     final_ip_group = final_ip_group[columns]
+    
     return final_ip_group
 
 
@@ -245,7 +245,7 @@ if __name__ == '__main__':
                     from {schema}.{source_table} order by data_source, pat_group;''')
         results = cur.fetchall()
         print(results)
-
+ 
     try:
         for pat_group in results:
             print(pat_group)
