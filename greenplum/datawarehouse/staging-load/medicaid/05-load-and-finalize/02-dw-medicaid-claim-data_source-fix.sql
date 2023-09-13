@@ -4,15 +4,18 @@
  *  Author || Date      || Notes
  * ******************************************************************************************************
  * xrzhang || 04/04/2023 || Created
- * ******************************************************************************************************
+ * ------------------------------------------------------------------------------------------------------
  * xrzhang || 09/05/2023 || Moved script order after load - easiest to make changes on live tables
  * 							as they already have the partitions and such
+ * ------------------------------------------------------------------------------------------------------
+ * xrzhang || 09/13/2023 || Modified script so it backfills in missing uth_member_ids as well
  */
 /**********************
  * NOTE: This by necessity makes changes to live tables.
  * The reason for this is because the Medicaid data is all mixed in, so it's easier
  * to deal with it as one big table... but one big table can't be loaded into 3 different partitions,
- * SO just leave it as one table and then alter the data source afterwards
+ * (well it CAN be inserted but it CAN'T be swapped) SO just leave it as one table and then alter the
+ * data source afterwards
  **********************/
 
 /*********************
@@ -54,7 +57,8 @@ analyze dw_staging.mcpp_mhtw_claims;
  *********************/
 --claim_detail
 update data_warehouse.claim_detail a
-set data_source = b.data_source
+set data_source = b.data_source,
+	uth_member_id = b.uth_member_id
 from dw_staging.mcpp_mhtw_claims b
 where a.data_source = 'mdcd' and
 	a.claim_id_src = b.claim_id_src;
@@ -63,7 +67,8 @@ vacuum analyze data_warehouse.claim_detail;
 
 --claim_diag
 update data_warehouse.claim_diag a
-set data_source = b.data_source
+set data_source = b.data_source,
+	uth_member_id = b.uth_member_id
 from dw_staging.mcpp_mhtw_claims b
 where a.data_source = 'mdcd' and
 	a.claim_id_src = b.claim_id_src;
@@ -72,7 +77,8 @@ vacuum analyze data_warehouse.claim_diag;
 
 --claim_icd_proc
 update data_warehouse.claim_icd_proc a
-set data_source = b.data_source
+set data_source = b.data_source,
+	uth_member_id = b.uth_member_id
 from dw_staging.mcpp_mhtw_claims b
 where a.data_source = 'mdcd' and
 	a.claim_id_src = b.claim_id_src;
@@ -81,7 +87,8 @@ vacuum analyze data_warehouse.claim_icd_proc;
 
 --claim_header
 update data_warehouse.claim_header a
-set data_source = b.data_source
+set data_source = b.data_source,
+	uth_member_id = b.uth_member_id
 from dw_staging.mcpp_mhtw_claims b
 where a.data_source = 'mdcd' and
 	a.claim_id_src = b.claim_id_src;
@@ -92,7 +99,8 @@ vacuum analyze data_warehouse.claim_header;
  * Update the data_source for pharmacy table
  *********************/
 update data_warehouse.pharmacy_claims a
-set data_source = b.data_source
+set data_source = b.data_source,
+	uth_member_id = b.uth_member_id
 from dw_staging.mcpp_mhtw_client_nbr_yrmonth b
 where a.data_source = 'mdcd' and
 	a.member_id_src = b.member_id_src and
@@ -100,6 +108,9 @@ where a.data_source = 'mdcd' and
 
 vacuum analyze data_warehouse.pharmacy_claims;
 
+
+/***QA: Count how many null uth_member_ids are left in each table***/
+select count(*) from data_warehouse.claim_detail where uth_member_id is null;
 
 /********************************
  * change update_log
