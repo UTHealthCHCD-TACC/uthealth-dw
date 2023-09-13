@@ -9,6 +9,16 @@
  * 
  * ****************************************************************************************************** */
 
+--09/13/23
+--Did uthealth_analyst not have access to future-created tables in dev?
+grant all on all tables in schema dev to uthealth_analyst;
+grant all privileges on all sequences in schema dev to uthealth_analyst; 
+alter default privileges in schema dev grant all on tables to uthealth_analyst;
+--well this didn't even fix it - hard-deleted the table(s) in question
+
+--may as well give Sharrah dev access
+grant uthealth_dev to sharrah17;
+
 --08/09/2023
 --Give Sharrah access to qa_reporting
 grant all on schema qa_reporting to sharrah17; 

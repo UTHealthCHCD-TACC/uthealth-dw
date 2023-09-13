@@ -136,8 +136,10 @@ create role uthealth_analyst;
 
 grant connect on database uthealth to uthealth_analyst; --allows connection to uthealth database
 grant temporary on database uthealth to uthealth_analyst; --allows creation of temp tables
-grant all on all tables in schema dev to uthealth_analyst; --grants read/write privileges to schema dev
 
+grant all on all tables in schema dev to uthealth_analyst; --grants read/write privileges to schema dev
+grant all privileges on all sequences in schema dev to uthealth_analyst; 
+alter default privileges in schema dev grant all on tables to uthealth_analyst; 
 --This code will delete all tables owned by anyone in the uthealth_analyst group along with dependent tables
 drop owned by uthealth_analyst cascade;
 /*from Posgresql documentation:

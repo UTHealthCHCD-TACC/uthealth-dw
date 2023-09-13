@@ -8,6 +8,11 @@ output: html_document
 # PURPOSE
 This R markdown script spot checks for matching details information in dw_staging
 
+09/13/23: updated for FY22
+  changed work -> chcdwork
+  changed dw_staging.claim_detail -> dw_staging.mcd_claim_detail
+  changed all temp tables to be named xz_dwqa15_temp so they don't interfere with other QA scripts if run concurrently
+
 # SECTION 0: Loading required packages, making connections, the usual
 
 ## 0.1 Load packages
@@ -60,14 +65,14 @@ rm(list=setdiff(ls(), c("tac", "spc")))
 ```{r}
 knitr::opts_chunk$set(echo=TRUE, rows.print=25)
 options("scipen"=100, "digits" = 4) #avoid scientific notation
-
+here::i_am("15-dw-claims-details-spotcheck.rmd")
 ```
 
 # SECTION 1: Declare global variables
 ```{r}
 #Define the starting and ending years for checking (4-digit year)
 starting_year = 2012
-ending_year = 2021
+ending_year = 2022
 
 #Define how many rows to check - will check this many rows 
 #from each of the clm and enc tables so double this number
@@ -87,7 +92,7 @@ ending_yr = ending_year - 2000
 rows_to_sample = as.integer(rows_to_check) * 1.2
 
 #select random rows from the claims table
-spc_sql1 = 'select top @rows_to_check  \'20@yr\' as spc_fy,
+spc_sql1 = "select top @rows_to_check  '20@yr' as spc_fy,
 a.clm_dtl_nbr as spc_claim_sequence_number,
 a.from_dos as spc_from_date_of_service,
 a.to_dos as spc_to_date_of_service,
@@ -102,7 +107,7 @@ a.dtl_alwd_amt as spc_allowed_amount,
 a.dtl_pd_amt as spc_paid_amount,
 a.ref_prov_npi as spc_ref_provider,
 a.perf_prov_npi as spc_perf_rn_provider,
-\'          \' as spc_perf_op_provider,
+'          ' as spc_perf_op_provider,
 a.txm_cd as spc_provider_type,
 b.adm_dt as spc_admit_date,
 b.dis_dt as spc_discharge_date,
@@ -112,27 +117,27 @@ c.drg as spc_drg_cd,
 substring(c.bill, 1, 1) as spc_bill_type_inst,
 substring(c.bill, 2, 1) as spc_bill_type_class,
 substring(c.bill, 3, 1) as spc_bill_type_freq,
-\'          \' as spc_units,
+'          ' as spc_units,
 c.pcn as spc_member_id_src
-into work.dbo.xz_dwqa_temp1
+into chcdwork.dbo.xz_dwqa15_temp1
 from medicaid.dbo.clm_detail_@yr a tablesample(@rows_to_sample rows) inner join
 	medicaid.dbo.clm_header_@yr b on a.icn = b.icn inner join 
-	medicaid.dbo.clm_proc_@yr c on a.icn = c.icn;'
+	medicaid.dbo.clm_proc_@yr c on a.icn = c.icn;"
 
-spc_sql2 = 'insert into work.dbo.xz_dwqa_temp1
-select top @rows_to_check  \'20@yr\' as spc_fy,
+spc_sql2 = "insert into chcdwork.dbo.xz_dwqa15_temp1
+select top @rows_to_check  '20@yr' as spc_fy,
 a.ln_nbr as spc_claim_sequence_number,
 a.fdos_dt  as spc_from_date_of_service,
 a.tdos_csl  as spc_to_date_of_service,
 a.pos  as spc_place_of_service,
 a.proc_cd  as spc_cpt_hcpcs_cd,
-\'\' as sub_proc_cd,
+'' as sub_proc_cd,
 a.proc_mod_cd_1  as spc_proc_mod_1,
 a.proc_mod_cd_2  as spc_proc_mod_2,
 a.rev_cd  as spc_revenue_cd,
 a.sub_chrg_amt  as spc_charge_amount,
 a.dt_pd_amt  as spc_allowed_amount,
-\'\' as spc_paid_amount,
+'' as spc_paid_amount,
 a.sub_ref_prov_npi  as spc_ref_provider,
 a.sub_rend_prov_npi  as spc_perf_rn_provider,
 a.sub_opt_phy_npi as spc_perf_op_provider,
@@ -147,12 +152,11 @@ substring(c.bill, 2, 1) as spc_bill_type_class,
 substring(c.bill, 3, 1) as spc_bill_type_freq,
 a.dt_ln_unt as spc_units,
 c.mem_id  as spc_member_id_src
-
 from medicaid.dbo.enc_det_@yr a tablesample(@rows_to_sample rows) inner join
 	medicaid.dbo.enc_header_@yr b on a.derv_enc = b.derv_enc inner join 
-	medicaid.dbo.enc_proc_@yr c on a.derv_enc = c.derv_enc;'
+	medicaid.dbo.enc_proc_@yr c on a.derv_enc = c.derv_enc;"
 
-spc_sql3 = 'select top @rows_to_check  \'HTW\' as spc_fy,
+spc_sql3 = "select top @rows_to_check  'HTW' as spc_fy,
 a.clm_dtl_nbr as spc_claim_sequence_number,
 a.from_dos as spc_from_date_of_service,
 a.to_dos as spc_to_date_of_service,
@@ -167,7 +171,7 @@ a.dtl_alwd_amt as spc_allowed_amount,
 a.dtl_pd_amt as spc_paid_amount,
 a.ref_prov_npi as spc_ref_provider,
 a.perf_prov_npi as spc_perf_rn_provider,
-\'          \' as spc_perf_op_provider,
+'          ' as spc_perf_op_provider,
 a.txm_cd as spc_provider_type,
 b.adm_dt as spc_admit_date,
 b.dis_dt as spc_discharge_date,
@@ -177,18 +181,18 @@ c.drg as spc_drg_cd,
 substring(c.bill, 1, 1) as spc_bill_type_inst,
 substring(c.bill, 2, 1) as spc_bill_type_class,
 substring(c.bill, 3, 1) as spc_bill_type_freq,
-\'          \' as spc_units,
+'          ' as spc_units,
 c.pcn as spc_member_id_src
-into work.dbo.xz_dwqa_temp1
+into chcdwork.dbo.xz_dwqa15_temp1
 from medicaid.dbo.clm_detail_1819_htw a tablesample(@rows_to_sample rows) inner join
 	medicaid.dbo.clm_header_1819_htw b on a.icn = b.icn inner join 
-	medicaid.dbo.clm_proc_1819_htw c on a.icn = c.icn;'
+	medicaid.dbo.clm_proc_1819_htw c on a.icn = c.icn;"
 
-spc_sql4 = 'alter table work.dbo.xz_dwqa_temp1
+spc_sql4 = "alter table chcdwork.dbo.xz_dwqa15_temp1
 alter column spc_perf_op_provider varchar(50);
 
-alter table work.dbo.xz_dwqa_temp1
-alter column spc_units varchar(50);'
+alter table chcdwork.dbo.xz_dwqa15_temp1
+alter column spc_units varchar(50);"
 
 ```
 
@@ -196,7 +200,7 @@ alter column spc_units varchar(50);'
 ```{r}
 
 #clear the holding table on TACC side
-dbGetQuery(tac, 'drop table if exists dev.xz_dwqa_temp1;')
+dbGetQuery(tac, 'drop table if exists dev.xz_dwqa15_temp1;')
 print("tacc temp table dropped")
 
 #yr = 14
@@ -204,7 +208,7 @@ print("tacc temp table dropped")
 for (yr in starting_yr:ending_yr){
   
   #clear tables
-  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa15_temp1;')
   print("spc temp table dropped")
   
   if (yr == 12){
@@ -237,8 +241,11 @@ for (yr in starting_yr:ending_yr){
     dbGetQuery(spc, spc_sql1.mod)
     toc()
     
-    #dbExecute(spc, spc_sql4) #make NULL int columns into varchar
-    #print("datatype changed")
+    #fix data_type issue for FY22
+    if (yr==22){
+      dbExecute(spc, "alter table chcdwork.dbo.xz_dwqa15_temp1
+                      alter column spc_claim_id_src varchar(50);")
+    }
     
     tic("sample from encounters")
     dbGetQuery(spc, spc_sql2.mod)
@@ -246,19 +253,19 @@ for (yr in starting_yr:ending_yr){
     
   }
 
-  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  spc_selection = dbGetQuery(spc, 'select * from chcdwork.dbo.xz_dwqa15_temp1;')
   #make all names lowercase bc GP gets case-sensitive
   names(spc_selection) = tolower(names(spc_selection))
   
   tic("Write to TACC")
-  dbWriteTable(tac, SQL('dev.xz_dwqa_temp1'), spc_selection, append = T, overwrite = F)
+  dbWriteTable(tac, SQL('dev.xz_dwqa15_temp1'), spc_selection, append = T, overwrite = F)
   toc()
 }
 
   #Sample HTW claims
 
   #clear tables
-  dbGetQuery(spc, 'drop table if exists work.dbo.xz_dwqa_temp1;')
+  dbGetQuery(spc, 'drop table if exists chcdwork.dbo.xz_dwqa15_temp1;')
   
   spc_sql3.mod = spc_sql3 %>% gsub('@rows_to_check', rows_to_check, .) %>%
   gsub('@rows_to_sample', rows_to_sample, .)
@@ -267,17 +274,17 @@ for (yr in starting_yr:ending_yr){
   dbGetQuery(spc, spc_sql3.mod)
   toc()
 
-  spc_selection = dbGetQuery(spc, 'select * from work.dbo.xz_dwqa_temp1;')
+  spc_selection = dbGetQuery(spc, 'select * from chcdwork.dbo.xz_dwqa15_temp1;')
   #make all names lowercase bc GP gets case-sensitive
   names(spc_selection) = tolower(names(spc_selection))
   
   tic("Write to TACC")
-  dbWriteTable(tac, SQL('dev.xz_dwqa_temp1'), spc_selection, append = T, overwrite = F)
+  dbWriteTable(tac, SQL('dev.xz_dwqa15_temp1'), spc_selection, append = T, overwrite = F)
   toc()
 
 ```
 
-# SECTION 3: Looks for DX codes in dw_staging.clm_dx
+# SECTION 3: Find mismatches
 
 ## 3.1 Modify raw data to match data_warehouse format
 
@@ -285,7 +292,7 @@ for (yr in starting_yr:ending_yr){
 
 --Trim and null things that need to be trimmed and nulled
 
-update dev.xz_dwqa_temp1
+update dev.xz_dwqa15_temp1
    set spc_claim_sequence_number = case when trim(spc_claim_sequence_number) = '' then null else trim(spc_claim_sequence_number) end,
 spc_from_date_of_service = case when trim(spc_from_date_of_service) = '' then null else trim(spc_from_date_of_service) end,
 spc_to_date_of_service = case when trim(spc_to_date_of_service) = '' then null else trim(spc_to_date_of_service) end,
@@ -318,7 +325,7 @@ spc_member_id_src = case when trim(spc_member_id_src) = '' then null else trim(s
 ```{sql, connection = tac}
 
 --Fix numbers if they are not the right length
-update dev.xz_dwqa_temp1
+update dev.xz_dwqa15_temp1
 set spc_cpt_hcpcs_cd = case when length(spc_cpt_hcpcs_cd) < 5 then null else spc_cpt_hcpcs_cd end,
 	sub_proc_cd = case when length(sub_proc_cd) < 5 then null else sub_proc_cd end,
 	spc_revenue_cd = lpad(spc_revenue_cd, 4, '0');
@@ -331,7 +338,7 @@ set spc_cpt_hcpcs_cd = case when length(spc_cpt_hcpcs_cd) < 5 then null else spc
 --Yes we do lose some SUB_PROC_CDs but anyone who needs them will have to go back to the original data
 --as none of the other data sources have more than 1 CPT_HCSPCS_CD
 
-update dev.xz_dwqa_temp1
+update dev.xz_dwqa15_temp1
 	set spc_cpt_hcpcs_cd = sub_proc_cd where spc_cpt_hcpcs_cd is null and sub_proc_cd is not null;
 
 ```
@@ -342,7 +349,7 @@ update dev.xz_dwqa_temp1
 	
 --Clear results table first
 
-drop table if exists dev.xz_dwqa_temp2;
+drop table if exists dev.xz_dwqa15_temp2;
 
 ```
 
@@ -373,8 +380,10 @@ b.bill_type_class,
 b.bill_type_freq,
 b.units,
 b.member_id_src,
-case when b.claim_sequence_number is null and a.spc_claim_sequence_number is not null then 1 when b.claim_sequence_number::text != a.spc_claim_sequence_number then 1 else 0 end as claim_sequence_number_mismatch,
-case when b.from_date_of_service is null and a.spc_from_date_of_service is not null then 1 when b.from_date_of_service::text != a.spc_from_date_of_service then 1 else 0 end as from_date_of_service_mismatch,
+case when b.claim_sequence_number is null and a.spc_claim_sequence_number is not null then 1
+when b.claim_sequence_number::text != a.spc_claim_sequence_number then 1 else 0 end as claim_sequence_number_mismatch,
+case when b.from_date_of_service is null and a.spc_from_date_of_service is not null then 1
+when b.from_date_of_service::text != a.spc_from_date_of_service then 1 else 0 end as from_date_of_service_mismatch,
 case when b.to_date_of_service is null and a.spc_to_date_of_service is not null then 1 when b.to_date_of_service::text != a.spc_to_date_of_service then 1 else 0 end as to_date_of_service_mismatch,
 case when b.place_of_service is null and a.spc_place_of_service is not null then 1 when b.place_of_service::text != a.spc_place_of_service then 1 else 0 end as place_of_service_mismatch,
 case when b.cpt_hcpcs_cd is null and a.spc_cpt_hcpcs_cd is not null then 1 when b.cpt_hcpcs_cd::text != a.spc_cpt_hcpcs_cd then 1 else 0 end as cpt_hcpcs_cd_mismatch,
@@ -398,8 +407,8 @@ case when b.bill_type_class is null and a.spc_bill_type_class is not null then 1
 case when b.bill_type_freq is null and a.spc_bill_type_freq is not null then 1 when b.bill_type_freq::text != a.spc_bill_type_freq then 1 else 0 end as bill_type_freq_mismatch,
 case when b.units is null and a.spc_units is not null then 1 when b.units::float != a.spc_units::float then 1 else 0 end as units_mismatch,
 case when b.member_id_src is null and a.spc_member_id_src is not null then 1 when b.member_id_src::text != a.spc_member_id_src then 1 else 0 end as member_id_src_mismatch
-into dev.xz_dwqa_temp2
-from dev.xz_dwqa_temp1 a left join dw_staging.claim_detail b
+into dev.xz_dwqa15_temp2
+from dev.xz_dwqa15_temp1 a left join dw_staging.mcd_claim_detail b
 on a.spc_claim_id_src = b.claim_id_src and trim(a.spc_claim_sequence_number)::int = b.claim_sequence_number;
 
 
@@ -436,7 +445,7 @@ sum(bill_type_freq_mismatch) as bill_type_freq_mismatches,
 sum(units_mismatch) as units_mismatches,
 sum(member_id_src_mismatch) as member_id_src_mismatches,
 count(*) as rows_checked
-from dev.xz_dwqa_temp2
+from dev.xz_dwqa15_temp2
 group by spc_fy
 order by spc_fy;
 
@@ -475,15 +484,15 @@ saveWorkbook(wb, file=path, overwrite=TRUE)
 #SECTION 99: Delete temp tables, Close connections, clear R environment
 
 ```{sql, connection = spc, eval = FALSE}
-drop table if exists work.dbo.xz_dwqa_temp1;
-drop table if exists work.dbo.xz_dwqa_temp2;
-drop table if exists work.dbo.xz_dwqa_temp3;
+drop table if exists chcdwork.dbo.xz_dwqa15_temp1;
+drop table if exists chcdwork.dbo.xz_dwqa15_temp2;
+drop table if exists chcdwork.dbo.xz_dwqa15_temp3;
 ```
 
 ```{sql, connection = tac, eval = FALSE}
-drop table if exists dev.xz_dwqa_temp1;
-drop table if exists dev.xz_dwqa_temp2;
-drop table if exists dev.xz_dwqa_temp3;
+drop table if exists dev.xz_dwqa15_temp1;
+drop table if exists dev.xz_dwqa15_temp2;
+drop table if exists dev.xz_dwqa15_temp3;
 ```
 
 ```{r close-connections, eval = FALSE}

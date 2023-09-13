@@ -5,6 +5,7 @@
  * various authors  || <09/05/2023 || created
  * ******************************************************************************************************
  * xzhang  			|| 09/05/2023 || Changed table name from claim_detail to mcd_claim_detail
+ * 									 Changed unit (dt_ln_unt) to float instead of int
 */
 
 drop table if exists dw_staging.enc_detail_etl;
@@ -188,7 +189,7 @@ tdos_csl date null,
 proc_cd varchar null,
 sub_chrg_amt numeric null,
 dt_pd_amt numeric null,
-dt_ln_unt int null,
+dt_ln_unt float null,
 proc_mod_cd_1 varchar null,
 proc_mod_cd_2 varchar null,
 pos varchar null,
@@ -273,10 +274,10 @@ select distinct
 	a.sub_chrg_amt as charge_amount,
 	a.dt_pd_amt as allowed_amount,
 	null::numeric as paid_amount,
-	null::int as copay,
-	null::int as deductible,
-	null::int as coins,
-	null::int as cob,
+	null::numeric as copay,
+	null::numeric as deductible,
+	null::numeric as coins,
+	null::numeric as cob,
 	bill_i,
 	bill_c,
 	bill_f,

@@ -6,10 +6,6 @@
  * xzhang  			|| 09/05/2023 || Changed table name from claim_detail to mcd_claim_detail
 */
 
-
-
-
-
 /* ETL TABLES FOR CLEANING */
 
 drop table if exists dw_staging.mcd_claim_detail;

@@ -14,7 +14,7 @@
 --1 clean up from date of service from matching claim in claim_header 
 update dw_staging.mcd_claim_detail a
    set from_date_of_service = b.from_date_of_service 
-  from dw_staging.claim_header b 
+  from dw_staging.mcd_claim_header b 
  where a.uth_member_id = b.uth_member_id 
    and a.uth_claim_id = b.uth_claim_id 
    and a.from_date_of_service not between '2011-01-01' and current_date
@@ -23,7 +23,7 @@ update dw_staging.mcd_claim_detail a
 --2 clean up to date of service from matching claim in claim_header   
 update dw_staging.mcd_claim_detail a
    set to_date_of_service  = b.to_date_of_service 
-  from dw_staging.claim_header b 
+  from dw_staging.mcd_claim_header b 
  where a.uth_member_id = b.uth_member_id 
    and a.uth_claim_id = b.uth_claim_id 
    and a.to_date_of_service not between '2011-01-01' and current_date
