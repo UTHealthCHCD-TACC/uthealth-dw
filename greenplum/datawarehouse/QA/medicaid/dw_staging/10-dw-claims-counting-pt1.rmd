@@ -8,6 +8,13 @@ output: html_document
 #PURPOSE
 This R markdown script counts distinct claims from SPC tables
 
+
+09/12/23 Modifications:
+  * Connection method for Greenplum was changed from odbc to RPostgres.
+  * Added package 'here' as a package to load. 
+
+
+
 # SECTION 0: Loading required packages, making connections, the usual
 
 ## 0.1 Load packages
@@ -15,7 +22,7 @@ This R markdown script counts distinct claims from SPC tables
 # Package installs/loading 
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc)
+pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, tictoc, here)
 
 ```
 
@@ -32,11 +39,10 @@ pacman::p_load(DBI, odbc, rstudioapi, keyring, openxlsx, tidyverse, beepr, ticto
 
 
 #Connect to Greenplum
-tac <- dbConnect(odbc::odbc(),
-	 dsn = "PostgreSQL30",
-	 database = "uthealth",
-	 UID = "xrzhang",
-	 PWD = key_get("Greenplum", "xrzhang"),
+tac <- dbConnect(RPostgres::Postgres(),
+	 dbname = "uthealth",
+	 user = "sharrah17",
+	 password = key_get("Greenplum", "sharrah17"),
 	 host = "greenplum01.corral.tacc.utexas.edu",
 	 port = 5432)
 ```
@@ -85,8 +91,8 @@ print("No previous output exists, proceeding...")
 ## 1.2 Otherwise define global variables and proceed
 ```{r}
 #define starting and ending year
-starting_year = 2012
-ending_year = 2021
+starting_year = 2016
+ending_year = 2022
 
 #conver to 2-digit year
 starting_yr = starting_year - 2000
@@ -118,7 +124,7 @@ colnames(clm_enc_overlaps) = c('Year', 'Count of clm/enc overlaps')
 
 ```{r}
 
-for (yr in 13:21){
+for (yr in 13:22){
   
   print(paste("Counting overlaps for", yr))
   
