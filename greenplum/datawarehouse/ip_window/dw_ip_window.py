@@ -136,7 +136,10 @@ with ip_data as (
         ch.uth_member_id,
         ch.uth_claim_id,
         ch.from_date_of_service,
-        ch.to_date_of_service,
+        case 
+            when extract(year from ch.to_date_of_service) > 2050 then cd.to_date_of_service
+            else ch.to_date_of_service
+        end as to_date_of_service,
         admit_date,
         discharge_date,
         discharge_status,
@@ -508,10 +511,10 @@ if __name__ == '__main__':
             data_sources = [
                             # 'mdcd',
                             # 'mcpp', 
-                            'mhtw', 
+                            # 'mhtw', 
                             # 'mcrt', 'mcrn',
                             # 'optz',
-                            # 'optd',
+                            'optd',
                             # 'truc', 
                             # 'trum',
                             ]
@@ -520,7 +523,7 @@ if __name__ == '__main__':
                 print(data_source)
 
                 # inserts all inpatient claims; adds a group identifier
-                # run_step_one(data_source)
+                run_step_one(data_source)
 
                 cursor.execute(f'''select distinct data_source, pat_group
                             from dev.gm_dw_ip_window_step_2
@@ -536,7 +539,7 @@ if __name__ == '__main__':
                     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
                                     'pat_group': pat_group[1], 
                                     'output_table': output_table}
-                    # run_step_two(variable_dict)
+                    run_step_two(variable_dict)
         
                 # insert all claims within ip window and move to DW
                 variable_dict = {'df_con': df_con, 'data_source': data_source, 
