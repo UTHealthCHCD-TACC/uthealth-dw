@@ -360,11 +360,12 @@ def dw_import(cursor, data_source, **kwargs):
         discharge_status,
         days_to_readmit,
         readmit_30,
-        missing_terminal_status,
-        missing_terminal_status_117,
         paid_status,
         member_id_src,
-        insert_ts
+        insert_ts,
+        total_charge_amount,
+        total_allowed_amount,
+        total_paid_amount
     )
     select
         data_source,
@@ -381,13 +382,14 @@ def dw_import(cursor, data_source, **kwargs):
         admit_date - lag (discharge_date) over ( partition by uth_member_id order by admit_date) as days_to_readmit,
         case 
             when admit_date - lag (discharge_date) over ( partition by uth_member_id order by admit_date)<=30 then 1
-        else 0
+            else 0
         end as readmit_30,
-        missing_terminal_status,
-        missing_terminal_status_117,
         paid_status,
         member_id_src,
-        insert_ts
+        insert_ts,
+        total_charge_amount,
+        total_allowed_amount,
+        total_paid_amount
     from dev.gm_dw_ip_admit
     where data_source = '{data_source}'
     order by uth_member_id, admit_date;''')
@@ -421,7 +423,9 @@ def dw_import_claims(cursor, data_source, **kwargs):
         charge_amount,
         allowed_amount,
         paid_amount,
-        insert_ts
+        insert_ts,
+        member_id_src,
+        claim_id_src   
     )
     select
         data_source,
@@ -439,9 +443,10 @@ def dw_import_claims(cursor, data_source, **kwargs):
         charge_amount,
         allowed_amount,
         paid_amount,
-    insert_ts
-    from
-        dev.gm_dw_ip_admit_claim
+        insert_ts,
+        member_id_src,
+        claim_id_src
+    from dev.gm_dw_ip_admit_claim
     where data_source = '{data_source}'
     order by uth_member_id, admit_date;''')
 
@@ -450,36 +455,34 @@ def dw_import_claims(cursor, data_source, **kwargs):
 @std_out_logger
 @db_logger(log_name)
 def admit_costs_update(cursor, data_source, **kwargs):
-    cursor.execute(f'''with costs as (
-select
-    admit_id,
-    sum(cd.charge_amount) as total_charge_amount,
-    sum(cd.allowed_amount) as total_allowed_amount,
-    sum(cd.paid_amount) as total_paid_amount
-from
-    data_warehouse.claim_detail cd
-inner join dev.gm_dw_ip_admit_claim ac
-on
-    ac.uth_member_id = cd.uth_member_id
-    and ac.uth_claim_id = cd.uth_claim_id
-group by
-    admit_id)
-update
-    data_warehouse.admission_acute_ip as aai
+    cursor.execute(f'''
+with costs as (
+    select
+        data_source,
+        uth_member_id,
+        admit_id,
+        sum(charge_amount) as total_charge_amount,
+        sum(allowed_amount) as total_allowed_amount,
+        sum(paid_amount) as total_paid_amount
+    from dev.gm_dw_ip_admit_claim ac
+    where data_source = '{data_source}'
+    group by 1,2,3
+)
+update dev.gm_dw_ip_admit as a
 set
     total_charge_amount = costs.total_charge_amount,
     total_allowed_amount = costs.total_allowed_amount,
     total_paid_amount = costs.total_paid_amount
-from
-    costs
-where
-    costs.admit_id = aai.derived_uth_admission_id
-and data_source = '{data_source}';''')
+from costs
+where costs.data_source = a.data_source
+and costs.uth_member_id = a.uth_member_id
+and costs.admit_id = a.admit_id
+;''')
     return cursor.rowcount
 
 def run_step_three(variable_dict):
 
-    step_three_pipeline = [insert_ip_admit_claims] #, dw_import, dw_import_claims, admit_costs_update]
+    step_three_pipeline = [insert_ip_admit_claims, admit_costs_update] #,  insert_ip_admit_claims, dw_import, dw_import_claims]
     sequence_description = f'IP Acute Admit: Step Three {variable_dict["data_source"]}'
     print('running: {}'.format(sequence_description))
     pipeline_runner(step_three_pipeline, sequence_description, variable_dict)
@@ -500,23 +503,24 @@ if __name__ == '__main__':
         with df_con.cursor() as cursor:
 
             # clears tables from step 1
-            run_step_zero()
+            # run_step_zero()
 
             data_sources = [
-                            'mdcd',
-                            'mcpp', 'mhtw', 
-                            'mcrt', 'mcrn',
-                            'optz',
-                            'optd',
-                            'truc', 
-                            'trum',
+                            # 'mdcd',
+                            # 'mcpp', 
+                            'mhtw', 
+                            # 'mcrt', 'mcrn',
+                            # 'optz',
+                            # 'optd',
+                            # 'truc', 
+                            # 'trum',
                             ]
 
             for data_source in data_sources:
                 print(data_source)
 
                 # inserts all inpatient claims; adds a group identifier
-                run_step_one(data_source)
+                # run_step_one(data_source)
 
                 cursor.execute(f'''select distinct data_source, pat_group
                             from dev.gm_dw_ip_window_step_2
@@ -532,7 +536,7 @@ if __name__ == '__main__':
                     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
                                     'pat_group': pat_group[1], 
                                     'output_table': output_table}
-                    run_step_two(variable_dict)
+                    # run_step_two(variable_dict)
         
                 # insert all claims within ip window and move to DW
                 variable_dict = {'df_con': df_con, 'data_source': data_source, 
