@@ -458,6 +458,8 @@ def dw_import_claims(cursor, data_source, **kwargs):
 @std_out_logger
 @db_logger(log_name)
 def admit_costs_update(cursor, data_source, **kwargs):
+    ''' Calculate total costs for an admit episode'''
+
     cursor.execute(f'''
 with costs as (
     select
@@ -506,17 +508,17 @@ if __name__ == '__main__':
         with df_con.cursor() as cursor:
 
             # clears tables from step 1
-            # run_step_zero()
+            run_step_zero()
 
             data_sources = [
-                            # 'mdcd',
-                            # 'mcpp', 
-                            # 'mhtw', 
-                            # 'mcrt', 'mcrn',
-                            # 'optz',
+                            'mdcd',
+                            'mcpp', 
+                            'mhtw', 
+                            'mcrt', 'mcrn',
+                            'optz',
                             'optd',
-                            # 'truc', 
-                            # 'trum',
+                            'truc', 
+                            'trum',
                             ]
 
             for data_source in data_sources:
