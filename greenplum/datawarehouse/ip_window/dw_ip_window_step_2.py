@@ -206,8 +206,8 @@ def ip_window_wrapper(clm_df):
                                                       max_bill_type=('bill_type', 'max'),
                                                       member_id_src=('member_id_src', 'first'))
     
-    final_ip_group['missing_terminal_status'] = (final_ip_group['min_bill_type'].isin(['111', '114', '117'])) & (final_ip_group['max_bill_type'].isin(['111', '114', '117']))
-    final_ip_group['missing_terminal_status_117'] = (final_ip_group['min_bill_type'] != final_ip_group['max_bill_type']) & (final_ip_group['max_bill_type'] == '117')
+    final_ip_group['missing_terminal_status'] = ~((final_ip_group['min_bill_type'].isin(['111', '114', '117'])) & (final_ip_group['max_bill_type'].isin(['111', '114', '117'])))
+    final_ip_group['missing_terminal_status_117'] = (final_ip_group['min_bill_type'] != final_ip_group['max_bill_type']) & (final_ip_group['max_bill_type'] == '117' | final_ip_group['min_bill_type'] == '117')
     print(final_ip_group.shape[0])
 
     # set in column order for load
