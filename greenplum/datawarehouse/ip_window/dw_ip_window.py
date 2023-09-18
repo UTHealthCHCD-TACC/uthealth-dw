@@ -200,10 +200,19 @@ insert into dev.gm_dw_ip_window_step_2 (
     claim_id_src,
     pat_group
 )
-with all_inp as (
+with pat_ids as (
+	select distinct uth_member_id
+	from dev.gm_dw_ip_window_step_1
+	where data_source = '{data_source}'
+),
+pat_groups as (
+	select uth_member_id, ntile(10) over (order by uth_member_id) as pat_group
+	from pat_ids
+),
+all_inp as (
 select
     data_source,
-    uth_member_id,
+    a.uth_member_id,
     uth_claim_id,
     min(admit_date) as admit_date,
     max(discharge_date) as discharge_date,
@@ -211,17 +220,22 @@ select
     bill_type,
     member_id_src,
     claim_id_src,
-    dense_rank() over (order by data_source, uth_member_id) / 1000000 as pat_group
-from dev.gm_dw_ip_window_step_1
-where data_source = '{data_source}'
+    b.pat_group
+    --ntile(10) over (order by uth_member_d) as pat_group
+    --dense_rank() over (order by data_source, uth_member_id) / 1000000 as pat_group
+from dev.gm_dw_ip_window_step_1 a
+join pat_groups b
+on a.uth_member_id = b.uth_member_id
+and a.data_source = '{data_source}'
 group by
     data_source,
-    uth_member_id,
+    a.uth_member_id,
     uth_claim_id,
     bill_type,
     discharge_status,
     member_id_src,
-    claim_id_src
+    claim_id_src,
+    pat_group
 )
 select
     distinct ip.data_source,
@@ -507,19 +521,20 @@ if __name__ == '__main__':
 
         with df_con.cursor() as cursor:
 
-            # clears tables from step 1
-            run_step_zero()
-
             data_sources = [
                             'mdcd',
                             'mcpp', 
                             'mhtw', 
-                            'mcrt', 'mcrn',
+                            'mcrt',
+                            'mcrn',
                             'optz',
                             'optd',
                             'truc', 
                             'trum',
                             ]
+
+            # clears tables from step 1
+            run_step_zero()
 
             for data_source in data_sources:
                 print(data_source)
