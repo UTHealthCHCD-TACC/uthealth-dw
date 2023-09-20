@@ -133,8 +133,7 @@ from (
  
 update dw_staging.mcd_claim_diag set icd_version = null where icd_version not in ('0','9');
 update dw_staging.mcd_claim_diag set load_date = current_date;
-vacuum full analyze dw_staging.mcd_claim_diag;
+vacuum analyze dw_staging.mcd_claim_diag;
 grant select on dw_staging.mcd_claim_diag to uthealth_analyst;
-alter table dw_staging.mcd_claim_diag owner to uthealth_dev;
 
 

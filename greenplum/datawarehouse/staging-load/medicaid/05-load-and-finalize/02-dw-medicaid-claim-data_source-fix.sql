@@ -34,6 +34,8 @@ distributed by (member_id_src);
 
 analyze dw_staging.mcpp_mhtw_client_nbr_yrmonth;
 
+--select * from dw_staging.mcpp_mhtw_client_nbr_yrmonth;
+
 /*********************
  * Create master list of claims from claim_header originating
  * from members enrolled in CHIP PERI and HTW
@@ -41,19 +43,26 @@ analyze dw_staging.mcpp_mhtw_client_nbr_yrmonth;
 drop table if exists dw_staging.mcpp_mhtw_claims;
 
 create table dw_staging.mcpp_mhtw_claims as
-select a.claim_id_src, a.from_date_of_service, b.*
-from data_warehouse.claim_header_1_prt_mdcd a
-inner join dw_staging.mcpp_mhtw_client_nbr_yrmonth b
-on a.member_id_src = b.member_id_src
-	and a.from_date_of_service between b.month_start and b.month_end
+select data_source, claim_id_src, uth_member_id, member_id_src
+from (
+	select a.claim_id_src, a.from_date_of_service, b.*
+	from data_warehouse.claim_header_1_prt_mdcd a
+	inner join dw_staging.mcpp_mhtw_client_nbr_yrmonth b
+	on a.member_id_src = b.member_id_src
+		and a.from_date_of_service between b.month_start and b.month_end) t
+group by 1, 2, 3, 4
 distributed by (claim_id_src);
 
 analyze dw_staging.mcpp_mhtw_claims;
+
+--select * from dw_staging.mcpp_mhtw_claims;
 
 /*********************
  * Relabel claims for each table
  * 
  * Update claim_header last
+ * 
+ * Note: null uth_member_ids are for people with a claim who are NOT in enrollment tables
  *********************/
 --claim_detail
 update data_warehouse.claim_detail a
@@ -108,9 +117,148 @@ where a.data_source = 'mdcd' and
 
 vacuum analyze data_warehouse.pharmacy_claims;
 
+/****************************************************************************************************/
+/*hotfix: add in the last few missing uth_member_ids for member_ids that are not in enrollment table*/
+/****************************************************************************************************/
+--first generate a shortlist of medicaid members who have claim_created_flag = true
+create table dw_staging.mcd_dim_memid_clm_created_temp
+as select * from data_warehouse.dim_uth_member_id
+where data_source = 'mdcd' and claim_created_id = true
+distributed by(uth_member_id);
 
-/***QA: Count how many null uth_member_ids are left in each table***/
-select count(*) from data_warehouse.claim_detail where uth_member_id is null;
+vacuum analyze dw_staging.mcd_dim_memid_clm_created_temp;
+
+--select * from dw_staging.mcd_dim_memid_clm_created_temp;
+
+--claim_detail
+update data_warehouse.claim_detail a
+set uth_member_id = b.uth_member_id
+from dw_staging.mcd_dim_memid_clm_created_temp b
+where a.data_source = 'mdcd' and
+	a.uth_member_id is null and
+	a.member_id_src = b.member_id_src;
+
+vacuum analyze data_warehouse.claim_detail_1_prt_mdcd;
+
+--claim_diag
+update data_warehouse.claim_diag a
+set uth_member_id = b.uth_member_id
+from dw_staging.mcd_dim_memid_clm_created_temp b
+where a.data_source = 'mdcd' and
+	a.uth_member_id is null and
+	a.member_id_src = b.member_id_src;
+
+vacuum analyze data_warehouse.claim_diag_1_prt_mdcd;
+
+--claim_icd_proc
+update data_warehouse.claim_icd_proc a
+set uth_member_id = b.uth_member_id
+from dw_staging.mcd_dim_memid_clm_created_temp b
+where a.data_source = 'mdcd' and
+	a.uth_member_id is null and
+	a.member_id_src = b.member_id_src;
+
+vacuum analyze data_warehouse.claim_icd_proc_1_prt_mdcd;
+
+--claim_header
+update data_warehouse.claim_header a
+set uth_member_id = b.uth_member_id
+from dw_staging.mcd_dim_memid_clm_created_temp b
+where a.data_source = 'mdcd' and
+	a.uth_member_id is null and
+	a.member_id_src = b.member_id_src;
+
+vacuum analyze data_warehouse.claim_header_1_prt_mdcd;
+
+
+/****************************************************************************************************
+ * pharmacy_claims - there are no claim_created members here
+ * but there are a whole bunch of missing uth_member_ids
+ * so update from the dim table
+*****************************************************************************************************/
+
+drop table if exists dw_staging.mcd_dim_uth_member_id_temp;
+
+create table dw_staging.mcd_dim_uth_member_id_temp as
+select * from data_warehouse.dim_uth_member_id
+where data_source = 'mdcd'
+distributed by (member_id_src);
+
+vacuum analyze dw_staging.mcd_dim_uth_member_id_temp;
+
+update data_warehouse.pharmacy_claims_1_prt_mdcd a
+set uth_member_id = b.uth_member_id
+from dw_staging.mcd_dim_uth_member_id_temp b
+where a.year = 2022
+	a.uth_member_id is null and
+	a.member_id_src = b.member_id_src;
+
+vacuum analyze data_warehouse.pharmacy_claims; --about 3 minutes
+
+/* QA - we still got nulls?
+select year, count(*) from data_warehouse.pharmacy_claims_1_prt_mdcd
+where uth_member_id is null group by 1 order by 1;
+
+--if pass QA then drop temp table
+drop table if exists dw_staging.mcd_dim_uth_member_id_temp;
+*/
+
+/*Hotfix: Fix missing uth_member_ids in the dim_uth_rx_claim_id table*/
+
+drop table if exists dw_staging.mcd_pharm_clms_subset_temp;
+
+create table dw_staging.mcd_pharm_clms_subset_temp as
+select distinct data_source, uth_member_id, rx_claim_id_src 
+from data_warehouse.pharmacy_claims
+where data_source in ('mdcd', 'mhtw', 'mcpp')
+and year between 2021 and 2022
+distributed by (rx_claim_id_src);
+
+vacuum analyze dw_staging.mcd_pharm_clms_subset_temp;
+
+update data_warehouse.dim_uth_rx_claim_id a
+set uth_member_id = b.uth_member_id,
+	data_source = b.data_source
+from dw_staging.mcd_pharm_clms_subset_temp b
+where a.data_source in ('mdcd', 'mhtw', 'mcpp') and
+	a.uth_member_id is null and
+	a.rx_claim_id_src = b.rx_claim_id_src;
+
+vacuum analyze data_warehouse.dim_uth_rx_claim_id;
+
+/***QA
+select * from dw_staging.mcd_pharm_clms_subset_temp;
+
+select data_source, count(*) from data_warehouse.dim_uth_rx_claim_id
+where year = 2022 and data_source in ('mdcd', 'mcpp', 'mhtw') and uth_member_id is null
+group by 1;
+***/
+
+/*
+
+ */
+
+
+
+
+/***QA: Count how many null uth_member_ids are left in each table**
+select count(*) from data_warehouse.claim_detail 
+where data_source in ('mdcd', 'mhtw', 'mcpp') and uth_member_id is null;
+
+select count(*) from data_warehouse.claim_diag 
+where data_source in ('mdcd', 'mhtw', 'mcpp') and uth_member_id is null;
+
+select count(*) from data_warehouse.claim_icd_proc
+where data_source in ('mdcd', 'mhtw', 'mcpp') and uth_member_id is null;
+
+select count(*) from data_warehouse.claim_header
+where data_source in ('mdcd', 'mhtw', 'mcpp') and uth_member_id is null;
+--18
+
+select count(*) from data_warehouse.pharmacy_claims
+where data_source in ('mdcd', 'mhtw', 'mcpp') and uth_member_id is null;
+--41,122 (but there are a metric ton of rows, so good enough)
+*/
 
 /********************************
  * change update_log
@@ -122,23 +270,15 @@ drop table if exists backup.update_log;
 create table backup.update_log as
 select * from data_warehouse.update_log;
 
-
---update main tables - not partitioned tables
+--update update_log (last update 9/20/23)
 update data_warehouse.update_log
-set data_last_updated = '04-04-2023'::date,
-	details = 'CHIP Perinatal and HTW split out to their own partitions'
+set data_last_updated = current_date,
+	details = 'Medicaid data updated for FY22'
 where schema_name = 'data_warehouse' and
 	(table_name like 'claim%' or 
 	table_name = 'pharmacy_claims') and
-	table_name not like '%1%';
-
---update partitioned tables
-update data_warehouse.update_log
-set data_last_updated = '04-04-2023'::date,
-	details = 'CHIP Perinatal and HTW split out to their own partitions'
-where schema_name = 'data_warehouse' and
-	(table_name like 'claim%' or 
-	table_name like 'pharmacy%') and
-	(table_name like '%mdcd' or
+	(table_name not like '%1%'
+	or (table_name like '%mdcd' or
 	table_name like '%mcpp' or 
-	table_name like '%mhtw');
+	table_name like '%mhtw'))
+	;

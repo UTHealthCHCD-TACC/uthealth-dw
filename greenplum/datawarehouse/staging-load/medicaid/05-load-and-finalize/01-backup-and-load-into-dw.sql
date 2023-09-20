@@ -59,7 +59,7 @@ with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
 create table backup.mdcd_member_enrollment_fiscal_yearly
-(like data_warehouse.member_enrollment_yearly including defaults) 
+(like data_warehouse.member_enrollment_fiscal_yearly including defaults) 
 with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
@@ -102,7 +102,7 @@ with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
 create table backup.mhtw_member_enrollment_fiscal_yearly
-(like data_warehouse.member_enrollment_yearly including defaults) 
+(like data_warehouse.member_enrollment_fiscal_yearly including defaults) 
 with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
@@ -145,7 +145,7 @@ with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
 create table backup.mcpp_member_enrollment_fiscal_yearly
-(like data_warehouse.member_enrollment_yearly including defaults) 
+(like data_warehouse.member_enrollment_fiscal_yearly including defaults) 
 with (appendonly=true, orientation=row, compresstype=zlib, compresslevel=5)
 distributed by (uth_member_id);
 
@@ -187,6 +187,24 @@ alter table backup.mdcd_claim_header owner to uthealth_dev;
 alter table backup.mdcd_claim_icd_proc owner to uthealth_dev;
 alter table backup.mdcd_pharmacy_claims owner to uthealth_dev;
 
+alter table backup.mhtw_member_enrollment_monthly owner to uthealth_dev;
+alter table backup.mhtw_member_enrollment_yearly owner to uthealth_dev;
+alter table backup.mhtw_member_enrollment_fiscal_yearly owner to uthealth_dev;
+alter table backup.mhtw_claim_detail owner to uthealth_dev;
+alter table backup.mhtw_claim_diag owner to uthealth_dev;
+alter table backup.mhtw_claim_header owner to uthealth_dev;
+alter table backup.mhtw_claim_icd_proc owner to uthealth_dev;
+alter table backup.mhtw_pharmacy_claims owner to uthealth_dev;
+
+alter table backup.mcpp_member_enrollment_monthly owner to uthealth_dev;
+alter table backup.mcpp_member_enrollment_yearly owner to uthealth_dev;
+alter table backup.mcpp_member_enrollment_fiscal_yearly owner to uthealth_dev;
+alter table backup.mcpp_claim_detail owner to uthealth_dev;
+alter table backup.mcpp_claim_diag owner to uthealth_dev;
+alter table backup.mcpp_claim_header owner to uthealth_dev;
+alter table backup.mcpp_claim_icd_proc owner to uthealth_dev;
+alter table backup.mcpp_pharmacy_claims owner to uthealth_dev;
+
 alter table data_warehouse.member_enrollment_monthly owner to uthealth_dev;
 alter table data_warehouse.member_enrollment_yearly owner to uthealth_dev;
 alter table data_warehouse.member_enrollment_fiscal_yearly owner to uthealth_dev;
@@ -217,7 +235,7 @@ alter table data_warehouse.member_enrollment_yearly
 exchange partition mdcd
 with table backup.mdcd_member_enrollment_yearly;
 
-alter table data_warehouse.member_enrollment_yearly
+alter table data_warehouse.member_enrollment_fiscal_yearly
 exchange partition mdcd
 with table backup.mdcd_member_enrollment_fiscal_yearly;
 
@@ -252,6 +270,10 @@ with table backup.mhtw_member_enrollment_monthly;
 alter table data_warehouse.member_enrollment_yearly
 exchange partition mhtw
 with table backup.mhtw_member_enrollment_yearly;
+
+alter table data_warehouse.member_enrollment_fiscal_yearly
+exchange partition mhtw
+with table backup.mhtw_member_enrollment_fiscal_yearly;
 
 alter table data_warehouse.claim_detail
 exchange partition mhtw
@@ -306,16 +328,57 @@ exchange partition mcpp
 with table backup.mcpp_pharmacy_claims;
 
 /********************
- * Meat and Potatoes: Move new tables into DW - trum
+ * Meat and Potatoes Part 1: Insert enrollment tables into DW
+ * Cannot do the swap thing b/c the data sources are not all 'mdcd'
  *******************/
+insert into data_warehouse.member_enrollment_monthly
+select * from dw_staging.mcd_member_enrollment_monthly;
 
-alter table data_warehouse.member_enrollment_monthly
-exchange partition mdcd
-with table dw_staging.mcd_member_enrollment_monthly;
+insert into data_warehouse.member_enrollment_yearly
+select * from dw_staging.mcd_member_enrollment_yearly;
 
-alter table data_warehouse.member_enrollment_yearly
-exchange partition mdcd
-with table dw_staging.mcd_member_enrollment_yearly;
+insert into data_warehouse.member_enrollment_fiscal_yearly
+select * from dw_staging.mcd_member_enrollment_fiscal_yearly;
+
+/* FY22 - fiscal_yearly table was messed up, so dropped
+ * and remade
+drop table data_warehouse.member_enrollment_fiscal_yearly;
+
+create table data_warehouse.member_enrollment_fiscal_yearly
+as 
+select * from dw_staging.mcd_member_enrollment_fiscal_yearly
+distributed by(uth_member_id);
+*/
+
+/***QA
+select data_source, count(*) from data_warehouse.member_enrollment_yearly
+where data_source in ('mdcd', 'mhtw', 'mcpp') and year = 2022
+group by 1;
+/*
+mhtw	456676
+mcpp	58136
+mdcd	6111494 */
+
+select data_source, count(*) from data_warehouse.member_enrollment_fiscal_yearly
+where data_source in ('mdcd', 'mhtw', 'mcpp') and fiscal_year = 2022
+group by 1;
+/*
+mhtw	474810
+mcpp	75052
+mdcd	6228776 */
+
+select data_source, count(*) from data_warehouse.member_enrollment_monthly
+where data_source in ('mdcd', 'mhtw', 'mcpp') and fiscal_year = 2022
+group by 1;
+/*
+mhtw	4943332
+mcpp	331519
+mdcd	68767080 */
+*/
+
+/********************
+ * Meat and Potatoes Part 2: Swapy swapy
+ *******************/
 
 alter table data_warehouse.claim_detail
 exchange partition mdcd
@@ -337,6 +400,7 @@ alter table data_warehouse.pharmacy_claims
 exchange partition mdcd
 with table dw_staging.mcd_pharmacy_claims;
 
+
 /*******
  * QA: Did things swap over properly?
 
@@ -345,25 +409,24 @@ group by month_year_id
 having count(*) > 100
 order by month_year_id desc limit 5;
 
---goes up to Sept 2022 so good, it worked
+--goes up to Aug 2022 so good, it worked
 
-202209	18034853
-202208	18075137
-202207	18084648
-202206	18131623
-202205	18151353
+202208	5989079
+202207	5942288
+202206	5899360
+202205	5858741
+202204	5820676
 
-select month_year_id, count(*) from data_warehouse.member_enrollment_monthly_1_prt_trum
-group by month_year_id
-having count(*) > 100
-order by month_year_id desc limit 5;
+select from_date_of_service, count(*) from data_warehouse.claim_icd_proc_1_prt_mdcd
+group by from_date_of_service
+having count(*) > 10
+order by from_date_of_service desc limit 5;
 
-202209	1444491
-202208	1479933
-202207	1480737
-202206	1481554
-202205	1481130
-
+2022-08-31	4746
+2022-08-30	5142
+2022-08-29	5849
+2022-08-28	3322
+2022-08-27	3223
  */
 
 /********************************

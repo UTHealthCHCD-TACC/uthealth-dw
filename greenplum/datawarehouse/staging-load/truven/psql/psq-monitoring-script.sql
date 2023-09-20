@@ -41,7 +41,7 @@ order by state, usename;
 /******************
  * Kill Query
  ******************/
-select pg_terminate_backend(218217);
+select pg_terminate_backend(101404);
 
 
 /****************
