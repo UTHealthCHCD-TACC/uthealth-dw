@@ -1,5 +1,5 @@
 /****************************************
- * Purpose: This script takes goes back and modifies the MONTHLY enrollment
+ * Purpose: This script goes back and modifies the MONTHLY enrollment
  * table. It can only be run after claims tables have been built, though.
  * 
  * This script will
@@ -9,21 +9,22 @@
  * 		3) It then fills member demographics pulled from the yearly enrollment table if it exists
  * 			or claims tables (proc and header tables) otherwise
  * 		4) This table is then appended to the monthly enrollment table with the claim_created_flag set to TRUE
+ * 
+ * Date     | Author  | Note
+ * ******************************************
+ * 04/20/23 | Xiaorui | Script created
+ * 09/20/23 | Xiaorui | Updated for FY22
 *****************************************/
-
-
-/**************
- * CAUTION: Current iteration of code operates using the LIVE tables
- * If running again, change code to run on dw_staging
- *************/
 
 /*********************
  * Create list of member_ids and year-months based on monthly enrollment table
+ * select distinct on mem_id and month-year only, not data source
+ * or else we end up with a duplicate error
  * ******************/
 drop table if exists dw_staging.claim_created_memid_yrmonth;
 
 create table dw_staging.claim_created_memid_yrmonth as
-select data_source, member_id_src, month_year_id,
+select distinct member_id_src, month_year_id,
 	to_date((month_year_id*100+01)::text, 'yyyymmdd') as month_start,
 	(to_date((month_year_id*100+01)::text, 'yyyymmdd') + interval '1 month - 1 day')::date as month_end
 from data_warehouse.member_enrollment_monthly
@@ -56,18 +57,21 @@ and b.member_id_src is null;
 --claims anyway - enrollment table needed to determine that
 update dw_staging.claim_created_unmapped_claims a
 set in_yearly_table = case when b.member_id_src is not null then 1 else 0 end
-from dw_staging.mcd_member_enrollment_fiscal_yearly_1_prt_mdcd b
-where b.member_id_src = a.member_id_src and b.fiscal_year = a.fiscal_year;
+from data_warehouse.member_enrollment_fiscal_yearly b
+where b.data_source = 'mdcd' and
+b.member_id_src = a.member_id_src and b.fiscal_year = a.fiscal_year;
 
 analyze dw_staging.claim_created_unmapped_claims;
 
 --see how many map on a matching fiscal year
 select sum(in_yearly_table) as sum_in_yearly_table,
 	sum(case when in_yearly_table = 0 then 1 else 0 end) as sum_not_in_yearly,
-	count(*) as total_unmapped
+	count(*) as total_unmapped,
+	sum(in_yearly_table) * 1.0 / count(*) as in_yrly_pct
 from dw_staging.claim_created_unmapped_claims;
 --in_yearly		not_in_yearly	total_unmapped
---	3820127		10571466		14391593
+--	3820127		10571466		14391593  -FY 2021
+-- 3982507	11245895	15228402	0.26151837861910921448  --FY 2022
 select 3820127.0/14391593;
 -- so about 26.5% map exactly
 
@@ -114,7 +118,6 @@ with cte as (select *,
 	row_number() over (partition by member_id_src, month_year_id
 		order by count desc) as rn
 		from dw_staging.claim_created_sex_counts)
-
 select * from cte
 where rn = 1;
 
@@ -132,7 +135,6 @@ with cte as (select *,
 	row_number() over (partition by member_id_src, month_year_id
 		order by count desc) as rn
 		from dw_staging.claim_created_dob_counts)
-
 select * from cte
 where rn = 1;
 
@@ -151,7 +153,6 @@ with cte as (select *,
 	row_number() over (partition by member_id_src, month_year_id
 		order by count desc) as rn
 		from dw_staging.claim_created_plan_counts)
-
 select * from cte
 where rn = 1;
 
@@ -217,15 +218,14 @@ insert into dw_staging.claim_created_enrollment_for_insert (
 	claim_created_flag, rx_coverage, fiscal_year,
 	load_date, table_id_src, member_id_src
 )
-
 select 'mdcd' as data_source, floor(a.month_year_id/100) as "year", a.uth_member_id,
 	a.month_year_id, b.gender_cd, b.race_cd, b.dob_derived,
 	b.state, b.zip5, b.zip3, true as claim_created_flag, 1 as rx_coverage,
 	a.fiscal_year, current_date as load_date, 'imputed' as table_id_src, a.member_id_src
 from dw_staging.claim_created_distinct_month_year_only a 
-inner join data_warehouse.member_enrollment_fiscal_yearly_1_prt_mdcd b
+inner join data_warehouse.member_enrollment_fiscal_yearly b
 on a.member_id_src = b.member_id_src and a.fiscal_year = b.fiscal_year
-where a.in_yearly_table = 1;
+where a.in_yearly_table = 1 and b.data_source = 'mdcd';
 --Updated Rows	3820127
 
 --Fill in the data for claims where we pulled member demographics from proc and header tables
@@ -235,7 +235,6 @@ insert into dw_staging.claim_created_enrollment_for_insert (
 	claim_created_flag, rx_coverage, fiscal_year,
 	load_date, table_id_src, member_id_src
 )
-
 select 'mdcd' as data_source, floor(a.month_year_id/100) as "year", a.uth_member_id,
 	a.month_year_id, b.sex, b.dob::date,
 	true as claim_created_flag, 1 as rx_coverage,
@@ -299,7 +298,7 @@ where b.data_source in ('mdcd', 'mcpp', 'mhtw');
 
 insert into data_warehouse.member_enrollment_monthly_1_prt_mdcd
 select * from dw_staging.claim_created_enrollment_for_insert;
---Updated Rows	4008497
+--Updated Rows	4214530
 
 --vacuum analyze it
 vacuum analyze data_warehouse.member_enrollment_monthly_1_prt_mdcd;
@@ -321,7 +320,7 @@ drop table if exists dw_staging.claim_created_unique_memids;
 drop table if exists dw_staging.claim_created_unmapped_claims;
 
 /********************************
- * change update_log
+ * change update_log (last updated 9/20/23)
  *******************************/
 --backup update_log
 drop table if exists backup.update_log;
@@ -330,12 +329,12 @@ create table backup.update_log as
 select * from data_warehouse.update_log;
 
 update data_warehouse.update_log
-set data_last_updated = '04-07-2023'::date,
+set data_last_updated = current_date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly';
 
 update data_warehouse.update_log
-set data_last_updated = '04-07-2023'::date,
+set data_last_updated = current_date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
 

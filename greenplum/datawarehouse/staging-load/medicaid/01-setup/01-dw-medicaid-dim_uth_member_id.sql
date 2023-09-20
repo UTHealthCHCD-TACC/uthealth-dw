@@ -97,9 +97,7 @@ from cte_distinct_member
 vacuum analyze data_warehouse.dim_uth_member_id;
 
 
-/*
----------member ids claim created 
-vacuum analyze data_warehouse.dim_uth_member_id;
+--Add member IDs who exist only in claims
 
 insert into data_warehouse.dim_uth_member_id  (member_id_src, data_source, uth_member_id, claim_created_id)
 with cte_distinct_member as ( 
@@ -118,13 +116,13 @@ with cte_distinct_member as (
  )
 select v_member_id, v_data_source, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq'), true as claim_created
 from cte_distinct_member ;
-*/
+
 
 /******************
  * Hotfix: I accidentally inserted everyone from FY22 as mdcd, so let's fix that
  * 
  * TO DO: Delete people who are assigned medicaid who are ONLY chip peri or mhtw from dim
- */
+
 
 delete from data_warehouse.dim_uth_member_id
 where data_source = 'mdcd' and
@@ -169,5 +167,5 @@ where uth_member_id in (
 );
 
 --ok that fixed it
-
+ */
 

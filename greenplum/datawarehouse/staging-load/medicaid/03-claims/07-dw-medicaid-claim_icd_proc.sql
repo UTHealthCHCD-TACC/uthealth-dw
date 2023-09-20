@@ -13,6 +13,8 @@
  * 								 and also made it into a loop for easier troubleshooting
  * ------------------------------------------------------------------------------------------------------
  *  xiaorui		|| 09/05/2023 || changed mcd_icd_proc to mcd_icd_proc to be consistent
+ * 								 and changed distribution key to match data_warehouse (uth_member_id)
+ * 								 so that we can swap partitions
  * */
 
 --create empty etl table
@@ -30,7 +32,7 @@ create table dw_staging.mcd_icd_proc_etl (
 	icd_version varchar(8),
 	proc_cd_trimmed varchar(20),
 	src_table varchar(50)
-) distributed by (icn);
+) distributed by (pcn);
 
 /***************************************
 Load icd proc codes from clm tables
@@ -201,7 +203,7 @@ with (
 	orientation = row,
 	compresstype = zlib,
 	compresslevel = 5)
-distributed by (uth_claim_id);
+distributed by (uth_member_id);
 
 --select * from dw_staging.mcd_claim_icd_proc;
 

@@ -9,6 +9,11 @@
  * 
  * ****************************************************************************************************** */
 
+--09/14/23
+--make Caroline's tables in dev and public editable
+alter default privileges for user cms2 in schema dev grant all on tables to uthealth_analyst;
+alter default privileges for user cms2 in schema public grant all on tables to uthealth_analyst;
+
 --09/13/23
 --Did uthealth_analyst not have access to future-created tables in dev?
 grant all on all tables in schema dev to uthealth_analyst;
