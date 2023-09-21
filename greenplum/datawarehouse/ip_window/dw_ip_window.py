@@ -523,24 +523,24 @@ if __name__ == '__main__':
 
             data_sources = [
                             'mdcd',
-                            'mcpp', 
-                            'mhtw', 
-                            'mcrt',
-                            'mcrn',
-                            'optz',
-                            'optd',
-                            'truc', 
-                            'trum',
+                            # 'mcpp', 
+                            # 'mhtw', 
+                            # 'mcrt',
+                            # 'mcrn',
+                            # 'optz',
+                            # 'optd',
+                            # 'truc', 
+                            # 'trum',
                             ]
 
             # clears tables from step 1
-            run_step_zero()
+            # run_step_zero()
 
             for data_source in data_sources:
                 print(data_source)
 
                 # inserts all inpatient claims; adds a group identifier
-                run_step_one(data_source)
+                # run_step_one(data_source)
 
                 cursor.execute(f'''select distinct data_source, pat_group
                             from dev.gm_dw_ip_window_step_2
@@ -556,7 +556,7 @@ if __name__ == '__main__':
                     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
                                     'pat_group': pat_group[1], 
                                     'output_table': output_table}
-                    run_step_two(variable_dict)
+                    # run_step_two(variable_dict)
         
                 # insert all claims within ip window and move to DW
                 variable_dict = {'df_con': df_con, 'data_source': data_source, 
