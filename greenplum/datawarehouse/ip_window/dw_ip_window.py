@@ -368,7 +368,8 @@ def dw_import(cursor, data_source, **kwargs):
     insert into data_warehouse.admission_acute_ip 
     (
         data_source,
-        year,
+        calendar_year,
+        fiscal_year,
         derived_uth_admission_id,
         uth_member_id,
         admit_date,
@@ -377,7 +378,7 @@ def dw_import(cursor, data_source, **kwargs):
         discharge_status,
         days_to_readmit,
         readmit_30,
-        paid_status,
+        --paid_status,
         member_id_src,
         insert_ts,
         total_charge_amount,
@@ -387,6 +388,7 @@ def dw_import(cursor, data_source, **kwargs):
     select
         data_source,
         extract(year from admit_date),
+        dev.fiscal_year_func(admit_date),
         admit_id,
         uth_member_id,
         admit_date,
@@ -398,10 +400,10 @@ def dw_import(cursor, data_source, **kwargs):
         enc_discharge_status,
         admit_date - lag (discharge_date) over ( partition by uth_member_id order by admit_date) as days_to_readmit,
         case 
-            when admit_date - lag (discharge_date) over ( partition by uth_member_id order by admit_date)<=30 then 1
+            when admit_date - lag (discharge_date) over (partition by uth_member_id order by admit_date)<=30 then 1
             else 0
         end as readmit_30,
-        paid_status,
+        --paid_status,
         member_id_src,
         insert_ts,
         total_charge_amount,
@@ -422,11 +424,9 @@ def dw_import_claims(cursor, data_source, **kwargs):
     cursor.execute(f'''delete from data_warehouse.admission_acute_ip_claims where data_source = '{data_source}';''')
 
     cursor.execute(f'''
-    insert
-        into
-        data_warehouse.admission_acute_ip_claims (
+    insert into data_warehouse.admission_acute_ip_claims (
         data_source,
-        year,
+        calendar_year,
         derived_uth_admission_id,
         uth_member_id,
         enc_id,
@@ -501,10 +501,19 @@ and costs.admit_id = a.admit_id
 
 def run_step_three(variable_dict):
 
-    step_three_pipeline = [insert_ip_admit_claims, admit_costs_update] #,  insert_ip_admit_claims, dw_import, dw_import_claims]
+    step_three_pipeline = [insert_ip_admit_claims, admit_costs_update]  
     sequence_description = f'IP Acute Admit: Step Three {variable_dict["data_source"]}'
     print('running: {}'.format(sequence_description))
     pipeline_runner(step_three_pipeline, sequence_description, variable_dict)
+    print('completed', end=': ')
+    print(sequence_description)
+
+def run_step_four(variable_dict):
+    # Moves tables from dev to data_warehouse
+    step_four_pipeline = [dw_import, dw_import_claims]  
+    sequence_description = f'IP Acute Admit: Step Four {variable_dict["data_source"]}'
+    print('running: {}'.format(sequence_description))
+    pipeline_runner(step_four_pipeline, sequence_description, variable_dict)
     print('completed', end=': ')
     print(sequence_description)
 
@@ -523,14 +532,14 @@ if __name__ == '__main__':
 
             data_sources = [
                             'mdcd',
-                            # 'mcpp', 
-                            # 'mhtw', 
-                            # 'mcrt',
-                            # 'mcrn',
-                            # 'optz',
-                            # 'optd',
-                            # 'truc', 
-                            # 'trum',
+                            'mcpp', 
+                            'mhtw', 
+                            'mcrt',
+                            'mcrn',
+                            'optz',
+                            'optd',
+                            'truc', 
+                            'trum',
                             ]
 
             # clears tables from step 1
@@ -542,26 +551,31 @@ if __name__ == '__main__':
                 # inserts all inpatient claims; adds a group identifier
                 # run_step_one(data_source)
 
-                cursor.execute(f'''select distinct data_source, pat_group
-                            from dev.gm_dw_ip_window_step_2
-                            where data_source in ('{data_source}')
-                            order by data_source, pat_group
-                            ;''')
-                results = cursor.fetchall()
-                print(results)
+                # cursor.execute(f'''select distinct data_source, pat_group
+                #             from dev.gm_dw_ip_window_step_2
+                #             where data_source in ('{data_source}')
+                #             order by data_source, pat_group
+                #             ;''')
+                # results = cursor.fetchall()
+                # print(results)
 
-                # iterates through the groups to determine ip window
-                # allows for processing in memory
-                for pat_group in results:
-                    variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
-                                    'pat_group': pat_group[1], 
-                                    'output_table': output_table}
-                    # run_step_two(variable_dict)
+                # # iterates through the groups to determine ip window
+                # # allows for processing in memory
+                # for pat_group in results:
+                #     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
+                #                     'pat_group': pat_group[1], 
+                #                     'output_table': output_table}
+                #     # run_step_two(variable_dict)
         
-                # insert all claims within ip window and move to DW
-                variable_dict = {'df_con': df_con, 'data_source': data_source, 
-                                'output_table': output_table+'_claim'}
-                run_step_three(variable_dict)
+                # # insert all claims within ip window
+                # variable_dict = {'df_con': df_con, 'data_source': data_source, 
+                #                 'output_table': output_table+'_claim'}
+                
+                # run_step_three(variable_dict)
+
+                # move to DW, to be done AFTER QA
+                variable_dict = {'df_con': df_con, 'data_source': data_source}
+                run_step_four(variable_dict)
     except:
         raise
     finally:
