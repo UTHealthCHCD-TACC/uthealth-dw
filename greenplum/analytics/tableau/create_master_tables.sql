@@ -32,7 +32,8 @@ partition by list(data_source)
 (
     partition optz values ('optz'),
     partition optd values ('optd'),
-    partition truv values ('truv'),
+    partition trum values ('trum'),
+    partition truc values ('truc')
     partition mcrt values ('mcrt'),
     partition mcrn values ('mcrn'),
     partition mdcd values ('mdcd'),
@@ -101,7 +102,8 @@ partition by list(data_source)
 (
     partition optz values ('optz'),
     partition optd values ('optd'),
-    partition truv values ('truv'),
+    partition trum values ('trum'),
+    partition truc values ('truc'),
     partition mcrt values ('mcrt'),
     partition mcrn values ('mcrn'),
     partition mdcd values ('mdcd'),
