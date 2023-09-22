@@ -499,6 +499,24 @@ and costs.admit_id = a.admit_id
 ;''')
     return cursor.rowcount
 
+@std_out_logger
+@db_logger(log_name)
+def update_log(cursor, **kwargs):
+    query = '''vacuum analyze data_warehouse.admission_acute_ip_claims;'''
+    cursor.execute(query)
+
+    query = '''vacuum analyze data_warehouse.admission_acute_ip;'''
+    cursor.execute(query)
+
+    query = '''
+    update data_warehouse.update_log
+    set data_last_updated = current_date,
+        last_vacuum_analyze = current_date
+    where schema_name = 'data_warehouse' and table_name like 'admission_acute_ip%';'''
+
+    cursor.execute(query)
+
+
 def run_step_three(variable_dict):
 
     step_three_pipeline = [insert_ip_admit_claims, admit_costs_update]  
@@ -510,7 +528,7 @@ def run_step_three(variable_dict):
 
 def run_step_four(variable_dict):
     # Moves tables from dev to data_warehouse
-    step_four_pipeline = [dw_import, dw_import_claims]  
+    step_four_pipeline = [dw_import, dw_import_claims, update_log]  
     sequence_description = f'IP Acute Admit: Step Four {variable_dict["data_source"]}'
     print('running: {}'.format(sequence_description))
     pipeline_runner(step_four_pipeline, sequence_description, variable_dict)
