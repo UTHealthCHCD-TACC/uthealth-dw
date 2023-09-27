@@ -136,7 +136,7 @@ def fill_claims_table(connection, data_source, year):
     '''
 
         cursor.execute(insert_query)
-        # cursor.execute(f'vacuum analyze dev.ip_master_temp_{data_source};')
+        cursor.execute(f'vacuum analyze dev.ip_master_temp_{data_source};')
 
 def swap_partitions(cursor, data_source):
     # once we gotten the refreshed data into a seperate table, swap current partition with our new table
@@ -157,31 +157,20 @@ def drop_temp_tables(cursor, data_source):
 
 if __name__ == '__main__':
 
-    # connection = psycopg2.connect(get_dsn()+' tcp_keepalives_idle=60*30 keepalives_idle=60')
-    config = dotenv_values('H:/uth_helpers/dw.env')
-    connection = psycopg2.connect(
-                                    database=config['dbname'],
-                                    host=config['host'],
-                                    port=config['port'],
-                                    user=config['user'],
-                                    password=keyring.get_password(config['dbname'], config['user']),
-                                    keepalives=1,
-                                    keepalives_idle=30,
-                                    keepalives_interval=10
-                                    )
+    connection = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
     connection.autocommit = True
-    # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd', 'mhtw', 'mcpp'
-    data_sources = ['truv']
+    # 'optz', 'truc', 'trum', 'mcrt', 'mcrn', 'mdcd', 'mhtw', 'mcpp'
+    data_sources = ['truc']
     # connection.close()
     #note that not all data sources have data for the same years. example: mcpp starts at 2015
-     #{'start_year':2012, 'end_year':2021}
+     #{'start_year':2014, 'end_year':2022}
     
     for data_source in data_sources:
         print(data_source)
         with connection.cursor() as cursor:
-            # create_temp_table(cursor, data_source)
+            create_temp_table(cursor, data_source)
             create_dx_table(cursor, data_source)
-        years = tqdm(range(2015, 2019))
+        years = tqdm(range(2014, 2023))
         for year in years:
             years.set_description(str(year))
             with connection.cursor() as cursor:
@@ -189,6 +178,6 @@ if __name__ == '__main__':
             
             fill_claims_table(connection, data_source, year)
 
-        # with connection.cursor() as cursor:
-            # swap_partitions(cursor, data_source)
-            # drop_temp_tables(cursor, data_source)
+        with connection.cursor() as cursor:
+            swap_partitions(cursor, data_source)
+            drop_temp_tables(cursor, data_source)
