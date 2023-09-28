@@ -3,13 +3,14 @@
  * Unlike with the master_claims table, we can create this table without splitting up into multiple steps (by year, data_source)
  */
 
-delete from tableau.master_enrollment;
+delete from tableau.master_enrollment where data_source = '';
 
 with enrl as(
 select data_source, year, uth_member_id, gender_cd, race_cd, age_derived, 
 		state, plan_type, bus_cd, total_enrolled_months
 from data_warehouse.member_enrollment_yearly a 
 where a.year >= 2014
+and data_source = ''
 ),
 cond  as (
 select data_source, "year" , uth_member_id,
@@ -17,7 +18,7 @@ select data_source, "year" , uth_member_id,
 		cysf, dep, epi, fbm, hemo, hep, hiv, 
 		ihd, lbp, lymp, ms, nicu, pain, park, 
 		pneu, ra, scd, smi, str, tbi, trans, 
-		trau, asth, dem, diab, htn, opi, tob
+		trau --asth, dem, diab, htn, opi, tob
 from data_warehouse.conditions_member_enrollment_yearly 
 where year >= 2014
 ),
@@ -36,11 +37,53 @@ select *
   from data_warehouse.covid_severity
 )
 insert into tableau.master_enrollment
+(data_source, year ,
+uth_member_id ,
+gender_cd ,
+race_cd ,
+age_derived ,
+state ,
+plan_type ,
+bus_cd ,
+total_enrolled_months ,
+aimm ,
+ami ,
+ca ,
+cfib ,
+chf ,
+ckd ,
+cliv ,
+copd ,
+cysf ,
+dep ,
+epi ,
+fbm ,
+hemo ,
+hep ,
+hiv ,
+ihd ,
+lbp ,
+lymp ,
+ms ,
+nicu ,
+pain ,
+park ,
+pneu ,
+ra ,
+scd ,
+smi ,
+str ,
+tbi ,
+trans ,
+trau ,
+crg,
+crg_abbreviated ,
+covid_severity )
 select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, 
 		c.cysf, c.dep, c.epi, c.fbm, c.hemo, c.hep, c.hiv, 
 		c.ihd, c.lbp, c.lymp, c.ms, c.nicu, c.pain, c.park, 
 		c.pneu, c.ra, c.scd, c.smi, c.str, c.tbi, c.trans, 
-		c.trau, c.asth, c.dem, c.diab, c.htn, c.opi, c.tob, 
+		c.trau, --c.asth, c.dem, c.diab, c.htn, c.opi, c.tob, 
 		cr.crg, cr.crg_abbreviated,
 		cs.severity as covid_severity
  from enrl e
@@ -51,7 +94,7 @@ select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd,
  left join crg cr
    on e.uth_member_id = cr.uth_member_id
   and e.year = cr.crg_year
---  and e.data_source = cr.data_source
+  and e.data_source = cr.data_source
  left join covid cs
    on e.uth_member_id = cs.uth_member_id
   and e.year = cs.year
