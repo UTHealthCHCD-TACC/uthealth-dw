@@ -1,11 +1,8 @@
 import pandas as pd
 import psycopg2
-import select
 from tqdm import tqdm
 import sys
 sys.path.append('H:/uth_helpers/')
-import keyring
-from dotenv import dotenv_values
 from db_utils import get_dsn
 
 def create_temp_table(cursor, data_source):
@@ -169,19 +166,29 @@ if __name__ == '__main__':
         # 'mcrt',
         # 'mcrn', 
         # 'mdcd',
-        'mhtw',
+        # 'mhtw',
         'mcpp'
         ]
-    # connection.close()
-    #note that not all data sources have data for the same years. example: mcpp starts at 2015
-     #{'start_year':2014, 'end_year':2022}
     
     for data_source in data_sources:
         print(data_source)
         with connection.cursor() as cursor:
             create_temp_table(cursor, data_source)
             create_dx_table(cursor, data_source)
-        years = tqdm(range(2014, 2023))
+
+        #note that not all data sources have data for the same years. example: mcpp starts at 2015
+        #we will get the min and max years from the master enrollment table to get claims from
+        query = f'''
+        select min(year) min_year, max(year) max_year
+        from tableau.master_enrollment
+        where data_source = '{data_source}'
+        ;
+        '''
+
+        year_df = pd.read_sql(query, con=connection)
+
+        years = tqdm(range(year_df['min_year'], year_df['max_year']+1))
+
         for year in years:
             years.set_description(str(year))
             with connection.cursor() as cursor:
