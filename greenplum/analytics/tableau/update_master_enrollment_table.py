@@ -9,6 +9,8 @@ def delete_old_data(cursor, data_source):
 
     cursor.execute(query)
 
+    return cursor.rowcount
+
 def insert_new_data(cursor, data_source):
     query = f'''
 with enrl as(
@@ -24,7 +26,7 @@ select data_source, "year" , uth_member_id,
 		cysf, dep, epi, fbm, hemo, hep, hiv, 
 		ihd, lbp, lymp, ms, nicu, pain, park, 
 		pneu, ra, scd, smi, str, tbi, trans, 
-		trau asth, dem, diab, htn, opi, tob
+		trau, asth, dem, diab, htn, opi, tob
 from data_warehouse.conditions_member_enrollment_yearly 
 where year >= 2014
 ),
@@ -148,6 +150,7 @@ tableau as (
     select data_source, year, count(distinct uth_member_id) tableau_member_count, count(*) tableau_row_count
     from tableau.master_enrollment
     where year >= 2020
+    and covid_severity is not null
     group by 1,2
 )
 select a.*, b.dw_member_count, b.dw_row_count
@@ -172,7 +175,7 @@ order by 1,2
 with dw as (
     select data_source, crg_year, count(distinct uth_member_id) dw_member_count, count(*) dw_row_count
     from data_warehouse.crg_risk
-    where year >= 2014
+    where crg_year >= 2014
     group by 1,2
 ),
 tableau as (
@@ -203,6 +206,7 @@ if __name__ == '__main__':
 
     data_sources = [
         # 'optz',
+        'optd'
         # 'truc',
         # 'trum',
         # 'mcrt',
@@ -213,7 +217,6 @@ if __name__ == '__main__':
         ]
 
     for data_source in data_sources:
-        print(data_source)
         with connection.cursor() as cursor:
             print(f'Number of {data_source} Rows deleted: ', delete_old_data(cursor, data_source))
             print(f'Number of {data_source} Rows inserted: ', insert_new_data(cursor, data_source))
