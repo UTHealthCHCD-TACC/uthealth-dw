@@ -4,9 +4,6 @@ from tqdm import tqdm
 sys.path.append('H:/uth_helpers')
 from db_utils import get_dsn
 
-
-
-
 def create_diag_dashboard_table(cursor):
     query = '''
 drop table if exists tableau.diag_dashboard;
@@ -42,10 +39,10 @@ create table tableau.tx_diag_dashboard
 with (appendoptimized=true, orientation=column, compresstype=zlib)
 ;
    '''
-    cursor.execute(query)    
+    cursor.execute(query)
 
-    cursor.execute('''alter table tableau.diag_dashboard owner to uthealth_analyst;''')
-    cursor.execute('''alter table tableau.tx_diag_dashboard owner to uthealth_analyst;''')
+    cursor.execute('''grant select on tableau.diag_dashboard to uthealth_analyst;''')
+    cursor.execute('''grant select on tableau.tx_diag_dashboard to uthealth_analyst;''')
 
 def fill_diag_dashboard_table(cursor, year):
     query = f'''
@@ -87,8 +84,16 @@ DISTRIBUTED BY (uth_member_id);
 insert into dev.ip_tx_claim_diag_temp
 (data_source, year, uth_member_id, uth_claim_id, diag_cd, diag_position)
 select b.data_source, b.year, a.uth_member_id, a.uth_claim_id, a.diag_cd, a.diag_position
-  from (select * from data_warehouse.claim_diag where extract(year from from_date_of_service) = {year}) a
-  join (select * from tableau.tx_claim_view where year = {year}) b
+  from (
+      select * 
+      from data_warehouse.claim_diag 
+      where extract(year from from_date_of_service) = {year}
+    ) a
+  join (
+      select * 
+      from tableau.tx_claim_view 
+      where year = {year}
+    ) b
     on a.uth_member_id = b.uth_member_id
    and a.uth_claim_id = b.uth_claim_id
 ;

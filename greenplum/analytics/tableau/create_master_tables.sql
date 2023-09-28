@@ -114,3 +114,6 @@ partition by list(data_source)
 
 vacuum analyze tableau.master_claims;
 vacuum analyze tableau.master_enrollment;
+
+grant select on tableau.master_claims to uthealth_analyst; 
+grant select on tableau.master_enrollment to uthealth_analyst; 
