@@ -170,7 +170,7 @@ order by 1,2
     # Comparing With CRG Table
     query = '''
 with dw as (
-    select data_source, year, count(distinct uth_member_id) dw_member_count, count(*) dw_row_count
+    select data_source, crg_year, count(distinct uth_member_id) dw_member_count, count(*) dw_row_count
     from data_warehouse.crg_risk
     where year >= 2014
     group by 1,2
@@ -184,7 +184,7 @@ select a.*, b.dw_member_count, b.dw_row_count
 from tableau a
 join dw b
 on a.data_source = b.data_source
-and a.year = b.year
+and a.year = b.crg_year
 order by 1,2
 ;
     '''
@@ -196,7 +196,6 @@ order by 1,2
 
     print('CRG Table Mismatch')
     print(df[~df['member_check'] | ~df['row_check']])
-
 
 if __name__ == '__main__':
     connection = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
@@ -219,6 +218,7 @@ if __name__ == '__main__':
             print(f'Number of {data_source} Rows deleted: ', delete_old_data(cursor, data_source))
             print(f'Number of {data_source} Rows inserted: ', insert_new_data(cursor, data_source))
 
+    print('Starting QA for Master Enrollment Table')
     qa(connection)
 
     connection.close()
