@@ -31,4 +31,3 @@ and a.year = b.year;
 select *, tableau_row_count - dw_row_count, 100. * (dw_row_count - tableau_row_count) / dw_row_count
 from qa_reporting.tableau_master_claims_count
 where tableau_row_count != dw_row_count;
-

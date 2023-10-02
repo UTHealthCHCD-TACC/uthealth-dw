@@ -43,6 +43,7 @@ where cr.crg_year >= 2014
 covid as (
 select *
   from data_warehouse.covid_severity
+  where year = 2020
 )
 insert into tableau.master_enrollment
 select e.*, c.aimm, c.ami, c.ca, c.cfib, c.chf, c.ckd, c.cliv, c.copd, 
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 
     data_sources = [
         # 'optz',
-        'optd'
+        # 'optd',
         # 'truc',
         # 'trum',
         # 'mcrt',
