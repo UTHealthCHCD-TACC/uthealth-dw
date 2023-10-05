@@ -4,10 +4,8 @@ import pandas as pd
 import psycopg2
 import psycopg2.extras
 import sys
-sys.path.append('H:/uth_helpers/')
+sys.path.append('H:/')
 from uth_helpers.db_utils import get_dsn, io_copy_from
-
-transfer_discharge_cds = ['02', '05', '65', '82', '85', '88', '93', '94', '30']
 
 
 def transfer_dt_adjuster(df):
@@ -22,6 +20,8 @@ def transfer_dt_adjuster(df):
 
         returns dataframe with adjusted transfer dates
     '''
+    transfer_discharge_cds = ['02', '05', '65', '82', '85', '88', '93', '94', '30']
+
     df.loc[:, 'transfer_cd'] = False
     df.loc[df['discharge_status'].isin(transfer_discharge_cds), 'transfer_cd'] = True
     df.loc[:, 'transfer_adj_discharge_date'] = None
@@ -48,7 +48,7 @@ def enc_identifier(df, is_sorted=False, drop_intermediate_cols=False):
     Returns
     -------
     df : pandas dataframe
-        adds columns that determine encounters time period. 
+        adds columns that determine encounters time period.
         The encounter time period is between by 'enc_admit_date' and
         'enc_discharge_date'
     '''
@@ -76,7 +76,7 @@ def admit_id_output(df):
     '''
     Parameters
     ----------
-    df: pandas dataframe 
+    df: pandas dataframe
         Must contain the encounter id and admit date
 
     Returns
@@ -102,7 +102,7 @@ def encounter_row_counter(df):
     df : pandas data frame
         returns altered df that has a row count for each encounter
 
-    This is used to make the function admit_encounter_status more efficient, 
+    This is used to make the function admit_encounter_status more efficient,
     identifying the encounters that only have one status.
     '''
     if 'enc_row_count' in df.columns:
@@ -178,8 +178,57 @@ def admit_encounter_status(df):
         enc_statuses = pd.concat([clm_segment_1[['enc_discharge_status']],
                                   enc_discharge_status_gt1])
     else:
-        enc_statuses = clm_segment_1[['enc_discharge_status']]        
+        enc_statuses = clm_segment_1[['enc_discharge_status']]
     return enc_statuses
+
+
+def ip_window_wrapper(clm_df):
+    '''Performs the steps into a singular definition'''
+    clm_df = clm_df.sort_values(['uth_member_id', 'admit_date', 'discharge_date'], ascending=[1, 1, 0])
+
+    # fills null discharge statuses...
+    clm_df['discharge_status'] = clm_df['discharge_status'].fillna('NA')
+
+    clm_df = transfer_dt_adjuster(clm_df)
+    clm_df = enc_identifier(clm_df, is_sorted=True)
+    clm_df.loc[:, 'admit_id'] = admit_id_output(clm_df)
+    clm_df = clm_df.set_index(['uth_member_id', 'enc_id'])
+    clm_df = encounter_row_counter(clm_df)
+    enc_statuses = admit_encounter_status(clm_df)
+    clm_df = pd.merge(clm_df, enc_statuses, left_index=True, right_index=True, how='left')
+
+    final_ip_group = clm_df.groupby(level=[0, 1]).agg(admit_date=('admit_date', 'min'),
+                                                      discharge_date=("discharge_date", "max"),
+                                                      enc_discharge_status=("enc_discharge_status", "first"),
+                                                      admit_id=('admit_id', 'first'),
+                                                      data_source=('data_source', 'first'),
+                                                      min_bill_type=('bill_type', 'min'),
+                                                      max_bill_type=('bill_type', 'max'),
+                                                      member_id_src=('member_id_src', 'first'))
+    
+    final_ip_group['missing_terminal_status'] = ~((final_ip_group['min_bill_type'].isin(['111', '114', '117'])) & (final_ip_group['max_bill_type'].isin(['111', '114', '117'])))
+    final_ip_group['missing_terminal_status_117'] = (final_ip_group['min_bill_type'] != final_ip_group['max_bill_type']) & (final_ip_group['max_bill_type'].isin(['117']) | final_ip_group['min_bill_type'].isin(['117']))
+    print(final_ip_group.shape[0])
+
+    # set in column order for load
+
+    columns = [
+        'data_source', 
+        'uth_member_id', 
+        'enc_id', 
+        'admit_date',
+        'discharge_date', 
+        'enc_discharge_status',
+        'admit_id',
+        'missing_terminal_status',
+        'missing_terminal_status_117',
+        'member_id_src'
+    ]
+
+    final_ip_group = final_ip_group.reset_index()
+    final_ip_group = final_ip_group[columns]
+    
+    return final_ip_group
 
 
 if __name__ == '__main__':
@@ -192,11 +241,11 @@ if __name__ == '__main__':
 
     with con.cursor() as cursor:
         cur = con.cursor()
-        cur.execute(f'''select distinct data_source, pat_group  
+        cur.execute(f'''select distinct data_source, pat_group
                     from {schema}.{source_table} order by data_source, pat_group;''')
         results = cur.fetchall()
         print(results)
-
+ 
     try:
         for pat_group in results:
             print(pat_group)
@@ -206,30 +255,7 @@ if __name__ == '__main__':
             clm_df = pd.read_sql(sql_string, con=con,
                                  parse_dates=['admit_date', 'discharge_date'])
 
-            clm_df = clm_df.sort_values(['uth_member_id', 'admit_date', 'discharge_date'], ascending=[1, 1, 0])
-
-            # fills null discharge statuses...
-            clm_df['discharge_status'] = clm_df['discharge_status'].fillna('NA')
-
-            clm_df = transfer_dt_adjuster(clm_df)
-            clm_df = enc_identifier(clm_df, is_sorted=True)
-            clm_df.loc[:, 'admit_id'] = admit_id_output(clm_df)
-            clm_df = clm_df.set_index(['uth_member_id', 'enc_id'])
-            clm_df = encounter_row_counter(clm_df)
-            enc_statuses = admit_encounter_status(clm_df)
-            clm_df = pd.merge(clm_df, enc_statuses, left_index=True, right_index=True, how='left')
-
-            final_ip_group = clm_df.groupby(level=[0, 1]).agg(admit_date=('admit_date', 'min'),
-                                                              discharge_date=("discharge_date", "max"),
-                                                              enc_discharge_status=("enc_discharge_status", "first"),
-                                                              admit_id=('admit_id', 'first'),
-                                                              data_source=('data_source', 'first'))
-            print(final_ip_group.shape[0])
-
-            # set in column order for load
-            final_ip_group = final_ip_group.reset_index()
-            final_ip_group = final_ip_group[['data_source', 'uth_member_id', 'enc_id', 'admit_date',
-                                             'discharge_date', 'enc_discharge_status', 'admit_id']]
+            final_ip_group = ip_window_wrapper(clm_df)
             final_ip_group.loc[:, 'insert_ts'] = datetime.now()
             io_copy_from(con, final_ip_group, schema, output_table)
 

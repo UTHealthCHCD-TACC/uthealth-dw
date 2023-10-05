@@ -1,11 +1,8 @@
 import pandas as pd
 import psycopg2
-import select
 from tqdm import tqdm
 import sys
 sys.path.append('H:/uth_helpers/')
-import keyring
-from dotenv import dotenv_values
 from db_utils import get_dsn
 
 def create_temp_table(cursor, data_source):
@@ -113,16 +110,18 @@ def fill_claims_table(connection, data_source, year):
     with connection.cursor() as cursor:
         insert_query = f'''
     insert into dev.ip_master_temp_{data_source}
-    (data_source, year, uth_member_id, uth_claim_id, claim_type,
-    total_charge_amount, total_allowed_amount, total_paid_amount, 
-    {columns[0]})
+    (
+        data_source, year, uth_member_id, uth_claim_id, claim_type,
+        total_charge_amount, total_allowed_amount, total_paid_amount, 
+        {columns[0]}
+    )
     select e.data_source, e.year, e.uth_member_id, h.uth_claim_id, claim_type,
             total_charge_amount, total_allowed_amount, total_paid_amount,
             {columns[1]}
     from (
         select * 
         from tableau.master_enrollment 
-        where data_source = '{data_source}' and year  = {year}
+        where data_source = '{data_source}' and year = {year}
         ) e 
     inner join (
         select * 
@@ -136,7 +135,7 @@ def fill_claims_table(connection, data_source, year):
     '''
 
         cursor.execute(insert_query)
-        # cursor.execute(f'vacuum analyze dev.ip_master_temp_{data_source};')
+        cursor.execute(f'vacuum analyze dev.ip_master_temp_{data_source};')
 
 def swap_partitions(cursor, data_source):
     # once we gotten the refreshed data into a seperate table, swap current partition with our new table
@@ -157,31 +156,39 @@ def drop_temp_tables(cursor, data_source):
 
 if __name__ == '__main__':
 
-    # connection = psycopg2.connect(get_dsn()+' tcp_keepalives_idle=60*30 keepalives_idle=60')
-    config = dotenv_values('H:/uth_helpers/dw.env')
-    connection = psycopg2.connect(
-                                    database=config['dbname'],
-                                    host=config['host'],
-                                    port=config['port'],
-                                    user=config['user'],
-                                    password=keyring.get_password(config['dbname'], config['user']),
-                                    keepalives=1,
-                                    keepalives_idle=30,
-                                    keepalives_interval=10
-                                    )
+    connection = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
     connection.autocommit = True
-    # 'optz', 'truv', 'mcrt', 'mcrn', 'mdcd', 'mhtw', 'mcpp'
-    data_sources = ['truv']
-    # connection.close()
-    #note that not all data sources have data for the same years. example: mcpp starts at 2015
-     #{'start_year':2012, 'end_year':2021}
+
+    data_sources = [
+        # 'optz',
+        # 'truc',
+        # 'trum',
+        # 'mcrt',
+        # 'mcrn', 
+        # 'mdcd',
+        # 'mhtw',
+        'mcpp'
+        ]
     
     for data_source in data_sources:
         print(data_source)
         with connection.cursor() as cursor:
-            # create_temp_table(cursor, data_source)
+            create_temp_table(cursor, data_source)
             create_dx_table(cursor, data_source)
-        years = tqdm(range(2015, 2019))
+
+        #note that not all data sources have data for the same years. example: mcpp starts at 2015
+        #we will get the min and max years from the master enrollment table to get claims from
+        query = f'''
+        select min(year) min_year, max(year) max_year
+        from tableau.master_enrollment
+        where data_source = '{data_source}'
+        ;
+        '''
+
+        year_df = pd.read_sql(query, con=connection)
+
+        years = tqdm(range(year_df['min_year'], year_df['max_year']+1))
+
         for year in years:
             years.set_description(str(year))
             with connection.cursor() as cursor:
@@ -189,6 +196,6 @@ if __name__ == '__main__':
             
             fill_claims_table(connection, data_source, year)
 
-        # with connection.cursor() as cursor:
-            # swap_partitions(cursor, data_source)
-            # drop_temp_tables(cursor, data_source)
+        with connection.cursor() as cursor:
+            swap_partitions(cursor, data_source)
+            drop_temp_tables(cursor, data_source)
