@@ -4,189 +4,330 @@
  * ******************************************************************************************************
  *  Author || Date      || Notes
  * ******************************************************************************************************
- * ******************************************************************************************************
- *  wcc001  || 10/01/2021 || add comment block. migrate to dw_staging load 
+ *  xzhang  || 09/28/2023 || rewrote using Excel, various fixes including mistakes in column mapping
  * ****************************************************************************************************** 
- *  gmunoz  || 10/20/2021 || added fiscal year logic function with dev.fiscal_year_func
- * ******************************************************************************************************
- *  jwozny  || 11/08/2021 || added provider variables 
- * ******************************************************************************************************
- *  jwozny  || 12/17/2021 || changed claim_type value to 'F' or 'P' based on which raw dataset is being loaded
- * ******************************************************************************************************
- *  jwozny  || 03/03/2022 || updated payment variables
- * ******************************************************************************************************
  * */
 
---------------- BEGIN SCRIPT -------
-do $$
+drop table if exists dw_staging.mcrn_claim_header;
 
-begin
+create table dw_staging.mcrn_claim_header 
+(like data_warehouse.claim_header including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id);
 
---inpatient
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)							        						        
-select 'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, 
-        a.clm_tot_chrg_amt::numeric, 
-       	clm_pmt_amt::numeric + clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::int + ---- allowed amount jw 3/3/2022
-        a.nch_bene_ip_ddctbl_amt::numeric + a.nch_bene_pta_coinsrnc_lblty_am::numeric + nch_bene_blood_ddctbl_lblty_am::numeric + nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt, 
-        clm_pmt_amt::numeric + clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::int as total_paid_amount,
-      	dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-      	a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 
-      	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
+/***********************************
+ * ----------FACILITY--------------
+ ***********************************/
+
+/***********************************
+ * Inpatient
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible, coins
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'F' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.clm_tot_chrg_amt::numeric as total_charge_amount, 
+    a.clm_pmt_amt::numeric + (clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::numeric) + nch_prmry_pyr_clm_pd_amt::numeric + nch_ip_tot_ddctn_amt::numeric + clm_uncompd_care_pmt_amt::numeric  + clm_ip_low_vol_pmt_amt::numeric + clm_hrr_adjstmt_pmt_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric + (clm_pass_thru_per_diem_amt::numeric * clm_utlztn_day_cnt::numeric) + clm_uncompd_care_pmt_amt::numeric  + clm_ip_low_vol_pmt_amt::numeric + clm_hrr_adjstmt_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.org_npi_num as bill_provider, 
+    NULL as ref_provider, 
+    a.ot_physn_npi as other_provider, 
+    a.rndrng_physn_npi as perf_rn_provider, 
+    a.at_physn_npi as perf_at_provider, 
+    a.op_physn_npi as perf_op_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'inpatient' as table_id_src, 
+    current_date as load_date, 
+    a.nch_bene_ip_ddctbl_amt::numeric + nch_bene_blood_ddctbl_lblty_am::numeric as deductible, 
+    a.nch_bene_pta_coinsrnc_lblty_am::numeric as coins
 from medicare_national.inpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-;
-
---outpatient
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, 
-        a.clm_pmt_amt::numeric + a.nch_bene_ptb_ddctbl_amt::numeric + a.nch_bene_ptb_coinsrnc_amt::numeric + ---- allowed amount jw 3/3/2022
-  			a.nch_bene_blood_ddctbl_lblty_am::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt,
-        a.clm_pmt_amt::numeric, 
-        dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-        a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
-      	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
-from medicare_national.outpatient_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  join data_warehouse.dim_uth_claim_id c 
-    on  c.member_id_src = a.bene_id  
-   and c.claim_id_src = a.clm_id
-   and c.data_source = b.data_source
-;
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
 
 
-
---bcarrier 
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'P', a.clm_from_dt::date, a.clm_thru_dt::date,
-        null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric, 
-          dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-          a.carr_clm_blg_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.cpo_org_npi_num as other_provider, 
-      	 null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
-from medicare_national.bcarrier_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.member_id_src = bene_id
-   and b.data_source = 'mcrn'
-  join data_warehouse.dim_uth_claim_id c 
-    on c.member_id_src = a.bene_id 
-   and c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-;
-
-
---dme
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'P', a.clm_from_dt::date, a.clm_thru_dt::date,
-        null, a.nch_carr_clm_sbmtd_chrg_amt::numeric, a.nch_carr_clm_alowd_amt::numeric, a.clm_pmt_amt::numeric,
-        dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-        null as bill_provider, a.rfr_physn_npi ref_provider, null as other_provider, 
-        null as perf_rn_provider, null as perf_at_provider, null as perf_op_provider
-from medicare_national.dme_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-   on b.member_id_src = bene_id
-  and b.data_source = 'mcrn'
-  join data_warehouse.dim_uth_claim_id c 
-    on c.member_id_src = a.bene_id 
-   and c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-;
-
---hha
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, a.clm_pmt_amt::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric, a.clm_pmt_amt::numeric, 
-        dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-        a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
-      	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
+/***********************************
+ * HHA
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible, coins
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'F' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.clm_tot_chrg_amt::numeric as total_charge_amount, 
+    a.clm_pmt_amt::numeric + nch_prmry_pyr_clm_pd_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.org_npi_num as bill_provider, 
+    a.rfr_physn_npi as ref_provider, 
+    a.ot_physn_npi as other_provider, 
+    a.rndrng_physn_npi as perf_rn_provider, 
+    a.at_physn_npi as perf_at_provider, 
+    a.op_physn_npi as perf_op_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'hha' as table_id_src, 
+    current_date as load_date, 
+    NULL as deductible, 
+    NULL as coins
 from medicare_national.hha_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-;
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
 
-
-
---hospice
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, a.clm_pmt_amt::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric, a.clm_pmt_amt::numeric, 
-        dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-        a.org_npi_num as bill_provider, a.rfr_physn_npi as ref_provider, a.ot_physn_npi as other_provider, 
-      	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
+/***********************************
+ * Hospice
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible, coins
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'F' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.clm_tot_chrg_amt::numeric as total_charge_amount, 
+    a.clm_pmt_amt::numeric + nch_prmry_pyr_clm_pd_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.org_npi_num as bill_provider, 
+    a.rfr_physn_npi as ref_provider, 
+    a.ot_physn_npi as other_provider, 
+    a.rndrng_physn_npi as perf_rn_provider, 
+    a.at_physn_npi as perf_at_provider, 
+    a.op_physn_npi as perf_op_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'hospice' as table_id_src, 
+    current_date as load_date, 
+    NULL as deductible, 
+    NULL as coins
 from medicare_national.hospice_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
-;
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
 
-
---snf
-insert into dw_staging.claim_header (data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, to_date_of_service, 
-                                uth_admission_id, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year,
-                                bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider)		
-select  'mcrn', extract(year from a.clm_thru_dt::date), c.uth_member_id, c.uth_claim_id, 'F', a.clm_from_dt::date, a.clm_thru_dt::date, 
-        null, a.clm_tot_chrg_amt::numeric, 
-        a.clm_pmt_amt::numeric + a.nch_bene_ip_ddctbl_amt::numeric + a.nch_bene_pta_coinsrnc_lblty_am::numeric + 
-        a.nch_bene_blood_ddctbl_lblty_am::numeric + a.nch_prmry_pyr_clm_pd_amt::numeric as allowed_amt,
-        a.clm_pmt_amt::numeric,       
-        dev.fiscal_year_func(a.clm_thru_dt::date) as fiscal_year,
-        a.org_npi_num as bill_provider, null as ref_provider, a.ot_physn_npi as other_provider, 
-      	a.rndrng_physn_npi as perf_rn_provider, a.at_physn_npi as perf_at_provider, a.op_physn_npi as perf_op_provider
+/***********************************
+ * SNF
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible, coins
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'F' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.clm_tot_chrg_amt::numeric as total_charge_amount, 
+    a.clm_pmt_amt::numeric + nch_prmry_pyr_clm_pd_amt::numeric + nch_ip_tot_ddctn_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.org_npi_num as bill_provider, 
+    NULL as ref_provider, 
+    a.ot_physn_npi as other_provider, 
+    a.rndrng_physn_npi as perf_rn_provider, 
+    a.at_physn_npi as perf_at_provider, 
+    a.op_physn_npi as perf_op_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'snf' as table_id_src, 
+    current_date as load_date, 
+    a.nch_bene_ip_ddctbl_amt::numeric + nch_bene_blood_ddctbl_lblty_am::numeric as deductible, 
+    a.nch_bene_pta_coinsrnc_lblty_am::numeric as coins
 from medicare_national.snf_base_claims_k a
-  join data_warehouse.dim_uth_member_id b 
-    on b.data_source = 'mcrn'
-   and b.member_id_src = bene_id
-  join data_warehouse.dim_uth_claim_id c 
-    on c.data_source = b.data_source
-   and c.claim_id_src = a.clm_id
-   and c.member_id_src = a.bene_id 
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
+
+
+/***********************************
+ * Outpatient
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible, coins
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'F' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.clm_tot_chrg_amt::numeric as total_charge_amount, 
+    a.clm_pmt_amt::numeric + nch_prmry_pyr_clm_pd_amt::numeric + nch_bene_ptb_coinsrnc_amt::numeric + nch_bene_ptb_ddctbl_amt::numeric + nch_bene_blood_ddctbl_lblty_am::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.org_npi_num as bill_provider, 
+    a.rfr_physn_npi as ref_provider, 
+    a.ot_physn_npi as other_provider, 
+    a.rndrng_physn_npi as perf_rn_provider, 
+    a.at_physn_npi as perf_at_provider, 
+    a.op_physn_npi as perf_op_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'outpatient' as table_id_src, 
+    current_date as load_date, 
+    a.nch_bene_ptb_ddctbl_amt::numeric + nch_bene_blood_ddctbl_lblty_am::numeric as deductible, 
+    a.nch_bene_ptb_coinsrnc_amt::numeric as coins
+from medicare_national.outpatient_base_claims_k a
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
+
+
+
+/***********************************
+ * ---------BCARRIER/DME------------
+ ***********************************/
+   
+/***********************************
+ * Bcarrier
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'P' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.nch_carr_clm_sbmtd_chrg_amt::numeric as total_charge_amount, 
+    a.nch_carr_clm_alowd_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    a.cpo_org_npi_num as bill_provider, 
+    a.rfr_physn_npi as ref_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'bcarrier' as table_id_src, 
+    current_date as load_date, 
+    a.carr_clm_cash_ddctbl_apld_amt::numeric as deductible
+from medicare_national.bcarrier_claims_k a
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
+   
+/***********************************
+ * DME
+ **********************************/
+insert into dw_staging.mcrn_claim_header(
+     data_source, year, uth_member_id, uth_claim_id, claim_type, from_date_of_service, 
+     to_date_of_service, total_charge_amount, total_allowed_amount, total_paid_amount, fiscal_year, 
+     bill_provider, ref_provider, 
+     claim_id_src, member_id_src, table_id_src, load_date, deductible
+)
+select
+    'mcrn' as data_source, 
+     extract(year from a.clm_from_dt::date) as year, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    'P' as claim_type, 
+    a.clm_from_dt::date as from_date_of_service, 
+    a.clm_thru_dt::date as to_date_of_service, 
+    a.nch_carr_clm_sbmtd_chrg_amt::numeric as total_charge_amount, 
+    a.nch_carr_clm_alowd_amt::numeric as total_allowed_amount, 
+    a.clm_pmt_amt::numeric as total_paid_amount, 
+    get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
+    NULL as bill_provider, 
+    a.rfr_physn_npi as ref_provider, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    'dme' as table_id_src, 
+    current_date as load_date, 
+    a.carr_clm_cash_ddctbl_apld_amt::numeric as deductible
+from medicare_national.dme_claims_k a
+left join data_warehouse.dim_uth_claim_id b
+    on a.clm_id = b.claim_id_src and b.data_source = 'mcrn';
+
+/****************************
+ * Coinsurance only exists on line-level tables
+ * so get numbers from there and sum it up
+ */
+
+drop table if exists dw_staging.mcrn_coinsrnc_sum;
+
+create table dw_staging.mcrn_coinsrnc_sum as
+select clm_id, bene_id, 'bcarrier' as table_id_src,
+ sum(coalesce(line_coinsrnc_amt::numeric, 0)) as coins
+from medicare_national.bcarrier_line_k
+group by 1, 2;
+
+insert into dw_staging.mcrn_coinsrnc_sum
+select clm_id, bene_id, 'dme' as table_id_src,
+ sum(coalesce(line_coinsrnc_amt::numeric, 0)) as coins
+from medicare_national.dme_line_k
+group by 1, 2;
+
+analyze dw_staging.mcrn_coinsrnc_sum;
+analyze dw_staging.mcrn_claim_header;
+
+update dw_staging.mcrn_claim_header a
+set coins = b.coins
+from dw_staging.mcrn_coinsrnc_sum b
+where a.claim_id_src = b.clm_id and a.member_id_src = b.bene_id
+	and a.table_id_src in ('bcarrier', 'dme')
 ;
 
-end $$
-;
+drop table if exists dw_staging.mcrn_coinsrnc_sum;
+  
+/***********************************
+ * ---------FINALIZE------------
+ ***********************************/
+vacuum analyze dw_staging.mcrn_claim_header;
 
----finalize
-analyze dw_staging.claim_header;
-
---validate
-select data_source, year,  count(*)
-from dw_staging.claim_header 
-group by data_source, year
-order by data_source, year;
-
-------------- / END SCRIPT 
-
+--update the oop (~7 mins)
+update dw_staging.mcrn_claim_header
+set oop = deductible + coins;
+	   	
+vacuum analyze dw_staging.mcrn_claim_header;	   	
 
 
+/***********QA
+select "year", count(*) from dw_staging.mcrn_claim_header
+where uth_claim_id is null group by "year" order by 1;
 
-
-
+select "year", count(*) from dw_staging.mcrn_claim_header
+where uth_member_id is null group by "year" order by 1;
+*/

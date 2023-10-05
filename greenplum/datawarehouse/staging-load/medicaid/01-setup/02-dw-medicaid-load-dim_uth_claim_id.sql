@@ -79,7 +79,7 @@ from dw_staging.mcd_clm_header_temp a
     on c.member_id_src = a.pcn 
    and c.claim_id_src = a.icn
    and c.data_source in ('mdcd', 'mhtw', 'mcpp')
- where c.uth_member_id is null 
+ where c.uth_claim_id is null 
 ;
 vacuum analyze data_warehouse.dim_uth_claim_id;
 
@@ -109,7 +109,7 @@ from dw_staging.mcd_htw_header_temp a
     on c.member_id_src = a.pcn 
    and c.claim_id_src = a.icn
    and c.data_source in ('mdcd', 'mhtw', 'mcpp')
- where c.uth_member_id is null 
+ where c.uth_claim_id is null 
 ;
 
 vacuum analyze data_warehouse.dim_uth_claim_id;

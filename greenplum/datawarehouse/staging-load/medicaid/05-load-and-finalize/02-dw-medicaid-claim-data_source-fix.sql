@@ -117,9 +117,79 @@ where a.data_source = 'mdcd' and
 
 vacuum analyze data_warehouse.pharmacy_claims;
 
+/***********************************************
+ * Using the newly determined uth_claim_id - data_source pairs,
+ * go back and fix dim_uth_claim_id
+ **********************************************/
+drop table if exists dw_staging.dim_claim_id_data_source_fix;
+
+create table dw_staging.dim_claim_id_data_source_fix as
+select data_source, uth_claim_id
+from data_warehouse.claim_header
+where data_source in ('mhtw', 'mcpp');
+
+update data_warehouse.dim_uth_claim_id a
+set data_source = b.data_source
+from dw_staging.dim_claim_id_data_source_fix b
+where a.uth_claim_id = b.uth_claim_id
+and a.data_source = 'mdcd';
+
+vacuum analyze data_warehouse.dim_uth_claim_id;
+
+/**** check if it worked *****************************
+select data_source, count(*) from data_warehouse.claim_header
+where data_source in ('mdcd', 'mhtw', 'mcpp')
+group by 1 order by 1;
+
+select data_source, count(*) from data_warehouse.dim_uth_claim_id
+where data_source in ('mdcd', 'mhtw', 'mcpp')
+group by 1 order by 1;
+*/
+
+/***********************************************
+ * Using the newly determined uth_rx_claim_id - data_source pairs,
+ * go back and fix dim_uth_rx_claim_id -- NOTE THE RX
+ **********************************************/
+drop table if exists dw_staging.dim_rx_claim_id_data_source_fix;
+
+create table dw_staging.dim_rx_claim_id_data_source_fix as
+select data_source, uth_rx_claim_id
+from data_warehouse.pharmacy_claims
+where data_source in ('mhtw', 'mcpp')
+group by 1, 2;
+
+update data_warehouse.dim_uth_rx_claim_id a
+set data_source = b.data_source
+from dw_staging.dim_rx_claim_id_data_source_fix b
+where a.uth_rx_claim_id = b.uth_rx_claim_id
+and a.data_source = 'mdcd';
+
+vacuum analyze data_warehouse.dim_uth_rx_claim_id;
+
+/**** check if it worked ***************************** 
+select data_source, count(distinct uth_rx_claim_id), count(distinct rx_claim_id_src) from data_warehouse.pharmacy_claims
+where data_source in ('mdcd', 'mhtw', 'mcpp') and "year" = 2022
+group by 1 order by 1;
+
+mcpp	121206	121206
+mdcd	23919004	23919004
+mhtw	92652	92652
+
+select data_source, count(*) from data_warehouse.dim_uth_rx_claim_id
+where data_source in ('mdcd', 'mhtw', 'mcpp') and "year" = 2022
+group by 1 order by 1;
+
+mcpp	121206
+mdcd	23919004
+mhtw	92652
+
+*/
+
 /****************************************************************************************************/
 /*hotfix: add in the last few missing uth_member_ids for member_ids that are not in enrollment table*/
 /****************************************************************************************************/
+
+/*
 --first generate a shortlist of medicaid members who have claim_created_flag = true
 create table dw_staging.mcd_dim_memid_clm_created_temp
 as select * from data_warehouse.dim_uth_member_id
@@ -169,7 +239,7 @@ where a.data_source = 'mdcd' and
 	a.member_id_src = b.member_id_src;
 
 vacuum analyze data_warehouse.claim_header_1_prt_mdcd;
-
+*/
 
 /****************************************************************************************************
  * pharmacy_claims - there are no claim_created members here

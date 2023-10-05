@@ -83,7 +83,7 @@ select 'mdcd',
        a.rx_claim_id_src ,
        a.member_id_src
   from dw_staging.dim_rx_load_mdcd a
-  left outer join dev.dim_uth_rx_claim_id c 
+  left outer join data_warehouse.dim_uth_rx_claim_id c 
     on c.member_id_src = a.member_id_src 
    and c.rx_claim_id_src = a.rx_claim_id_src 
    and c.data_source in ('mdcd', 'mhtw', 'mcpp')

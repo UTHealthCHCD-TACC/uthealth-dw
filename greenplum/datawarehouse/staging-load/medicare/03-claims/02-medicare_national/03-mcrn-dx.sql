@@ -1,225 +1,140 @@
-
 /* ******************************************************************************************************
- *  load claim diag for medicare national 5% sample
+ *  load claim diag for medicare national
  * ******************************************************************************************************
- *  Author || Date      || Notes
- * ******************************************************************************************************
- * ******************************************************************************************************
- *  wcc001  || 10/04/2021 || add comment block. migrate to dw_staging load 
+ *  Author   || Date      || Notes
  * ****************************************************************************************************** 
- *  gmunoz  || 10/25/2021 || adding dev.fiscal_year_func() logic
- * ****************************************************************************************************** 
- *  jwozny  || 1/02/2022  || removed icd type, year, fiscal_year
+ *  Xiaorui  || 10/03/23  || Rewrote -- ETL first then load
  * ******************************************************************************************************
  * */
 
+/**************************
+ * First make an ETL (to reduce grabbing blank diagnosis code fields)
+ **************************/
+--initialize table
+drop table if exists dw_staging.mcrn_diag_etl;
 
---------------- BEGIN SCRIPT -------
+create table dw_staging.mcrn_diag_etl as
+select clm_id, bene_id, clm_from_dt::date, 0 as pos, icd_dgns_cd1 as dx,
+	'version'::text as dx_version,
+	clm_poa_ind_sw1 as poa, 'table_id_src'::text as table_id_src
+from medicare_national.inpatient_base_claims_k
+where 0 = 1
+distributed by(bene_id);
 
+--Get non-null diagnosis codes from facility tables
+do $$
+declare 
+	--month_counter integer := 1;
+	i int;
+	table_names text[]:= array['inpatient', 'hha', 'hospice', 'snf', 'outpatient'];
+	table_name text;
 
---45min
+begin
+--loops through each table
+	for table_name in select unnest(table_names) loop
+		raise notice 'loading from % starting at %', table_name, now();
+		--loops through positions 1-25
+		for i in 1..25 loop
+			if i % 5 = 0 then raise notice '     pos: %', i; end if; --raise notice every 5 positions
+			--inpatient has POA flags
+			if table_name = 'inpatient' then 
+				execute 'insert into dw_staging.mcrn_diag_etl
+					select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
+					 icd_dgns_cd' || i || ', null as dx_version, clm_poa_ind_sw' || i || ' ,
+					''' || table_name || ''' as table_id_src
+					from medicare_national.' || table_name || '_base_claims_k
+					where icd_dgns_cd' || i || ' is not null and
+					icd_dgns_cd' || i || ' != '''';';
+			--other facility tables do not have POA flags
+			else
+				execute 'insert into dw_staging.mcrn_diag_etl
+					select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
+					 icd_dgns_cd' || i || ', null as dx_version, null as poa,
+					''' || table_name || ''' as table_id_src
+					from medicare_national.' || table_name || '_base_claims_k
+					where icd_dgns_cd' || i || ' is not null and
+					icd_dgns_cd' || i || ' != '''';';
+			end if;
+		end loop;
+	end loop;
+end $$;
 
-do $$ 
-begin 
-	
--- Outpatient DX codes
+--get non-null diagnosis codes from bcarrier and dme tables
+do $$
+declare 
+	--month_counter integer := 1;
+	i int;
+	table_names text[]:= array['bcarrier', 'dme'];
+	table_name text;
 
-insert into dw_staging.claim_diag (data_source,  uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn', d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
-						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-	    ,null
-	    ,null
-from medicare_national.outpatient_revenue_center_k a 
-     join medicare_national.outpatient_base_claims_k b
-        on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id 
-   and d.claim_sequence_number = a.clm_line_num::numeric  
-;
+begin
+--loops through each table
+	for table_name in select unnest(table_names) loop
+		raise notice 'loading from % starting at %', table_name, now();
+		for i in 1..12 loop
+			if i % 4 = 0 then raise notice '     pos: %', i; end if; --raise notice every 4 positions
+			execute 'insert into dw_staging.mcrn_diag_etl
+				select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
+				 icd_dgns_cd' || i || ', icd_dgns_vrsn_cd' || i || ' as dx_version, null as poa,
+				''' || table_name || ''' as table_id_src
+				from medicare_national.' || table_name || '_claims_k
+				where icd_dgns_cd' || i || ' is not null and
+				icd_dgns_cd' || i || ' != '''';';
+		end loop;
+	end loop;
+end $$;
 
+vacuum analyze dw_staging.mcrn_diag_etl;
+--select * from dw_staging.mcrn_diag_etl;
+--select count(*) from dw_staging.mcrn_diag_etl;
+--1683751849
 
+/*******************************
+ * Load into claim_diag table
+ */
 
--- Bcarrier DX codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null					      
-	    ,unnest(array[icd_dgns_vrsn_cd1,icd_dgns_vrsn_cd2,icd_dgns_vrsn_cd3,icd_dgns_vrsn_cd4,icd_dgns_vrsn_cd5,icd_dgns_vrsn_cd6,icd_dgns_vrsn_cd7,icd_dgns_vrsn_cd8,
-					  icd_dgns_vrsn_cd9,icd_dgns_vrsn_cd10,icd_dgns_vrsn_cd11,icd_dgns_vrsn_cd12]) as dx_ver	
-from medicare_national.bcarrier_claims_k a
-     join medicare_national.bcarrier_line_k b 
-        on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id  
-   and d.claim_sequence_number = b.line_num::numeric 
-;
+drop table if exists dw_staging.mcrn_claim_diag;
 
+create table dw_staging.mcrn_claim_diag 
+(like data_warehouse.claim_diag including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id);
 
-
--- DME DX codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12])  as dx_pos 
-		,null
-	    ,unnest(array[icd_dgns_vrsn_cd1,icd_dgns_vrsn_cd2,icd_dgns_vrsn_cd3,icd_dgns_vrsn_cd4,icd_dgns_vrsn_cd5,icd_dgns_vrsn_cd6,icd_dgns_vrsn_cd7,icd_dgns_vrsn_cd8,
-					  icd_dgns_vrsn_cd9,icd_dgns_vrsn_cd10,icd_dgns_vrsn_cd11,icd_dgns_vrsn_cd12]) as dxver		
-from medicare_national.dme_claims_k  a
-     join medicare_national.dme_line_k b 
-        on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id  
-   and d.claim_sequence_number = b.line_num::numeric 
-;
-
--- Insert Inpatient DX codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 									 									  
-select  'mcrn', d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
-						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos
-	    ,unnest(array[clm_poa_ind_sw1,clm_poa_ind_sw2,clm_poa_ind_sw3,clm_poa_ind_sw4,clm_poa_ind_sw5,clm_poa_ind_sw6,clm_poa_ind_sw7,clm_poa_ind_sw8,
-							  clm_poa_ind_sw9,clm_poa_ind_sw10,clm_poa_ind_sw11,clm_poa_ind_sw12,clm_poa_ind_sw13,clm_poa_ind_sw14,clm_poa_ind_sw15,clm_poa_ind_sw16,clm_poa_ind_sw17,
-						      clm_poa_ind_sw18,clm_poa_ind_sw19,clm_poa_ind_sw20,clm_poa_ind_sw21,clm_poa_ind_sw22,clm_poa_ind_sw23,clm_poa_ind_sw24,clm_poa_ind_sw25]) as poa			
-		,null
-from medicare_national.inpatient_revenue_center_k a 
-     join medicare_national.inpatient_base_claims_k b 
-        on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id 
-   and d.claim_sequence_number = a.clm_line_num::numeric  
-;
-
-
--- HHA DX Codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
-						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null
-		,null
-from medicare_national.hha_revenue_center_k a 
-     join medicare_national.hha_base_claims_k b 
-         on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id  
-   and d.claim_sequence_number = a.clm_line_num::numeric  
-;
-
-   
--- Hospice DX Codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
-						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null
-		,null
-from medicare_national.hospice_revenue_center_k a 
-     join medicare_national.hospice_base_claims_k b 
-         on a.bene_id = b.bene_id 
-       and a.clm_id = b.clm_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id  
-   and d.claim_sequence_number = a.clm_line_num::numeric  
-;
+insert into dw_staging.mcrn_claim_diag(
+     data_source, uth_member_id, uth_claim_id, from_date_of_service, diag_cd, diag_position, 
+     poa_src, icd_version, load_date, year, fiscal_year, claim_id_src, member_id_src, table_id_src
+)
+select
+    'mcrn' as data_source, 
+    b.uth_member_id as uth_member_id, 
+    b.uth_claim_id as uth_claim_id, 
+    a.clm_from_dt as from_date_of_service, 
+    a.dx as diag_cd, 
+    pos as diag_position, 
+    a.poa as poa_src, 
+    dx_version as icd_version, 
+    current_date as load_date, 
+    extract(year from a.clm_from_dt) as year, 
+    get_fy_from_date(a.clm_from_dt) as fiscal_year, 
+    a.clm_id as claim_id_src, 
+    a.bene_id as member_id_src, 
+    table_id_src as table_id_src
+from dw_staging.mcrn_diag_etl a
+left join data_warehouse.dim_uth_claim_id b
+    on b.data_source = 'mcrn'
+    and a.clm_id = b.claim_id_src
+    and a.bene_id = b.member_id_src;
 
 
--- SNF DX Codes
-insert into dw_staging.claim_diag (data_source, uth_member_id, uth_claim_id, claim_sequence_number,
-								   from_date_of_service, diag_cd, diag_position, poa_src, icd_version) 														  									  								  
-select  'mcrn',d.uth_member_id, d.uth_claim_id, d.claim_sequence_number
-		,d.from_date_of_service
-	    ,unnest(array[icd_dgns_cd1,icd_dgns_cd2,icd_dgns_cd3,icd_dgns_cd4,icd_dgns_cd5,icd_dgns_cd6,icd_dgns_cd7,icd_dgns_cd8,
-							  icd_dgns_cd9,icd_dgns_cd10,icd_dgns_cd11,icd_dgns_cd12,icd_dgns_cd13,icd_dgns_cd14,icd_dgns_cd15,icd_dgns_cd16,icd_dgns_cd17,
-						      icd_dgns_cd18,icd_dgns_cd19,icd_dgns_cd20,icd_dgns_cd21,icd_dgns_cd22,icd_dgns_cd23,icd_dgns_cd24,icd_dgns_cd25]) as dx				
-		,unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])  as dx_pos 
-		,null
-		,null
-from medicare_national.snf_revenue_center_k a 
-    join medicare_national.snf_base_claims_k b 
-       on a.clm_id = b.clm_id 
-      and a.bene_id = b.bene_id 
-     join data_warehouse.dim_uth_claim_id c 
-       on a.bene_id = c.member_id_src 
-      and a.clm_id = c.claim_id_src 
-      and c.data_source = 'mcrn'
-  join dw_staging.claim_detail d 
-    on c.uth_member_id = d.uth_member_id 
-   and c.uth_claim_id = d.uth_claim_id  
-   and d.claim_sequence_number = a.clm_line_num::numeric
-;
+vacuum analyze dw_staging.mcrn_claim_diag;
 
-end  $$
+--select * from dw_staging.mcrn_claim_diag;
 
---cleanup
-delete from dw_staging.claim_diag where diag_cd is null;
+--drop temp table
+drop table if exists dw_staging.mcrn_diag_etl;
 
---finalize
-vacuum analyze dw_staging.claim_diag;
-
----validate
-select count(*), data_source
-from dw_staging.claim_diag 
-group by data_source 
-order by data_source;
-
-
----- END SCRIPT 

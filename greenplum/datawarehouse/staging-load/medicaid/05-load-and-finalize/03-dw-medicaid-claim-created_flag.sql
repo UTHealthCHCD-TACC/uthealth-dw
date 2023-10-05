@@ -338,6 +338,28 @@ set data_last_updated = current_date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
 
+/*******************************
+ * How many are claim_created?
+ * select year,
+	sum(case when claim_created_flag is TRUE then 1 else 0 end) as claim_created,
+	sum(case when claim_created_flag is TRUE then 1 else 0 end) * 1.0 / count(*) as pct
+from data_warehouse.member_enrollment_monthly_1_prt_mdcd
+group by 1 order by 1;
+
+2011	238127	0.01310706964492014979
+2012	640823	0.01172647242691625833
+2013	643211	0.01171734544435323418
+2014	378620	0.00679976207477690918
+2015	349196	0.00618897982803690666
+2016	392938	0.00691437307587770348
+2017	356535	0.00623618248346620608
+2018	331555	0.00588154799512041993
+2019	278113	0.00508024122583248950
+2020	237838	0.00411610369020348181
+2021	237490	0.00364986494700534106
+2022	130084	0.00278779222859947708
+ */
+
 /**************
  * In case you messed up and need to start again
 
