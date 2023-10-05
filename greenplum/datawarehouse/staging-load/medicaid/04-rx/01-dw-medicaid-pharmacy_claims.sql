@@ -20,6 +20,11 @@ add column claim_status varchar(20);
 vacuum analyze data_warehouse.pharmacy_claims;
 */
 
+/*on next run: need to change data_source = 'mdcd' to
+ * data source in ('mdcd', 'mhtw', 'mcpp') for joining
+ * to dim tables
+ */
+
 drop table if exists dw_staging.mcd_pharmacy_claims;
 
 create table dw_staging.mcd_pharmacy_claims 

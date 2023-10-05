@@ -118,6 +118,7 @@ select v_member_id, v_data_source, nextval('data_warehouse.dim_uth_member_id_uth
 from cte_distinct_member ;
 
 
+
 /******************
  * Hotfix: I accidentally inserted everyone from FY22 as mdcd, so let's fix that
  * 
