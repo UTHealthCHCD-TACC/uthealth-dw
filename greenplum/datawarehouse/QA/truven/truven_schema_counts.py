@@ -35,6 +35,16 @@ report_version numeric
 
     cursor.execute(query)
 
+    query = '''
+    grant select on qa_reporting.truven_counts_old to uthealth_analyst;
+    grant select on qa_reporting.truven_counts to uthealth_analyst;
+    grant insert on qa_reporting.truven_counts to uthealth_dev;
+    grant update on qa_reporting.truven_counts to uthealth_dev;
+    grant delete on qa_reporting.truven_counts to uthealth_dev;
+    '''
+
+    cursor.execute(query)
+
     print('A - enrollment tables')
 
     query = '''
