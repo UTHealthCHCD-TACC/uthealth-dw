@@ -105,22 +105,6 @@ from qa_reporting.temp_mcd_claims a left join qa_reporting.temp_mcd_enrl b
 on a.member_id_src = b.client_nbr
 	and a.from_date_of_service between b.month_start and b.month_end;
 
-/**************
- * Drill down and check
-
-select * from qa_reporting.temp_mcd_matches where data_source_mismatch = 1;
-member_id	fy		dos			elig_datemonth_startmonth_end	clm		enrl
-522953650	2017	2016-12-21	201612	2016-12-01	2016-12-31	mcpp	mdcd -- >1 record per row
-728055086	2020	2020-05-30	202005	2020-05-01	2020-05-31	mcpp	mdcd
-527362429	2018	2018-03-01	201803	2018-03-01	2018-03-31	mcpp	mdcd
-706302430	2019	2019-08-22	201908	2019-08-01	2019-08-31	mcpp	mdcd
-523535198	2018	2017-10-09	201710	2017-10-01	2017-10-31	mcpp	mdcd
-
-select * from qa_reporting.temp_mcd_enrl
-where client_nbr = '522953650' order by elig_date;
-
-*/
-
 --Try it again but this time only show the ones where DW has COMPLETELY incorrect information
 --e.g. there is no match from enrollment tables
 drop table if exists qa_reporting.temp_mcd_matches2;
@@ -133,28 +117,6 @@ select a.member_id_src, a.fiscal_year, a.from_date_of_service,
 from qa_reporting.temp_mcd_claims a left join qa_reporting.temp_mcd_enrl b
 on a.data_source = b.data_source and a.member_id_src = b.client_nbr
 	and a.from_date_of_service between b.month_start and b.month_end;
-
-/**************
- * Drill down and check
-
-select * from qa_reporting.temp_mcd_matches2 where data_source_mismatch = 1;
---44 records here but they are all when there is no enrollment data
---all 44 records are 'mdcd' data source
-member_id	fy		from_dos
-519297993	2016	2016-03-25  --not enrolled in march 2016
-519084348	2016	2015-12-28  --not enrolled 
-520637944	2014	2014-06-24
-612403706	2015	2015-06-18
-616423787	2021	2020-09-21
-
---let's go hunt them down
-select * from data_warehouse.member_enrollment_monthly
-where member_id_src = '519297993' order by month_year_id;
-
-select year_fy, client_nbr, elig_date from medicaid.enrl
-where client_nbr = '519084348' order by elig_date;
-
-*/
 
 /***********************************
 * And now that we note that there's ~40 claims per 1000 (only for Medicaid apparently)
