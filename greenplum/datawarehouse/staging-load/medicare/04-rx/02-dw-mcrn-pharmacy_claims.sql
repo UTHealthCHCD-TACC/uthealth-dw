@@ -5,7 +5,8 @@
  *  Author  || Date       || Notes
  * ******************************************************************************************************
  *  xiaorui || 10/04/2023 || created script
- * ****************************************************************************************************** 
+ * ******************************************************************************************************
+ *  xiaorui || 10/09/2023 || hotfix for missing uth_rx_claim_ids
  * */
 
 drop table if exists dw_staging.mcrn_pharmacy_claims;
@@ -60,6 +61,24 @@ left join data_warehouse.dim_uth_rx_claim_id b
     on a.pde_id = b.rx_claim_id_src and b.data_source = 'mcrn';
 
 vacuum analyze dw_staging.mcrn_pharmacy_claims;
+
+/**********HOTFIX: some uth_rx_claim_ids fell off the dim table ******
+
+update dw_staging.mcrn_pharmacy_claims a
+set uth_rx_claim_id = b.uth_rx_claim_id,
+	uth_member_id = b.uth_member_id
+from data_warehouse.dim_uth_rx_claim_id b
+where a.uth_rx_claim_id is null
+	and b.data_source = 'mcrn'
+	and a.rx_claim_id_src = b.rx_claim_id_src;
+
+vacuum analyze dw_staging.mcrn_pharmacy_claims;
+
+select * from dw_staging.mcrn_pharmacy_claims
+where uth_rx_claim_id is null;
+--21, but these are the ones whose bene_id doesn't exist in the enrollment table
+
+*/
 
 
 

@@ -16,6 +16,7 @@ where data_source = 'truv';
 
 --timestamp
 select 'Truven dim_uth_member_id refresh started at ' || current_timestamp as message;
+select 'mdcr started at ' || current_timestamp as message;
 
 insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
 with cte_distinct_member as (
