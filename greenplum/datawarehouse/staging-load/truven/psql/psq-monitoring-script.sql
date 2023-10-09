@@ -75,7 +75,7 @@ order by ordinal_position;
 
 
 
-
+select year, sum(case when ) from truven.ccaef where year
 
 
 

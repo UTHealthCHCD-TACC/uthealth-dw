@@ -11,11 +11,13 @@ and enter password when prompted. Then, execute each row individually.
 
 \i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/00-dw-truven-vacuum-analyze-all.sql
 
-\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/01-dw-truven-dim_uth_member_id.sql
+\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/01-fill-in-claim-id-derv.sql
 
-\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/02-dw-truven-dim_uth_claim_id.sql
+\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/02-dw-truven-dim_uth_member_id.sql
 
-\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/03-dw-truven-dim_uth_rx_id.sql
+\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/03-dw-truven-dim_uth_claim_id.sql
+
+\i H:/GitHub/UTH-CHCD/uthealth-dw/greenplum/datawarehouse/staging-load/truven/01-setup/04-dw-truven-dim_uth_rx_id.sql
 
 --------or if you prefer, as a one-liner---------
 
