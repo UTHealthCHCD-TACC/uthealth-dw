@@ -146,8 +146,8 @@ select 'Member demographic clean-up started at ' || current_timestamp as message
 
 /****************************************************
  * Clean member demographics
+ *     DOB is 1-1 with member_id_src and does not require cleaning
  ****************************************************/
---DOB is 1-1 with member_id_src and does not require cleaning
 
 do $$
 declare
@@ -155,10 +155,11 @@ declare
 	col_list_len int = array_length(col_list,1);
 begin
 
------------------------------------------------------------------------------------------------------------------------
------************** logic for yearly rollup of various columns
--- all logic finds the most common occurence in a given year and assigns that value  28min
------------------------------------------------------------------------------------------------------------------------
+/***************************************************
+ * logic for yearly rollup of various columns
+ * all logic finds the most common occurence in a given year and assigns that value  28min
+*******************************************************/
+	
 	for col_counter in 1.. col_list_len
 	loop
 
@@ -204,44 +205,10 @@ select 'Vacuum analyze and final clean up started at ' || current_timestamp as m
 --vacuum analyze
 vacuum analyze dw_staging.truc_member_enrollment_yearly;
 
-/**************************
- * Hot fix for load_date - this code exist bc the original code didn't include load_date
- * It's since been changed so theoretically this shouldn't need to be run anymore
- * 
-UPDATE dw_staging.truv_member_enrollment_yearly
-SET load_date = CURRENT_DATE;
- */
-
 -- Drop temp table we created earlier
 drop table if exists staging_clean.temp_member_enrollment_month;
 
 select 'Truven CCAE member enrollment yearly etl script completed at ' || current_timestamp as message;
-
-/* 	QA
- * 
-select year, 
-	sum(case when state is null then 1 else 0 end) * 1.0 / count(*) as state_null_pct,
-	sum(case when state = '' then 1 else 0 end) * 1.0 / count(*) as state_empty_pct,
-	sum(case when zip3 is null then 1 else 0 end) * 1.0 / count(*) as zip_null_pct,
-	sum(case when msa is null then 1 else 0 end) * 1.0 / count(*) as msa_null_pct
-from dw_staging.truc_member_enrollment_yearly
-group by year order by year;
-
-"year"	state_null_pct				state_empty_pct			zip_null_pct			msa_null_pct
-2011	0.000000000000000000000000	0.02989626155934627802	0.02775216843654602804	1.00000000000000000000
-2012	0.000000000000000000000000	0.02130257475628500318	0.01963531342605035177	1.00000000000000000000
-2013	0.000000000000000000000000	0.02738290367217466077	0.02359939819673483112	1.00000000000000000000
-2014	0.000000000000000000000000	0.02354495679594590843	0.02212514956030793003	1.00000000000000000000
-2015	0.000000000000000000000000	0.00302740585056004821	0.00271119711568530430	1.00000000000000000000
-2016	0.000000000000000000000000	0.00323615320955988943	0.00297607005119971496	1.00000000000000000000
-2017	0.000000000000000000000000	0.13224357963036799697	0.11053846102360661318	1.00000000000000000000
-2018	0.000000000000000000000000	0.08854090448298750653	0.08924738645601294165	1.00000000000000000000
-2019	0.000000000000000000000000	0.09637923495175703218	1.00000000000000000000	0.09422115550421528756
-2020	0.000000000000000000000000	0.09480363057303524381	1.00000000000000000000	0.09273967772575943073
-2021	0.00046166714889324073		0.14741432009228962419	1.00000000000000000000	0.17077702580609410274
-2022	0.00051550240187198089		0.15546500571340883619	1.00000000000000000000	0.17799173475091446030
- * 
- */
 
 
 

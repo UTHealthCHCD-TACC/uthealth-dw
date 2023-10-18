@@ -11,13 +11,7 @@
  * 07/13/23	| Xiaorui		| Split 'truv' into 'trum' and 'truc'
  **************************************/
 
-/***********************
- * 07/13/23: As part of the truven data source split into truc and trum, 
- * we need to first delete all the records with data_source = 'truv'
- * 
-delete from data_warehouse.dim_uth_claim_id where data_source = 'truv';
-vacuum analyze data_warehouse.dim_uth_claim_id;
- */
+--last run 10/09/2023
 
 /*
 --how distinct are 'o' tables and 's' tables? are there claims that are in both?
@@ -125,7 +119,7 @@ select * from data_warehouse.update_log;
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Updated for Truven 2022 Q3, split Truven into truc and trum',
+	details = 'Updated for Truven 2022 Q4',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname

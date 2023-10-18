@@ -11,8 +11,7 @@
  * ------------------------------------------------------------------------------------------------------
  *  xrzhang || 07/13/2023 || Split 'truv' into 'trum' and 'truc'
  * 
- * 
- * last run date: 07/13/2023 (2022 Q3 data, truv split into trum and truc)
+ * last run date: 10/09/2023 (2022 Q4)
  * */
 
 /*******************
@@ -96,7 +95,7 @@ select * from data_warehouse.update_log;
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Updated for Truven 2022 Q3, split Truven into truc and trum',
+	details = 'Updated for Truven 2022 Q4',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
