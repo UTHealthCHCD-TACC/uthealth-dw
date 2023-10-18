@@ -1,82 +1,182 @@
-/********************************
- * This script adds any enrolids not already in dim_uth and assigns a new uth_member_id
- * 
- * Date  	|	Author 	| Change
- * ********************************************************************************
- * 07/13/23 | Xiaorui	| Truven split into truc and trum (commercial and medicare)
- */
 
-/***********************
- * 07/13/23: As part of the truven data source split into truc and trum, 
- * we need to first delete all the records with data_source = 'truv'
- * 
-delete from data_warehouse.dim_uth_member_id
-where data_source = 'truv';
- */
+/* ******************************************************************************************************
+ *  claim diag load for truven commercial
+ * ******************************************************************************************************
+*   jw001   || 9/24/2021  || need to put claim sequence number in insert and select statements. 
+ * ******************************************************************************************************
+ *  gmunoz  || 10/29/2021 || added fiscal year logic with function dev.fiscal_year_func
+ * ******************************************************************************************************
+ *  gmunoz  || 11/05/2021 || removed the data_year column in insert on all four inserts
+ * ******************************************************************************************************
+ *  jwozny  || 1/03/2022  || removed icd_type, year, fiscal_year 
+ * ******************************************************************************************************
+ *  iperez  || 09/28/2022 || added claim id source and member id source to columns
+ * ******************************************************************************************************
+ *  iperez  || 09/30/2022 || removed claim id source and member id source to columns
+ * ******************************************************************************************************
+ *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
+ * ******************************************************************************************************
+ *  xzhang  || 07/20/2023 || Split into trum and truc, added table_id_src
+ * ******************************************************************************************************
+ *  xzhang  || 10/17/2023 || Converted diag_pos to text and indicated which one is primary
+ * */
 
---timestamp
-select 'Truven dim_uth_member_id refresh started at ' || current_timestamp as message;
-select 'mdcr started at ' || current_timestamp as message;
+select 'Truven CCAE Claim Diag script started at ' || current_timestamp as message;
 
-insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
-with cte_distinct_member as (
-	select distinct enrolid as v_member_id, 'trum' as v_raw_data
-           from truven.mdcrt 
-	 left outer join data_warehouse.dim_uth_member_id b 
-          on b.data_source = 'trum'
-         and b.member_id_src = enrolid::text
-	   where b.member_id_src is null
-)
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
-from cte_distinct_member 
+drop table if exists dw_staging.truc_claim_diag;
+
+--create empty table
+create table dw_staging.truc_claim_diag
+(like data_warehouse.claim_diag including defaults) 
+with (
+		appendonly=true, 
+		orientation=row, 
+		compresstype=zlib, 
+		compresslevel=5 
+	 )
+distributed by (uth_member_id)
 ;
 
-select 'mdcr done, starting ccae at ' || current_timestamp as message;
+vacuum analyze dw_staging.truc_claim_diag;
 
-insert into data_warehouse.dim_uth_member_id (member_id_src, data_source, uth_member_id)
-with cte_distinct_member as (
-	select distinct enrolid as v_member_id, 'truc' as v_raw_data
-           from truven.ccaet 
-	 left outer join data_warehouse.dim_uth_member_id b 
-          on b.data_source = 'truc'
-         and b.member_id_src = enrolid::text
-	   where b.member_id_src is null 	
-)
-select v_member_id, v_raw_data, nextval('data_warehouse.dim_uth_member_id_uth_member_id_seq')
-from cte_distinct_member 
+select 'Inserting from ccaes: ' || current_timestamp as message;
+
+ -------------------------------- truven commercial inpatient ------
+insert into dw_staging.truc_claim_diag 
+( 
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date,
+table_id_src
+)  					
+with diag_agg as (
+select  'truc', 
+         enrolid,
+         claim_id_derv,
+         min(svcdate) as svcdate,
+		 min(year) as year,
+		 min(dxver) as dxver,
+		 min(pdx) as pdx,
+		 min(dx1) as dx1,
+		 min(dx2) as dx2,
+		 min(dx3) as dx3,
+		 min(dx4) as dx4
+   from staging_clean.ccaes_etl  	 
+  group by enrolid, claim_id_derv 
+  )
+ select * from (
+  select 
+ 	 'truc' as data_source,
+	 year,
+     b.uth_member_id, 
+     b.uth_claim_id, 
+	 a.svcdate,
+     unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
+	 unnest(array['P','1','2','3','4']) as dx_pos,
+     null as poa_src,
+     a.dxver as icd_version,
+     a.claim_id_derv as claim_id_src,
+     a.enrolid::text as member_id_src,
+     current_date as load_date,
+     'ccaes' as table_id_src
+from diag_agg a
+join staging_clean.truc_dim_id  b 
+  on b.member_id_src = a.enrolid 
+ and b.claim_id_src = a.claim_id_derv 
+ ) dx where dx_cd is not null
 ;
 
-/* QA
+select 'Analyze: ' || current_timestamp as message;
+
+analyze dw_staging.truc_claim_diag;
+
+select 'Inserting from ccaeo: ' || current_timestamp as message;
+
+-------------------------------- truven commercial outpatient -------------------------------------- 22m
+insert into dw_staging.truc_claim_diag 
+( 
+data_source, 
+year,
+uth_member_id, 
+uth_claim_id, 
+from_date_of_service,
+diag_cd, 
+diag_position, 
+poa_src,
+icd_version,
+claim_id_src,
+member_id_src,
+load_date,
+table_id_src
+)  					
+with diag_agg as (
+select  'truc', 
+         enrolid,
+         claim_id_derv,
+         min(svcdate) as svcdate,
+		 min(year) as year,
+		 min(dxver) as dxver,
+		 min(dx1) as dx1,
+		 min(dx2) as dx2,
+		 min(dx3) as dx3,
+		 min(dx4) as dx4
+   from staging_clean.ccaeo_etl  	 
+  group by enrolid, claim_id_derv 
+  )
+select * from (
+	  select 
+	   'truc', 
+		 year,
+	     b.uth_member_id, 
+	     b.uth_claim_id, 
+		 a.svcdate,
+	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
+		 unnest(array['1','2','3','4']) as dx_pos,
+	     null,
+	     a.dxver,
+	     a.claim_id_derv,
+	     a.enrolid::text,
+	     current_date,
+	     'ccaeo' as table_id_src
+	from diag_agg a
+	join staging_clean.truc_dim_id  b 
+	  on b.member_id_src = a.enrolid 
+	 and b.claim_id_src = a.claim_id_derv 
+ ) dx where dx_cd is not null
+;
+
+select 'Analyze: ' || current_timestamp as message;
+
+analyze dw_staging.truc_claim_diag;
+
+select 'Truven CCAE Claim Diag script completed at ' || current_timestamp as message;
+
+/*************
+ * QA:
  * 
-select * from data_warehouse.dim_uth_member_id where data_source = 'trum';
-select * from data_warehouse.dim_uth_member_id where data_source = 'truc';
+select table_id_src, count(*) from dw_staging.truc_claim_diag group by table_id_src;
  */
 
-select 'claims refreshed, vacuum analyze and updating update_log: ' || current_timestamp as message;
 
-vacuum analyze data_warehouse.dim_uth_member_id;
 
-/********************************
- * change update_log
- *******************************/
 
---backup update_log
-drop table if exists backup.update_log;
 
-create table backup.update_log as
-select * from data_warehouse.update_log;
 
---update update_log
-update data_warehouse.update_log a
-set data_last_updated = current_date, --last updated 7/12/23
-	details = 'Updated for Truven 2022 Q3, split Truven into truc and trum',
-	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
-from pg_catalog.pg_stat_all_tables b
-where a.schema_name = b.schemaname and a.table_name = b.relname
-and schema_name = 'data_warehouse' and table_name = 'dim_uth_member_id';
 
---timestamp
-select 'Truven dim_uth_member_id refresh completed at ' || current_timestamp as message;
+
+
+
+
+
 
 
 

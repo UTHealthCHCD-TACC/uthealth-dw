@@ -6,13 +6,7 @@
  * 07/13/23 | Xiaorui	| Truven split into truc and trum (commercial and medicare)
  */
 
-/***********************
- * 07/13/23: As part of the truven data source split into truc and trum, 
- * we need to first delete all the records with data_source = 'truv'
- * 
-delete from data_warehouse.dim_uth_member_id
-where data_source = 'truv';
- */
+--last run 10/09/2023
 
 --timestamp
 select 'Truven dim_uth_member_id refresh started at ' || current_timestamp as message;
@@ -69,7 +63,7 @@ select * from data_warehouse.update_log;
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date, --last updated 7/12/23
-	details = 'Updated for Truven 2022 Q3, split Truven into truc and trum',
+	details = 'Updated for Truven 2022 Q4',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname

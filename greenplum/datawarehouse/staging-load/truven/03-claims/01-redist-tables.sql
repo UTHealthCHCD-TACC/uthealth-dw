@@ -7,7 +7,7 @@
  * 07/19/2023: Adapted for psql (added in timestamps)
  * 				Fixed the say stdprov imports
  * 				(previously added an extraneous .0 after the number if you go straight ::text instead of ::int::text
- * 
+ * 10/10/2023: XZ fixed typo ('trum' was supposed to be 'truv' in a drop table statement)
  */
 
 /*
@@ -49,7 +49,7 @@ analyze staging_clean.truc_dim_id;
 select 'Redistributing mdcrf: ' || current_timestamp as message;
 
 ---medicare 
-drop table if exists staging_clean.trum_mdcrf_etl;
+drop table if exists staging_clean.truv_mdcrf_etl;
 
 create table staging_clean.truv_mdcrf_etl as
 select enrolid::bigint, 
@@ -265,7 +265,3 @@ select count(*) from truven.ccaeo;
 select count(*) from staging_clean.ccaeo_etl;
  * 
  */
-
-
-
-
