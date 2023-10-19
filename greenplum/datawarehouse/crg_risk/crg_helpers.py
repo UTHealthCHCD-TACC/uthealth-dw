@@ -142,7 +142,7 @@ def crg_claim_rev(cursor, data_source, year, use_fiscal_year=False):
         from data_warehouse.claim_detail
         where {'fiscal_' if use_fiscal_year else ''}year = {year}
         and data_source = '{data_source}'
-        where revenue_cd is not null
+        and revenue_cd is not null
     ) a
     group by 1,2
     ;
@@ -204,10 +204,14 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
     from ( 
         select uth_member_id, uth_claim_id, diag_cd, icd_version
         from (
-            select distinct uth_member_id, uth_claim_id, diag_cd, icd_version
+            select distinct uth_member_id, uth_claim_id, diag_cd, 
+                    case 
+                        when icd_version is null then dev.fn_crg_icd_version(icd_version, year) 
+                        else icd_version 
+                    end as icd_version
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position = {'P' if data_source in ['trum', 'truc'] else '1'}
+            and diag_position = '{'P' if data_source in ['trum', 'truc'] else '1'}'
             and data_source = '{data_source}'
         ) c
     ) a 
@@ -217,7 +221,7 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
             select distinct uth_member_id, uth_claim_id, diag_cd, diag_position
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position <> {'P' if data_source in ['trum', 'truc'] else '1'}
+            and diag_position <> '{'P' if data_source in ['trum', 'truc'] else '1'}'
             and data_source = '{data_source}'
         ) a
         group by 1,2

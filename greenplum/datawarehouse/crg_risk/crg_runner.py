@@ -89,12 +89,12 @@ if __name__ == '__main__':
     data_sources = [
                     # 'mdcd',
                     # 'mcpp', 
-                    'mhtw', 
+                    # 'mhtw', 
                     # 'mcrt',
                     # 'mcrn',
                     # 'optz',
                     # 'optd',
-                    # 'truc', 
+                    'truc', 
                     # 'trum',
                     ]
 
