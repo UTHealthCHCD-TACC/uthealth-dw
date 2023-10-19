@@ -1,16 +1,18 @@
 import pandas as pd
+from datetime import date
 
-def crg_enrl_yearly(cursor, data_source, year, use_fiscal_year=False):
+def crg_enrl_yearly(cursor, data_source, start_age, end_age, year, use_fiscal_year=False):
     # Get list of enrolled people from given data source(s) for at least one calendar year
 
     query = f'''
 drop table if exists dev.ip_{data_source}_crg_enrl;
 
-select uth_member_id, gender_cd, to_char(dob_derived, 'mmddyyyy') as dob
+select uth_member_id, gender_cd, to_char(dob_derived, 'mmddyyyy') as dob, age_derived
 into dev.ip_{data_source}_crg_enrl
 from data_warehouse.member_enrollment_{'fiscal_' if use_fiscal_year else ''}yearly
 where {'fiscal_' if use_fiscal_year else ''}year = {year}
 and data_source = '{data_source}'
+and age_derived between {start_age} and {end_age}
 ;
     '''
 
@@ -140,6 +142,7 @@ def crg_claim_rev(cursor, data_source, year, use_fiscal_year=False):
         from data_warehouse.claim_detail
         where {'fiscal_' if use_fiscal_year else ''}year = {year}
         and data_source = '{data_source}'
+        where revenue_cd is not null
     ) a
     group by 1,2
     ;
@@ -180,6 +183,7 @@ def crg_claim_proc(cursor, data_source, year, use_fiscal_year=False):
         from data_warehouse.claim_detail
         where {'fiscal_' if use_fiscal_year else ''}year = {year}
         and data_source = '{data_source}'
+        and cpt_hcpcs_cd is not null
     ) a
     group by uth_member_id, uth_claim_id
     ;
@@ -196,9 +200,9 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
     select a.*, b.secondary_dx
     into dev.ip_{data_source}_crg_dx
     from ( 
-        select uth_member_id, uth_claim_id, diag_cd
+        select uth_member_id, uth_claim_id, diag_cd, icd_version
         from (
-            select distinct uth_member_id, uth_claim_id, diag_cd
+            select distinct uth_member_id, uth_claim_id, diag_cd, icd_version
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
             and diag_position = 1
@@ -242,24 +246,26 @@ def crg_admit(cursor, data_source):
 
     cursor.execute(query)
 
+    return cursor.rowcount
+
 def crg_input(cursor, data_source, year, use_fiscal_year=False):
     query = f'''
     drop table if exists dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year};
 
     select distinct
-            a.uth_member_id as PatientId,
+            a.uth_member_id::text as PatientId,
             a.gender_cd as Sex,
             a.dob as BirthDate,
-            b.uth_claim_id as ClaimId,
-            coalesce(to_char(i.admit_date, 'mmddyyyy') , to_char(h.from_date_of_service, 'mmddyyyy'), '') as AdmitDate,
-		    coalesce(to_char(i.discharge_date, 'mmddyyyy') , to_char(h.to_date_of_service, 'mmddyyyy'), '') AS DischargeDate,
+            b.uth_claim_id::text as ClaimId,
+            coalesce(to_char(i.admit_date, 'mmddyyyy'), h.from_date_of_service) as AdmitDate,
+		    coalesce(to_char(i.discharge_date, 'mmddyyyy'), h.to_date_of_service) AS DischargeDate,
             h.from_dos as ItemFromDate,
             h.to_dos as ItemToDate,
             b.discharge_status as DischargeStatus,
             case when b.bill is null then '' else b.bill end as TypeOfBill,
             g.pos as PlaceOfService,
             case when b.bill is null then 1 else 2 end as ProviderType,
-            0 as ICDVersionQualifier,
+            c.icd_version as ICDVersionQualifier,
             c.diag_cd as AdmitDiagnosis,
             c.diag_cd as PrimaryDiagnosis,
             c.secondary_dx as SecondaryDiagnosis,
@@ -320,31 +326,33 @@ def crg_input(cursor, data_source, year, use_fiscal_year=False):
 def swap_uth_id_src_id(cursor, data_source, year, use_fiscal_year=False):
     query = f'''
     update dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year} a
-    set PatientId = b.member_id_src,
-        ClaimId = b.claim_id_src
+    set patientid = b.member_id_src,
+        claimid = b.claim_id_src
     from (
         select *
         from data_warehouse.dim_uth_claim_id
-        where data_source = {data_source}
+        where data_source = '{data_source}'
         and data_year between {year}-1 and {year}
     ) b
-    where a.PatientId = b.uth_member_id
-    and a.ClaimId = b.uth_claim_id
+    where a.patientid = b.uth_member_id::text
+    and a.claimid = b.uth_claim_id::text
     '''
     
     cursor.execute(query)
 
-def generate_crg_input_table(cursor, data_source, year, use_fiscal_year=False, user_src_id=False):
-    print('Enrollment: ', crg_enrl_yearly(cursor, data_source, year, use_fiscal_year))
-    print('Claim Detail: ', crg_claim_detail(cursor, data_source, year, use_fiscal_year))
-    print('Claim POS: ', crg_claim_pos(cursor, data_source, year, use_fiscal_year))
-    print('Claim DOS: ', crg_claim_dos(cursor, data_source, year, use_fiscal_year))
-    print('Claim Revenue Codes: ', crg_claim_rev(cursor, data_source, year, use_fiscal_year))
-    print('ICD Proc: ', crg_claim_icd_proc(cursor, data_source, year, use_fiscal_year))
-    print('Proc: ', crg_claim_proc(cursor, data_source, year, use_fiscal_year))
-    print('DX: ', crg_claim_dx(cursor, data_source, year, use_fiscal_year))
-    print('Admit: ', crg_admit(cursor, data_source))
-    print('Input: ', crg_input(cursor, data_source, year, use_fiscal_year))
+def generate_crg_input_table(cursor, data_source, year, start_age=None, end_age=None, use_fiscal_year=False, user_src_id=False):
+    if start_age is not None and end_age is not None:
+        print('Enrollment: ', crg_enrl_yearly(cursor, data_source, start_age, end_age, year, use_fiscal_year))
+        print('Input: ', crg_input(cursor, data_source, year, use_fiscal_year))
+    else:
+        print('Claim Detail: ', crg_claim_detail(cursor, data_source, year, use_fiscal_year))
+        print('Claim POS: ', crg_claim_pos(cursor, data_source, year, use_fiscal_year))
+        print('Claim DOS: ', crg_claim_dos(cursor, data_source, year, use_fiscal_year))
+        print('Claim Revenue Codes: ', crg_claim_rev(cursor, data_source, year, use_fiscal_year))
+        print('ICD Proc: ', crg_claim_icd_proc(cursor, data_source, year, use_fiscal_year))
+        print('Proc: ', crg_claim_proc(cursor, data_source, year, use_fiscal_year))
+        print('DX: ', crg_claim_dx(cursor, data_source, year, use_fiscal_year))
+        print('Admit: ', crg_admit(cursor, data_source))
 
     if user_src_id:
         print('Swapping uth ids with source ids')
@@ -352,32 +360,36 @@ def generate_crg_input_table(cursor, data_source, year, use_fiscal_year=False, u
 
 def crg_input_file_batch_export(cursor, year, data_source, start_age, end_age, file_directory, use_fiscal_year=False):
     # Creates partitions based on people age from the input table so that 3M can run with no issues
-    with open(file_directory+f'''{data_source}_input_{'fy_' if use_fiscal_year else 'cy_'}{year}_{start_age}_{end_age}.csv''', 'w') as file:
+    with open(file_directory+f'''{data_source}_input_crg_{'fy_' if use_fiscal_year else 'cy_'}{year}_{start_age}_{end_age}.csv''', 'w') as file:
         query = f'''
         select * 
-        from dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year} 
-        where substring(BirthDate, 5, 4)::int between {start_age} and {end_age}
+        from dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year}
         order by PatientId, ItemFromDate'''
         query = f'''copy ({query}) to stdout with csv header'''
         cursor.copy_expert(query, file)
 
 def create_crg_table(cursor, schema, table_name):
     cursor.execute(
-        f''''create table {schema}.{table_name}
- (
-        data_source bpchar(4),
-        uth_member_id int8,
-        crg_year int2,
-        crg text,
-        aggregated_crg_3 text,
-        prospective_crg	text,
-        prospective_agg_crg_1 text,
-        prospective_agg_crg_2 text,
-        prospective_agg_crg_3 text,
-        concurrent_crg text,
-        concurrent_agg_crg_1 text,
-        concurrent_agg_crg_2 text,
-        concurrent_agg_crg_3 text)
+        f'''
+drop table if exists {schema}.{table_name};
+
+create table {schema}.{table_name}
+(
+    data_source bpchar(4),
+    uth_member_id int8,
+    crg_year int2,
+    crg text,
+    aggregated_crg_3 text,
+    prospective_crg	text,
+    prospective_agg_crg_1 text,
+    prospective_agg_crg_2 text,
+    prospective_agg_crg_3 text,
+    concurrent_crg text,
+    concurrent_agg_crg_1 text,
+    concurrent_agg_crg_2 text,
+    concurrent_agg_crg_3 text,
+    load_date date
+)
 WITH (
     appendonly=true,
     orientation=column,
@@ -389,31 +401,37 @@ DISTRIBUTED BY (uth_member_id, crg_year);
     return -1
 
 def crg_read_csv(crg_file, data_source, crg_year):
+    
     # Once 3M generates the file with the CRG scores, read the relevant columns as a dataframe
-    crg_df = pd.read_csv(crg_file,
-                         dtype={'Crg': 'str',
-                                'AggregatedCrg3': 'str',
-                                'ProspectiveCrg': 'str',
-                                'ProspectiveAggregatedCrg1': 'str',
-                                'ProspectiveAggregatedCrg2': 'str',
-                                'ProspectiveAggregatedCrg23': 'str',
-                                'ConcurrentCrg': 'str',
-                                'ConcurrentAggregatedCrg1': 'str',
-                                'ConcurrentAggregatedCrg2': 'str',
-                                'ConcurrentAggregatedCrg2': 'str'},
-                         usecols=['PatientId',
-                                  'Crg',
-                                  'AggregatedCrg3',
-                                  'ProspectiveCrg',
-                                  'ProspectiveAggregatedCrg1',
-                                  'ProspectiveAggregatedCrg2',
-                                  'ProspectiveAggregatedCrg3',
-                                  'ConcurrentCrg', 'ConcurrentAggregatedCrg1',
-                                  'ConcurrentAggregatedCrg2',
-                                  'ConcurrentAggregatedCrg3'])
+    try:
+        crg_df = pd.read_csv(crg_file,
+                            dtype={'Crg': 'str',
+                                    'AggregatedCrg3': 'str',
+                                    'ProspectiveCrg': 'str',
+                                    'ProspectiveAggregatedCrg1': 'str',
+                                    'ProspectiveAggregatedCrg2': 'str',
+                                    'ProspectiveAggregatedCrg23': 'str',
+                                    'ConcurrentCrg': 'str',
+                                    'ConcurrentAggregatedCrg1': 'str',
+                                    'ConcurrentAggregatedCrg2': 'str',
+                                    'ConcurrentAggregatedCrg2': 'str'},
+                            usecols=['PatientId',
+                                    'Crg',
+                                    'AggregatedCrg3',
+                                    'ProspectiveCrg',
+                                    'ProspectiveAggregatedCrg1',
+                                    'ProspectiveAggregatedCrg2',
+                                    'ProspectiveAggregatedCrg3',
+                                    'ConcurrentCrg', 'ConcurrentAggregatedCrg1',
+                                    'ConcurrentAggregatedCrg2',
+                                    'ConcurrentAggregatedCrg3'])
+    except:
+        # If 3M generated an empty output file, skip the rest of the process and ignore having to upload to DB
+        return None
 
     crg_df.loc[:, 'data_source'] = data_source
     crg_df.loc[:, 'crg_year'] = crg_year
+    crg_df.loc[:, 'load_date'] = date.today()
 
     crg_df = crg_df.rename(columns={'PatientId': 'uth_member_id',
                                     'Crg': 'crg',
@@ -433,7 +451,7 @@ def crg_read_csv(crg_file, data_source, crg_year):
                      'prospective_crg', 'prospective_agg_crg_1',
                      'prospective_agg_crg_2', 'prospective_agg_crg_3',
                      'concurrent_crg', 'concurrent_agg_crg_1', 
-                     'concurrent_agg_crg_2', 'concurrent_agg_crg_3']]
+                     'concurrent_agg_crg_2', 'concurrent_agg_crg_3', 'load_date']]
 
     crg_df = crg_df.dropna(subset=['uth_member_id'])
     crg_df['uth_member_id'] = crg_df['uth_member_id'].astype(int)
