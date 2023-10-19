@@ -194,6 +194,8 @@ def crg_claim_proc(cursor, data_source, year, use_fiscal_year=False):
     return cursor.rowcount
 
 def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
+    # Currently only trum and truc have 'P' diagnosis position, 
+    # once all the other data sources have been updated to meet new mappings, this query will change again
     query = f'''
     drop table if exists dev.ip_{data_source}_crg_dx;
 
@@ -205,17 +207,17 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
             select distinct uth_member_id, uth_claim_id, diag_cd, icd_version
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position = 1
+            and diag_position = {'P' if data_source in ['trum', 'truc'] else '1'}
             and data_source = '{data_source}'
         ) c
     ) a 
     left join (
-        select uth_member_id, uth_claim_id, string_agg(diag_cd, ';') as secondary_dx
+        select uth_member_id, uth_claim_id, string_agg(diag_cd, ';' order by diag_position) as secondary_dx
         from (
-            select distinct uth_member_id, uth_claim_id, diag_cd 
+            select distinct uth_member_id, uth_claim_id, diag_cd, diag_position
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position > 1
+            and diag_position <> {'P' if data_source in ['trum', 'truc'] else '1'}
             and data_source = '{data_source}'
         ) a
         group by 1,2
