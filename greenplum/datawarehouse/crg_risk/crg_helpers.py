@@ -5,10 +5,10 @@ def crg_enrl_yearly(cursor, data_source, start_age, end_age, year, use_fiscal_ye
     # Get list of enrolled people from given data source(s) for at least one calendar year
 
     query = f'''
-drop table if exists dev.ip_{data_source}_crg_enrl;
+drop table if exists dev.ip_{data_source}_crg_enrl_{year};
 
 select uth_member_id, gender_cd, to_char(dob_derived, 'mmddyyyy') as dob, age_derived
-into dev.ip_{data_source}_crg_enrl
+into dev.ip_{data_source}_crg_enrl_{year}
 from data_warehouse.member_enrollment_{'fiscal_' if use_fiscal_year else ''}yearly
 where {'fiscal_' if use_fiscal_year else ''}year = {year}
 and data_source = '{data_source}'
@@ -29,7 +29,7 @@ def crg_claim_detail(cursor, data_source, year, use_fiscal_year=False):
     '''
 
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_claim_detail;
+    drop table if exists dev.ip_{data_source}_crg_claim_detail_{year};
 
     select distinct uth_member_id, uth_claim_id, 
             case 
@@ -45,7 +45,7 @@ def crg_claim_detail(cursor, data_source, year, use_fiscal_year=False):
                 when bill_type_inst is null then '2' 
                 else '1'
             end as provider_type
-    into dev.ip_{data_source}_crg_claim_detail
+    into dev.ip_{data_source}_crg_claim_detail_{year}
     from data_warehouse.claim_detail
     where {'fiscal_' if use_fiscal_year else ''}year = {year}
     and data_source = '{data_source}'
@@ -62,7 +62,7 @@ def crg_claim_pos(cursor, data_source, year, use_fiscal_year=False):
     '''
 
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_claim_pos;
+    drop table if exists dev.ip_{data_source}_crg_claim_pos_{year};
 
     select uth_member_id, uth_claim_id, 
         min(
@@ -81,7 +81,7 @@ def crg_claim_pos(cursor, data_source, year, use_fiscal_year=False):
             else place_of_service  
         end 
         )  as pos
-    into dev.ip_{data_source}_crg_claim_pos
+    into dev.ip_{data_source}_crg_claim_pos_{year}
     from data_warehouse.claim_detail
     where {'fiscal_' if use_fiscal_year else ''}year = {year}
     and data_source = '{data_source}'
@@ -99,14 +99,14 @@ def crg_claim_dos(cursor, data_source, year, use_fiscal_year=False):
     '''
 
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_claim_dos;
+    drop table if exists dev.ip_{data_source}_crg_claim_dos_{year};
 
     select a.uth_member_id, a.uth_claim_id, 
         to_char(b.from_date_of_service, 'mmddyyyy') as from_date_of_service,
         to_char(b.to_date_of_service, 'mmddyyyy') as to_date_of_service,
         string_agg(to_char(a.from_date_of_service, 'mmddyyyy'), ';' order by claim_sequence_number) from_dos,
 		string_agg(to_char(a.to_date_of_service, 'mmddyyyy'), ';' order by claim_sequence_number) to_dos
-    into dev.ip_{data_source}_crg_claim_dos
+    into dev.ip_{data_source}_crg_claim_dos_{year}
     from (
         select distinct uth_member_id, uth_claim_id, 
             claim_sequence_number, from_date_of_service, to_date_of_service
@@ -131,11 +131,11 @@ def crg_claim_rev(cursor, data_source, year, use_fiscal_year=False):
     '''
 
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_claim_rev;
+    drop table if exists dev.ip_{data_source}_crg_claim_rev_{year};
 
     select uth_member_id, uth_claim_id, 
         string_agg(revenue_cd, ';' order by claim_sequence_number) revenue_cd
-    into dev.ip_{data_source}_crg_claim_rev
+    into dev.ip_{data_source}_crg_claim_rev_{year}
     from (
         select distinct uth_member_id, uth_claim_id, 
             claim_sequence_number, revenue_cd
@@ -154,10 +154,10 @@ def crg_claim_rev(cursor, data_source, year, use_fiscal_year=False):
 
 def crg_claim_icd_proc(cursor, data_source, year, use_fiscal_year=False):
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_icd_proc;
+    drop table if exists dev.ip_{data_source}_crg_icd_proc_{year};
 
     select uth_member_id, uth_claim_id, string_agg(proc_cd, ';') icd_proc
-    into dev.ip_{data_source}_crg_icd_proc
+    into dev.ip_{data_source}_crg_icd_proc_{year}
     from (
         select distinct uth_member_id, uth_claim_id, proc_cd 
         from data_warehouse.claim_icd_proc
@@ -174,10 +174,10 @@ def crg_claim_icd_proc(cursor, data_source, year, use_fiscal_year=False):
 
 def crg_claim_proc(cursor, data_source, year, use_fiscal_year=False):
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_proc;
+    drop table if exists dev.ip_{data_source}_crg_proc_{year};
 
     select uth_member_id, uth_claim_id, string_agg(cpt_hcpcs_cd, ';') proc_cd
-    into dev.ip_{data_source}_crg_proc
+    into dev.ip_{data_source}_crg_proc_{year}
     from (
         select distinct uth_member_id, uth_claim_id, cpt_hcpcs_cd 
         from data_warehouse.claim_detail
@@ -197,10 +197,10 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
     # Currently only trum and truc have 'P' diagnosis position, 
     # once all the other data sources have been updated to meet new mappings, this query will change again
     query = f'''
-    drop table if exists dev.ip_{data_source}_crg_dx;
+    drop table if exists dev.ip_{data_source}_crg_dx_{year};
 
     select a.*, b.secondary_dx
-    into dev.ip_{data_source}_crg_dx
+    into dev.ip_{data_source}_crg_dx_{year}
     from ( 
         select uth_member_id, uth_claim_id, diag_cd, icd_version
         from (
@@ -234,15 +234,15 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
 
     return cursor.rowcount
 
-def crg_admit(cursor, data_source):
+def crg_admit(cursor, data_source, year):
     query =  f'''
-    drop table if exists dev.ip_{data_source}_crg_admit;
+    drop table if exists dev.ip_{data_source}_crg_admit_{year};
 
     select distinct a.uth_member_id, a.uth_claim_id, admit_date, discharge_date
-    into dev.ip_{data_source}_crg_admit
+    into dev.ip_{data_source}_crg_admit_{year}
     from (
         select distinct uth_member_id, uth_claim_id
-        from dev.ip_{data_source}_crg_claim_detail
+        from dev.ip_{data_source}_crg_claim_detail_{year}
     ) a
     join data_warehouse.admission_acute_ip_claims b
     on a.uth_member_id = b.uth_member_id
@@ -296,28 +296,28 @@ def crg_input(cursor, data_source, year, use_fiscal_year=False):
             '' AS ItemSiteOfService,
             '' AS SiteOfService
     into dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year}
-    from dev.ip_{data_source}_crg_enrl a
-    inner join dev.ip_{data_source}_crg_claim_detail b
+    from dev.ip_{data_source}_crg_enrl_{year} a
+    inner join dev.ip_{data_source}_crg_claim_detail_{year} b
     on a.uth_member_id = b.uth_member_id
-    left join dev.ip_{data_source}_crg_dx c
+    left join dev.ip_{data_source}_crg_dx_{year} c
     on b.uth_member_id = c.uth_member_id
     and b.uth_claim_id = c.uth_claim_id
-    left join dev.ip_{data_source}_crg_icd_proc d
+    left join dev.ip_{data_source}_crg_icd_proc_{year} d
     on b.uth_member_id = d.uth_member_id
     and b.uth_claim_id = d.uth_claim_id
-    left join dev.ip_{data_source}_crg_proc e
+    left join dev.ip_{data_source}_crg_proc_{year} e
     on b.uth_member_id = e.uth_member_id
     and b.uth_claim_id = e.uth_claim_id
-    left join dev.ip_{data_source}_crg_claim_rev f
+    left join dev.ip_{data_source}_crg_claim_rev_{year} f
     on b.uth_member_id = f.uth_member_id
     and b.uth_claim_id = f.uth_claim_id
-    left join dev.ip_{data_source}_crg_claim_pos g
+    left join dev.ip_{data_source}_crg_claim_pos_{year} g
     on b.uth_member_id = g.uth_member_id
     and b.uth_claim_id = g.uth_claim_id
-    join dev.ip_{data_source}_crg_claim_dos h
+    join dev.ip_{data_source}_crg_claim_dos_{year} h
     on b.uth_member_id = h.uth_member_id
     and b.uth_claim_id = h.uth_claim_id
-    left join dev.ip_{data_source}_crg_admit i
+    left join dev.ip_{data_source}_crg_admit_{year} i
     on b.uth_member_id = i.uth_member_id
     and b.uth_claim_id = i.uth_claim_id
     ;
@@ -358,7 +358,7 @@ def generate_crg_input_table(cursor, data_source, year, start_age=None, end_age=
         print('ICD Proc: ', crg_claim_icd_proc(cursor, data_source, year, use_fiscal_year))
         print('Proc: ', crg_claim_proc(cursor, data_source, year, use_fiscal_year))
         print('DX: ', crg_claim_dx(cursor, data_source, year, use_fiscal_year))
-        print('Admit: ', crg_admit(cursor, data_source))
+        print('Admit: ', crg_admit(cursor, data_source, year))
 
     if user_src_id:
         print('Swapping uth ids with source ids')
@@ -463,3 +463,19 @@ def crg_read_csv(crg_file, data_source, crg_year):
     crg_df['uth_member_id'] = crg_df['uth_member_id'].astype(int)
 
     return crg_df
+
+def drop_intermediate_tables(cursor, data_source, year, use_fiscal_year=False):
+    query = f'''
+    drop table if exists dev.ip_{data_source}_crg_input_{'fy_' if use_fiscal_year else 'cy_'}{year};
+    drop table if exists dev.ip_{data_source}_crg_enrl_{year};
+    drop table if exists dev.ip_{data_source}_crg_claim_detail_{year};
+    drop table if exists dev.ip_{data_source}_crg_dx_{year};
+    drop table if exists dev.ip_{data_source}_crg_icd_proc_{year};
+    drop table if exists dev.ip_{data_source}_crg_proc_{year};
+    drop table if exists dev.ip_{data_source}_crg_claim_rev_{year};
+    drop table if exists dev.ip_{data_source}_crg_claim_pos_{year};
+    drop table if exists dev.ip_{data_source}_crg_claim_dos_{year};
+    drop table if exists dev.ip_{data_source}_crg_admit_{year};
+    '''
+
+    cursor.execute(query)

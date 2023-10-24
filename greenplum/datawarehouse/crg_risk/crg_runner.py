@@ -68,10 +68,13 @@ if __name__ == '__main__':
     output_template = 'C:\\3mhis\\cgs\\templates\\crg_out.2022.3.1.dic'
     crg_files_path = 'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
     
-    start_year = 2014
-    end_year = 2022
+    start_year = 2017
+    end_year = 2017
+    
     use_fiscal_year = False
     use_src_ids = False
+    recreate_intermediate_tables = True
+    create_data_source_crg_risk_table = False
 
     age_windows = [
 					{'start_age': 0, 'end_age': 10},
@@ -103,8 +106,10 @@ if __name__ == '__main__':
         connection.autocommit = True
 
         # If it is for calendar year, create output table, typically used when crg are generated for DW
+        # Also check if we want to create the crg risk table for the given data_source,
+        # typically this flag is for if multiple instances of 3M is being run for different years concurrently
         with connection.cursor() as cursor:
-            if not use_fiscal_year:
+            if create_data_source_crg_risk_table:
                 crg_helpers.create_crg_table(cursor, 'dev', f'ip_{data_source}_crg_risk')
 
         for year in range(start_year, end_year+1):
@@ -115,18 +120,19 @@ if __name__ == '__main__':
                 connection = psycopg2.connect(get_dsn())
                 connection.autocommit = True
 
-            with connection.cursor() as cursor:
-                print(datetime.now().strftime('%A, %d %B %Y %I:%M %p'), 'Generating Subtables')
-                crg_helpers.generate_crg_input_table(cursor, data_source, year, use_fiscal_year=use_fiscal_year)
+            if recreate_intermediate_tables:
+                with connection.cursor() as cursor:
+                    print(datetime.now().strftime('%A, %d %B %Y %I:%M %p'), 'Generating Subtables')
+                    crg_helpers.generate_crg_input_table(cursor, data_source, year, use_fiscal_year=use_fiscal_year)
 
             connection.close()
 
             # Generate input files based on age groups/windows and run 3M
             for age_window in age_windows:
-
                 if connection.closed:
                     connection = psycopg2.connect(get_dsn())
                     connection.autocommit = True
+
                 with connection.cursor() as cursor:
                     print(datetime.now().strftime('%A, %d %B %Y %I:%M %p'), f'''Generating Enrollment and Input Table for ages {age_window['start_age']} to {age_window['end_age']}''')
                     crg_helpers.generate_crg_input_table(cursor, data_source, year, age_window['start_age'], age_window['end_age'], use_fiscal_year, use_src_ids)
@@ -152,5 +158,8 @@ if __name__ == '__main__':
                     
                     connection.close()
 
+            with connection.cursor() as cursor:
+                crg_helpers.drop_intermediate_tables(cursor, data_source, year, use_fiscal_year)
+    
     if not connection.closed:
         connection.close()
