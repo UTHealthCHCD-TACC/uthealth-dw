@@ -69,7 +69,7 @@ if __name__ == '__main__':
     crg_files_path = 'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
     
     start_year = 2017
-    end_year = 2017
+    end_year = 2019
     
     use_fiscal_year = False
     use_src_ids = False
@@ -157,6 +157,10 @@ if __name__ == '__main__':
                         print(f'Number of row inserted to ip_{data_source}_crg_risk: ', io_copy_from(connection, crg_df, 'dev', f'ip_{data_source}_crg_risk'))
                     
                     connection.close()
+
+            if connection.closed:
+                connection = psycopg2.connect(get_dsn())
+                connection.autocommit = True
 
             with connection.cursor() as cursor:
                 crg_helpers.drop_intermediate_tables(cursor, data_source, year, use_fiscal_year)

@@ -196,6 +196,10 @@ def crg_claim_proc(cursor, data_source, year, use_fiscal_year=False):
 def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
     # Currently only trum and truc have 'P' diagnosis position, 
     # once all the other data sources have been updated to meet new mappings, this query will change again
+
+    # Due to changes in the claim_diag table based on diagnosis position, there are some slight modifications needed to be done to identify primary and secondary disnogis
+    # Currently only data from the Truven's ccaes and mdcrs tables have the primary diagnosis position mapped in the data warehouse so we need to modify the logic as follows
+
     query = f'''
     drop table if exists dev.ip_{data_source}_crg_dx_{year};
 
@@ -211,8 +215,8 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
                     end as icd_version
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position = '{'P' if data_source in ['trum', 'truc'] else '1'}'
             and data_source = '{data_source}'
+            and diag_position = case when table_id_src in ('mdcrs', 'ccaes') then 'P' else '1' end
         ) c
     ) a 
     left join (
@@ -221,8 +225,8 @@ def crg_claim_dx(cursor, data_source, year, use_fiscal_year=False):
             select distinct uth_member_id, uth_claim_id, diag_cd, diag_position
             from data_warehouse.claim_diag
             where {'fiscal_' if use_fiscal_year else ''}year = {year}
-            and diag_position <> '{'P' if data_source in ['trum', 'truc'] else '1'}'
             and data_source = '{data_source}'
+            and diag_position <> case when table_id_src in ('mdcrs', 'ccaes') then 'P' else '1' end
         ) a
         group by 1,2
     ) b
