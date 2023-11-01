@@ -413,7 +413,11 @@ def dw_import(cursor, data_source, **kwargs):
     where data_source = '{data_source}'
     order by uth_member_id, admit_date;''')
 
-    return cursor.rowcount
+    rowcount = cursor.rowcount
+
+    # cursor.execute('vacuum analyze data_warehouse.admission_acute_ip;')
+
+    return rowcount
 
 @std_out_logger
 @db_logger(log_name)
@@ -467,7 +471,9 @@ def dw_import_claims(cursor, data_source, **kwargs):
     where data_source = '{data_source}'
     order by uth_member_id, admit_date;''')
 
-    return cursor.rowcount
+    rowcount = cursor.rowcount
+
+    return rowcount
 
 @std_out_logger
 @db_logger(log_name)
@@ -496,17 +502,15 @@ from costs
 where costs.data_source = a.data_source
 and costs.uth_member_id = a.uth_member_id
 and costs.admit_id = a.admit_id
-;''')
+;'''
+    )
     return cursor.rowcount
+   
 
 @std_out_logger
 @db_logger(log_name)
 def update_log(cursor, **kwargs):
-    query = '''vacuum analyze data_warehouse.admission_acute_ip_claims;'''
-    cursor.execute(query)
-
-    query = '''vacuum analyze data_warehouse.admission_acute_ip;'''
-    cursor.execute(query)
+    # cursor.execute('vacuum analyze data_warehouse.admission_acute_ip_claims;')
 
     query = '''
     update data_warehouse.update_log
@@ -546,54 +550,55 @@ if __name__ == '__main__':
         df_con = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
         df_con.autocommit = True
 
-        with df_con.cursor() as cursor:
+        data_sources = [
+                        # 'mdcd',
+                        # 'mcpp', 
+                        # 'mhtw', 
+                        # 'mcrt',
+                        # 'mcrn',
+                        # 'optz',
+                        # 'optd',
+                        'truc', 
+                        'trum',
+                        ]
 
-            data_sources = [
-                            'mdcd',
-                            'mcpp', 
-                            'mhtw', 
-                            'mcrt',
-                            'mcrn',
-                            'optz',
-                            'optd',
-                            'truc', 
-                            'trum',
-                            ]
+        # with df_con.cursor() as cursor:
+        #     # clears tables from step 1
+        #     run_step_zero()
 
-            # clears tables from step 1
-            # run_step_zero()
+        for data_source in data_sources:
+            print(data_source)
 
-            for data_source in data_sources:
-                print(data_source)
+            # inserts all inpatient claims; adds a group identifier
+            # run_step_one(data_source)
 
-                # inserts all inpatient claims; adds a group identifier
-                # run_step_one(data_source)
+            # with df_con.cursor() as cursor:
+            #     cursor.execute(f'''select distinct data_source, pat_group
+            #                 from dev.gm_dw_ip_window_step_2
+            #                 where data_source in ('{data_source}')
+            #                 order by data_source, pat_group
+            #                 ;''')
+            #     results = cursor.fetchall()
+            #     print(results)
 
-                # cursor.execute(f'''select distinct data_source, pat_group
-                #             from dev.gm_dw_ip_window_step_2
-                #             where data_source in ('{data_source}')
-                #             order by data_source, pat_group
-                #             ;''')
-                # results = cursor.fetchall()
-                # print(results)
+            # # iterates through the groups to determine ip window
+            # # allows for processing in memory
+            # for pat_group in results:
+            #     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
+            #                     'pat_group': pat_group[1], 
+            #                     'output_table': output_table}
+            #     run_step_two(variable_dict)
+    
+            # # insert all claims within ip window
+            # variable_dict = {'df_con': df_con, 'data_source': data_source, 
+            #                 'output_table': output_table+'_claim'}
+            
+            # run_step_three(variable_dict)
 
-                # # iterates through the groups to determine ip window
-                # # allows for processing in memory
-                # for pat_group in results:
-                #     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
-                #                     'pat_group': pat_group[1], 
-                #                     'output_table': output_table}
-                #     # run_step_two(variable_dict)
-        
-                # # insert all claims within ip window
-                # variable_dict = {'df_con': df_con, 'data_source': data_source, 
-                #                 'output_table': output_table+'_claim'}
-                
-                # run_step_three(variable_dict)
+            # move to DW, to be done AFTER QA
+            variable_dict = {'df_con': df_con, 'data_source': data_source}
+            run_step_four(variable_dict)
 
-                # move to DW, to be done AFTER QA
-                variable_dict = {'df_con': df_con, 'data_source': data_source}
-                run_step_four(variable_dict)
     except:
         raise
     finally:
