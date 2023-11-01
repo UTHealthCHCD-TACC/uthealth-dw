@@ -68,8 +68,8 @@ if __name__ == '__main__':
     output_template = 'C:\\3mhis\\cgs\\templates\\crg_out.2022.3.1.dic'
     crg_files_path = 'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
     
-    start_year = 2017
-    end_year = 2019
+    start_year = 2020
+    end_year = 2022
     
     use_fiscal_year = False
     use_src_ids = False
@@ -107,7 +107,8 @@ if __name__ == '__main__':
 
         # If it is for calendar year, create output table, typically used when crg are generated for DW
         # Also check if we want to create the crg risk table for the given data_source,
-        # typically this flag is for if multiple instances of 3M is being run for different years concurrently
+        # typically this flag is for if multiple instances of 3M is being run for different years concurrently 
+        # so that the overall crg_risk table for the data source is not deleted everytime the script is used
         with connection.cursor() as cursor:
             if create_data_source_crg_risk_table:
                 crg_helpers.create_crg_table(cursor, 'dev', f'ip_{data_source}_crg_risk')
