@@ -8,8 +8,39 @@
 										So we update claim detail from claim header and re-derive year
  * ******************************************************************************************************
  * xzhang  			|| 09/05/2023  || Changed table name from claim_detail to mcd_claim_detail
+ * ******************************************************************************************************
+ * xzhang			|| 10/20/2023  || Actually, all dates should be set to the from_dos from claim_header because
+ * 									  there are typos in claim_details (e.g. 2022-10-15 becomes 2023-10-15)
+ * 									  Code is for live tables so on next run, change to dw_staging tables
 */
 
+ /****************************
+  * New code that needs to be modified for next run here
+  */
+ --backup table
+ create table backup.mcd_claim_detail as
+ select * from data_warehouse.claim_detail
+ where data_source in ('mdcd', 'mcpp', 'mhtw');
+ 
+ --1 clean up from date of service from matching claim in claim_header 
+update data_warehouse.claim_detail a
+   set from_date_of_service = b.from_date_of_service,
+   	   to_date_of_service = b.to_date_of_service,
+   	   "year" = b."year",
+   	   fiscal_year = b.fiscal_year
+  from data_warehouse.claim_header b 
+ where a.data_source in ('mdcd', 'mcpp', 'mhtw')
+ 	and b.data_source in ('mdcd', 'mcpp', 'mhtw')
+ 	and a.uth_member_id = b.uth_member_id 
+    and a.uth_claim_id = b.uth_claim_id 
+    and (a.from_date_of_service != b.from_date_of_service
+   		or a.to_date_of_service != b.to_date_of_service);
+ 
+ 
+ /******************************
+  * Older code here
+  */
+ 
 
 --1 clean up from date of service from matching claim in claim_header 
 update dw_staging.mcd_claim_detail a
