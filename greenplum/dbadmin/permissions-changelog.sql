@@ -9,6 +9,24 @@
  * 
  * ****************************************************************************************************** */
 
+--11/08/23
+--grant read-only access to IQVIA for uthealth_analysts
+	---IQVIA
+	grant usage on schema iqvia to uthealth_analyst; 
+	grant select on all tables in schema iqvia to uthealth_analyst; 
+	alter default privileges in schema iqvia grant select on tables to uthealth_analyst;
+
+--grant read/write access to IQVIA for uthealth_admin
+	grant all on schema iqvia to group uthealth_admin; 
+	grant all on all tables in schema iqvia to group uthealth_admin; 
+	alter default privileges in schema iqvia grant all on tables to group uthealth_admin;
+
+--cascade the change to uthealth_dev (this didn't seem like it did anything)
+grant uthealth_analyst to uthealth_dev;
+
+--give permissions again to individuals
+grant uthealth_analyst to sharrah17;
+
 --10/13/23
 --remove hasani, will coughlin, david walling's access and delete accounts
 
