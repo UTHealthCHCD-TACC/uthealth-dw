@@ -252,6 +252,7 @@ alter default privileges in schema crosswalk grant select on tables to group uth
  *   			reference_tables
  *   			conditions
  *   			public
+ * 				backup (added 11/27/23)
  *******************************************************************/
 
 --Create role
@@ -314,6 +315,12 @@ grant all on schema crosswalk to uthealth_dev;
 grant all on all tables in schema crosswalk to uthealth_dev; 
 grant all privileges on all sequences in schema crosswalk to uthealth_dev; 
 alter default privileges in schema crosswalk grant all on tables to uthealth_dev; 
+
+--backup (all access)
+grant all on schema backup to uthealth_dev; 
+grant all on all tables in schema backup to uthealth_dev; 
+grant all privileges on all sequences in schema backup to uthealth_dev; 
+alter default privileges in schema backup grant all on tables to uthealth_dev; 
 
 /*******************************************************************
  * Role definition: uthealth_admin

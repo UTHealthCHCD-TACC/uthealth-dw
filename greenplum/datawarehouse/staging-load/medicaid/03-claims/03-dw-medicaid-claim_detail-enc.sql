@@ -6,6 +6,8 @@
  * ******************************************************************************************************
  * xzhang  			|| 09/05/2023 || Changed table name from claim_detail to mcd_claim_detail
  * 									 Changed unit (dt_ln_unt) to float instead of int
+ * xzhang			|| 11/16/2023 || Modified to include line_status (paid/denied/etc on line level)
+ * 									 Also rolled extraneous update statements into create table statements
 */
 
 drop table if exists dw_staging.enc_detail_etl;
@@ -13,6 +15,7 @@ drop table if exists dw_staging.enc_detail_etl;
 CREATE TABLE dw_staging.enc_detail_etl (
     year_fy int null,
 	ln_nbr varchar NULL,
+	enc_stat_cd varchar NULL,
 	fdos_dt varchar NULL,
 	tdos_csl varchar NULL,
 	proc_cd varchar NULL,
@@ -43,64 +46,41 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.enc_detail_etl
 select 
-year_fy,
-trim(ln_nbr),
-trim(fdos_dt),
-trim(tdos_csl),
-trim(proc_cd),
-trim(sub_chrg_amt),
-trim(dt_pd_amt),
-trim(dt_ln_unt),
-trim(proc_mod_cd_1),
-trim(proc_mod_cd_2),
-trim(pos),
-trim(rev_cd),
-trim(sub_opt_phy_npi),
-trim(sub_ref_prov_npi),
-trim(sub_rend_prov_npi),
-trim(sub_rend_prv_tax_cd),
-trim(derv_enc)
+	year_fy,
+    case when trim(ln_nbr) = '' then null else trim(ln_nbr) end,
+    case when trim(enc_stat_cd) = '' then null else trim(enc_stat_cd) end,
+    case when trim(fdos_dt) = '' then null else trim(fdos_dt) end,
+    case when trim(tdos_csl) = '' then null else trim(tdos_csl) end,
+    case when trim(proc_cd) = '' then null else trim(proc_cd) end,
+    case when trim(sub_chrg_amt) = '' then null else trim(sub_chrg_amt) end,
+    case when trim(dt_pd_amt) = '' then null else trim(dt_pd_amt) end,
+    case when trim(dt_ln_unt) = '' then null else trim(dt_ln_unt) end,
+    case when trim(proc_mod_cd_1) = '' then null else trim(proc_mod_cd_1) end,
+    case when trim(proc_mod_cd_2) = '' then null else trim(proc_mod_cd_2) end,
+    case when trim(pos) = '' then null else trim(pos) end,
+    case when trim(rev_cd) = '' then null else trim(rev_cd) end,
+    case when trim(sub_opt_phy_npi) = '' then null else trim(sub_opt_phy_npi) end,
+    case when trim(sub_ref_prov_npi) = '' then null else trim(sub_ref_prov_npi) end,
+    case when trim(sub_rend_prov_npi) = '' then null else trim(sub_rend_prov_npi) end,
+    case when trim(sub_rend_prv_tax_cd) = '' then null else trim(sub_rend_prv_tax_cd) end,
+    case when trim(derv_enc) = '' then null else trim(derv_enc) end
 from medicaid.enc_det ;
 
 analyze dw_staging.enc_detail_etl;
-
-update dw_staging.enc_detail_etl
-   set ln_nbr = case when ln_nbr = '' then null else ln_nbr end,
-    fdos_dt = case when fdos_dt = '' then null else fdos_dt end,
-    tdos_csl = case when tdos_csl = '' then null else tdos_csl end,
-    proc_cd = case when proc_cd = '' then null else proc_cd end,
-    sub_chrg_amt = case when sub_chrg_amt = '' then null else sub_chrg_amt end,
-    dt_pd_amt = case when dt_pd_amt = '' then null else dt_pd_amt end,
-    dt_ln_unt = case when dt_ln_unt = '' then null else dt_ln_unt end,
-    proc_mod_cd_1 = case when proc_mod_cd_1 = '' then null else proc_mod_cd_1 end,
-    proc_mod_cd_2 = case when proc_mod_cd_2 = '' then null else proc_mod_cd_2 end,
-    pos = case when pos = '' then null else pos end,
-    rev_cd = case when rev_cd = '' then null else rev_cd end,
-    sub_opt_phy_npi = case when sub_opt_phy_npi = '' then null else sub_opt_phy_npi end,
-    sub_ref_prov_npi = case when sub_ref_prov_npi = '' then null else sub_ref_prov_npi end,
-    sub_rend_prov_npi = case when sub_rend_prov_npi = '' then null else sub_rend_prov_npi end,
-    sub_rend_prv_tax_cd = case when sub_rend_prv_tax_cd = '' then null else sub_rend_prv_tax_cd end,
-    derv_enc = case when derv_enc = '' then null else derv_enc end;
-   
    
 update dw_staging.enc_detail_etl
    set rev_cd = 
    		case when length(rev_cd) = 4 then rev_cd
    		     when length(rev_cd) = 3 then lpad(rev_cd,4,'0')
-   		     else null end ;
-   		     
-update dw_staging.enc_detail_etl
-   set proc_cd = 
-   	   case when length(proc_cd) = 5 then proc_cd 
-   	   else null end ;
+   		     else null end,
+   	   proc_cd = 
+	   	   case when length(proc_cd) = 5 then proc_cd 
+	   	   else null end
+;
    		    
 vacuum analyze dw_staging.enc_detail_etl;
 
-   
-   
-   
-   
-   
+
 ---------------------------etl enc header-----------------------------
 
 drop table if exists dw_staging.enc_header_etl;
@@ -122,20 +102,14 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.enc_header_etl
 select 
-adm_dt,
-dis_dt,
-trim(pat_stat),
-trim(derv_enc)
+	adm_dt,
+	dis_dt,
+	case when trim(pat_stat) = '' then null else trim(pat_stat) end,
+	trim(derv_enc)
 from medicaid.enc_header;
-
-analyze dw_staging.enc_header_etl;
-
-update dw_staging.enc_header_etl
-   set pat_stat = case when pat_stat = '' then null else pat_stat end;
   
 vacuum analyze dw_staging.enc_header_etl;
  
-
 ---------------------------etl enc proc-----------------------------
 
 drop table if exists dw_staging.enc_proc_etl;
@@ -157,51 +131,46 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.enc_proc_etl
 select 
-trim(mem_id),
-trim(bill),
-trim(derv_enc),
-trim(drg)
+	trim(mem_id),
+    case when trim(bill) = '' then null else trim(bill) end,
+	trim(derv_enc),
+    case when trim(drg) = '' then null else trim(drg) end
 from medicaid.enc_proc ;
-
-analyze dw_staging.enc_proc_etl;
-
-update dw_staging.enc_proc_etl
-   set bill = case when bill = '' then null else bill end,
-       drg = case when drg = '' then null else drg end;
       
 vacuum analyze dw_staging.enc_proc_etl;
 
 ---------------------------------------------------------------------
 
-
 drop table if exists dw_staging.detail_enc_etl;
 
 CREATE TABLE dw_staging.detail_enc_etl (
-year_fy int null,
-derv_enc varchar null,
-mem_id varchar null,
-adm_dt date null, 
-dis_dt date null, 
-ln_nbr varchar null,
-pat_stat varchar null,
-fdos_dt date null, 
-tdos_csl date null, 
-proc_cd varchar null,
-sub_chrg_amt numeric null,
-dt_pd_amt numeric null,
-dt_ln_unt float null,
-proc_mod_cd_1 varchar null,
-proc_mod_cd_2 varchar null,
-pos varchar null,
-rev_cd varchar null,
-sub_opt_phy_npi varchar null,
-sub_ref_prov_npi varchar null,
-sub_rend_prov_npi varchar null,
-sub_rend_prv_tax_cd varchar null,
-bill_i varchar null,
-bill_c varchar null,
-bill_f varchar null,
-drg varchar null
+	year_fy int null,
+	derv_enc varchar null,
+	mem_id varchar null,
+	adm_dt date null, 
+	dis_dt date null, 
+	ln_nbr varchar null,
+	enc_stat_cd varchar null,
+	pat_stat varchar null,
+	fdos_dt date null, 
+	tdos_csl date null, 
+	proc_cd varchar null,
+	sub_chrg_amt numeric null,
+	dt_pd_amt numeric null,
+	dt_ln_unt float null,
+	proc_mod_cd_1 varchar null,
+	proc_mod_cd_2 varchar null,
+	pos varchar null,
+	rev_cd varchar null,
+	sub_opt_phy_npi varchar null,
+	sub_ref_prov_npi varchar null,
+	sub_rend_prov_npi varchar null,
+	sub_rend_prv_tax_cd varchar null,
+	bill_i varchar null,
+	bill_c varchar null,
+	bill_f varchar null,
+	bill varchar null,
+	drg varchar null
 )
 WITH (
 	appendonly=true,
@@ -212,31 +181,30 @@ DISTRIBUTED BY (derv_enc);
 
 insert into dw_staging.detail_enc_etl
 select 
-d.year_fy,
-h.derv_enc,
-p.mem_id,
-h.adm_dt,
-h.dis_dt,
-d.ln_nbr,
-h.pat_stat,
-d.fdos_dt::date,
-d.tdos_csl::date,
-d.proc_cd,
-d.sub_chrg_amt::numeric,
-d.dt_pd_amt::numeric,
-d.dt_ln_unt::numeric,
-d.proc_mod_cd_1,
-d.proc_mod_cd_2,
-d.pos,
-d.rev_cd,
-d.sub_opt_phy_npi,
-d.sub_ref_prov_npi,
-d.sub_rend_prov_npi,
-d.sub_rend_prv_tax_cd,
-substring(p.bill,1,1) as bill_i,
-substring(p.bill,2,1) as bill_c,
-substring(p.bill,3,1) as bill_f,
-p.drg
+	d.year_fy,
+	h.derv_enc,
+	p.mem_id,
+	h.adm_dt,
+	h.dis_dt,
+	d.ln_nbr,
+	d.enc_stat_cd,
+	h.pat_stat,
+	d.fdos_dt::date,
+	d.tdos_csl::date,
+	d.proc_cd,
+	d.sub_chrg_amt::numeric,
+	d.dt_pd_amt::numeric,
+	d.dt_ln_unt::numeric,
+	d.proc_mod_cd_1,
+	d.proc_mod_cd_2,
+	d.pos,
+	d.rev_cd,
+	d.sub_opt_phy_npi,
+	d.sub_ref_prov_npi,
+	d.sub_rend_prov_npi,
+	d.sub_rend_prv_tax_cd,
+	p.bill,
+	p.drg
 from dw_staging.enc_header_etl h 
 join dw_staging.enc_proc_etl p 
 on h.derv_enc  = p.derv_enc 
@@ -246,8 +214,7 @@ on d.derv_enc = h.derv_enc
 
 analyze dw_staging.detail_enc_etl;
 
-
-select * from dw_staging.detail_enc_etl;
+--select * from dw_staging.detail_enc_etl;
 
 insert into dw_staging.mcd_claim_detail
 select distinct 
@@ -278,9 +245,9 @@ select distinct
 	null::numeric as deductible,
 	null::numeric as coins,
 	null::numeric as cob,
-	bill_i,
-	bill_c,
-	bill_f,
+	substring(a.bill,1,1) as bill_type_inst,
+	substring(a.bill,2,1) as bill_type_class,
+	substring(a.bill,3,1) as bill_type_freq,
 	dt_ln_unt as units,
 	a.year_fy  as fiscal_year,
 	null::int as cost_factor_year,
@@ -294,12 +261,14 @@ select distinct
 	a.derv_enc as claim_id_src,
 	a.mem_id as member_id_src,
 	current_date as load_date,
-	a.sub_rend_prv_tax_cd as provider_type
+	a.sub_rend_prv_tax_cd as provider_type,
+	a.bill as bill,
+	a.enc_stat_cd as line_status
 from dw_staging.detail_enc_etl a 
 join data_warehouse.dim_uth_claim_id b 
   on a.mem_id = b.member_id_src 
  and a.derv_enc = b.claim_id_src 
- and b.data_source = 'mdcd'
+ and b.data_source in ('mdcd', 'mhtw', 'mcpp')
 ;
 
 vacuum analyze dw_staging.mcd_claim_detail;

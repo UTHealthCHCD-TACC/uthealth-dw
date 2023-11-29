@@ -4,6 +4,8 @@
  * various authors  || <09/05/2023 || created
  * ******************************************************************************************************
  * xzhang  			|| 09/05/2023 || Changed table name from claim_detail to mcd_claim_detail
+ * xzhang			|| 11/16/2023 || Modified to include line_status (paid/denied/etc on line level)
+ * 									 Also rolled extraneous update statements into create table statements
 */
 
 drop table if exists dw_staging.htw_clm_detail_etl;
@@ -11,8 +13,7 @@ drop table if exists dw_staging.htw_clm_detail_etl;
 CREATE TABLE dw_staging.htw_clm_detail_etl (
 	icn text NULL,
 	clm_dtl_nbr text NULL,
-	from_dos date NULL,
-	to_dos date NULL,
+	dtl_stat_cd text NULL,
 	proc_cd text NULL,
 	sub_proc_cd text NULL,
 	dtl_bill_amt numeric NULL,
@@ -37,47 +38,27 @@ DISTRIBUTED BY (icn);
 
 insert into dw_staging.htw_clm_detail_etl
 select 
-trim(icn),
-trim(clm_dtl_nbr),
-from_dos,
-to_dos,
-trim(proc_cd),
-trim(sub_proc_cd),
-dtl_bill_amt,
-dtl_alwd_amt,
-dtl_pd_amt,
-trim(proc_mod_1),
-trim(proc_mod_2),
-trim(pos),
-trim(rev_cd),
-trim(ref_prov_npi),
-trim(perf_prov_npi),
-trim(txm_cd),
-trim(perf_prov_id),
-trim(sub_perf_prov_sfx)
+    case when trim(icn) = '' then null else trim(icn) end,
+    case when trim(clm_dtl_nbr) = '' then null else trim(clm_dtl_nbr) end,
+    case when trim(dtl_stat_cd) = '' then null else trim(dtl_stat_cd) end,
+	case when (trim(proc_cd) = '' or length(trim(proc_cd)) < 5) then null else trim(proc_cd) end,
+	case when (trim(sub_proc_cd) = '' or length(trim(sub_proc_cd)) < 5) then null else trim(sub_proc_cd) end,
+    dtl_bill_amt,
+    dtl_alwd_amt,
+    dtl_pd_amt,
+    case when trim(proc_mod_1) = '' then null else trim(proc_mod_1) end,
+    case when trim(proc_mod_2) = '' then null else trim(proc_mod_2) end,
+    case when trim(pos) = '' then null else trim(pos) end,
+	case when trim(rev_cd) = '' then null else lpad(trim(rev_cd), 4, '0') end,
+    case when trim(ref_prov_npi) = '' then null else trim(ref_prov_npi) end,
+    case when trim(perf_prov_npi) = '' then null else trim(perf_prov_npi )end,
+    case when trim(txm_cd) = '' then null else trim(txm_cd) end,
+    case when trim(perf_prov_id) = '' then null else trim(perf_prov_id) end,
+    case when trim(sub_perf_prov_sfx) = '' then null else trim(sub_perf_prov_sfx) end
 from medicaid.htw_clm_detail  
 ;
 
 analyze dw_staging.htw_clm_detail_etl;
-
-update dw_staging.htw_clm_detail_etl
-   set clm_dtl_nbr = case when clm_dtl_nbr = '' then null else clm_dtl_nbr end,
-   proc_cd = case when proc_cd = '' then null else proc_cd end,
-   sub_proc_cd = case when sub_proc_cd = '' then null else sub_proc_cd end,
-   proc_mod_1 = case when proc_mod_1 = '' then null else proc_mod_1 end,
-   proc_mod_2 = case when proc_mod_2 = '' then null else proc_mod_2 end,
-   pos = case when pos = '' then null else pos end,
-   rev_cd = case when rev_cd = '' then null else rev_cd end,
-   ref_prov_npi = case when ref_prov_npi = '' then null else ref_prov_npi end,
-   perf_prov_npi = case when perf_prov_npi = '' then null else perf_prov_npi end,
-   txm_cd = case when txm_cd = '' then null else txm_cd end,
-   perf_prov_id = case when perf_prov_id = '' then null else perf_prov_id end,
-   sub_perf_prov_sfx = case when sub_perf_prov_sfx = '' then null else sub_perf_prov_sfx end;
-
-update dw_staging.htw_clm_detail_etl
-   set proc_cd = case when length(proc_cd) < 5 then null else proc_cd end,
-       sub_proc_cd  = case when length(sub_proc_cd) < 5 then null else sub_proc_cd end,
-       rev_cd = lpad(rev_cd,4,'0');
 
 update dw_staging.htw_clm_detail_etl
    set proc_cd = sub_proc_cd where proc_cd is null and sub_proc_cd is not null;
@@ -93,6 +74,8 @@ CREATE TABLE dw_staging.htw_clm_header_etl (
 	icn text NULL,
 	adm_dt text NULL,
 	dis_dt text NULL,
+	from_dos text NULL,
+	to_dos text NULL,
 	pat_stat_cd text NULL
 )
 WITH (
@@ -104,18 +87,13 @@ DISTRIBUTED BY (icn);
 
 insert into dw_staging.htw_clm_header_etl 
 select 
-trim(icn),
-trim(adm_dt),
-trim(dis_dt),
-trim(pat_stat_cd)
+	trim(icn),
+	case when trim(adm_dt) = '' then null else trim(adm_dt) end,
+	case when trim(dis_dt) = '' then null else trim(dis_dt) end,
+	trim(hdr_frm_dos),
+	trim(hdr_to_dos),
+	case when trim(pat_stat_cd) = '' then null else trim(pat_stat_cd) end
 from medicaid.htw_clm_header;
-
-analyze dw_staging.htw_clm_header_etl ;
-
-update dw_staging.htw_clm_header_etl
-   set adm_dt = case when adm_dt = '' then null else adm_dt end,
-       dis_dt = case when dis_dt = '' then null else dis_dt end,
-       pat_stat_cd = case when pat_stat_cd = '' then null else pat_stat_cd end;
   
 vacuum analyze dw_staging.htw_clm_header_etl ;
 
@@ -142,16 +120,10 @@ DISTRIBUTED BY (icn);
 insert into dw_staging.htw_clm_proc_etl
 select trim(icn),
        trim(pcn),
-       trim(drg),
-       trim(bill)
+       case when trim(drg) = '' then null else trim(drg) end,
+       case when trim(bill) = '' then null else trim(bill) end
   from medicaid.htw_clm_proc 
   ;
-  
-analyze dw_staging.htw_clm_proc_etl;
-
-update dw_staging.htw_clm_proc_etl
-   set drg = case when drg = '' then null else drg end,
-       bill = case when bill = '' then null else bill end;
   
 vacuum analyze dw_staging.htw_clm_proc_etl;
 
@@ -163,6 +135,7 @@ CREATE TABLE dw_staging.htw_detail_etl (
 	icn text NULL,
 	pcn text NULL,
 	clm_dtl_nbr text NULL,
+	dtl_stat_cd text NULL,
 	from_dos date NULL,
 	to_dos date NULL,
 	proc_cd text NULL,
@@ -182,9 +155,7 @@ CREATE TABLE dw_staging.htw_detail_etl (
 	dis_dt date NULL,
 	pat_stat_cd text null,
 	drg text null,
-	bill_i text null,
-	bill_c text null,
-	bill_f text null
+	bill text null
 )
 WITH (
 	appendonly=true,
@@ -195,31 +166,30 @@ DISTRIBUTED BY (icn);
 
 insert into dw_staging.htw_detail_etl 
 select 
-h.icn,
-p.pcn,
-clm_dtl_nbr,
-from_dos,
-to_dos,
-proc_cd,
-dtl_bill_amt,
-dtl_alwd_amt,
-dtl_pd_amt,
-proc_mod_1,
-proc_mod_2,
-pos,
-rev_cd,
-ref_prov_npi,
-perf_prov_npi,
-txm_cd,
-perf_prov_id,
-sub_perf_prov_sfx,
-adm_dt::date,
-dis_dt::date,
-pat_stat_cd,
-drg,
-substring(bill,1,1),
-substring(bill,2,1),
-substring(bill,3,1)
+	h.icn,
+	p.pcn,
+	clm_dtl_nbr,
+	dtl_stat_cd,
+	from_dos::date,
+	to_dos::date,
+	proc_cd,
+	dtl_bill_amt,
+	dtl_alwd_amt,
+	dtl_pd_amt,
+	proc_mod_1,
+	proc_mod_2,
+	pos,
+	rev_cd,
+	ref_prov_npi,
+	perf_prov_npi,
+	txm_cd,
+	perf_prov_id,
+	sub_perf_prov_sfx,
+	adm_dt::date,
+	dis_dt::date,
+	pat_stat_cd,
+	drg,
+	bill
 from dw_staging.htw_clm_header_etl h 
 join dw_staging.htw_clm_proc_etl p 
 on h.icn = p.icn 
@@ -266,9 +236,9 @@ select distinct
 	null::numeric as deductible,
 	null::numeric as coins,
 	null::numeric as cob,
-	bill_i,
-	bill_c,
-	bill_f,
+	substring(bill,1,1),
+	substring(bill,2,1),
+	substring(bill,3,1),
 	null::numeric as units,
 	dev.fiscal_year_func(a.from_dos) as fiscal_year,
 	null::int as cost_factor_year,
@@ -282,12 +252,14 @@ select distinct
 	a.icn as claim_id_src,
 	a.pcn as member_id_src,
 	current_date as load_date,
-	a.txm_cd as provider_type
+	a.txm_cd as provider_type,
+	a.bill as bill,
+	a.dtl_stat_cd as line_status
 from dw_staging.htw_detail_etl a 
 join data_warehouse.dim_uth_claim_id b 
   on a.pcn = b.member_id_src 
  and a.icn = b.claim_id_src 
- and b.data_source = 'mdcd'
+ and b.data_source in ('mdcd', 'mhtw', 'mcpp')
 ;
 
 
