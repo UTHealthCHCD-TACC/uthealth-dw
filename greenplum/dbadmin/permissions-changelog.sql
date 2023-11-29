@@ -9,6 +9,16 @@
  * 
  * ****************************************************************************************************** */
 
+--11/27/23
+--grant dev access to Sharrah
+grant uthealth_dev to sharrah17;
+
+--grant access to backup for uthealth_dev
+grant all on schema backup to uthealth_dev; 
+grant all on all tables in schema backup to uthealth_dev; 
+grant all privileges on all sequences in schema backup to uthealth_dev; 
+alter default privileges in schema backup grant all on tables to uthealth_dev; 
+
 --11/08/23
 --grant read-only access to IQVIA for uthealth_analysts
 	---IQVIA

@@ -439,12 +439,12 @@ drop table if exists backup.update_log;
 create table backup.update_log as
 select * from data_warehouse.update_log;
 
---09/13/2023: Medicaid data updated for FY 2022
+--11/23/2023: Added in claim_status, line_status, and dental claim type
 
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Medicaid data updated for FY2022',
+	details = 'Added in claim_status, line_status, and dental claim type',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
