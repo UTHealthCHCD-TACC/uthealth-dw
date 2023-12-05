@@ -9,6 +9,8 @@
  * ******************************************************************************************************
  *  wc003  || 11/04/2021 || update bus_cd table
  * ******************************************************************************************************
+ * 	sa001  || 11/30/2023 || update plan_type and bus_cd tables for IQVIA
+ ********************************************************************************************************
  */
 
 -------------------------------------------------------------------------------------------------------
@@ -73,7 +75,7 @@ insert into data_warehouse.ref_gender (data_source, gender_cd_src, gender_cd)
              
              
 ---plan type decode table   			 
-create table data_warehouse.ref_plan_type (
+create table reference_tables.ref_plan_type (
 				data_source char(4), 
 				source_column_name text, 
 				plan_type_src varchar, 
@@ -81,9 +83,9 @@ create table data_warehouse.ref_plan_type (
 				plan_desc text
 				);
 				
-delete from data_warehouse.ref_plan_type;				
+delete from reference_tables.ref_plan_type;				
 				
-insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_type_src, plan_type, plan_desc)
+insert into reference_tables.ref_plan_type (data_source, source_column_name, plan_type_src, plan_type, plan_desc)
 		values ('trv','plantyp','1','BMM','basic major medical'),
 			   ('trv','plantyp','2','CMP','comprehensive'),
 			   ('trv','plantyp','3','EPO',''),
@@ -104,8 +106,15 @@ insert into data_warehouse.ref_plan_type (data_source, source_column_name, plan_
 			   ('opt','product','POS','POS',''),
 			   ('opt','product','PPO','PPO',''),
 			   ('opt','product','SPN','SPN',''),
-			   ('opt','product','UNK','UNK','')
-			   ;
+			   ('opt','product','UNK','UNK',''),
+			   ('iqva','prd_type','D','CDHP','Consumer Directed Health Care'),
+			   ('iqva','prd_type','H','HMO','Health Maintenance Organization'),
+			   ('iqva','prd_type','I','FFS','Indemnity/Traditional'),
+			   ('iqva','prd_type','P','PPO','Preferred Provider Organization'),
+			   ('iqva','prd_type','R','HSA','Health Savings Account (HSA)'),
+			   ('iqva','prd_type','S','POS','Point of Service'),
+			   ('iqva','prd_type','U','UNK','Unknown/Missing')
+			  ;
 				
 select *--distinct year, medadv 
 from truven.ccaea;
@@ -126,8 +135,15 @@ insert into reference_tables.ref_bus_cd (data_source, bus_cd, bus_desc, note)
 	          ('optz','MA','Medicare Advantage','from mbr_enroll.bus'),
 	          ('optd','COM','Commercial','from mbr_enroll_r.bus'),
 	          ('optd','MA','Medicare Advantage','from mbr_enroll_r.bus'),
-	          ('mdcd',null,'Medicaid',null) 
-	         ;
+	          ('mdcd',null,'Medicaid',null),
+	          ('iqva','COM','Commercial','from iqvia.enroll_synth where pay_type = C'),
+			  ('iqva','CHIP','State Childrens Health Insurance Program (SCHIP)','from iqvia.enroll_synth where pay_type = K'),
+			  ('iqva','MDCD','Medicaid','from iqvia.enroll_synth where pay_type = M'),
+			  ('iqva','MA','Medicare Risk (presently known as Medicare Advantage)','from iqvia.enroll_synth where pay_type = R'),
+			  ('iqva','SI','Self-Insured','from iqvia.enroll_synth where pay_type = S'),
+			  ('iqva','MS','Medicare Cost (Medicare Supplemental)','from iqvia.enroll_synth where pay_type = T'),
+			  ('iqva',null,'Unknown/Missing','from iqvia.enroll_synth where pay_type = U')
+			 ;
  
 ---ref_race
 create table reference_tables.ref_race (data_source char(4), race_cd_src text, race_cd char(1), race_desc text );     
