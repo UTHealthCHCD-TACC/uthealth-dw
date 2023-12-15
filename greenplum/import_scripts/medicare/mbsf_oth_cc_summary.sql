@@ -1,6 +1,6 @@
-drop table if exists medicare_texas.msbf_oth_cc_summary;
+drop table if exists medicare_texas.mbsf_oth_cc_summary;
 
-create table medicare_texas.msbf_oth_cc_summary
+create table medicare_texas.mbsf_oth_cc_summary
 (
     year text,
     BENE_ID varchar,

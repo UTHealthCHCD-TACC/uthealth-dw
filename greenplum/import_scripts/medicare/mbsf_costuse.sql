@@ -1,6 +1,6 @@
-drop table if exists medicare_texas.msbf_costuse;
+drop table if exists medicare_texas.mbsf_costuse;
 
-create table medicare_texas.msbf_costuse
+create table medicare_texas.mbsf_costuse
 (
     year text,
     BENE_ID varchar,
