@@ -207,10 +207,14 @@ alter default privileges in schema dw_staging grant select on tables to group ut
 	grant usage on schema truven to group uthealth_analyst; 
 	grant select on all tables in schema truven to group uthealth_analyst; 
 	alter default privileges in schema truven grant select on tables to group uthealth_analyst;
-	---tables
+	---tableau
 	grant all on schema tableau to group uthealth_analyst; 
 	grant all on all tables in schema tableau to group uthealth_analyst; 
 	alter default privileges in schema tableau grant all on tables to group uthealth_analyst;
+	---IQVIA
+	grant all on schema iqvia to group uthealth_analyst; 
+	grant all on all tables in schema iqvia to group uthealth_analyst; 
+	alter default privileges in schema iqvia grant all on tables to group uthealth_analyst;
 
 --qa_reporting (select only )
 grant usage on schema qa_reporting to group uthealth_analyst; 
@@ -248,6 +252,7 @@ alter default privileges in schema crosswalk grant select on tables to group uth
  *   			reference_tables
  *   			conditions
  *   			public
+ * 				backup (added 11/27/23)
  *******************************************************************/
 
 --Create role
@@ -311,6 +316,12 @@ grant all on all tables in schema crosswalk to uthealth_dev;
 grant all privileges on all sequences in schema crosswalk to uthealth_dev; 
 alter default privileges in schema crosswalk grant all on tables to uthealth_dev; 
 
+--backup (all access)
+grant all on schema backup to uthealth_dev; 
+grant all on all tables in schema backup to uthealth_dev; 
+grant all privileges on all sequences in schema backup to uthealth_dev; 
+alter default privileges in schema backup grant all on tables to uthealth_dev; 
+
 /*******************************************************************
  * Role definition: uthealth_admin
  * 
@@ -360,6 +371,10 @@ grant uthealth_dev to uthealth_admin;
 	grant all on schema tableau to group uthealth_admin; 
 	grant all on all tables in schema tableau to group uthealth_admin; 
 	alter default privileges in schema tableau grant all on tables to group uthealth_admin;
+	---IQVIA
+	grant all on schema iqvia to group uthealth_admin; 
+	grant all on all tables in schema iqvia to group uthealth_admin; 
+	alter default privileges in schema iqvia grant all on tables to group uthealth_admin;
 
 
 

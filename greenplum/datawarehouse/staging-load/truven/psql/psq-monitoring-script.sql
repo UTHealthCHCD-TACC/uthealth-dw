@@ -41,7 +41,7 @@ order by state, usename;
 /******************
  * Kill Query
  ******************/
-select pg_terminate_backend(101404);
+select pg_terminate_backend(8625);
 
 
 /****************
@@ -71,6 +71,16 @@ from information_schema.columns
 where table_schema = 'medicaid' and table_name = 'enrl'
 order by ordinal_position;
 
+
+
+
+
+select year, sum(case when ) from truven.ccaef where year
+
+
+--see sizes of databases
+select datname, pg_database_size(datname), pg_size_pretty(pg_database_size(datname))
+from pg_database;
 
 
 

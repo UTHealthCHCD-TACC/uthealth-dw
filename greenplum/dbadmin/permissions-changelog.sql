@@ -9,6 +9,79 @@
  * 
  * ****************************************************************************************************** */
 
+--11/27/23
+--grant dev access to Sharrah
+grant uthealth_dev to sharrah17;
+
+--grant access to backup for uthealth_dev
+grant all on schema backup to uthealth_dev; 
+grant all on all tables in schema backup to uthealth_dev; 
+grant all privileges on all sequences in schema backup to uthealth_dev; 
+alter default privileges in schema backup grant all on tables to uthealth_dev; 
+
+--11/08/23
+--grant read-only access to IQVIA for uthealth_analysts
+	---IQVIA
+	grant usage on schema iqvia to uthealth_analyst; 
+	grant select on all tables in schema iqvia to uthealth_analyst; 
+	alter default privileges in schema iqvia grant select on tables to uthealth_analyst;
+
+--grant read/write access to IQVIA for uthealth_admin
+	grant all on schema iqvia to group uthealth_admin; 
+	grant all on all tables in schema iqvia to group uthealth_admin; 
+	alter default privileges in schema iqvia grant all on tables to group uthealth_admin;
+
+--cascade the change to uthealth_dev (this didn't seem like it did anything)
+grant uthealth_analyst to uthealth_dev;
+
+--give permissions again to individuals
+grant uthealth_analyst to sharrah17;
+
+--10/13/23
+--remove hasani, will coughlin, david walling's access and delete accounts
+
+--walling and hasani93 have some tables owned by them so reassign
+reassign owned by walling to uthealth_dev;
+reassign owned by hasani93 to uthealth_analyst;
+
+--need to revoke some privileges before username can be dropped
+alter default privileges for user walling in schema gis revoke all on tables from walling;
+alter default privileges for user walling in schema tableau revoke all on tables from walling;
+alter default privileges for user walling in schema truven revoke all on tables from walling;
+alter default privileges for user walling in schema optum_zip revoke all on tables from walling;
+alter default privileges for user walling in schema optum_dod revoke all on tables from walling;
+alter default privileges for user walling in schema data_warehouse revoke all on tables from walling;
+alter default privileges for user walling in schema reference_tables revoke all on tables from walling;
+
+alter default privileges for user hasani93 in schema tableau revoke all on tables from hasani93;
+alter default privileges for user hasani93 in schema data_warehouse revoke all on tables from hasani93;
+revoke all privileges on table tableau.diag_code_description from hasani93;
+revoke all privileges on table data_warehouse.crg_risk from hasani93;
+revoke all privileges on table data_warehouse.dim_uth_claim_id from hasani93;
+revoke all privileges on table data_warehouse.dim_uth_rx_claim_id from hasani93;
+revoke all privileges on table tableau.claim_header_optz_truv from hasani93;
+revoke all privileges on table tableau.dashboard_1720 from hasani93;
+revoke all privileges on table tableau.enrollment_only from hasani93;
+revoke all privileges on table tableau.enrollment_yearly_optz_truv from hasani93;
+revoke all privileges on table tableau.member_conditions from hasani93;
+revoke all privileges on table tableau.member_conditions_old from hasani93;
+revoke all privileges on table tableau.tx_claim_header from hasani93;
+revoke all privileges on table tableau.tx_member_conditions from hasani93;
+revoke all privileges on table data_warehouse.dim_uth_member_id from hasani93;
+revoke all privileges on table tableau.covid_severity_raw_optd from hasani93;
+revoke all privileges on table tableau.crg_risk from hasani93;
+revoke all privileges on table tableau.tx_covid from hasani93;
+revoke all privileges on table tableau.tx_crg_risk from hasani93;
+revoke all privileges on table tableau.tx_enrollment from hasani93;
+revoke all privileges on data_warehouse.last_analyze_date from hasani93;
+
+--drop users (this did not run)
+drop user if exists hasani93;
+drop user if exists walling;
+drop user if exists wcough;
+
+--after all that code, still can't drop users - but privileges have been revoked at least
+
 --09/14/23
 --make Caroline's tables in dev and public editable
 alter default privileges for user cms2 in schema dev grant all on tables to uthealth_analyst;

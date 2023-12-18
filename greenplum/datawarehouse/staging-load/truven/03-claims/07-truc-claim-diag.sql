@@ -1,6 +1,6 @@
 
 /* ******************************************************************************************************
- *  claim diag load for truven
+ *  claim diag load for truven commercial
  * ******************************************************************************************************
 *   jw001   || 9/24/2021  || need to put claim sequence number in insert and select statements. 
  * ******************************************************************************************************
@@ -17,6 +17,8 @@
  *  xzhang  || 04/18/2023 || change msclmid to claim_id_derv
  * ******************************************************************************************************
  *  xzhang  || 07/20/2023 || Split into trum and truc, added table_id_src
+ * ******************************************************************************************************
+ *  xzhang  || 10/17/2023 || Converted diag_pos to text and indicated which one is primary
  * */
 
 select 'Truven CCAE Claim Diag script started at ' || current_timestamp as message;
@@ -79,7 +81,7 @@ select  'truc',
      b.uth_claim_id, 
 	 a.svcdate,
      unnest(array[a.pdx, a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
-	 unnest(array[1,2,3,4,5]) as dx_pos,
+	 unnest(array['P','1','2','3','4']) as dx_pos,
      null as poa_src,
      a.dxver as icd_version,
      a.claim_id_derv as claim_id_src,
@@ -138,7 +140,7 @@ select * from (
 	     b.uth_claim_id, 
 		 a.svcdate,
 	     unnest(array[a.dx1, a.dx2, a.dx3, a.dx4]) as dx_cd,
-		 unnest(array[1,2,3,4]) as dx_pos,
+		 unnest(array['1','2','3','4']) as dx_pos,
 	     null,
 	     a.dxver,
 	     a.claim_id_derv,

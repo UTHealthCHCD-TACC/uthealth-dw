@@ -66,15 +66,15 @@ if __name__ == '__main__':
     # Requirements
     input_template = 'C:\\3mhis\\cgs\\templates\\crg_in.2022.3.1.dic'
     output_template = 'C:\\3mhis\\cgs\\templates\\crg_out.2022.3.1.dic'
-    crg_files_path = 'Z:\\Users\\iperez\\hoft\\'#'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
+    crg_files_path = 'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
     
-    start_year = 2021
-    end_year = 2021
+    start_year = 2020
+    end_year = 2022
     
     use_fiscal_year = False
-    use_src_ids = True
+    use_src_ids = False
     recreate_intermediate_tables = True
-    create_data_source_crg_risk_table = True
+    create_data_source_crg_risk_table = False
 
     age_windows = [
 					{'start_age': 0, 'end_age': 10},
@@ -95,9 +95,9 @@ if __name__ == '__main__':
                     # 'mhtw', 
                     # 'mcrt',
                     # 'mcrn',
-                    'optz',
+                    # 'optz',
                     # 'optd',
-                    # 'truc', 
+                    'truc', 
                     # 'trum',
                     ]
 

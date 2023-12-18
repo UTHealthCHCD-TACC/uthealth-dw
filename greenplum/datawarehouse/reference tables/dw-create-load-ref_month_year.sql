@@ -10,6 +10,8 @@
  * 							added cy_end and fy_end to calculate ages
  * 							changed distributed replicated b/c it doesn't need to be there?
  * 							also ran this table out to 2030 bc why not
+ *  xzhang || 11/27/2023 || extended start date out to 2005-01-01 (previously 2007)
+ * 							changed ownership of backup/ref table to uthealth_dev
  */
 
 --back up current table in case anything bad happens
@@ -42,7 +44,7 @@ select substring( replace(datum::text,'-',''),1,6)::int4 AS month_year_id,
 			else extract(year from datum) end as fy_ut
 FROM (	  
 select date(datum) as datum
-      FROM GENERATE_SERIES ('2007-01-01'::DATE, '2030-12-31'::DATE, '1 month') AS datum     
+      FROM GENERATE_SERIES ('2005-01-01'::DATE, '2030-12-31'::DATE, '1 month') AS datum     
 ) DQ
 ORDER BY 1;
 
@@ -66,6 +68,10 @@ analyze reference_tables.ref_month_year;
 
 --select * from reference_tables.ref_month_year order by month_year_id desc;
 
+--change owner to uthealth_dev
+alter table backup.ref_month_year owner to uthealth_dev;
+alter table reference_tables.ref_month_year owner to uthealth_dev;
+
 /********************************
  * change update_log
  *******************************/
@@ -79,7 +85,7 @@ select * from data_warehouse.update_log;
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Table has dates from Jan 2007 to December 2030',
+	details = 'Table has dates from Jan 2005 to December 2030',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
