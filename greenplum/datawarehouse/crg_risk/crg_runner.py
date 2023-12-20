@@ -69,22 +69,22 @@ if __name__ == '__main__':
     crg_files_path = 'Y:\\_3M\\CRG\\' #'Y:\\_3M\\CRG\\'
     
     start_year = 2020
-    end_year = 2022
+    end_year = 2020
     
     use_fiscal_year = False
     use_src_ids = False
-    recreate_intermediate_tables = True
+    recreate_intermediate_tables = False
     create_data_source_crg_risk_table = False
 
     age_windows = [
-					{'start_age': 0, 'end_age': 10},
-					{'start_age': 11, 'end_age': 20},
-					{'start_age': 21, 'end_age': 30},
-					{'start_age': 31, 'end_age': 40},
-					{'start_age': 41, 'end_age': 50},
-					{'start_age': 51, 'end_age': 60},
-					{'start_age': 61, 'end_age': 70},
-					{'start_age': 71, 'end_age': 80},
+					# {'start_age': 0, 'end_age': 10},
+					# {'start_age': 11, 'end_age': 20},
+					# {'start_age': 21, 'end_age': 30},
+					# {'start_age': 31, 'end_age': 40},
+					# {'start_age': 41, 'end_age': 50},
+					# {'start_age': 51, 'end_age': 60},
+					# {'start_age': 61, 'end_age': 70},
+					# {'start_age': 71, 'end_age': 80},
 					{'start_age': 81, 'end_age': 90},
 					{'start_age': 91, 'end_age': 200}
                 ]
@@ -93,11 +93,11 @@ if __name__ == '__main__':
                     # 'mdcd',
                     # 'mcpp', 
                     # 'mhtw', 
-                    # 'mcrt',
+                    'mcrt',
                     # 'mcrn',
                     # 'optz',
                     # 'optd',
-                    'truc', 
+                    # 'truc', 
                     # 'trum',
                     ]
 
@@ -163,8 +163,8 @@ if __name__ == '__main__':
                 connection = psycopg2.connect(get_dsn())
                 connection.autocommit = True
 
-            with connection.cursor() as cursor:
-                crg_helpers.drop_intermediate_tables(cursor, data_source, year, use_fiscal_year)
+            # with connection.cursor() as cursor:
+            #     crg_helpers.drop_intermediate_tables(cursor, data_source, year, use_fiscal_year)
     
     if not connection.closed:
         connection.close()

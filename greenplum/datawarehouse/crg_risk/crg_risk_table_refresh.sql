@@ -5,9 +5,8 @@ Once the CRG scores are generated and are uploaded to a seperate table in Greenp
 we can start the process of adding the new CRG scores to the data warehouse table.
 */
 
-
 -- Remove old CRG risk scores
-delete from data_warehouse.crg_risk where data_source = '';
+delete from data_warehouse.crg_risk where data_source like 'mcr%' and crg_year >= 2020;
 
 -- Insert new CRG risk scores
 -- Note which table the new scores are stored in
@@ -15,7 +14,7 @@ insert into data_warehouse.crg_risk
 (data_source, uth_member_id, crg_year, crg, aggregated_crg_3, prospective_crg, prospective_agg_crg_1, prospective_agg_crg_2, prospective_agg_crg_3,
 concurrent_crg, concurrent_agg_crg_1, concurrent_agg_crg_2, concurrent_agg_crg_3, load_date)
 select *
-from dev.ip_truc_crg_risk
+from dev.ip_mcrn_crg_risk
 --where crg_year = 2021
 ;
 
@@ -32,5 +31,5 @@ vacuum analyze data_warehouse.crg_risk;
 update data_warehouse.update_log
 set data_last_updated = current_date,
 	last_vacuum_analyze = current_date,
-	details = 'Added truc CRG risk scores'
+	details = 'Added 2020 and 2021 Medicare CRG risk scores'
 where table_name = 'crg_risk' and schema_name = 'data_warehouse';
