@@ -8,6 +8,8 @@
  * ******************************************************************************************************
  * */
 
+select 'mcrt claim icd proc script started at ' || current_timestamp as message;
+
 /**************************
  * First make an ETL (to reduce grabbing blank proc code fields)
  * Note that only Inpatient, SNF, and Outpatient have ICD Proc codes
@@ -99,3 +101,4 @@ vacuum analyze dw_staging.mcrt_claim_icd_proc;
 --drop temp table
 drop table if exists dw_staging.mcrt_proc_etl;
 
+select 'mcrt claim icd proc script finished at ' || current_timestamp as message;

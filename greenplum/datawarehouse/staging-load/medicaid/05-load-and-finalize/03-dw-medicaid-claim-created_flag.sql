@@ -338,6 +338,9 @@ set data_last_updated = current_date,
 	details = 'Imputed records from claims appended'
 where schema_name = 'data_warehouse' and table_name = 'member_enrollment_monthly_1_prt_mdcd';
 
+alter table data_warehouse.update_log owner to uthealth_analyst;
+alter table backup.update_log owner to uthealth_analyst;
+
 /*******************************
  * How many are claim_created?
  * select year,
