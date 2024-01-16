@@ -352,3 +352,6 @@ where schema_name = 'data_warehouse' and
 	table_name like '%mcpp' or 
 	table_name like '%mhtw'))
 	;
+
+alter table data_warehouse.update_log owner to uthealth_analyst;
+alter table backup.update_log owner to uthealth_analyst;

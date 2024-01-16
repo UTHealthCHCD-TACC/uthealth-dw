@@ -458,6 +458,9 @@ and schema_name = 'data_warehouse'
 		or table_name like '%mcpp')
 	;
 
+alter table data_warehouse.update_log owner to uthealth_analyst;
+alter table backup.update_log owner to uthealth_analyst;
+
 /*check
 select *
 from data_warehouse.update_log

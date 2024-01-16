@@ -11,7 +11,7 @@
  * --10/9/23 XZ: noted that script causes dupes to emerge, but haven't figured out why yet.
  * Check if it happens again on next load. Might have something to do with year - we had issues
  * with rx claims in 2019 whose member enrollment is in 2020 being duplicated
- * 
+ * --12/15/23 XZ: Previous issue did not reappear it looks like? Let's consider it fixed?
  **************************************/
 
 select 'Medicare Texas dim_uth_rx_claim_id script started at ' || current_timestamp as message;
