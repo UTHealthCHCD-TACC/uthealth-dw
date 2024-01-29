@@ -8,6 +8,8 @@
  * ****************************************************************************************************** 
  * */
 
+select 'mcrt claim detail script started at ' || current_timestamp as message;
+
 drop table if exists dw_staging.mcrt_claim_detail;
 
 create table dw_staging.mcrt_claim_detail 
@@ -439,7 +441,7 @@ select "year", count(*) from dw_staging.mcrt_claim_detail
 where uth_member_id is null group by "year" order by 1;
 */
 
-
+select 'mcrt claim detail script finished at ' || current_timestamp as message;
 
 
 

@@ -7,6 +7,8 @@
  * ******************************************************************************************************
  * */
 
+select 'mcrt claim diag script started at ' || current_timestamp as message;
+
 /**************************
  * First make an ETL (to reduce grabbing blank diagnosis code fields)
  **************************/
@@ -137,4 +139,7 @@ vacuum analyze dw_staging.mcrt_claim_diag;
 
 --drop temp table
 drop table if exists dw_staging.mcrt_diag_etl;
+
+select 'mcrt claim diag script finished at ' || current_timestamp as message;
+
 
