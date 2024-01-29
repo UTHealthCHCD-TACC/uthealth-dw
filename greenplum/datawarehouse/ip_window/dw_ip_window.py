@@ -554,17 +554,17 @@ if __name__ == '__main__':
                         # 'mdcd',
                         # 'mcpp', 
                         # 'mhtw', 
-                        # 'mcrt',
-                        # 'mcrn',
+                        'mcrt',
+                        'mcrn',
                         # 'optz',
                         # 'optd',
-                        'truc', 
-                        'trum',
+                        # 'truc', 
+                        # 'trum',
                         ]
 
-        # with df_con.cursor() as cursor:
-        #     # clears tables from step 1
-        #     run_step_zero()
+        with df_con.cursor() as cursor:
+            # clears tables from step 1
+            run_step_zero()
 
         for data_source in data_sources:
             print(data_source)
