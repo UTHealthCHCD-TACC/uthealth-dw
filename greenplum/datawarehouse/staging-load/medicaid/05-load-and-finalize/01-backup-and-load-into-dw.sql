@@ -478,4 +478,19 @@ order by table_name;
 --check 2
 --select * from data_warehouse.update_log order by table_name;
 
-
+/*
+--update update_log just for pharmacy 01/24/24
+update data_warehouse.update_log a
+set data_last_updated = current_date,
+	details = 'Changed mapping for charge and allowed amounts',
+	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
+from pg_catalog.pg_stat_all_tables b
+where a.schema_name = b.schemaname and a.table_name = b.relname
+and schema_name = 'data_warehouse'
+	and table_name like 'pharmacy_claims%'
+	and (table_name not like '%_1_%'
+		or table_name like '%mdcd'
+		or table_name like '%mhtw'
+		or table_name like '%mcpp')
+	;
+*/

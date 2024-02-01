@@ -144,6 +144,10 @@ group by 1 order by 1;
 select data_source, count(*) from data_warehouse.dim_uth_claim_id
 where data_source in ('mdcd', 'mhtw', 'mcpp')
 group by 1 order by 1;
+
+select data_source, count(*) from data_warehouse.pharmacy_claims
+where data_source in ('mdcd', 'mhtw', 'mcpp')
+group by 1 order by 1;
 */
 
 /***********************************************
