@@ -5,7 +5,7 @@
  * ****************************************************************************************************** 
  *  Xiaorui  || 10/03/23  || Rewrote -- ETL first then load
  * ******************************************************************************************************
-  *  iperez  || 02/06/2026 || modified existing medicare script for medicare enc tables
+  *  iperez  || 02/06/24 || modified existing medicare script for medicare enc tables
  * ****************************************************************************************************** 
  * */
 
@@ -45,7 +45,7 @@ begin
 				execute 'insert into dw_staging.mcet_diag_etl
 					select enc_join_key, bene_id, clm_from_dt::date, ' || i || ' as pos,
 					 icd_dgns_cd' || i || ', null as dx_version, clm_poa_ind_sw' || i || ' ,
-					''' || case when table_name = 'ip' then 'inpatient' when table_name = 'op' then 'outpatient' else table_name end || ''' as table_id_src
+					''' || table_name || ''' as table_id_src
 					from medicare_enc_texas.' || table_name || '_base_enc
 					where icd_dgns_cd' || i || ' is not null and
 					icd_dgns_cd' || i || ' != '''';';
@@ -54,7 +54,7 @@ begin
 				execute 'insert into dw_staging.mcet_diag_etl
 					select enc_join_key, bene_id, clm_from_dt::date, ' || i || ' as pos,
 					 icd_dgns_cd' || i || ', null as dx_version, null as poa,
-					''' || case when table_name = 'ip' then 'inpatient' when table_name = 'op' then 'outpatient' else table_name end || ''' as table_id_src
+					''' || table_name || ''' as table_id_src
 					from medicare_enc_texas.' || table_name || '_base_enc
 					where icd_dgns_cd' || i || ' is not null and
 					icd_dgns_cd' || i || ' != '''';';

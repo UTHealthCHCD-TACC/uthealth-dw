@@ -6,7 +6,7 @@
  * ******************************************************************************************************
  *  xzhang  || 09/28/2023 || rewrote using Excel, various fixes including mistakes in column mapping
  * ****************************************************************************************************** 
- *  iperez  || 02/06/2026 || modified existing medicare sciprt for medicare enc tables
+ *  iperez  || 02/06/2024 || modified existing medicare sciprt for medicare enc tables
  * ****************************************************************************************************** 
  * */
 
@@ -70,7 +70,7 @@ select
     a.clm_freq_cd as bill_type_freq, 
     b.rev_cntr_unit_cnt::float as units, 
     get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
-    'inpatient' as table_id_src, 
+    'ip' as table_id_src, 
     a.org_npi as bill_provider, 
     a.rev_cntr_rndrng_physn_npi_num as perf_rn_provider, 
     NULL as perf_at_provider, 
@@ -80,8 +80,8 @@ select
     current_date as load_date, 
     NULL as provider_type, 
     a.clm_fac_type_cd || a.clm_srvc_clsfctn_type_cd || a.clm_freq_cd as bill
-from medicare_enc_texas.inpatient_base_enc a
-inner join medicare_enc_texas.inpatient_revenue_enc b
+from medicare_enc_texas.ip_base_enc a
+inner join medicare_enc_texas.ip_revenue_enc b
     on a.enc_join_key = b.enc_join_key and a.bene_id = b.bene_id
 left join data_warehouse.dim_uth_claim_id c
     on a.enc_join_key = c.claim_id_src and c.data_source = 'mcet';
@@ -245,7 +245,7 @@ select
     a.clm_freq_cd as bill_type_freq, 
     b.rev_cntr_unit_cnt::float as units, 
     get_fy_from_date(a.clm_from_dt::date) as fiscal_year, 
-    'outpatient' as table_id_src, 
+    'op' as table_id_src, 
     a.org_npi as bill_provider, 
     a.rev_cntr_rndrng_physn_npi as perf_rn_provider, 
     NULL as perf_at_provider, 
@@ -255,8 +255,8 @@ select
     current_date as load_date, 
     NULL as provider_type, 
     a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
-from medicare_enc_texas.outpatient_base_enc a
-inner join medicare_enc_texas.outpatient_revenue_enc b
+from medicare_enc_texas.op_base_enc a
+inner join medicare_enc_texas.op_revenue_enc b
     on a.enc_join_key = b.enc_join_key and a.bene_id = b.bene_id
 left join data_warehouse.dim_uth_claim_id c
     on a.enc_join_key = c.claim_id_src and c.data_source = 'mcet';

@@ -6,7 +6,7 @@
  * ******************************************************************************************************
  *  xzhang  || 09/28/2023 || rewrote using Excel, various fixes including mistakes in column mapping
  * ****************************************************************************************************** 
- *  iperez  || 02/06/2026 || modified existing medicare sciprt for medicare enc tables
+ *  iperez  || 02/06/2024 || modified existing medicare sciprt for medicare enc tables
  * ****************************************************************************************************** 
  * */
 
@@ -57,11 +57,11 @@ select
     a.op_physn_npi as perf_op_provider, 
     a.enc_join_key as claim_id_src, 
     a.bene_id as member_id_src, 
-    'inpatient' as table_id_src, 
+    'ip' as table_id_src, 
     current_date as load_date,
     NULL as deductible, 
     NULL as coins
-from medicare_enc_texas.inpatient_base_enc a
+from medicare_enc_texas.ip_base_enc a
 left join data_warehouse.dim_uth_claim_id b
     on a.enc_join_key = b.claim_id_src and b.data_source = 'mcet';
 
@@ -170,11 +170,11 @@ select
     a.op_physn_npi as perf_op_provider, 
     a.enc_join_key as claim_id_src, 
     a.bene_id as member_id_src, 
-    'outpatient' as table_id_src, 
+    'op' as table_id_src, 
     current_date as load_date, 
     NULL as deductible, 
     NULL as coins
-from medicare_enc_texas.outpatient_base_enc a
+from medicare_enc_texas.op_base_enc a
 left join data_warehouse.dim_uth_claim_id b
     on a.enc_join_key = b.claim_id_src and b.data_source = 'mcet';
 
@@ -209,7 +209,7 @@ select
     a.rfrg_npi as ref_provider, 
     a.enc_join_key as claim_id_src, 
     a.bene_id as member_id_src, 
-    'bcarrier' as table_id_src, 
+    'carrier' as table_id_src, 
     current_date as load_date, 
     NULL as deductible
 from medicare_enc_texas.carrier_base_enc a

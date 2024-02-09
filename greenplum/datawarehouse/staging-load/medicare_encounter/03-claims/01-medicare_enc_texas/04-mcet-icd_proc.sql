@@ -6,6 +6,8 @@
  * ****************************************************************************************************** 
  *  Xiaorui  || 10/03/23  || Rewrote -- ETL first then load
  * ******************************************************************************************************
+ *  iperez  || 02/06/24 || modified existing medicare sciprt for medicare enc tables
+ * ****************************************************************************************************** 
  * */
 
 select 'mcet claim icd proc script started at ' || current_timestamp as message;
@@ -42,7 +44,7 @@ begin
 			execute 'insert into dw_staging.mcet_proc_etl
 				select enc_join_key, bene_id, prcdr_dt' || i || '::date, ' || i || ' as pos,
 				 icd_prcdr_cd' || i || ' as proc_cd,
-				''' || case when table_name = 'ip' then 'inpatient' when table_name = 'op' then 'outpatient' else table_name end || ''' as table_id_src
+				''' || table_name || ''' as table_id_src
 				from medicare_enc_texas.' || table_name || '_base_enc
 				where icd_prcdr_cd' || i || ' is not null and
 				icd_prcdr_cd' || i || ' != '''';';
