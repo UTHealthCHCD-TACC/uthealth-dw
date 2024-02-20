@@ -260,5 +260,14 @@ from pg_stat_user_tables
 where schemaname = 'data_warehouse'
 order by relname;
 
-
+--table last operation
+-- if table is not in this list, then it means that it has been deleted
+--create view qa_reporting.table_last_operation as
+select statime, staactionname, stausename, relname table_name, nspname schema_name
+from pg_catalog.pg_stat_last_operation a
+left join pg_catalog.pg_class b
+on a.objid = b.oid
+left join pg_catalog.pg_namespace c
+on b.relnamespace = c.oid
+order by statime desc;
 
