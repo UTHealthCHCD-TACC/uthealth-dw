@@ -12,6 +12,8 @@
  * Xiaorui || 04/18/2023 || Changed msclmid to claim_id_derv
  * --------------------------------------------------------------------
  * Xiaorui || 07/20/2023 || Split into trum and truc
+ * --------------------------------------------------------------------
+ * Xiaorui || 03/14/2024 || Fixed stdprov(int) -> stdprov(char) conversion
  ***********************************************************************/
 
 select 'Truven CCAE Claim Header script started at ' || current_timestamp as message;
@@ -154,7 +156,7 @@ select 'Add provider type: ' || current_timestamp as message;
 --- add provider type 
 
 update dw_staging.truc_claim_header a 
-   set provider_type = b.stdprov
+   set provider_type = to_char(b.stdprov , 'FM9999')
   from staging_clean.truv_ccaef_etl b
  where a.member_id_src::bigint = b.enrolid 
    and a.claim_id_src = b.claim_id_derv 
