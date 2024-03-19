@@ -9,6 +9,13 @@
  * 
  * ****************************************************************************************************** */
 
+--03/19/24
+--grant all access to qa_reporting for uthealth_analyst
+grant usage on schema qa_reporting to group uthealth_analyst; 
+grant all on all tables in schema qa_reporting to group uthealth_analyst; 
+grant all on all sequences in schema qa_reporting to uthealth_analyst;
+alter default privileges in schema qa_reporting grant all on tables to group uthealth_analyst;
+
 --11/27/23
 --grant dev access to Sharrah
 grant uthealth_dev to sharrah17;
