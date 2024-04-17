@@ -9,6 +9,11 @@
  * 
  * ****************************************************************************************************** */
 
+
+--04/17/24
+--grant dev access to Peter
+grant uthealth_dev to piacobelli;
+
 --03/19/24
 --grant all access to qa_reporting for uthealth_analyst
 grant usage on schema qa_reporting to group uthealth_analyst; 
