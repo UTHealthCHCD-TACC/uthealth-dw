@@ -1,4 +1,5 @@
 from datetime import datetime
+from venv import create
 import pandas as pd
 import psycopg2
 import psycopg2.extras
@@ -551,7 +552,7 @@ if __name__ == '__main__':
         df_con.autocommit = True
 
         data_sources = [
-                        'mdcd',
+                        # 'mdcd',
                         # 'mcpp', 
                         # 'mhtw', 
                         # 'mcrt',
@@ -560,44 +561,47 @@ if __name__ == '__main__':
                         # 'optd',
                         # 'truc', 
                         # 'trum',
+                        'iqva',
                         ]
 
         with df_con.cursor() as cursor:
             # clears tables from step 1
+            # create_log_table(cursor, 'dev', 'ip_dw_ip_log')
             run_step_zero()
+            
 
         for data_source in data_sources:
             print(data_source)
 
             # inserts all inpatient claims; adds a group identifier
-            run_step_one(data_source)
+            # run_step_one(data_source)
 
-            with df_con.cursor() as cursor:
-                cursor.execute(f'''select distinct data_source, pat_group
-                            from dev.gm_dw_ip_window_step_2
-                            where data_source in ('{data_source}')
-                            order by data_source, pat_group
-                            ;''')
-                results = cursor.fetchall()
-                print(results)
+            # with df_con.cursor() as cursor:
+            #     cursor.execute(f'''select distinct data_source, pat_group
+            #                 from dev.gm_dw_ip_window_step_2
+            #                 where data_source in ('{data_source}')
+            #                 order by data_source, pat_group
+            #                 ;''')
+            #     results = cursor.fetchall()
+            #     print(results)
 
-            # # iterates through the groups to determine ip window
-            # # allows for processing in memory
-            for pat_group in results:
-                variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
-                                'pat_group': pat_group[1], 
-                                'output_table': output_table}
-                run_step_two(variable_dict)
+            # # # iterates through the groups to determine ip window
+            # # # allows for processing in memory
+            # for pat_group in results:
+            #     variable_dict = {'df_con': df_con, 'data_source': pat_group[0],
+            #                     'pat_group': pat_group[1], 
+            #                     'output_table': output_table}
+            #     run_step_two(variable_dict)
     
-            # # insert all claims within ip window
-            variable_dict = {'df_con': df_con, 'data_source': data_source, 
-                            'output_table': output_table+'_claim'}
+            # # # insert all claims within ip window
+            # variable_dict = {'df_con': df_con, 'data_source': data_source, 
+            #                 'output_table': output_table+'_claim'}
             
-            run_step_three(variable_dict)
+            # run_step_three(variable_dict)
 
             # move to DW, to be done AFTER QA
-            # variable_dict = {'df_con': df_con, 'data_source': data_source}
-            # run_step_four(variable_dict)
+            variable_dict = {'df_con': df_con, 'data_source': data_source}
+            run_step_four(variable_dict)
 
     except:
         raise
