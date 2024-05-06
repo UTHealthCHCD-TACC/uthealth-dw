@@ -2,14 +2,16 @@
 /* ******************************************************************************************************
  *  load claim detail for Medicaid
  * ******************************************************************************************************
- *  Author  || Date       || Notes
+ *  Author  | Date       | Notes
  * ******************************************************************************************************
- * ******************************************************************************************************
- *  wc001   || 9/29/2021  || script creation - pointed at dev schema for testing
- * ****************************************************************************************************** 
- *  wc002   || 12/9/2021  || modify to do end script
- * ******************************************************************************************************
- *  xiaorui || 09/12/2023 || added claim_status
+ *  wc001   | 9/29/2021  | script creation - pointed at dev schema for testing
+ *  wc002   | 12/9/2021  | modify to do end script
+ *  Xiaorui | 09/12/2023 | added claim_status
+ *  Xiaorui | 01/24/2024 | total_charge_amt previously mapped to gross_amt_due -> change to null
+ *                         total_allowed_amt previously null -> map to gross_amt_due
+ *                         Also changed data_source = 'mdcd' to data source in ('mdcd', 'mhtw', 'mcpp')
+ *                         On next data load: make sure this isn't causing any problems
+ * 
  * ****************************************************************************************************** 
  * */
 
@@ -42,7 +44,7 @@ distributed by (uth_member_id)
 insert into dw_staging.mcd_pharmacy_claims (
 data_source, year, uth_rx_claim_id, uth_member_id,  
  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
- quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
+ quantity, provider_npi, pharmacy_id, total_allowed_amount, total_paid_amount, 
  fiscal_year, rx_claim_id_src, member_id_src, table_id_src, claim_status
  )
 select distinct 'mdcd', extract(year from a.rx_fill_dt) as yr, b.uth_rx_claim_id, b.uth_member_id, 
@@ -53,7 +55,8 @@ from medicaid.chip_rx a
   join data_warehouse.dim_uth_rx_claim_id  b  
      on a.pcn = b.member_id_src 
     and pcn || ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
-    and data_source = 'mdcd'
+    --and data_source = 'mdcd'
+    and data_source in ('mdcd', 'mhtw', 'mcpp')
 ;
 
 analyze dw_staging.mcd_pharmacy_claims;
@@ -62,7 +65,7 @@ analyze dw_staging.mcd_pharmacy_claims;
 insert into dw_staging.mcd_pharmacy_claims (
 data_source, year, uth_rx_claim_id, uth_member_id,  
  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
- quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
+ quantity, provider_npi, pharmacy_id, total_allowed_amount, total_paid_amount, 
  fiscal_year, rx_claim_id_src, member_id_src, table_id_src, claim_status )
 select distinct 'mdcd', extract(year from a.rx_fill_dt) as yr, b.uth_rx_claim_id, b.uth_member_id, 
        a.rx_fill_dt, a.ndc, a.rx_days_supply, a.rx_nbr, a.refill_nbr, get_my_from_date(a.rx_fill_dt) as month_year, 
@@ -72,7 +75,8 @@ from medicaid.ffs_rx a
   join data_warehouse.dim_uth_rx_claim_id  b  
      on a.pcn = b.member_id_src 
     and pcn || ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
-    and data_source = 'mdcd'
+    --and data_source = 'mdcd'
+    and data_source in ('mdcd', 'mhtw', 'mcpp')
 ;
 
 vacuum analyze dw_staging.mcd_pharmacy_claims;
@@ -81,7 +85,7 @@ vacuum analyze dw_staging.mcd_pharmacy_claims;
 insert into dw_staging.mcd_pharmacy_claims (
 data_source, year, uth_rx_claim_id, uth_member_id,  
  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
- quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
+ quantity, provider_npi, pharmacy_id, total_allowed_amount, total_paid_amount, 
  fiscal_year, rx_claim_id_src, member_id_src, table_id_src, claim_status )
 select distinct 'mdcd', extract(year from a.rx_fill_dt) as yr, b.uth_rx_claim_id, b.uth_member_id, 
        a.rx_fill_dt, a.ndc, a.rx_days_supply, a.rx_nbr, a.refill_nbr::int, get_my_from_date(a.rx_fill_dt) as month_year, 
@@ -91,7 +95,8 @@ from medicaid.mco_rx a
    join data_warehouse.dim_uth_rx_claim_id  b 
       on a.pcn = b.member_id_src 
      and pcn || a.ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
-     and b.data_source = 'mdcd'
+    --and data_source = 'mdcd'
+    and data_source in ('mdcd', 'mhtw', 'mcpp')
 ;   
 
 vacuum analyze dw_staging.mcd_pharmacy_claims;
@@ -100,7 +105,7 @@ vacuum analyze dw_staging.mcd_pharmacy_claims;
 insert into dw_staging.mcd_pharmacy_claims (
 data_source, year, uth_rx_claim_id, uth_member_id,  
  fill_date, ndc, days_supply, script_id, refill_count, month_year_id, 
- quantity, provider_npi, pharmacy_id, total_charge_amount, total_paid_amount, 
+ quantity, provider_npi, pharmacy_id, total_allowed_amount, total_paid_amount, 
  fiscal_year, rx_claim_id_src, member_id_src, table_id_src, claim_status )
 select distinct 'mdcd', extract(year from a.rx_fill_dt) as yr, b.uth_rx_claim_id, b.uth_member_id, 
        a.rx_fill_dt, a.ndc, a.rx_days_supply, a.rx_nbr, a.refill_nbr, get_my_from_date(a.rx_fill_dt) as month_year, 
@@ -110,7 +115,8 @@ from medicaid.htw_ffs_rx a
   join data_warehouse.dim_uth_rx_claim_id  b  
      on a.pcn = b.member_id_src 
     and pcn || ndc || replace(rx_fill_dt::text, '-','') = b.rx_claim_id_src 
-    and data_source = 'mdcd'
+    --and data_source = 'mdcd'
+    and data_source in ('mdcd', 'mhtw', 'mcpp')
 ;   
 
 vacuum analyze dw_staging.mcd_pharmacy_claims;

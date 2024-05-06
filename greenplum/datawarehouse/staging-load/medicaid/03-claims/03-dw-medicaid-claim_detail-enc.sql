@@ -8,7 +8,11 @@
  * 									 Changed unit (dt_ln_unt) to float instead of int
  * xzhang			|| 11/16/2023 || Modified to include line_status (paid/denied/etc on line level)
  * 									 Also rolled extraneous update statements into create table statements
+ * xrzhang          || 02/01/2024 || Modified code to address bug that caused both bill type and drg to be
+ *                                   null in final DW table - NEED TO CHECK OUTPUT ON NEXT RUN
 */
+
+/************CHECK OUTPUT FOR BILL AND DRG ON NEXT RUN****************/
 
 drop table if exists dw_staging.enc_detail_etl;
 
@@ -166,9 +170,6 @@ CREATE TABLE dw_staging.detail_enc_etl (
 	sub_ref_prov_npi varchar null,
 	sub_rend_prov_npi varchar null,
 	sub_rend_prv_tax_cd varchar null,
-	bill_i varchar null,
-	bill_c varchar null,
-	bill_f varchar null,
 	bill varchar null,
 	drg varchar null
 )
@@ -277,3 +278,20 @@ drop table if exists dw_staging.enc_detail_etl;
 drop table if exists dw_staging.enc_header_etl;
 drop table if exists dw_staging.enc_proc_etl;
 drop table if exists dw_staging.detail_enc_etl;
+
+/**********HOT FIX 02/01/2024***********************
+
+update data_warehouse.claim_detail a
+set bill_type_inst = substring(b.bill,1,1),
+	bill_type_class = substring(b.bill,2,1),
+	bill_type_freq = substring(b.bill,3,1),
+	bill = b.bill,
+	drg_cd = b.drg
+from dw_staging.enc_proc_etl b
+where a.claim_id_src = b.derv_enc
+and a.data_source in ('mdcd', 'mcpp', 'mhtw')
+;
+
+vacuum analyze data_warehouse.claim_detail;
+
+*/
