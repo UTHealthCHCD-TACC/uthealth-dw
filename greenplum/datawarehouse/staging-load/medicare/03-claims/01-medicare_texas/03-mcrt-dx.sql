@@ -5,6 +5,8 @@
  * ****************************************************************************************************** 
  *  Xiaorui  || 10/03/23  || Rewrote -- ETL first then load
  * ******************************************************************************************************
+ * 
+ * TO DO: STRIP DX CODES OF NONALPHA
  * */
 
 select 'mcrt claim diag script started at ' || current_timestamp as message;

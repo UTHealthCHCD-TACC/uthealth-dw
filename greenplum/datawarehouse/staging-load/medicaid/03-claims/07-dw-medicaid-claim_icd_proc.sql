@@ -15,6 +15,11 @@
  *  xiaorui		|| 09/05/2023 || changed mcd_icd_proc to mcd_icd_proc to be consistent
  * 								 and changed distribution key to match data_warehouse (uth_member_id)
  * 								 so that we can swap partitions
+ * 
+ * Note: 04/25/24 Xiaorui implemented a hotfix for this table b/c a very small % (<1% most years) had
+ * null as their uth_claim_id. Not sure why it happened for just this table and no other tables, but
+ * on next data load, check to see if this issue repeats itself
+ * 
  * */
 
 --create empty etl table

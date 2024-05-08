@@ -9,7 +9,9 @@
  * ******************************************************************************************************
  *  wcough	    || 1/07/2022 || add icd_version back to table
  * ****************************************************************************************************** 
- * xzhang  		|| 09/05/2023 || Changed table name from claim_diag to mcd_claim_diag
+ *  xzhang  	|| 09/05/2023 || Changed table name from claim_diag to mcd_claim_diag
+ * 
+ * TO DO: NEED TO STRIP PUNCTUATION FROM DX CODES
  * 
  * */
 
