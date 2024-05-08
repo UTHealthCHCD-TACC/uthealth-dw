@@ -9,10 +9,21 @@
  * 
  * ****************************************************************************************************** */
 
-
 --04/17/24
 --grant dev access to Peter
 grant uthealth_dev to piacobelli;
+
+--03/20/24
+--grant access to medicaid.chip_pren - owner is xrzhang
+alter table medicaid.chip_pren owner to uthealth_admin;
+
+--refresh access permissions
+grant usage on schema medicaid to group uthealth_analyst; 
+grant select on all tables in schema medicaid to group uthealth_analyst; 
+alter default privileges in schema medicaid grant select on tables to group uthealth_analyst;
+
+--grant same permissions as uthealth-analyst
+grant uthealth_analyst to uthealth_dev;
 
 --03/19/24
 --grant all access to qa_reporting for uthealth_analyst
