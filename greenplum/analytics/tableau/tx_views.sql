@@ -15,7 +15,7 @@ union
 select 'cmrc', "year", uth_member_id, gender_cd, race_cd, age_derived, state, plan_type, bus_cd, total_enrolled_months
   from tableau.master_enrollment
   where state = 'TX' 
-  and data_source in ('optz', 'truc')
+  and data_source in ('iqva', 'truc')
   and bus_cd = 'COM';
  
  
@@ -47,7 +47,7 @@ select 'cmrc', uth_member_id, year, covid_severity, gender_cd, age_derived, plan
   from tableau.master_enrollment
  where year >= 2020 
   and state = 'TX' 
-  and data_source in ('optz', 'truc')
+  and data_source in ('iqva', 'truc')
   and bus_cd = 'COM';
  
 -- tx conditions   
@@ -118,7 +118,7 @@ left join tableau.master_enrollment b
  and a.data_source = b.data_source
  and a.year = b.year
  where a.state = 'TX' 
-  and b.data_source in ('optz', 'truc')
+  and b.data_source in ('iqva', 'truc')
   and a.bus_cd = 'COM';
 
 -- granting permissions

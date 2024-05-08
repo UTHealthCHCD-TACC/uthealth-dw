@@ -1,0 +1,501 @@
+---
+title: "Geowhatsup"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+# Geospatial
+
+There are several key libraries/object types for handling geospatial data in R.
+
+-   `sf`: This is a library for handling simple feature objects. Simple features are a standard data protocol for geometry. Libraries may assume you already have an sf object, so if you're reading data in from a csv, you may need to use sf to do conversion, further processing (spatial joins, etc). Read more [here](https://r-spatial.github.io/sf/index.html)
+
+-   `tigris`: This is an interface to the census bureau's TIGER shapefiles. Manually keeping and loading shapefiles in a pain in the butt. These download as sf objects, which is nice so you don't have to do too much conversion.
+
+The rest is kind of a hodgepodge of packages for helping you deal with the data. There are really so many different packages meant for mapping data, that it really depends on your familiarity with what you want to use for actual plotting.
+
+```{r}
+pacman::p_load(dplyr, ggplot2, tidygeocoder, leaflet, sf, zipcodeR, tigris, tmap, RColorBrewer, here, readxl, RPostgres, DBI, keyring, spdep, gridExtra)
+
+```
+
+If `tmap` is being annoying, you may need to `pacman::p_load(XML)` first... It's weird!
+
+Some online books that are helpful:
+
+<https://r-spatial.org/book/>
+
+<https://r.geocompx.org/>
+
+add note sp outdated
+
+# Up and running with base maps
+
+If you are running analysis at some arbitrary geospatial level, you will typically aggregate that to that level and then join it to a sf object for mapping. `tigris` is super easy to use and a good way to get those base maps.
+
+```{r}
+texas.counties <- 
+  tigris::counties(cb=FALSE, state = "TX") 
+
+names(texas.counties)
+```
+
+Notice the `geometry` column! `GEOID` is the FIPS code, which is just the other two FIPS codes put together.
+
+```{r}
+class(texas.counties)
+```
+
+We have a `sf` object. Which you can think of as a data.frame with additional attributes like a coordinate reference system (CRS). That means how the world is projected from 3 dimensions to 2. It matters and it doesn't... Often times you will get weird errors about CRS... But as we can see, this is a NAD83 CRS:
+
+```{r}
+st_crs(texas.counties)
+```
+
+## ggplot
+
+`ggplot` may be the best bet if you are already familiar with the syntax. `geom_sf` is the key change that is different than what you might use.
+
+```{r}
+ggplot(texas.counties) + 
+  geom_sf(aes(fill=AWATER))
+```
+
+## tmaps
+
+`tmaps` is also good for plotting. You'll see it makes some assumptions about breaks in continuous variables
+
+```{r}
+tm_shape(texas.counties) + 
+  tm_polygons("AWATER") 
+
+```
+
+## leaflet
+
+If you want to make interactive maps (if you end up making Shiny dashboards, you might use leaflet) leaflet is a good choice.
+
+leaflet map code can get pretty complex, and might require a lot more finagling. We will get an error related to the CRS! But we will ignore it for now.
+
+```{r}
+
+pal_fun <- colorQuantile("YlOrRd", NULL, n = 5)
+
+
+leaflet(texas.counties) %>%
+  addPolygons(
+    stroke = FALSE,
+    fillColor = ~pal_fun(AWATER),
+    fillOpacity = 0.8,
+    popup = texas.counties$NAMELSAD) %>%
+  addTiles() 
+```
+
+## others
+
+That said, there is also plotly for interactive maps and tamps has interactive as well. Plotly plays very nicely with ggplot.
+
+Honestly, most of the times with the maps is spent trying to get them to look right. Usually data is distrusted so weirdly that you have to work with getting it to look right, whether that be quartiles, deciles, whatever.
+
+# Zip Codes
+
+Zip codes are mailing routes maintained by the USPS, they are not locations and they are not administrative boundaries, such as counties. They can be thought of as lines made of points of all the addresses along that route.
+
+### ZCTA
+
+ZCTA https://www.census.gov/programs-surveys/geography/guidance/geo-areas/zctas.html are areas, created by the census, that often, but do not always line up with zip codes.
+
+Let's get a base map of ZCTA, just to see:
+
+(the `cb` parameter is about how detailed the shape is. `TRUE` is a more "generalized file" while `FALSE` is the full data (a larger object in memory) -- what is available for what year depends...)
+
+```{r}
+# Get Texas ZCTA
+zcta_tx <- tigris::zctas(cb=FALSE, year=2010, state = "TX") 
+```
+
+As you can see, it looks quite different than a county map. If there are no people in an area, then there's no geometry in that area. And, there are quite a bit of them. Sometimes ZCTA is useful for creating custom service areas, often called catchment areas. There is a lot more complicated polygons, so it takes longer to map.
+
+```{r}
+ggplot(zcta_tx) + 
+  geom_sf(aes(fill=AWATER10))
+```
+
+### `zipcodeR`
+
+`zipcodeR` is a package that is sometimes useful. It isn't very telling on the github about how it got all the data, but I'm pretty sure it just uses HUD data, which we have in the `crosswalk` schema on GP.
+
+```{r}
+data.path <- here("data")
+address.file <- here(data.path, "address_file.xlsx")
+
+address.df <- read_excel(address.file, na = "NA") 
+
+```
+
+```{r}
+zips <- reverse_zipcode(address.df$zip)
+names(zips) 
+```
+
+You can use it to get zip codes, for example, if you wanted to validate what someone says is a list of zips from Texas
+
+```{r}
+# Get Texas zip codes 
+tx.zips <- search_state("TX")
+
+# Check a zip code
+"53333" %in% tx.zips$zipcode
+```
+
+## Crosswalks
+
+This count of MS ppl per year was pulled with `state = TX` from data warehouse enrollment yearly, and I have a feeling many of the zip codes will not be in Texas!
+
+```{r}
+prev.file <- here(data.path, "ms-zip5.csv")
+prev.df <- read.csv(prev.file)
+prev.df$zip5 <- as.character(prev.df$zip5)
+head(prev.df)
+```
+
+Let's see how many are in Texas according to zipcodeR
+
+```{r}
+prev.df %>%
+  select(zip5) %>% distinct() %>%
+  mutate(in_tx = case_when(zip5  %in% tx.zips$zipcode ~ 1, TRUE ~ 0)) %>%
+  summarise(n = n(), in_texas = sum(in_tx)) 
+```
+
+### HUD Crosswalks
+
+We keep several HUD USPS Zip crosswalks on the greenplum server. They create these from the secret USPS files that have every address as a point location. What is special about them is that they have the ratios to account for a zip that exists in multiples of the other geographic area you are crosswalking to...
+
+```{r}
+tac <- dbConnect(RPostgres::Postgres(),
+                 dbname = "uthealth",
+                 user = "jwozny",
+                 password = key_get("Greenplum", "jwozny"),
+                 host = "greenplum01.corral.tacc.utexas.edu")
+
+```
+
+Let's get the HUD zip codes just to see how many from the enrollment table (when it was theoretically limited to TX) are actually in TX.
+
+```{r}
+TX <- "TX"
+
+tx.zips.hud <- 
+dbGetQuery(tac,
+  glue::glue_sql("select distinct zip 
+                    from crosswalk.zip_county 
+                   where usps_zip_pref_state = {TX};", .con = tac))
+
+prev.df %>%
+  select(zip5) %>% distinct() %>%
+  mutate(in_tx = case_when(zip5  %in% tx.zips.hud$zip ~ 1, TRUE ~ 0)) %>%
+  summarise(n = n(), in_texas = sum(in_tx)) 
+```
+
+So, a few less than is in the zipcodeR list, but HUD knows there are a few less zip codes. For example, some PO boxes. If you really wanted to make sure you got EVERY single zip code, you might need to iterate and use different sources for crosswalking, which may not be worth it.
+
+```{r}
+zip_county.crosswalk <- 
+dbGetQuery(tac,
+  glue::glue_sql("select *
+                    from crosswalk.zip_county 
+                   where usps_zip_pref_state = {TX}
+                     and year >= 2016 ;", .con = tac)) 
+
+zip_county.crosswalk <- zip_county.crosswalk %>% arrange(zip, year)
+```
+
+There are several ratio variables. These mean the percentage of the addresses for that ZIP you could find in the crosswalked area. `res_ratio` is for residences, `bus` for businesses, and so on. If the ratios are 1.0, that means that zip code only maps to one county. So you could assign a person to a county without worry. Or assign an observation to a county.
+
+```{r}
+zip_county.crosswalk %>% head(20) %>% flextable::flextable()
+```
+
+BUT! They are not all like that. Sometimes zip codes are split across multiple counties.
+
+```{r}
+zip_county.crosswalk %>% filter(zip == "75080") %>% head() %>% flextable::flextable()
+```
+
+```{r}
+zip_county.crosswalk %>% filter(zip == "75449") %>% arrange(zip, year) %>% head(10)%>% flextable::flextable()
+
+```
+
+## Full Information Zip -\> County Join
+
+So, if you are interested in an unbiased estimate by year and for each county, you would want to go the "full distance" in using the HUD table ratio variables as weights to estimate county totals. You join and multiply and then collapse on county to get your info.
+
+You have to be careful with sum if there are NA values. IDK why the NA values are there for ratio sometimes, but I didn't filter them on getting the OG table. So, if you are getting lots of counties that seem to be missing data after using `_ratio` variables to create a weighted count from a crosswalk, double check the `NA` situation.
+
+```{r}
+prev.crosswalk <- 
+prev.df %>%
+  inner_join(., zip_county.crosswalk, 
+             by = c("zip5"="zip","year"="year")) %>%
+  mutate(county_cases = cases * tot_ratio, 
+         county_denom = denom * tot_ratio)
+
+prev.county <- 
+prev.crosswalk %>%
+  group_by(county_fips) %>%
+  summarise(denom = sum(county_denom, na.rm = TRUE), 
+            cases = sum(county_cases, na.rm = TRUE)) %>%
+  mutate(county_fips = as.character(county_fips))
+```
+
+Because of occasional sparisity issues, which we'll talk about later, it is usually safer to left join from the geospatial sf object to make sure you don't miss any counties.
+
+```{r}
+prev.county.sf <- 
+texas.counties %>%
+  left_join(x=., y=prev.county, by=c("GEOID"="county_fips")) %>%
+  mutate(prev = cases / denom * 100000)
+
+county.plot.1 <- 
+ggplot(prev.county.sf) + 
+  geom_sf(aes(fill=prev)) + 
+  theme_minimal() +
+    theme(legend.key.height = unit(2, "cm"),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12, face = "bold"),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          plot.title = element_text(hjust = 0.5, size = 18, face="bold"))
+
+county.plot.1
+```
+
+## Not Full Information
+
+There is a table in reference tables that has basically taken the geographies with the highest ratios for each zip code and put them into one table. So if we want to map a zip to just one county, we would use this table. Of course, we lose information.
+
+```{r}
+one.to.one.crosswalk <- 
+dbGetQuery(tac,
+  glue::glue_sql("select *
+                    from reference_tables.ref_zip_code 
+                   where state = {TX};", .con = tac)) 
+
+one.to.one.crosswalk <- 
+one.to.one.crosswalk %>%
+  mutate(county_fips = as.character(county_fips))
+
+one.to.one.crosswalk %>% head() %>% flextable::flextable()
+```
+
+So we'll join it the same as before. There's no ratio allocation like before, we're just assuming all of the observations in one 5 digit zip code will apply to one county.
+
+```{r}
+prev.county.2 <- 
+prev.df %>%
+  inner_join(., one.to.one.crosswalk, by = c("zip5"="zip")) %>%
+  group_by(county_fips) %>%
+  summarise(denom = sum(denom), cases = sum(cases)) %>%
+  mutate(county_fips = as.character(county_fips))
+
+
+prev.county2.sf <- 
+texas.counties %>%
+  left_join(x=., y=prev.county.2, by=c("GEOID"="county_fips")) %>%
+  mutate(prev = cases / denom * 100000)
+
+county.plot.2 <- 
+ggplot(prev.county2.sf) + 
+  geom_sf(aes(fill=prev)) + 
+  theme_minimal() +
+    theme(legend.key.height = unit(2, "cm"),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12, face = "bold"),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          plot.title = element_text(hjust = 0.5, size = 18, face="bold"))
+
+county.plot.2
+```
+
+### Full versus partial
+
+Let's see how different they are:
+
+```{r}
+grid.arrange(county.plot.1, county.plot.2,
+             ncol=2, nrow=1)
+```
+
+```{r}
+
+full <-
+prev.county2.sf %>% as.data.frame() %>% select(GEOID, prev)
+
+one.to.one <- 
+prev.county.sf %>% as.data.frame() %>% select(GEOID, prev)
+
+compare <- 
+left_join(x=full, y=one.to.one, by="GEOID")
+
+plot(compare$prev.x, compare$prev.y)
+```
+
+I assume that the more granular you get--if you are then stratifying by many variables--the more some bias would become apparent, but for a range of years, it doesn't seem to affect it much. It depends on the question. The ratios don't appear to change a whole over time for the allocation weights, so you could also just take the most recent year from the original `crosswalk` table and use that.
+
+### Public Health Regions
+
+Public health regions are groupings of counties. Texas has lots of counties and sometimes data can be very sparse on the county level, so we need some higher level of aggregation, which is often public health regions. You can get what table from GP.
+
+```{r}
+ph.region.crosswalk <- dbGetQuery(tac, "select fips_code as county_fips, public_health_region from reference_tables.ref_tx_county_regions")
+```
+
+You just union geometries as you would a sum() in summarize()
+
+```{r}
+ph.region.crosswalk <- 
+ph.region.crosswalk %>%
+  mutate(county_fips = as.character(county_fips))
+
+prev.region.sf <- 
+prev.county.sf %>%
+  left_join(x=., y=ph.region.crosswalk, by=c("GEOID"="county_fips")) %>%
+  group_by(public_health_region) %>%
+  summarise(denom = sum(denom, na.rm = TRUE), 
+            cases = sum(cases, na.rm = TRUE), 
+            geometry = st_union(geometry)) %>% 
+  mutate(prev = (cases / denom) * 100000)
+
+ggplot(prev.region.sf) + 
+  geom_sf(aes(fill=prev)) + 
+  theme_minimal() +
+    theme(legend.key.height = unit(2, "cm"),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12, face = "bold"),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          plot.title = element_text(hjust = 0.5, size = 18, face="bold"))
+```
+
+## A Note About Sparsity
+
+Because Texas has so many counties, and there are many counties where very few people live, we often run into sparsity issues, where we have low counts. And you have the issue that variance of estimates is tied to the population size:
+
+```{r}
+plot(log(prev.county.sf$denom), prev.county.sf$prev)
+```
+
+Since we're just summing all years for all groups over counties, we haven't reallllly run into the problem, but as soon as you get into age groups and by year, you will run into the problem of having lots of empty cells in your geometry. If you're trying to show a spatial distribution and find pockets, you can end up with a messy looking map. You may need to look into smoothing, such as empirical bayes smoothers or building hierarchical models using public health region or something like that. In that case, you're basically modeling it and using the predicted rate as your mapped value. All these methods are going to shift high variance areas toward either a global or local mean and leave low variance areas as they are.
+
+We often censor areas if there are \<=10 observations there, which can leave a lot of blanks. Giving the estimated rate can be a good workaround for that.
+
+# Points in Polygons
+
+## Geocoding
+
+Sometimes you have address data and you want to get a lat/longitude. Ideally, we would just have an address on everyone and could geocode them and count the points within an area... but alas.... We will use `tidygeocoder`. It has several "modes", some of which are faster than others... It is definitely not a mass solution if you need to geocode 100,000 addresses, but in a pinch it will do. I think the limit may actually be 10,000 for the "census" mode, and the other modes would be too slow anyways.
+
+This is data that was used for opioid providers, so I'm just repurposing it for demonstration purposes. It has been somewhat cleaned beforehand standardize the addresses.
+
+```{r}
+# Make full address field
+# Only need this if using ARCGIS service
+address.df <- 
+address.df %>%
+  mutate(full_address = glue::glue("{street}, {city}, {state} {zip}", .na=""))
+
+# Send to geocoder
+geocoder.census <- 
+  address.df %>% 
+  geocode(street = street, city = city, state = state, postalcode = zip,
+          method = "census",
+          full_results = TRUE)
+
+# Keep those matched 
+geocoded.census <- 
+geocoder.census %>%
+  filter(!is.na(lat))
+
+
+```
+
+So now you have to convert it to an SF object. Here's where the CRS matters
+
+```{r}
+geocoded.census.sf <- 
+  st_as_sf(geocoded.census, coords = c("long", "lat"), crs = 4269)
+```
+
+Now they have an actual geometry
+
+```{r}
+ggplot(geocoded.census.sf) +
+  geom_sf(aes())
+```
+
+Well, look there's some out of texas and we want to know what county they are in, so we need to do some work.
+
+```{r}
+geocoded.census.sf.tx <- 
+  st_join(geocoded.census.sf, texas.counties, join = st_within) %>% 
+  filter(!is.na(GEOID))
+
+ggplot(geocoded.census.sf.tx) +
+  geom_sf(aes())
+```
+
+We can layer things on the same map in ggplot
+
+```{r}
+ggplot(texas.counties) +
+  geom_sf() + 
+  geom_sf(data = geocoded.census.sf.tx)
+```
+
+If you wanted to count within you might have to remake the join.
+
+```{r}
+# You need to specify left joins in the function call for st_join
+providers.in.counties <- 
+st_join(texas.counties, geocoded.census.sf, left=TRUE, join= st_contains)
+
+# Count the clinics 
+aggregate.clinics.in.counties <- 
+providers.in.counties %>%
+  mutate(clinic = if_else(is.na(name),0,1)) %>%
+  group_by(GEOID) %>%
+  summarise(
+    clinic_count = sum(clinic),
+    geometry = st_union(geometry)
+  )
+
+ggplot(aggregate.clinics.in.counties) +
+  geom_sf(aes(fill=clinic_count))
+```
+
+
+# Storing GIS in Database
+
+You can store geospatial data in Postgres using PostGis and if you wanted to save the results of the geospatial analysis in a table that retains the geometry, you can do that, it just takes a bit of wrangling.
+
+```{r}
+county.gp <- dbGetQuery(tac,"select * from gis.county;")
+class(county.gp)
+```
+
+```{r}
+county.gp$geom <- st_as_sfc(county.gp$geom) 
+county.gp.sf <- st_as_sf(county.gp)
+class(county.gp.sf)
+
+ggplot(county.gp.sf) +
+  geom_sf(aes(fill=shape_area))
+```
