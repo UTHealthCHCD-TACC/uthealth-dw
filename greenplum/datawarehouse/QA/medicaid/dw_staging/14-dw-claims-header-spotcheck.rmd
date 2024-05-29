@@ -19,6 +19,14 @@ This R markdown script spot checks for matching header information in dw_staging
   * In section 3.1, SQL statement was modified to set the value in the mismatch 
     columns to 0 when both claim_type between tables a and b and provider_type between 
     tables a and b are both NULL.
+
+05/24/24 Modifications:
+  * In section 2.1, spc_sql queries 1, 2, and 3 where modified to pull provider_taxonomy, 
+    provider_specialty, and billing_provider_type. Additionally, the logic within those
+    three queries for claim_type was modified to match the logic in the Medicaid claim_header 
+    script (prior to update, there were mismatch counts for claim_type). 
+  * Sections 3.1 and 3.2 were also modified to incorporate provider_taxonomy, 
+    provider_specialty, and billing_provider_type. 
     
   
     
@@ -104,7 +112,11 @@ rows_to_sample = as.integer(rows_to_check) * 1.2
 spc_sql1 = "with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_@yr group by icn)
 
 select top @rows_to_check a.hdr_frm_dos as from_dos,
-	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
+  case 
+    when a.clm_typ_cd = \'021\' then \'D\' 
+    when p.pos = \'1\' then \'P\' 
+    else \'F\' 
+  end as claim_type,
 	a.tot_bill_amt as tot_charge_amt,
 	a.TOT_ALWD_AMT as tot_allowed_amt,
 	a.hdr_pd_amt as tot_paid_amt,
@@ -113,16 +125,21 @@ select top @rows_to_check a.hdr_frm_dos as from_dos,
 	a.BILL_PROV_NPI as bill_provider,
 	a.atd_prov_npi as perf_at_provider,
 	a.icn as icn,
-	case when a.hdr_txm_cd  = '' then null else a.hdr_txm_cd end as provider_type
+	case when a.hdr_txm_cd  = '' then null else a.hdr_txm_cd end as provider_taxonomy,
+	case when a.bill_prov_sp_cd  = '' then null else a.bill_prov_sp_cd end as provider_specialty,
+  case when a.bill_prov_ty_cd like '%[^a-zA-Z0-9]%' or a.bill_prov_ty_cd = '' then null else a.bill_prov_ty_cd end as billing_provider_type
 into CHCDWORK.dbo.xz_dwqa_temp1
 from medicaid.dbo.clm_header_@yr a tablesample(@rows_to_sample rows)
 	left join p on a.icn = p.icn;"
 
 spc_sql2 = "insert into CHCDWORK.dbo.xz_dwqa_temp1
   select top @rows_to_check FRM_DOS,
-	case when TX_CD = \'P\' then \'P\'
+	case 
+	  when TX_CD = \'D\' then \'D\'
+	  when TX_CD = \'P\' then \'P\'
 		when TX_CD = \'I\' then \'F\'
-		else null end as claim_type,
+		else null 
+	end as claim_type,
 	TOT_CHRG_AMT as tot_charge_amt,
 	MCO_PD_AMT as tot_allowed_amt,
 	null as tot_paid_amt,
@@ -131,13 +148,19 @@ spc_sql2 = "insert into CHCDWORK.dbo.xz_dwqa_temp1
 	BILL_PROV_NPI as bill_provider,
 	ATTD_PHY_NPI as perf_at_provider,
 	DERV_ENC as icn,
-	case when BILL_PROV_TAX_CD = '' then null else BILL_PROV_TAX_CD end as provider_type
+	case when BILL_PROV_TAX_CD = '' then null else BILL_PROV_TAX_CD end as provider_taxonomy,
+	case when bill_prov_spc_cd = '' then null else bill_prov_spc_cd end as provider_specialty,
+	case when bill_prov_typ_cd like '%[^a-zA-Z0-9]%' or bill_prov_typ_cd = '' then null else bill_prov_typ_cd end as billing_provider_type
 from medicaid.dbo.enc_header_@yr tablesample(@rows_to_sample rows);"
 
 spc_sql3 = "with p as (select max(pos) as pos, icn from medicaid.dbo.clm_detail_1819_htw group by icn)
 \
 select top @rows_to_check a.hdr_frm_dos as from_dos,
-	case when p.pos = \'1\' then \'P\' else \'F\' end as claim_type,
+	case 
+	  when a.clm_typ_cd = \'021\' then \'D\'
+	  when p.pos = \'1\' then \'P\' 
+	  else \'F\' 
+	end as claim_type,
 	a.tot_bill_amt as tot_charge_amt,
 	a.TOT_ALWD_AMT as tot_allowed_amt,
 	a.hdr_pd_amt as tot_paid_amt,
@@ -146,7 +169,9 @@ select top @rows_to_check a.hdr_frm_dos as from_dos,
 	a.BILL_PROV_NPI as bill_provider,
 	a.atd_prov_npi as perf_at_provider,
 	a.icn as icn,
-	case when a.hdr_txm_cd = '' then null else a.hdr_txm_cd end as provider_type
+	case when a.hdr_txm_cd = '' then null else a.hdr_txm_cd end as provider_taxonomy,
+	case when a.bill_prov_sp_cd = '' then null else a.bill_prov_sp_cd end as provider_specialty,
+	case when a.bill_prov_ty_cd like '%[^a-zA-Z0-9]%' or a.bill_prov_ty_cd = '' then null else a.bill_prov_ty_cd end as billing_provider_type
 into CHCDWORK.dbo.xz_dwqa_temp1
 from medicaid.dbo.CLM_header_1819_HTW a tablesample(@rows_to_sample rows)
 	left join p on a.icn = p.icn;"
@@ -261,7 +286,7 @@ drop table if exists dev.xz_dwqa_temp2;
 ```{sql, connection = tac}
 select a.*, b.from_date_of_service, b.claim_type as dw_claim_type, b.total_charge_amount, b.total_allowed_amount,
 	b.total_paid_amount, b.fiscal_year, b.to_date_of_service, b.bill_provider as dw_bill_provider, b.ref_provider as dw_ref_provider, 
-	b.perf_at_provider as dw_perf_at_provider, b.provider_type as dw_provider_type,
+	b.perf_at_provider as dw_perf_at_provider, b.provider_taxonomy as dw_provider_taxonomy, b.provider_specialty as dw_provider_specialty, b.billing_provider_type as dw_billing_provider_type,
 	case when b.claim_id_src is null then 1 when b.claim_id_src::text != trim(a.icn)::text then 1 else 0 end as icn_mismatch,
 	case when b.fiscal_year is null then 1 when b.fiscal_year::text != trim(a.fy)::text then 1 else 0 end as fy_mismatch,
 	case when b.from_date_of_service is null then 1 when b.from_date_of_service::text != trim(a.from_dos)::text then 1 else 0 end as from_dos_mismatch,
@@ -276,7 +301,9 @@ select a.*, b.from_date_of_service, b.claim_type as dw_claim_type, b.total_charg
 	case when b.perf_at_provider is null and trim(a.perf_at_provider) = '' then 0
 		when b.perf_at_provider is null and trim(a.perf_at_provider) != '' then 1
 		when b.perf_at_provider::text != trim(a.perf_at_provider)::text then 1 else 0 end as perf_at_provider_mismatch,
-	case when b.provider_type is null and a.provider_type is null then 0 when b.provider_type is null then 1 when b.provider_type::text != trim(a.provider_type)::text then 1 else 0 end as provider_type_mismatch
+	case when b.provider_taxonomy is null and a.provider_taxonomy is null then 0 when b.provider_taxonomy is null then 1 when b.provider_taxonomy::text != trim(a.provider_taxonomy)::text then 1 else 0 end as provider_taxonomy_mismatch,
+	case when b.provider_specialty is null and a.provider_specialty is null then 0 when b.provider_specialty is null then 1 when b.provider_specialty::text != trim(a.provider_specialty)::text then 1 else 0 end as provider_specialty_mismatch,
+	case when b.billing_provider_type is null and a.billing_provider_type is null then 0 when b.billing_provider_type is null then 1 when b.billing_provider_type::text != trim(a.billing_provider_type)::text then 1 else 0 end as billing_provider_type_mismatch
 into dev.xz_dwqa_temp2
 from dev.xz_dwqa_temp1 a left join dw_staging.mcd_claim_header b on a.icn = b.claim_id_src;
 
@@ -295,7 +322,9 @@ select fy, sum(icn_mismatch) as icn_mismatches,
   sum(tot_paid_amt_mismatch) as tot_paid_amt_mismatches,
   sum(bill_provider_mismatch) as bill_provider_mismatches,
   sum(perf_at_provider_mismatch) as perf_at_provider_mismatches,
-  sum(provider_type_mismatch) as provider_type_mismatches,
+  sum(provider_taxonomy_mismatch) as provider_taxonomy_mismatches,
+  sum(provider_specialty_mismatch) as provider_specialty_mismatches,
+  sum(billing_provider_type_mismatch) as billing_provider_type_mismatches,
  count(*) as rows_checked
 from dev.xz_dwqa_temp2
 group by fy

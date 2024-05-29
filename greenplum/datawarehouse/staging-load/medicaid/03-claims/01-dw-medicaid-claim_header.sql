@@ -13,6 +13,9 @@
  * xzhang  || 09/05/2023 || Changed table name from claim_header to mcd_claim_header
  * xzhang  || 11/15/2023 || Modified logic for claim_type to indicate dental claims 
  * 						    Added claim_status (see column mapping)
+ * sallen  || 05/21/2024 || Added provider_taxonomy, provider_specialty, and billing_provider_type (see column mapping)
+ *                          Removed mapping for provider_type
+ * 
  * */
 
 --create empty table
@@ -42,8 +45,8 @@ insert into dw_staging.mcd_claim_header (
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, 
        perf_rn_provider, perf_at_provider, perf_op_provider,
-       table_id_src, claim_id_src, member_id_src, load_date, provider_type,
-       claim_status)		
+       table_id_src, claim_id_src, member_id_src, load_date,
+       claim_status, provider_taxonomy, provider_specialty, billing_provider_type)
 select distinct 'mdcd', 
 	   extract(year from h.hdr_frm_dos::date) as year, 
 	   c.uth_claim_id, 
@@ -67,8 +70,13 @@ select distinct 'mdcd',
        h.icn as claim_id_src,
        p.pcn as member_id_src,
        current_date as load_date,
-       h.hdr_txm_cd as provider_type,
-       h.clm_cur_stat_cd as claim_status
+       h.clm_cur_stat_cd as claim_status,
+       h.hdr_txm_cd as provider_taxonomy,
+       h.bill_prov_sp_cd as provider_specialty,
+       case 
+	       when h.bill_prov_ty_cd ~ '[^a-zA-Z0-9]' or h.bill_prov_ty_cd = '' then null 
+	       else h.bill_prov_ty_cd
+	   end as billing_provider_type 
 from medicaid.clm_header h  
 join medicaid.clm_proc p 
   on h.icn  = p.icn 
@@ -89,8 +97,8 @@ insert into dw_staging.mcd_claim_header (
        total_charge_amount, total_allowed_amount, total_paid_amount ,
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       table_id_src, claim_id_src, member_id_src, load_date, provider_type,
-       claim_status)
+       table_id_src, claim_id_src, member_id_src, load_date,
+       claim_status, provider_taxonomy, provider_specialty, billing_provider_type)
 select distinct 'mdcd', 
        extract(year from h.frm_dos::date) as cal_year, 
        c.uth_claim_id, c.uth_member_id, 
@@ -114,8 +122,13 @@ select distinct 'mdcd',
       h.derv_enc as claim_id_src,
       p.mem_id as member_id_src,
       current_date as load_date,
-      h.bill_prov_tax_cd as provider_type,
-      h.enc_stat_cd as claim_status
+      h.enc_stat_cd as claim_status,
+      h.bill_prov_tax_cd as provider_taxonomy,
+	  h.bill_prov_spc_cd as provider_specialty,
+      case 
+	       when h.bill_prov_typ_cd ~ '[^a-zA-Z0-9]' or h.bill_prov_typ_cd = '' then null 
+	       else h.bill_prov_typ_cd
+	  end as billing_provider_type 
   from medicaid.enc_header h  
   join medicaid.enc_proc p 
       on h.derv_enc = p.derv_enc       
@@ -138,8 +151,8 @@ insert into dw_staging.mcd_claim_header (
        total_charge_amount, total_allowed_amount, total_paid_amount ,
        fiscal_year, to_date_of_service,
        bill_provider, ref_provider, other_provider, perf_rn_provider, perf_at_provider, perf_op_provider,
-       table_id_src, claim_id_src, member_id_src, load_date, provider_type,
-       claim_status)
+       table_id_src, claim_id_src, member_id_src, load_date,
+       claim_status, provider_taxonomy, provider_specialty, billing_provider_type) 
 select distinct 'mdcd', 
 	   extract(year from h.hdr_frm_dos::date) as year, 
 	   c.uth_claim_id, 
@@ -163,8 +176,13 @@ select distinct 'mdcd',
        h.icn as claim_id_src,
        p.pcn as member_id_src,
        current_date as load_date,
-       h.hdr_txm_cd as provider_type,
-       h.clm_cur_stat_cd as claim_status
+       h.clm_cur_stat_cd as claim_status,
+       h.hdr_txm_cd as provider_taxonomy,
+	   h.bill_prov_sp_cd as provider_specialty,
+        case 
+	       when h.bill_prov_ty_cd ~ '[^a-zA-Z0-9]' or h.bill_prov_ty_cd = '' then null 
+	       else h.bill_prov_ty_cd
+	   end as billing_provider_type 
 from medicaid.htw_clm_header h  
 join medicaid.htw_clm_proc p 
   on h.icn  = p.icn 
