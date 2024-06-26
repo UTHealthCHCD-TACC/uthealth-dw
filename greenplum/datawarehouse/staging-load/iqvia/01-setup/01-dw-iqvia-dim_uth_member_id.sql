@@ -40,7 +40,7 @@ from cte_distinct_member;
 insert into data_warehouse.dim_uth_member_id(member_id_src, data_source, uth_member_id, claim_created_id)
 with cte_distinct_member as (
 	select distinct pat_id as v_member_id, 'iqva' as v_raw_data
-    from dev.sa_iqvia_derv_claimno_new_all_yr -- iqvia.claims table with the generated derv_claimnos
+    from dev.sa_iqvia_derv_claimno -- iqvia.claims table with the generated derv_claimnos
     	left outer join data_warehouse.dim_uth_member_id b 
     		on b.data_source = 'iqva' 
            and b.member_id_src = pat_id
@@ -88,6 +88,8 @@ select 'IQVIA data_warehouse.dim_uth_member_id refresh completed at ' || current
 
 --= Various checks: =--
 
+/*
+
 -- View Table:
 --select * from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true;
 --select * from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true;
@@ -95,13 +97,13 @@ select 'IQVIA data_warehouse.dim_uth_member_id refresh completed at ' || current
 --``````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Total row count:
-select 'data_warehouse.dim_uth_member_id total row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT: 115690695
+select 'data_warehouse.dim_uth_member_id total row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT:  116350420
 
--- Total patient count (should be 115690695):
-select 'data_warehouse.dim_uth_member_id total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT: 115690695
-select 'data_warehouse.dim_uth_member_id total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT: 115690695
+-- Total patient count (should be  116350420):
+select 'data_warehouse.dim_uth_member_id total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT: 116350420
+select 'data_warehouse.dim_uth_member_id total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva'; -- CNT: 116350420
 
--- Total patient count from table union of enroll2 and claims (Should be 115690695):
+-- Total patient count from table union of enroll2 and claims (Should be 116350420):
 select 'enroll2 union claims total patient count (pat_id)' as message, count(distinct pat_id)
 from(
 	select pat_id from iqvia.enroll2
@@ -109,32 +111,34 @@ from(
 	union 
 
 	select pat_id from iqvia.claims
-)a; -- CNT: 115690695
+)a; -- CNT: 116350420
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Total patient count from enroll2:
-select 'data_warehouse.dim_uth_member_id total enroll2 row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 115613220
-select 'data_warehouse.dim_uth_member_id enroll2 total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 115613220
-select 'data_warehouse.dim_uth_member_id enroll2 total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 115613220
+select 'data_warehouse.dim_uth_member_id total enroll2 row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 116270571
+select 'data_warehouse.dim_uth_member_id enroll2 total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 116270571
+select 'data_warehouse.dim_uth_member_id enroll2 total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is not true; -- CNT: 116270571
 
--- Enroll2 total patient count (should be 115613220):
-select 'total patient count from iqvia.enroll2 (pat_id)' as message, count(distinct pat_id) from iqvia.enroll2; -- CNT: 115613220
+-- Enroll2 total patient count (should be 116270571):
+select 'total patient count from iqvia.enroll2 (pat_id)' as message, count(distinct pat_id) from iqvia.enroll2; -- CNT: 116270571
 
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Total patient count from claims:
-select 'data_warehouse.dim_uth_member_id total claims row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 77475
-select 'data_warehouse.dim_uth_member_id claims total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 77475
-select 'data_warehouse.dim_uth_member_id claims total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 77475
+select 'data_warehouse.dim_uth_member_id total claims row count: ' as message, count(*) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 79849
+select 'data_warehouse.dim_uth_member_id claims total patient count (member_id_src): ' as message, count(distinct member_id_src) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 79849
+select 'data_warehouse.dim_uth_member_id claims total patient count (uth_member_id): ' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_member_id where data_source = 'iqva' and claim_created_id is true; -- CNT: 79849
 
--- Total patient count added from iqvia claims (should be 77475):
+-- Total patient count added from iqvia claims (should be 79849):
 select 'total patient count from iqvia.claims (pat_id)' as message, count(distinct pat_id) 
 from(
  select a.pat_id, b.pat_id as pat_id_b
  	from iqvia.claims a
 	left join (select distinct pat_id from iqvia.enroll2) b
 		on a.pat_id = b.pat_id
-where b.pat_id is null)a; -- CNT: 77475
+where b.pat_id is null)a; -- CNT: 79849
+
+*/
 

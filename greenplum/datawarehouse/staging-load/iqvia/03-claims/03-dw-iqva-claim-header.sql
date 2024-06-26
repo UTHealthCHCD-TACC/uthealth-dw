@@ -106,8 +106,7 @@ select 'iqva' as data_source,
 from iqvia_agg_cte a
 	join staging_clean.iqva_dim_claim_id b 
 		on a.pat_id = b.member_id_src 
-	   and a.derv_claimno = b.claim_id_src
-where year in (2020,2021,2022,2023); -- remove when done
+	   and a.derv_claimno = b.claim_id_src;
 	
 -- Vacuum analyze:
 select 'Vacuum analyze dw_staging.iqva_claim_header started at: ' || current_timestamp as message;
@@ -125,6 +124,8 @@ select 'IQVIA claim header script completed at: ' || current_timestamp as messag
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --= Various Checks =--
+
+/*
 
 -- View Data:
 --select * from dw_staging.iqva_claim_header order by member_id_src, claim_id_src;
@@ -144,7 +145,7 @@ select year, count (distinct derv_claimno) from (select min(year) as year, pat_i
 
 select 'IQVIA raw data claim count: ' as message;
 select year, count(distinct derv_claimno) from 
-	(select min(year) as year, pat_id, derv_claimno from dev.sa_iqvia_derv_claimno_new_all_yr where (new_rectype != 'P' or new_rectype is null) group by pat_id, derv_claimno)a
+	(select min(year) as year, pat_id, derv_claimno from dev.sa_iqvia_derv_claimno where (new_rectype != 'P' or new_rectype is null) group by pat_id, derv_claimno)a
 group by year order by 1; -- CNT: 
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
@@ -154,12 +155,17 @@ select distinct year from dw_staging.iqva_claim_header order by 1; -- 2006 thru 
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
+-- Check for NULLS:
+select * from dw_staging.iqva_claim_header where member_id_src is null or member_id_src = ''; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_header where claim_id_src is null or claim_id_src  = ''; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_header where uth_claim_id  is null; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_header where uth_member_id is null; -- no rows returned, no nulls
+
+--````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
 -- Ensure there are no dupe rows:
---select count(*) from dw_staging.iqva_claim_header; -- CNT: 4105423335
---select count(*) from (select distinct * from dw_staging.iqva_claim_header)a; -- CNT: 4105423335
+--select count(*) from dw_staging.iqva_claim_header; -- CNT: 4170185799
+--select count(*) from (select distinct * from dw_staging.iqva_claim_header)a; -- CNT: 4170185799
 
-
-
-
-
+*/
 

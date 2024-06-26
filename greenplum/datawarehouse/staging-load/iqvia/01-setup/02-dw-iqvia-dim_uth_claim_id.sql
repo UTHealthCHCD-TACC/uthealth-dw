@@ -21,7 +21,7 @@ insert into data_warehouse.dim_uth_claim_id(data_source, claim_id_src, member_id
 with all_clms as 
 (                            
 	select derv_claimno as v_claim_id_src, pat_id as v_member_id_src, min(substring(from_dt, 1, 4)::int) as v_data_year
-	from dev.sa_iqvia_derv_claimno_new_all_yr -- iqvia.claims table with the generated derv_claimnos
+	from dev.sa_iqvia_derv_claimno -- iqvia.claims table with the generated derv_claimnos
 	where (new_rectype != 'P' or new_rectype is null) -- filter for medical claims only
 		and pat_id is not null
 		and derv_claimno is not null
@@ -83,40 +83,47 @@ select 'IQVIA dim_uth_claim_id refresh completed at: ' || current_timestamp as m
 
 --= Various Checks =--
 
+/*
+
 -- View Table:
---select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' order by 1;
+select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' order by 1;
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Row count:
-select 'total row count in data_warehouse.dim_uth_claim_id table' as message, count(*) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: #4105423335
+select 'total row count in data_warehouse.dim_uth_claim_id table' as message, count(*) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 4170185799
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Compare total claimno counts (should equal the row count, #):
-select 'total claim count (uth_claim_id) in data_warehouse.dim_uth_claim_id table' as message, count(distinct uth_claim_id) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 4105423335
-select 'total claim count (claim_id_src) in data_warehouse.dim_uth_claim_id table' as message, count(distinct claim_id_src) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 4105423335
+select 'total claim count (uth_claim_id) in data_warehouse.dim_uth_claim_id table' as message, count(distinct uth_claim_id) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 4170185799
+select 'total claim count (claim_id_src) in data_warehouse.dim_uth_claim_id table' as message, count(distinct claim_id_src) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 4170185799
 
 -- total claim count from iqvia raw claims table (should be #):
 select 'total claim count in raw iqvia claims table' as message, count(distinct derv_claimno)
-from dev.sa_iqvia_derv_claimno_new_all_yr
-where (new_rectype != 'P' or new_rectype is null); -- CNT: # 4105423335
+from dev.sa_iqvia_derv_claimno
+where (new_rectype != 'P' or new_rectype is null); -- CNT: # 4170185799
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Compare total patient counts:
-select 'total pat count (uth_member_id) in data_warehouse.dim_uth_claim_id table' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 93581316
-select 'total pat count (member_id_src) in data_warehouse.dim_uth_claim_id table' as message, count(distinct member_id_src) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 93581316
+select 'total pat count (uth_member_id) in data_warehouse.dim_uth_claim_id table' as message, count(distinct uth_member_id) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 94178429
+select 'total pat count (member_id_src) in data_warehouse.dim_uth_claim_id table' as message, count(distinct member_id_src) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: # 94178429
 
 -- total patient count from iqvia raw claims table (should be #):
 select 'total pat count in raw iqvia claims table' as message, count(distinct pat_id) 
-from dev.sa_iqvia_derv_claimno_new_all_yr 
-where (new_rectype != 'P' or new_rectype is null); -- CNT: # 93581316
+from dev.sa_iqvia_derv_claimno 
+where (new_rectype != 'P' or new_rectype is null); -- CNT: # 94178429
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Distinct Year:
-select distinct data_year from data_warehouse.dim_uth_claim_id order by 1; -- Years: 2006 thru 2023
+select distinct data_year from data_warehouse.dim_uth_claim_id where data_source = 'iqva' order by 1; -- Years: 2006 thru 2023
 
+-- Check for nulls:
+select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' and uth_claim_id is null; -- no rows returned, no nulls
+select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' and claim_id_src is null or claim_id_src  = ''; -- no rows returned, no nulls
+select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' and uth_member_id  is null; -- no rows returned, no nulls
+select * from data_warehouse.dim_uth_claim_id where data_source = 'iqva' and uth_member_id  is null or claim_id_src  = ''; -- no rows returned, no nulls
 
-
+*/
