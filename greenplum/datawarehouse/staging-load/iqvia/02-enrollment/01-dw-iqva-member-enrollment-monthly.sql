@@ -17,6 +17,9 @@
  * ---------++-----------++------------------------------------------------------------------------------------
  * 04/04/24 || Sharrah   || Script updated to reverse changes made to script on 03/18/24.
  * ---------++-----------++------------------------------------------------------------------------------------
+ * 04/22/24 || Sharrah   || Script updated to first, pull patient demographic information from the 
+ *          ||           || enroll_synth table, and then after the enroll_synth_old table.
+ * ---------++-----------++------------------------------------------------------------------------------------
  *          ||           || 
  **************************************************************************************************************/ 
 
@@ -46,16 +49,16 @@ alter sequence dw_staging.iqva_member_enrollment_monthly_row_id_seq cache 200;
 
 
 
---=== Gather IQVIA monthly enrollment info and distribute the table on pat_id: ===-- 
+--=== Gather IQVIA monthly enrollment info from enroll2. Additionally, first, pull demographic information from the enroll_synth table: ===-- 
 
 -- Timestamp:
-select 'Redistributing IQVIA enroll tables started at: ' || current_timestamp as message;
+select 'IQVIA demographics pull from enroll_synth started at: ' || current_timestamp as message;
 
 -- Drop existing table:
-drop table if exists staging_clean.iqva_enroll_redistributed;
+drop table if exists staging_clean.iqva_enroll_synth_demographics;
 
 -- Note: There are no null pat_ids in either enroll tables
-create table staging_clean.iqva_enroll_redistributed with(
+create table staging_clean.iqva_enroll_synth_demographics with(
 	appendonly=true,
 	orientation=column,
 	compresstype=zlib
@@ -67,8 +70,76 @@ as select
 	es.pat_state,
 	es.pat_zip3,
 	es.mh_cd 
-  from iqvia.enroll2 erl2 left join iqvia.enroll_synth es on erl2.pat_id = es.pat_id 
+  from iqvia.enroll2 erl2 
+  	left join iqvia.enroll_synth es 
+  		on erl2.pat_id = es.pat_id 
+  where es.pat_id is not null -- filter where pat_id is not null in the enroll_synth table to retain patient monthly enrollment and demographic information for pat_ids that exist in both enroll2 and enroll_synth
   distributed by (pat_id);
+
+-- Vacuum analyze:
+vacuum analyze staging_clean.iqva_enroll_synth_demographics;
+
+
+
+--=== Gather IQVIA monthly enrollment info from enroll2. Additionally, gather demographic information from enroll_synth_old for pat_ids that are not in the enroll_synth table: ===-- 
+
+-- Timestamp:
+select 'IQVIA demographics pull from enroll_synth_old started at: ' || current_timestamp as message;
+
+-- Drop existing table:
+drop table if exists staging_clean.iqva_enroll_synth_old_demographics;
+
+-- Note: There are no null pat_ids in either enroll tables
+create table staging_clean.iqva_enroll_synth_old_demographics with(
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select 
+	erl2.*,
+	eso.der_sex,
+	eso.der_yob,
+	eso.pat_state,
+	eso.pat_zip3,
+	eso.mh_cd 
+  from (
+  		select a.* 
+  		from iqvia.enroll2 a 
+  			left join staging_clean.iqva_enroll_synth_demographics b 
+  				on a.pat_id = b.pat_id 
+  		where b.pat_id is null -- join the enroll2 table to staging_clean.iqva_enroll_synth_demographics and filter for where there are no matches on pat_id. These will be the pat_ids that are not in the enroll_synth table
+  	) erl2 
+  	left join iqvia.enroll_synth_old eso 
+  		on erl2.pat_id = eso.pat_id 
+  distributed by (pat_id);
+
+-- Vacuum analyze:
+vacuum analyze staging_clean.iqva_enroll_synth_old_demographics;
+
+
+
+--=== Create final raw data IQVIA enroll table: Combine the staging_clean.iqva_enroll_synth_demographics and staging_clean.iqva_enroll_synth_old_demographics tables: ===-- 
+
+-- Timestamp:
+select 'staging_clean.iqva_enroll_synth_demographics and staging_clean.iqva_enroll_synth_old_demographics table combination started at: ' || current_timestamp as message;
+
+-- Drop existing table:
+drop table if exists staging_clean.iqva_enroll_redistributed;
+
+create table staging_clean.iqva_enroll_redistributed with(
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select *
+   from (
+  		select * from staging_clean.iqva_enroll_synth_demographics
+  		
+  		union all
+  		
+  		select * from staging_clean.iqva_enroll_synth_old_demographics 		
+)comb_tbl
+distributed by (pat_id);
 
 -- Vacuum analyze:
 vacuum analyze staging_clean.iqva_enroll_redistributed;
@@ -199,7 +270,7 @@ update dw_staging.iqva_member_enrollment_monthly a
 
 
 
---== Cleanup ===--
+--=== Cleanup ===--
 
 -- Timestamp:
 select 'IQVIA cleanup started at: ' || current_timestamp as message;
@@ -207,6 +278,8 @@ select 'IQVIA cleanup started at: ' || current_timestamp as message;
 -- Drop existing tables that are no longer needed:
 drop table if exists staging_clean.iqva_enroll_redistributed;
 drop table if exists dev.iqva_temp_consec_enrollment;
+drop table if exists staging_clean.iqva_enroll_synth_demographics;
+drop table if exists staging_clean.iqva_enroll_synth_old_demographics;
 
 -- Remove row_id from the monthly enrollment table:
 alter table dw_staging.iqva_member_enrollment_monthly drop column row_id;
@@ -228,25 +301,27 @@ select 'IQVIA member enrollment monthly ETL script completed at: ' || current_ti
 
 --= Various checks: =--
 
+/*
+
 -- View populated table:
 --select * from dw_staging.iqva_member_enrollment_monthly order by uth_member_id, month_year_id limit 1000; 
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Total row count:
-select 'dw_staging.iqva_member_enrollment_monthly total row count: ' as message, count(*) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 4058328099
+select 'dw_staging.iqva_member_enrollment_monthly total row count: ' as message, count(*) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 4103527760
 
 -- Number of rows from the raw enroll2 table:
-select 'iqvia.enroll2 total row count: ' as message, count(*) from iqvia.enroll2; -- CNT: 4058328099
+select 'iqvia.enroll2 total row count: ' as message, count(*) from iqvia.enroll2; -- CNT: 4103527760
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Number of patients:
-select 'dw_staging.iqva_member_enrollment_monthly total number of patients (uth_member_id): ' as message, count(distinct uth_member_id) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 115613220
-select 'dw_staging.iqva_member_enrollment_monthly total number of patients (member_id_src): ' as message, count(distinct member_id_src) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 115613220
+select 'dw_staging.iqva_member_enrollment_monthly total number of patients (uth_member_id): ' as message, count(distinct uth_member_id) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 116270571
+select 'dw_staging.iqva_member_enrollment_monthly total number of patients (member_id_src): ' as message, count(distinct member_id_src) from dw_staging.iqva_member_enrollment_monthly; -- CNT: 116270571
 
 -- Number of patients from the raw enroll2 table:
-select 'iqvia.enroll2 total patient count (pat_id)' as message, count(distinct pat_id) from iqvia.enroll2; -- CNT: 115613220
+select 'iqvia.enroll2 total patient count (pat_id)' as message, count(distinct pat_id) from iqvia.enroll2; -- CNT: 116270571
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
@@ -258,6 +333,9 @@ select distinct year from dw_staging.iqva_member_enrollment_monthly order by 1; 
 -- Ensure there are no nulls in consecutive_enrolled_months;
 select * from dw_staging.iqva_member_enrollment_monthly where consecutive_enrolled_months is null;  -- no rows returned
 
+-- Check for null member_id_src and uth_member_id:
+select * from dw_staging.iqva_member_enrollment_yearly where member_id_src is null; -- no rows returned
+select * from dw_staging.iqva_member_enrollment_yearly where uth_member_id is null; -- no rows returned
 
-
+*/
 

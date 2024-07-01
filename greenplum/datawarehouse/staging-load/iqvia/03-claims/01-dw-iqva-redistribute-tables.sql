@@ -66,9 +66,8 @@ with iqvia_clean_cte as( -- select and transform variables as needed here
 			   when patstat !~ '[0-9]' then null -- maps patstat to null when patstat contains special characters (EX: ??, \\)
 			   else patstat 
 		   end as patstat,
-		   proc_cde,
+		   regexp_replace(proc_cde, '[^a-zA-Z0-9]', '', 'g') as proc_cde, -- remove non-alphanumeric characters from proc_cde
 		   cpt_mod,
-		   ndc,
 		   case 
 			   when rev_code in ('000', '0000') then null -- map rev_code to null when rev_code is 000 or 0000 
 			   when length(trim(rev_code)) in (1, 2) then null -- map rev_code to null when rev_code is 1 or 2 characters long 
@@ -98,7 +97,6 @@ with iqvia_clean_cte as( -- select and transform variables as needed here
 	       srv_unit::float8,
 	       bill_id,
 	       rend_id,  
-	       ptypeflg,
 	       case 
 		       when diagprc_ind = '-1' then null
 		       when diagprc_ind = '1' then '9'
@@ -132,7 +130,7 @@ with iqvia_clean_cte as( -- select and transform variables as needed here
 		   icdprc12,
 		   new_rectype,
 		   bill_spec
-	from dev.sa_iqvia_derv_claimno_new_all_yr -- iqvia.claims table with the generated derv_claimnos
+	from dev.sa_iqvia_derv_claimno -- iqvia.claims table with the generated derv_claimnos
 	where (new_rectype != 'P' or new_rectype is null) -- filter for where new_rectype != P or where new_rectype is null to select medical claims only
 )
 select *,
@@ -161,6 +159,8 @@ select 'IQVIA table redistribution and data transformation script completed at: 
 
 --= Various Checks =--
 
+/*
+
 -- View table:
 --select * from staging_clean.iqva_etl order by pat_id, derv_claimno, derv_linenum limit 5000;
 --select * from staging_clean.iqva_etl where claim_type = 'F' order by pat_id, derv_claimno, derv_linenum limit 5000;
@@ -169,15 +169,15 @@ select 'IQVIA table redistribution and data transformation script completed at: 
 
 -- Counts (make sure IQVIA raw data row count and staging_clean.iqva_etl row count match):
 select 'iqvia raw claims row count: ' as message, count(*) 
-from dev.sa_iqvia_derv_claimno_new_all_yr where (new_rectype != 'P' or new_rectype is null); -- CNT: 9105920411
+from dev.sa_iqvia_derv_claimno where (new_rectype != 'P' or new_rectype is null); -- CNT: 9255962780
 
-select 'staging_clean.iqva_etl row count: ' as message, count(*) from staging_clean.iqva_etl; -- CNT: 9105920411
+select 'staging_clean.iqva_etl row count: ' as message, count(*) from staging_clean.iqva_etl; -- CNT: 9255962780
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Counts (make sure data_warehouse.dim_uth_claim_id row count and staging_clean.iqva_dim_claim_id row count match):
-select 'staging_clean.iqva_dim_claim_id row count: ' as message, count(*) from staging_clean.iqva_dim_claim_id; -- CNT: 4105423335
-select 'data_warehouse.dim_uth_claim_id row count: ' as message, count(*) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: 4105423335
+select 'staging_clean.iqva_dim_claim_id row count: ' as message, count(*) from staging_clean.iqva_dim_claim_id; -- CNT: 4170185799
+select 'data_warehouse.dim_uth_claim_id row count: ' as message, count(*) from data_warehouse.dim_uth_claim_id where data_source = 'iqva'; -- CNT: 4170185799
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
@@ -226,5 +226,9 @@ from staging_clean.iqva_etl where ((billtype is null and rev_code is null) or (b
 --from staging_clean.iqva_etl 
 --where ((billtype is null and rev_code is null) or (billtype = '' and rev_code = '')) and (new_rectype not in ('F', 'S') or new_rectype is null) order by pat_id, derv_claimno, derv_linenum; -- P view data
 
+-- Ensure proc_cde does not contain non-alphanumeric characters:
+select * from staging_clean.iqva_etl where proc_cde ~ '[^a-zA-Z0-9]'; -- no rows returned
+select * from iqvia.claims where proc_cde ~ '[^a-zA-Z0-9]' limit 5; -- raw data for comparison
 
+*/
 

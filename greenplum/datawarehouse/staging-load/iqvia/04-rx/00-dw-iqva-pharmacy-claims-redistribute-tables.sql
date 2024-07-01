@@ -85,7 +85,7 @@ iqvia_clean_cte as (
 			when length(trim(ndc)) in (7, 8, 9, 10) then lpad(ndc, 11, '0')
 			else ndc
 		end as ndc_cleaned
-   from dev.sa_iqvia_derv_claimno_new_all_yr -- iqvia.claims table with the generated derv_claimnos
+   from dev.sa_iqvia_derv_claimno -- iqvia.claims table with the generated derv_claimnos
    where new_rectype = 'P' -- filter for where new_rectype = P to select pharmacy claims only
 )
 select 
@@ -114,24 +114,28 @@ select 'IQVIA Rx table redistribution and data transformation script completed a
 
 --= Various Checks =--
 
+/*
+
 -- View table:
 --select * from staging_clean.iqva_rx_etl limit 1000;
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Counts (make sure IQVIA raw data row count and staging_clean.iqva_rx_etl row count match):
-select 'staging_clean.iqva_rx_etl row count: ' as message, count(*) from staging_clean.iqva_rx_etl; -- CNT: 3312774549
-select 'iqvia raw claims row count: ' as message, count(*) from dev.sa_iqvia_derv_claimno_new_all_yr where new_rectype = 'P'; -- CNT: 3312774549
+select 'staging_clean.iqva_rx_etl row count: ' as message, count(*) from staging_clean.iqva_rx_etl; -- CNT: 3360117563
+select 'iqvia raw claims row count: ' as message, count(*) from dev.sa_iqvia_derv_claimno where new_rectype = 'P'; -- CNT: 3360117563
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Counts (make sure data_warehouse.dim_uth_rx_claim_id row count and dev.sa_iqvia_rx_dim_id row count match):
-select 'staging_clean.iqva_dim_rx_claim_id row count: ' as message, count(*) from staging_clean.iqva_dim_rx_claim_id; -- CNT: 3233703887
-select 'data_warehouse.dim_uth_rx_claim_id row count: ' as message, count(*) from data_warehouse.dim_uth_rx_claim_id where data_source = 'iqva'; -- CNT: 3233703887
+select 'staging_clean.iqva_dim_rx_claim_id row count: ' as message, count(*) from staging_clean.iqva_dim_rx_claim_id; -- CNT: 3281050005
+select 'data_warehouse.dim_uth_rx_claim_id row count: ' as message, count(*) from data_warehouse.dim_uth_rx_claim_id where data_source = 'iqva'; -- CNT: 3281050005
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Distinct NDC length (should be 11):
 select distinct(length(ndc)) from staging_clean.iqva_rx_etl; -- 11
+
+*/
 
 

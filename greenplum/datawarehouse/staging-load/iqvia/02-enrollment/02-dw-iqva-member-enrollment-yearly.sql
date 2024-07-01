@@ -14,6 +14,9 @@
  *          ||           || in the iqvia.claims table, and for patients who have claims for a year they were 
  *          ||           || not enrolled in.
  * ---------++-----------++------------------------------------------------------------------------------------
+ * 04/22/24 || Sharrah   || Script updated to first, pull patient demographic information from the 
+ *          ||           || enroll_synth table, and then after the enroll_synth_old table.
+ * ---------++-----------++------------------------------------------------------------------------------------
  *          ||           || 
  **************************************************************************************************************/ 
 
@@ -91,11 +94,11 @@ analyze dw_staging.iqva_member_enrollment_yearly;
  * 
  * Note: 
  * 	Below, pat_ids and years (substring(month_id, 1, 4)) are pulled from the iqvia.claims 
- *  table (dev.sa_iqvia_derv_claimno_new_all_yr) for patients who do not exist in the enroll2 table
+ *  table (dev.sa_iqvia_derv_claimno) for patients who do not exist in the enroll2 table
  *  and for patients who have claims that occured in years they were not enrolled in.
  * 	Additionally, uth_member_ids (from the data_warehouse.uth_member_id table) and additional 
- *  demographic information (from the iqvia.enroll_synth table) are collected for these patients.
- * 	This information will then be inserted into dw_staging.iqva_member_enrollment_yearly with
+ *  demographic information (from the iqvia.enroll_synth and iqvia.enroll_synth_old tables) are collected
+ * 	for these patients. This information will then be inserted into dw_staging.iqva_member_enrollment_yearly with
  * 	the claim_created_flag set to true. 
  * 
  * 	This is to create rows with claim_created_flag = T for the year(s) that a patient is not enrolled in,
@@ -105,6 +108,94 @@ analyze dw_staging.iqva_member_enrollment_yearly;
  * 
  * 
  *************************************************************************************************************************/
+
+--== Pull pat_ids and years (substring(month_id, 1, 4)) from the iqvia.claims table (dev.sa_iqvia_derv_claimno) for patients 
+--== who do not exist in the enroll2 table and for patients who have claims that occured in years they were not enrolled in:
+
+-- Drop existing table:
+drop table if exists staging_clean.iqva_claim_created_pat_ids_years;
+
+create table staging_clean.iqva_claim_created_pat_ids_years with(
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) as
+	select distinct a.pat_id, substring(a.month_id, 1, 4) as year
+	from dev.sa_iqvia_derv_claimno a -- iqvia.claims table with the generated derv_claimnos
+		left join iqvia.enroll2 erl2
+			on a.pat_id = erl2.pat_id 
+	       and substring(a.month_id, 1, 4) = substring(erl2.month_id, 1, 4)	
+	where erl2.pat_id is null and erl2.month_id is null; -- find where there are no matches on pat_id and year (substring(month_id), 1, 4)) between iqvia.claims and iqvia.enroll2. This will be the yearly info that needs to be added to enrollment_yearly table
+
+-- Vacuum analyze:
+vacuum analyze staging_clean.iqva_claim_created_pat_ids_years;
+
+
+
+--== First, grab demographic information from enroll_synth:
+
+-- Drop existing table:
+drop table if exists staging_clean.iqva_claim_created_enroll_synth_demographics;
+
+-- Note: There are no null pat_ids in either enroll tables
+create table staging_clean.iqva_claim_created_enroll_synth_demographics with(
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select 
+	a.*, 
+	es.der_sex,
+	es.der_yob,
+	es.pat_state,
+	es.pat_zip3,
+	es.mh_cd 
+   from staging_clean.iqva_claim_created_pat_ids_years a -- table containing pat_ids and years (substring(month_id, 1, 4)) from iqvia.claims that do not exist in enroll2
+		left join iqvia.enroll_synth es -- gather demographic info for a patient, if it exists, from the enroll_synth table
+			on a.pat_id = es.pat_id
+   where es.pat_id is not null -- filter where pat_id is not null in the enroll_synth table to retain patient demographic information for pat_ids that exist in both iqvia.claims and iqvia.enroll_synth
+   distributed by (pat_id);
+
+-- Vacuum analyze:
+vacuum analyze staging_clean.iqva_claim_created_enroll_synth_demographics;
+
+
+
+--== Next, grab demographic information from enroll_synth_old for pat_ids that are not in the enroll_synth table:
+
+-- Drop existing table:
+drop table if exists staging_clean.iqva_claim_created_enroll_synth_old_demographics;
+
+-- Note: There are no null pat_ids in either enroll tables
+create table staging_clean.iqva_claim_created_enroll_synth_old_demographics with(
+	appendonly=true,
+	orientation=column,
+	compresstype=zlib
+) 
+as select 
+	a.*,
+	eso.der_sex,
+	eso.der_yob,
+	eso.pat_state,
+	eso.pat_zip3,
+	eso.mh_cd 
+   from (
+   		select x.* 
+  		from staging_clean.iqva_claim_created_pat_ids_years x -- table containing pat_ids and years (substring(month_id, 1, 4)) from iqvia.claims that do not exist in enroll2
+  			left join staging_clean.iqva_claim_created_enroll_synth_demographics y
+  				on x.pat_id = y.pat_id 
+  		where y.pat_id is null -- join the staging_clean.iqva_claim_created_pat_ids_years table to staging_clean.iqva_claim_created_enroll_synth_demographics and filter for where there are no matches on pat_id. These will be the pat_ids that are not in the enroll_synth table
+  	) a 
+  		left join iqvia.enroll_synth_old eso -- gather demographic info for a patient, if it exists, from the enroll_synth_old table
+			on a.pat_id = eso.pat_id
+   distributed by (pat_id);
+  
+-- Vacuum analyze:
+vacuum analyze staging_clean.iqva_claim_created_enroll_synth_old_demographics;
+
+
+
+--== Insert data into dw_staging.iqva_member_enrollment_yearly, set claim_created_flag = T:
 
 -- Timestamp:
 select 'Inserting IQVIA data from iqvia.claims and iqvia.enroll_synth started at: ' || current_timestamp as message;
@@ -124,9 +215,9 @@ insert into dw_staging.iqva_member_enrollment_yearly(
 		 load_date,
          member_id_src,
          table_id_src)
-select distinct on(substring(a.month_id,1,4)::int, b.uth_member_id)
+select distinct on(es.year, b.uth_member_id)
        'iqva' as data_source, 
-       substring(a.month_id,1,4)::int as year,
+       es.year::int,
        b.uth_member_id as uth_member_id,
        case
 	       when es.der_sex is null then 'U' -- patients missing der_sex (NULL) will have gender_cd mapped as 'U'
@@ -135,12 +226,12 @@ select distinct on(substring(a.month_id,1,4)::int, b.uth_member_id)
        '0' as race_cd,
        case 
 	       when es.der_yob = '0000' or es.der_yob = '0' then 86 
-	       when es.der_yob::int > substring(a.month_id,1,4)::int then null 
-	       else (substring(a.month_id,1,4)::int - es.der_yob::int) -- patients missing der_yob (NULL) will have age_derived mapped as null
+	       when es.der_yob::int > es.year::int then null 
+	       else es.year::int - es.der_yob::int -- patients missing der_yob (NULL) will have age_derived mapped as null
 	   end as age_derived,
        case 
 	       when es.der_yob = '0000' or es.der_yob = '0' then null 
-	       when es.der_yob::int > substring(a.month_id,1,4)::int then null 
+	       when es.der_yob::int > es.year::int then null 
 	       else (es.der_yob || '/12/31')::date -- patients missing der_yob (NULL) will have dob_derived mapped as null
 	   end as dob_derived,
        es.pat_state as state,
@@ -159,17 +250,12 @@ select distinct on(substring(a.month_id,1,4)::int, b.uth_member_id)
 	       else null 
 	   end as behavioral_coverage,
        current_date as load_date,
-       a.pat_id as member_id_src,
+       es.pat_id as member_id_src,
        'claims' as table_id_src
-from dev.sa_iqvia_derv_claimno_new_all_yr a -- iqvia.claims table with the generated derv_claimnos
+from (select * from staging_clean.iqva_claim_created_enroll_synth_demographics union all select * from staging_clean.iqva_claim_created_enroll_synth_old_demographics) es 
 	join data_warehouse.dim_uth_member_id b 
-    	on a.pat_id = b.member_id_src 
-	left join iqvia.enroll2 c
-		on a.pat_id = c.pat_id 
-	   and substring(a.month_id, 1, 4) = substring(c.month_id, 1, 4)
-	left join iqvia.enroll_synth es -- gather additional demographic info for a patient, if it exists, from the enroll_synth table
-		on a.pat_id = es.pat_id
-where c.pat_id is null and c.month_id is null; -- find where there are no matches on pat_id and year (substring(month_id), 1, 4)) between iqvia.claims and iqvia.enroll2. This will be the yearly info that needs to be added to enrollment_yearly table
+    	on es.pat_id = b.member_id_src 
+;
 
  -- Analyze:
 analyze dw_staging.iqva_member_enrollment_yearly;
@@ -313,6 +399,9 @@ vacuum analyze dw_staging.iqva_member_enrollment_yearly;
 
 -- Drop existing tables that are no longer needed:
 drop table if exists staging_clean.iqva_temp_member_enrollment_month;
+drop table if exists staging_clean.iqva_claim_created_pat_ids_years;
+drop table if exists staging_clean.iqva_claim_created_enroll_synth_demographics;
+drop table if exists staging_clean.iqva_claim_created_enroll_synth_old_demographics;
 
 -- Grant Access:
 grant select on dw_staging.iqva_member_enrollment_yearly to uthealth_analyst;
@@ -328,10 +417,12 @@ select 'IQVIA member enrollment yearly ETL script completed at: ' || current_tim
 
 --= Various checks: =--
 
+/*
+
 -- View populated table: 
 --select * from dw_staging.iqva_member_enrollment_yearly limit 1000;
 --select * from dw_staging.iqva_member_enrollment_yearly where claim_created_flag is true limit 1000;
---select * from dw_staging.iqva_member_enrollment_yearly where claim_created_flag is not true limit 1000;
+--select * from dw_staging.iqva_member_enrollment_yearly where claim_created_flag is not true and bus_cd is not null limit 1000;
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
@@ -391,8 +482,10 @@ select distinct year from dw_staging.iqva_member_enrollment_yearly order by 1; -
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
--- Check for null member_id_src:
+-- Check for null member_id_src and uth_member_id:
 select * from dw_staging.iqva_member_enrollment_yearly where member_id_src is null; -- no rows returned
+select * from dw_staging.iqva_member_enrollment_yearly where uth_member_id is null; -- no rows returned
+
 
 -- Check distinct total_enrolled_months for where claim_created_flag = true (should be 0):
 select distinct total_enrolled_months from dw_staging.iqva_member_enrollment_yearly where claim_created_flag is true; -- 0
@@ -400,4 +493,5 @@ select distinct total_enrolled_months from dw_staging.iqva_member_enrollment_yea
 -- Check distinct total_enrolled_months for where claim_created_flag = true (should be not be 0, lowest value should be 1):
 select distinct total_enrolled_months from dw_staging.iqva_member_enrollment_yearly where claim_created_flag is not true order by 1; -- 1 thru 12
 
+*/
 

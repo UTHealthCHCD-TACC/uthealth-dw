@@ -138,6 +138,8 @@ select 'IQVIA claim detail script completed at: ' || current_timestamp as messag
 
 --= Various Checks =--
 
+/*
+
 -- View Table and Compare to DW claim_detail Table:
 --select * from dw_staging.iqva_claim_detail order by member_id_src, claim_id_src, claim_sequence_number limit 1000;
 
@@ -145,11 +147,11 @@ select 'IQVIA claim detail script completed at: ' || current_timestamp as messag
 
 -- Counts (make sure dw_staging.iqva_claim_detail row count and staging_clean.iqva_etl row count match):
 select 'iqvia raw claims row count: ' as message, count(*) 
-from dev.sa_iqvia_derv_claimno_new_all_yr where (new_rectype != 'P' or new_rectype is null); -- CNT: 9105920411
+from dev.sa_iqvia_derv_claimno where (new_rectype != 'P' or new_rectype is null); -- CNT: 9255962780
 
-select 'staging_clean.iqva_etl row count: ' as message, count(*) from staging_clean.iqva_etl; -- CNT: 9105920411
+select 'staging_clean.iqva_etl row count: ' as message, count(*) from staging_clean.iqva_etl; -- CNT: 9255962780
 
-select 'dw_staging.iqva_claim_detail row count: ' as message,count(*) from dw_staging.iqva_claim_detail; -- CNT: 9105920411
+select 'dw_staging.iqva_claim_detail row count: ' as message,count(*) from dw_staging.iqva_claim_detail; -- CNT: 9255962780
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
@@ -177,6 +179,13 @@ select distinct discharge_date from dw_staging.iqva_claim_detail where (substrin
 --select distinct admit_date from dw_staging.iqva_claim_detail where substring(bill,1,2) in ('11', '21') or substring(bill,1,1) = '7'; -- not null
 --select distinct discharge_date from dw_staging.iqva_claim_detail where substring(bill,1,2) in ('11', '21') or substring(bill,1,1) = '7'; -- not null
 
+--````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
+-- Check for NULLS:
+select * from dw_staging.iqva_claim_detail where member_id_src is null or member_id_src = ''; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_detail where claim_id_src is null or claim_id_src  = ''; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_detail where uth_claim_id  is null; -- no rows returned, no nulls
+select * from dw_staging.iqva_claim_detail where uth_member_id is null; -- no rows returned, no nulls
 
+*/
 

@@ -122,19 +122,30 @@ select 'IQVIA pharmacy claims script completed at: ' || current_timestamp as mes
 
 --= Various Checks =--
 
+/*
+
 -- View table:
 --select * from dw_staging.iqva_pharmacy_claims;
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Compare row counts (they should be the same):
-select count(*) from staging_clean.iqva_rx_etl; -- CNT: 3312774549
-select count(*) from dev.sa_iqvia_derv_claimno_new_all_yr where new_rectype = 'P'; -- CNT: 3312774549
-select count(*) from dw_staging.iqva_pharmacy_claims; -- CNT: 3312774549
+select count(*) from staging_clean.iqva_rx_etl; -- CNT: 3360117563
+select count(*) from dev.sa_iqvia_derv_claimno where new_rectype = 'P'; -- CNT: 3360117563
+select count(*) from dw_staging.iqva_pharmacy_claims; -- CNT: 3360117563
 
 --````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 -- Distinct year:
 select distinct year from dw_staging.iqva_pharmacy_claims order by 1; -- 2006 thru 2023
 
+--````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+-- Check for NULLS:
+select * from dw_staging.iqva_pharmacy_claims where uth_member_id is null; -- no rows returned
+select * from dw_staging.iqva_pharmacy_claims where uth_rx_claim_id is null; -- no rows returned
+select * from dw_staging.iqva_pharmacy_claims where member_id_src is null or member_id_src = ''; -- no rows returned, no nulls
+select * from dw_staging.iqva_pharmacy_claims where rx_claim_id_src is null or rx_claim_id_src  = ''; -- no rows returned, no nulls
+
+*/
 
