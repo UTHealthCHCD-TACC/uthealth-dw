@@ -10,8 +10,9 @@
  *  wcough	    || 1/07/2022 || add icd_version back to table
  * ****************************************************************************************************** 
  *  xzhang  	|| 09/05/2023 || Changed table name from claim_diag to mcd_claim_diag
- * 
- * TO DO: NEED TO STRIP PUNCTUATION FROM DX CODES
+ * ****************************************************************************************************** 
+ *  sallen      || 08/05/2024 || updated script to take the admitting Dx code and to
+ *              ||            || strip Dx code of punctuation
  * 
  * */
 
@@ -37,16 +38,16 @@ from (
 		select distinct 'mdcd', extract(year from d.hdr_frm_dos::date), 
 		       c.uth_member_id, d.year_fy, c.uth_claim_id, b.icn, b.pcn,
 		       d.hdr_frm_dos::date, 
-			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
+			   regexp_replace(unnest(array[ trim(a.adm_dx_cd), trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
 			                  trim(a.dx_cd_14), trim(a.dx_cd_15), trim(a.dx_cd_16), trim(a.dx_cd_17), trim(a.dx_cd_18), trim(a.dx_cd_19),
-			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24), trim(a.dx_cd_25) ] )as dx_cd,
-			    unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]) as dx_pos, 
-		 	    unnest(array[a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
+			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24), trim(a.dx_cd_25) ] ), '[^a-zA-Z0-9]', '', 'g') as dx_cd,
+			    unnest(array['A','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26']) as dx_pos, 
+		 	    unnest(array['Y', a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
 		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24, a.dx_poa_25 ]) as dx_poa,
-		       		        unnest(array[a.prim_dx_qal, a.dx_cd_qual_1, a.dx_cd_qual_2, a.dx_cd_qual_3, a.dx_cd_qual_4, a.dx_cd_qual_5, a.dx_cd_qual_6,
+		       		        unnest(array[null,a.prim_dx_qal, a.dx_cd_qual_1, a.dx_cd_qual_2, a.dx_cd_qual_3, a.dx_cd_qual_4, a.dx_cd_qual_5, a.dx_cd_qual_6,
 		                     a.dx_cd_qual_7, a.dx_cd_qual_8, a.dx_cd_qual_9, a.dx_cd_qual_10, a.dx_cd_qual_11, a.dx_cd_qual_12, a.dx_cd_qual_13,
 		                     a.dx_cd_qual_14, a.dx_cd_qual_15, a.dx_cd_qual_16, a.dx_cd_qual_17, a.dx_cd_qual_18, a.dx_cd_qual_19,
 		                     a.dx_cd_qual_20, a.dx_cd_qual_21, a.dx_cd_qual_22, a.dx_cd_qual_23, a.dx_cd_qual_24, a.dx_cd_qual_25 ]) as icd_ver
@@ -71,16 +72,16 @@ from (
 		select distinct 'mdcd', extract(year from d.frm_dos::date), 
 		       c.uth_member_id, d.year_fy, c.uth_claim_id, b.derv_enc, b.mem_id,
 		       d.frm_dos, 
-			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
+			   regexp_replace(unnest(array[ trim(a.adm_dx_cd), trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
 			                  trim(a.dx_cd_14), trim(a.dx_cd_15), trim(a.dx_cd_16), trim(a.dx_cd_17), trim(a.dx_cd_18), trim(a.dx_cd_19),
-			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24) ] )as dx_cd,
-			    unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]) as dx_pos, 
-		 	    unnest(array[a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
+			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24) ] ), '[^a-zA-Z0-9]', '', 'g') as dx_cd,
+			    unnest(array['A','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25']) as dx_pos, 
+		 	    unnest(array['Y', a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
 		              a.dx_poa_14, a.dx_poa_15, a.dx_poa_16, a.dx_poa_17, a.dx_poa_18, a.dx_poa_19,
 		              a.dx_poa_20, a.dx_poa_21, a.dx_poa_22, a.dx_poa_23, a.dx_poa_24]) as dx_poa,
-		        unnest(array[a.prim_dx_qal, a.dx_cd_qal_1, a.dx_cd_qal_2, a.dx_cd_qal_3, a.dx_cd_qal_4, a.dx_cd_qal_5, a.dx_cd_qal_6,
+		        unnest(array[null,a.prim_dx_qal, a.dx_cd_qal_1, a.dx_cd_qal_2, a.dx_cd_qal_3, a.dx_cd_qal_4, a.dx_cd_qal_5, a.dx_cd_qal_6,
 		                     a.dx_cd_qal_7, a.dx_cd_qal_8, a.dx_cd_qal_9, a.dx_cd_qal_10, a.dx_cd_qal_11, a.dx_cd_qal_12, a.dx_cd_qal_13,
 		                     a.dx_cd_qal_14, a.dx_cd_qal_15, a.dx_cd_qal_16, a.dx_cd_qal_17, a.dx_cd_qal_18, a.dx_cd_qal_19,
 		                     a.dx_cd_qal_20, a.dx_cd_qal_21, a.dx_cd_qal_22, a.dx_cd_qal_23, a.dx_cd_qal_24 ]) as icd_ver
@@ -108,10 +109,10 @@ from (
 		       c.uth_member_id, dev.fiscal_year_func(d.hdr_frm_dos::date),  
 		       c.uth_claim_id, b.icn, b.pcn,
 		       d.hdr_frm_dos::date, 
-			   unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
+			   regexp_replace(unnest(array[ trim(a.prim_dx_cd), trim(a.dx_cd_1), trim(a.dx_cd_2), trim(a.dx_cd_3), trim(a.dx_cd_4), trim(a.dx_cd_5), trim(a.dx_cd_6), 
 			                  trim(a.dx_cd_7), trim(a.dx_cd_8), trim(a.dx_cd_9), trim(a.dx_cd_10), trim(a.dx_cd_11), trim(a.dx_cd_12), trim(a.dx_cd_13), 
 			                  trim(a.dx_cd_14), trim(a.dx_cd_15), trim(a.dx_cd_16), trim(a.dx_cd_17), trim(a.dx_cd_18), trim(a.dx_cd_19),
-			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24), trim(a.dx_cd_25) ] )as dx_cd,
+			                  trim(a.dx_cd_20), trim(a.dx_cd_21), trim(a.dx_cd_22), trim(a.dx_cd_23), trim(a.dx_cd_24), trim(a.dx_cd_25) ] ), '[^a-zA-Z0-9]', '', 'g') as dx_cd,
 			    unnest(array[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]) as dx_pos, 
 		 	    unnest(array[a.prm_dx_poa, a.dx_poa_1, a.dx_poa_2, a.dx_poa_3, a.dx_poa_4, a.dx_poa_5, a.dx_poa_6, 
 		              a.dx_poa_7, a.dx_poa_8, a.dx_poa_9, a.dx_poa_10, a.dx_poa_11, a.dx_poa_12, a.dx_poa_13, 
