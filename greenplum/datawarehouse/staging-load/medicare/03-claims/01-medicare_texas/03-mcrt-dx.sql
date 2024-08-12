@@ -5,8 +5,9 @@
  * ****************************************************************************************************** 
  *  Xiaorui  || 10/03/23  || Rewrote -- ETL first then load
  * ******************************************************************************************************
- * 
- * TO DO: STRIP DX CODES OF NONALPHA
+ *  Sharrah  || 08/05/24  || Updated the script to pull the admitting Dx codes and to strip the Dx
+ *           ||           || codes of non-alphanumeric characters
+ * ******************************************************************************************************
  * */
 
 select 'mcrt claim diag script started at ' || current_timestamp as message;
@@ -18,7 +19,7 @@ select 'mcrt claim diag script started at ' || current_timestamp as message;
 drop table if exists dw_staging.mcrt_diag_etl;
 
 create table dw_staging.mcrt_diag_etl as
-select clm_id, bene_id, clm_from_dt::date, 0 as pos, icd_dgns_cd1 as dx,
+select clm_id, bene_id, clm_from_dt::date, '0'::text as pos, icd_dgns_cd1 as dx,
 	'version'::text as dx_version,
 	clm_poa_ind_sw1 as poa, 'table_id_src'::text as table_id_src
 from medicare_texas.inpatient_base_claims_k
@@ -44,7 +45,7 @@ begin
 			if table_name = 'inpatient' then 
 				execute 'insert into dw_staging.mcrt_diag_etl
 					select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
-					 icd_dgns_cd' || i || ', null as dx_version, clm_poa_ind_sw' || i || ' ,
+					regexp_replace(icd_dgns_cd' || i || ', ''[^a-zA-Z0-9]'', '''', ''g''), null as dx_version, clm_poa_ind_sw' || i || ' ,
 					''' || table_name || ''' as table_id_src
 					from medicare_texas.' || table_name || '_base_claims_k
 					where icd_dgns_cd' || i || ' is not null and
@@ -53,7 +54,7 @@ begin
 			else
 				execute 'insert into dw_staging.mcrt_diag_etl
 					select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
-					 icd_dgns_cd' || i || ', null as dx_version, null as poa,
+					regexp_replace(icd_dgns_cd' || i || ', ''[^a-zA-Z0-9]'', '''', ''g''), null as dx_version, null as poa,
 					''' || table_name || ''' as table_id_src
 					from medicare_texas.' || table_name || '_base_claims_k
 					where icd_dgns_cd' || i || ' is not null and
@@ -79,12 +80,34 @@ begin
 			if i % 4 = 0 then raise notice '     pos: %', i; end if; --raise notice every 4 positions
 			execute 'insert into dw_staging.mcrt_diag_etl
 				select clm_id, bene_id, clm_from_dt::date, ' || i || ' as pos,
-				 icd_dgns_cd' || i || ', icd_dgns_vrsn_cd' || i || ' as dx_version, null as poa,
+				regexp_replace(icd_dgns_cd' || i || ', ''[^a-zA-Z0-9]'', '''', ''g''), icd_dgns_vrsn_cd' || i || ' as dx_version, null as poa,
 				''' || table_name || ''' as table_id_src
 				from medicare_texas.' || table_name || '_claims_k
 				where icd_dgns_cd' || i || ' is not null and
 				icd_dgns_cd' || i || ' != '''';';
 		end loop;
+	end loop;
+end $$;
+
+
+--Get non-null admitting diagnosis codes from the snf and inpatient tables
+do $$
+declare 
+	--month_counter integer := 1;
+	i int;
+	table_names text[]:= array['inpatient','snf'];
+	table_name text;
+
+begin
+--loops through each table
+	for table_name in select unnest(table_names) loop
+		execute 'insert into dw_staging.mcrt_diag_etl
+			select clm_id, bene_id, clm_from_dt::date, ''A'' as pos,
+			regexp_replace(admtg_dgns_cd, ''[^a-zA-Z0-9]'', '''', ''g''), null as dx_version, ''Y'' as poa,
+			''' || table_name || ''' as table_id_src
+			from medicare_texas.' || table_name || '_base_claims_k
+			where admtg_dgns_cd is not null and
+			admtg_dgns_cd != '''';';
 	end loop;
 end $$;
 
