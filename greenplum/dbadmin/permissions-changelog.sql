@@ -9,6 +9,26 @@
  * 
  * ****************************************************************************************************** */
 
+--10/08/24
+---refresh permissions on conditions
+grant usage on schema conditions to group uthealth_analyst; 
+grant select on all tables in schema conditions to group uthealth_analyst; 
+grant select on all sequences in schema conditions to uthealth_analyst;
+alter default privileges in schema conditions grant select on tables to group uthealth_analyst;
+
+--refresh permissions for jwozny
+grant uthealth_analyst to jwozny;
+
+
+--05/10/24
+--refresh permissions for uthealth_analyst to reference_tables schema so Peter can get at the ref_zip_code
+grant usage on schema reference_tables to group uthealth_analyst; 
+grant select on all tables in schema reference_tables to group uthealth_analyst; 
+alter default privileges in schema reference_tables grant select on tables to group uthealth_analyst;
+
+--flow it upstream to uthealth_dev
+grant uthealth_analyst to uthealth_dev;
+
 --03/20/24
 --grant access to medicaid.chip_pren - owner is xrzhang
 alter table medicaid.chip_pren owner to uthealth_admin;
