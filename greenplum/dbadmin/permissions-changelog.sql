@@ -29,6 +29,10 @@ alter default privileges in schema reference_tables grant select on tables to gr
 --flow it upstream to uthealth_dev
 grant uthealth_analyst to uthealth_dev;
 
+--04/17/24
+--grant dev access to Peter
+grant uthealth_dev to piacobelli;
+
 --03/20/24
 --grant access to medicaid.chip_pren - owner is xrzhang
 alter table medicaid.chip_pren owner to uthealth_admin;
@@ -40,6 +44,13 @@ alter default privileges in schema medicaid grant select on tables to group uthe
 
 --grant same permissions as uthealth-analyst
 grant uthealth_analyst to uthealth_dev;
+
+--03/19/24
+--grant all access to qa_reporting for uthealth_analyst
+grant usage on schema qa_reporting to group uthealth_analyst; 
+grant all on all tables in schema qa_reporting to group uthealth_analyst; 
+grant all on all sequences in schema qa_reporting to uthealth_analyst;
+alter default privileges in schema qa_reporting grant all on tables to group uthealth_analyst;
 
 --11/27/23
 --grant dev access to Sharrah
