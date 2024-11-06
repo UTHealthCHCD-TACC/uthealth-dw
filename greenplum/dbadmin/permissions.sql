@@ -86,6 +86,19 @@ SELECT *
 FROM pg_default_acl
 WHERE defaclobjtype = 'r' AND defaclnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'dev');
 
+/************************
+ * Reset someone's password
+ * 
+ * (this doesn't work because GP uses LADP authentication)
+ */
+
+alter user [username] with password '---';
+
+select *
+from pg_catalog.pg_authid
+where rolname = '---';
+
+
 /*******************************************************************
  * Role definitions: apcd_uthealth_analyst
  * 
