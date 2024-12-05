@@ -8,6 +8,9 @@
  * 									 Also rolled extraneous update statements into create table statements
  * xzhang			|| 11/29/23   || Fixed issue with 2019/2020 duplicated claims in proc table
  * 									 Previously yielded duplicated rows in final table
+ * 
+ * PRIOR TO RUNNING CODE AGAIN - 3 new columns were added (NDC, NDC_QTY, NDC_UNIT) to claim_detail
+ * Modify code to account for this please
 */
 
 /* ETL TABLES FOR CLEANING */

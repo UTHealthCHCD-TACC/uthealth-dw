@@ -175,6 +175,8 @@ group by 1 order by 1;
 2019	4419443
 2020	4727375
 2021	4818441
+2022	4832687
+2023	4860233
 
 select year, count(*) from data_warehouse.member_enrollment_monthly
 where data_source = 'mcrt'
@@ -189,6 +191,8 @@ order by year;
 2019	50466984
 2020	54015078
 2021	54948770
+2022	55166660
+2023	55648755
 
 select year, count(*) from data_warehouse.claim_header
 where data_source = 'mcrt'
@@ -242,10 +246,23 @@ and schema_name = 'data_warehouse'
 	;
 */
 
+/*
+--update update log for claim details tables only
+update data_warehouse.update_log a
+set data_last_updated = current_date,
+	details = 'ndc columns added to details table',
+	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
+from pg_catalog.pg_stat_all_tables b
+where a.schema_name = b.schemaname and a.table_name = b.relname
+and schema_name = 'data_warehouse'
+	and table_name in ('claim_detail', 'claim_detail_1_prt_mcrt')
+;
+ */
+
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Medicare data updated 2022/2021',
+	details = 'Medicare data updated for 2022/2023',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
@@ -275,4 +292,5 @@ order by table_name;
 --check 2
 --select * from data_warehouse.update_log order by table_name;
 
+--select * from qa_reporting.medicare_national_counts order by 1, 2;
 

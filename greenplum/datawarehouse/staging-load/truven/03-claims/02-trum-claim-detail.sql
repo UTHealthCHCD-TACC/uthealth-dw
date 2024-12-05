@@ -18,6 +18,12 @@
 							didn't want issues
  * --------------------------------------------------------------------
  * Xiaorui || 07/20/2023 || Split into trum and truc, modified stdprov again b/c we fixed problem in script 02
+ * 
+ * NOTE: Before next data load, check to see if there is anything we can put into new columns
+ *  line status, provider taxonomy, provider specialty, ndc, ndc qty, ndc unit.
+ *  update code and column maps accordingly
+ * 
+ * 
  ***********************************************************************/
 
 select 'Truven MDCR Claim Detail script started at ' || current_timestamp as message;

@@ -173,6 +173,8 @@ group by 1 order by 1;
 2019	3306928
 2020	3390959
 2021	3248859
+2022	3525767
+2023	3590827
 
 select month_year_id, count(*) from data_warehouse.member_enrollment_monthly
 where data_source = 'mcrn'
@@ -180,13 +182,13 @@ group by month_year_id
 having count(*) > 100
 order by month_year_id desc limit 5;
 
---goes up to Dec 2020
+--goes up to Dec 2023
 
-202008	3238233
-202009	3243906
-202010	3249748
-202011	3252950
-202012	3255361
+202312	3471778
+202311	3466902
+202310	3461648
+202309	3454574
+202308	3447226
 
  */
 
@@ -238,7 +240,7 @@ and schema_name = 'data_warehouse'
 --update update_log
 update data_warehouse.update_log a
 set data_last_updated = current_date,
-	details = 'Medicare data updated for 2020/2021',
+	details = 'Medicare data updated for 2022/2023',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname

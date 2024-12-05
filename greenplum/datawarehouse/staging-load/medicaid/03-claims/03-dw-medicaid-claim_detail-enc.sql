@@ -10,6 +10,9 @@
  * 									 Also rolled extraneous update statements into create table statements
  * xrzhang          || 02/01/2024 || Modified code to address bug that caused both bill type and drg to be
  *                                   null in final DW table - NEED TO CHECK OUTPUT ON NEXT RUN
+ * 
+ * PRIOR TO RUNNING CODE AGAIN - 3 new columns were added (NDC, NDC_QTY, NDC_UNIT) to claim_detail
+ * Modify code to account for this please
 */
 
 /************CHECK OUTPUT FOR BILL AND DRG ON NEXT RUN****************/

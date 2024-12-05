@@ -6,6 +6,9 @@
  * xzhang  			|| 09/05/2023 || Changed table name from claim_detail to mcd_claim_detail
  * xzhang			|| 11/16/2023 || Modified to include line_status (paid/denied/etc on line level)
  * 									 Also rolled extraneous update statements into create table statements
+ * 
+ * PRIOR TO RUNNING CODE AGAIN - 3 new columns were added (NDC, NDC_QTY, NDC_UNIT) to claim_detail
+ * Modify code to account for this please
 */
 
 drop table if exists dw_staging.htw_clm_detail_etl;
