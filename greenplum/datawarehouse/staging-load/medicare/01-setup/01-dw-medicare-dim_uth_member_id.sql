@@ -76,7 +76,6 @@ vacuum analyze data_warehouse.update_log;
 
 /*************
  * QA: make sure that there's only one instance per bene_id per data_source
- */
 
 select data_source, member_id_src, count(*)
 from data_warehouse.dim_uth_member_id
@@ -94,5 +93,5 @@ having count(distinct uth_member_id) > 1
 ;
 --none
 
-
+ */
 

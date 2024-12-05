@@ -9,6 +9,8 @@
  *  xiaorui || 10/09/2023 || hotfix for missing uth_rx_claim_ids
  * */
 
+select 'Medicare National pharmacy claims script started at: ' || current_timestamp as message;
+
 drop table if exists dw_staging.mcrn_pharmacy_claims;
 
 create table dw_staging.mcrn_pharmacy_claims 
@@ -62,13 +64,38 @@ left join data_warehouse.dim_uth_rx_claim_id b
 
 vacuum analyze dw_staging.mcrn_pharmacy_claims;
 
+select 'Medicare National pharmacy claims script completed at: ' || current_timestamp as message;
+
+--select * from dw_staging.mcrn_pharmacy_claims;
+
 /**********HOTFIX: some uth_rx_claim_ids fell off the dim table ******
+ * 
+
+
+--check what claims are missing ids
+select year, count(*)
+from dw_staging.mcrn_pharmacy_claims
+where uth_rx_claim_id is null
+group by 1 order by 1;
+
+2019	21
+2020	13
+2021	14460
+2022	587
+--these are due to bene_ids being null
+
+--look at the sharp spike in 2021
+select * from dw_staging.mcrn_pharmacy_claims
+where uth_rx_claim_id is null
+and year = 2021;
+
 
 update dw_staging.mcrn_pharmacy_claims a
 set uth_rx_claim_id = b.uth_rx_claim_id,
 	uth_member_id = b.uth_member_id
 from data_warehouse.dim_uth_rx_claim_id b
-where a.uth_rx_claim_id is null
+where a.year = 2021
+	and a.uth_rx_claim_id is null
 	and b.data_source = 'mcrn'
 	and a.rx_claim_id_src = b.rx_claim_id_src;
 
@@ -79,6 +106,8 @@ where uth_rx_claim_id is null;
 --21, but these are the ones whose bene_id doesn't exist in the enrollment table
 
 */
+
+
 
 
 

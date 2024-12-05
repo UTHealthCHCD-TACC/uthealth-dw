@@ -6,6 +6,8 @@
  * ******************************************************************************************************
  *  xzhang  || 09/28/2023 || rewrote using Excel, various fixes including mistakes in column mapping
  * ****************************************************************************************************** 
+ * 
+ * Many columns were added - need to fix before running script again
  * */
 
 select 'mcrt claim detail script started at ' || current_timestamp as message;
@@ -36,7 +38,8 @@ insert into dw_staging.mcrt_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )
 select
     'mcrt' as data_source, 
@@ -77,7 +80,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || a.clm_srvc_clsfctn_type_cd || a.clm_freq_cd as bill
+    a.clm_fac_type_cd || a.clm_srvc_clsfctn_type_cd || a.clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_texas.inpatient_base_claims_k a
 inner join medicare_texas.inpatient_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -94,7 +100,8 @@ insert into dw_staging.mcrt_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrt' as data_source, 
@@ -135,7 +142,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_texas.hha_base_claims_k a
 inner join medicare_texas.hha_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -152,7 +162,8 @@ insert into dw_staging.mcrt_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrt' as data_source, 
@@ -193,7 +204,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_texas.hospice_base_claims_k a
 inner join medicare_texas.hospice_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -212,7 +226,8 @@ insert into dw_staging.mcrt_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrt' as data_source, 
@@ -253,7 +268,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_texas.snf_base_claims_k a
 inner join medicare_texas.snf_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -271,7 +289,8 @@ insert into dw_staging.mcrt_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrt' as data_source, 
@@ -312,7 +331,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_texas.outpatient_base_claims_k a
 inner join medicare_texas.outpatient_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -380,7 +402,8 @@ insert into dw_staging.mcrt_claim_detail(
      cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, 
      charge_amount, allowed_amount, paid_amount, deductible, coins, 
      units, fiscal_year, table_id_src, bill_provider, 
-     claim_id_src, member_id_src, load_date, provider_type
+     claim_id_src, member_id_src, load_date, provider_type,
+     ndc
 )
 select
     'mcrt' as data_source, 
@@ -410,7 +433,8 @@ select
     b.clm_id as claim_id_src, 
     b.bene_id as member_id_src, 
     current_date as load_date, 
-    NULL as provider_type
+    NULL as provider_type,
+    b.line_ndc_cd as ndc
 from medicare_texas.dme_claims_k a
 inner join medicare_texas.dme_line_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id

@@ -34,7 +34,8 @@ insert into dw_staging.mcrn_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )
 select
     'mcrn' as data_source, 
@@ -75,7 +76,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || a.clm_srvc_clsfctn_type_cd || a.clm_freq_cd as bill
+    a.clm_fac_type_cd || a.clm_srvc_clsfctn_type_cd || a.clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_national.inpatient_base_claims_k a
 inner join medicare_national.inpatient_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -92,7 +96,8 @@ insert into dw_staging.mcrn_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrn' as data_source, 
@@ -133,7 +138,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_national.hha_base_claims_k a
 inner join medicare_national.hha_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -150,7 +158,8 @@ insert into dw_staging.mcrn_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrn' as data_source, 
@@ -191,7 +200,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_national.hospice_base_claims_k a
 inner join medicare_national.hospice_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -210,7 +222,8 @@ insert into dw_staging.mcrn_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrn' as data_source, 
@@ -251,7 +264,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_national.snf_base_claims_k a
 inner join medicare_national.snf_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -269,7 +285,8 @@ insert into dw_staging.mcrn_claim_detail(
      drg_cd, revenue_cd, charge_amount, allowed_amount, paid_amount, deductible, coins, 
      bill_type_inst, bill_type_class, bill_type_freq, units, fiscal_year, 
      table_id_src, bill_provider, perf_rn_provider, perf_at_provider, perf_op_provider, 
-     claim_id_src, member_id_src, load_date, provider_type, bill
+     claim_id_src, member_id_src, load_date, provider_type, bill,
+     ndc, ndc_qty, ndc_unit
 )						   							   
 select
     'mcrn' as data_source, 
@@ -310,7 +327,10 @@ select
     a.bene_id as member_id_src, 
     current_date as load_date, 
     a.rndrng_physn_spclty_cd as provider_type, 
-    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill
+    a.clm_fac_type_cd || clm_srvc_clsfctn_type_cd || clm_freq_cd as bill,
+    b.rev_cntr_ide_ndc_upc_num as ndc,
+    b.rev_cntr_ndc_qty::numeric as ndc_qty,
+    b.rev_cntr_ndc_qty_qlfr_cd as ndc_unit
 from medicare_national.outpatient_base_claims_k a
 inner join medicare_national.outpatient_revenue_center_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
@@ -378,7 +398,8 @@ insert into dw_staging.mcrn_claim_detail(
      cpt_hcpcs_cd, procedure_type, proc_mod_1, proc_mod_2, 
      charge_amount, allowed_amount, paid_amount, deductible, coins, 
      units, fiscal_year, table_id_src, bill_provider, 
-     claim_id_src, member_id_src, load_date, provider_type
+     claim_id_src, member_id_src, load_date, provider_type,
+     ndc
 )
 select
     'mcrn' as data_source, 
@@ -408,7 +429,8 @@ select
     b.clm_id as claim_id_src, 
     b.bene_id as member_id_src, 
     current_date as load_date, 
-    NULL as provider_type
+    NULL as provider_type,
+    b.line_ndc_cd as ndc
 from medicare_national.dme_claims_k a
 inner join medicare_national.dme_line_k b
     on a.clm_id = b.clm_id and a.bene_id = b.bene_id
