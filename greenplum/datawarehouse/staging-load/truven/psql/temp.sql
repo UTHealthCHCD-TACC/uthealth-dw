@@ -1,16 +1,16 @@
+select 'Add provider type: ' || current_timestamp as message;
+--- add provider type 
 
-select 'Script Start' || current_timestamp as message;
+update dw_staging.truc_claim_header a 
+   set provider_specialty = to_char(b.stdprov , 'FM9999')
+  from staging_clean.truv_ccaef_etl b
+ where a.member_id_src::bigint = b.enrolid 
+   and a.claim_id_src = b.claim_id_derv 
+   and substring(table_id_src,1,2) = 'cc';
+  
+select 'Analyze: ' || current_timestamp as message;
 
-select 'Task 1 - count from truven-ccaeo started at: ' || current_timestamp as message;
-select count(*) as count_from_bcarrier from truven.ccaeo;
+vacuum analyze dw_staging.truc_claim_header;
+   
 
-select 'Task 2 - count from dme started at ' || current_timestamp as message;
-select count(*) as count_from_dme from medicare_texas.dme_claims_k;
-
-select 'Script completed at: ' || current_timestamp as message;
-
-select usename, pid, state, waiting, query_start , query, *
-from pg_catalog.pg_stat_activity where
-usename in ('xrzhang') and ---- put your username
-state = 'active'
-order by state, usename;
+select 'Truven CCAE Claim Header script completed at ' || current_timestamp as message;

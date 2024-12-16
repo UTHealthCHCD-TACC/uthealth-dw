@@ -105,9 +105,13 @@ where schemaname = 'truven'
 	and (relname like '%f' or relname like '%s' or relname like '%o')
 order by last_vacuum;
 
-
 /*QA
-select year, count(*) from truven.ccaeo where claim_id_derv is null and year between 2019 and 2022 group by year order by year;
+select year, count(*) from truven.ccaeo where claim_id_derv is null and year = 2023 group by year order by year;
+2019	407823
+2020	453193
+2021	424626
+2022	514850
+2023	426384
 
 select year, count(*) from truven.ccaeo where enrolid is null and year between 2019 and 2022 group by year order by year;
  */

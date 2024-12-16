@@ -14,6 +14,9 @@
  * Xiaorui || 07/20/2023 || Split into trum and truc
  * --------------------------------------------------------------------
  * Xiaorui || 03/14/2024 || Fixed stdprov(int) -> stdprov(char) conversion
+ * --------------------------------------------------------------------
+ * Xiaorui || 12/12/2024 || provider_type column got renamed to provider_specialty
+ *                          Change was implemented due to Medicaid in March 2024
  ***********************************************************************/
 
 select 'Truven MDCR Claim Header script started at ' || current_timestamp as message;
@@ -157,7 +160,7 @@ select 'Add provider type: ' || current_timestamp as message;
 --- add provider type 
    
 update dw_staging.trum_claim_header a 
-   set provider_type = to_char(b.stdprov , 'FM9999')
+   set provider_specialty = to_char(b.stdprov , 'FM9999')
   from staging_clean.truv_mdcrf_etl b
  where a.member_id_src::bigint = b.enrolid 
    and a.claim_id_src = b.claim_id_derv 

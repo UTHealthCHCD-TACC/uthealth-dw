@@ -157,6 +157,3 @@ select 'Analyze dw_staging.truc_claim_detail: ' || current_timestamp as message;
 analyze dw_staging.truc_claim_detail;
 
 select 'Truven CCAE Claim Detail script completed at ' || current_timestamp as message;
-
-
-
