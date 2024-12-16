@@ -118,8 +118,8 @@ select * from data_warehouse.update_log;
 
 --update update_log
 update data_warehouse.update_log a
-set data_last_updated = current_date,
-	details = 'Updated for Truven 2022 Q4',
+set data_last_updated = current_date,  --last updated 12/11/24
+	details = 'Updated for Truven 2023',
 	last_vacuum_analyze = case when b.last_vacuum is not null then b.last_vacuum else b.last_analyze end
 from pg_catalog.pg_stat_all_tables b
 where a.schema_name = b.schemaname and a.table_name = b.relname
