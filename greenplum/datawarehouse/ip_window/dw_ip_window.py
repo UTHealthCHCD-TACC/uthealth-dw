@@ -272,7 +272,7 @@ def run_step_one(data_source):
                          ip_acute_admit_tables_delete_datasource]
 
     variable_dict = {'start_year': 2015,
-                     'end_year': 2022,
+                     'end_year': 2024,
                      'data_source': data_source}
 
     sequence_description = 'IP Acute Admit: Step One'
@@ -353,6 +353,7 @@ def insert_ip_admit_claims(cursor, data_source, output_table, **kwargs):
     on dia.uth_member_id = ch.uth_member_id
     and (from_date_of_service between admit_date and discharge_date)
     and (to_date_of_service between admit_date and discharge_date)
+    and dia.data_source = ch.data_source
     and dia.data_source = '{data_source}';''')
 
     return cursor.rowcount
@@ -553,31 +554,31 @@ if __name__ == '__main__':
     # step two: runs the python logic
     # see script dw_ip_window_step_2.py
     output_table = 'gm_dw_ip_admit'
-
-    dw_load = True
+    
+    dw_load = False
 
     try:
-        df_con = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
+        df_con = psycopg2.connect(get_dsn('uth_dw.env', host='uth')+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
         df_con.autocommit = True
 
         data_sources = [
-                        # 'mdcd',
-                        # 'mcpp', 
-                        # 'mhtw', 
+                        'mdcd',
+                        'mcpp', 
+                        'mhtw', 
                         # 'mcrt',
                         # 'mcrn',
                         # 'optz',
                         # 'optd',
                         # 'truc', 
                         # 'trum',
-                        'iqva',
+                        # 'iqva',
                         ]
 
         if not dw_load:
             with df_con.cursor() as cursor:
                 # clears tables from step 1
                 # create_log_table(cursor, 'dev', 'ip_dw_ip_log')
-                run_step_zero()
+                run_step_zero() 
             
 
         for data_source in data_sources:

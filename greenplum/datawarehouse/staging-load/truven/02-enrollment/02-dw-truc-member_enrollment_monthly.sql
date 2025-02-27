@@ -49,7 +49,9 @@ with (
 		compresstype=zlib, 
 		compresslevel=5 
 	 )
-distributed by (uth_member_id);
+	 distributed randomly
+--distributed by (uth_member_id)
+;
 
 alter table dw_staging.truc_member_enrollment_monthly add column row_id bigserial;
 alter sequence dw_staging.truc_member_enrollment_monthly_row_id_seq cache 200;
@@ -85,10 +87,11 @@ as select m.enrolid::text,
        m.year, 
        m.msa
   from truven.ccaet m
-  distributed by (enrolid)
+  distributed randomly
+--  distributed by (enrolid)
   ;
  
- analyze staging_clean.ccaet;
+vacuum analyze staging_clean.ccaet;
 
 /****************************
  * Insert into monthly enrollment table
@@ -103,6 +106,8 @@ select * from truven.ccaet where medadv = 1 limit 10 ; --no results
 */
 
 select 'Inserting ccaet started at: ' || current_timestamp as message;
+
+select distinct year from staging_clean.ccaet;
 
 -- Truven Commercial ----------------------------------------------------------------------------
 insert into dw_staging.truc_member_enrollment_monthly  (
@@ -151,7 +156,11 @@ select 'truc',
        current_date,
        'ccaet',
        enrolid 
-  from staging_clean.ccaet m
+  from (
+  	select *
+  	from staging_clean.ccaet 
+--  	where year between 2020 and 2022
+  ) m
   join data_warehouse.dim_uth_member_id  a 
     on a.member_id_src = m.enrolid
  and a.data_source = 'truc'
@@ -165,7 +174,16 @@ select 'truc',
   and d.plan_type_src::int = m.plantyp  
 ;
 
-analyze dw_staging.truv_member_enrollment_monthly;
+-- 2011-2013 10min
+-- 2014-2016 7.5min
+-- 2017-2019 5.5 min
+-- 2020-2022 4.5min
+-- distr random 10 min
+
+analyze dw_staging.truc_member_enrollment_monthly;
+
+vacuum analyze dw_staging.truc_member_enrollment_monthly;
+
 ---------------------------------------------------------------------------------------------------
 
 select 'Get consecutive enrollment for ccae: ' || current_timestamp as message;
@@ -188,7 +206,12 @@ from (
 	     join reference_tables.ref_month_year b 
 	       on a.month_year_id = b.month_year_id 	   		    
 	 ) inr    
-distributed by (row_id);
+distributed randomly
+--distributed by (row_id)
+;
+
+-- 5 min
+-- 2.5 min with distrb randomly tables
 
 analyze dev.temp_consec_enrollment;
 
@@ -197,7 +220,11 @@ update dw_staging.truc_member_enrollment_monthly a
    set consecutive_enrolled_months = b.in_streak 
   from dev.temp_consec_enrollment b 
  where a.row_id = b.row_id
+-- and year between 2014 and 2016
 ;
+
+-- 2011-2013 10min?
+-- 2014-2016
 
 --**cleanup
 drop table if exists dev.temp_consec_enrollment;
@@ -207,7 +234,3 @@ alter table dw_staging.truc_member_enrollment_monthly drop column row_id;
 vacuum analyze dw_staging.truc_member_enrollment_monthly;
 
 select 'Truven CCAE member enrollment monthly etl script completed at ' || current_timestamp as message;
-
-
-
-

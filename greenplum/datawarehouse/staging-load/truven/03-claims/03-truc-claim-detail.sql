@@ -102,6 +102,7 @@ select 'Inserting from ccaeo: ' || current_timestamp as message;
 ---------------------------------------------
 -------- Commercial Outpatient (ccaeo)
 ---------------------------------------------
+--explain
 insert into dw_staging.truc_claim_detail
 select  'truc',
 		a.year, 

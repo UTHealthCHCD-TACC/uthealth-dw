@@ -2,8 +2,20 @@ import psycopg2
 import sys
 sys.path.append('H:/uth_helpers')
 from db_utils import get_dsn
+from datetime import datetime
+import keyring
 
-connection = psycopg2.connect(get_dsn()+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
+connection = psycopg2.connect(get_dsn(host='tacc')+' keepalives=1 keepalives_idle=30 keepalives_interval=10')
+
+# connection_param = 'dbname=uthealth'
+# connection_param+= ' user=iperez9'
+# connection_param+= ' port=5432'
+# connection_param+= ' host=spgpcdplv001'
+# connection_param+= ' password=' + keyring.get_password('local_uthealth', 'iperez9')
+# connection_param+= ' keepalives=1 keepalives_idle=30 keepalives_interval=10'
+# connection_param+= ' application_name=truven_schema_counts.py'
+# connection = psycopg2.connect(connection_param)
+
 connection.autocommit = True
 
 with connection.cursor() as cursor:
@@ -45,6 +57,8 @@ report_version numeric
 
     cursor.execute(query)
 
+    print('start', datetime.now())
+
     print('A - enrollment tables')
 
     query = '''
@@ -56,7 +70,7 @@ group by year;
     '''
 
     cursor.execute(query)
-
+    
     query = '''
 insert into qa_reporting.truven_counts
 (year, table_name, row_count, pat_count, clm_count)
@@ -66,6 +80,8 @@ group by year;
     '''
 
     cursor.execute(query)
+
+    print('a', datetime.now())
 
     print('F - facility header tables')
 
@@ -88,6 +104,8 @@ group by year;
     '''
 
     cursor.execute(query)
+
+    print('f', datetime.now())
 
     print('I - inpatient admission tables')
 
@@ -112,6 +130,8 @@ group by year;
 
     cursor.execute(query)
 
+    print('i', datetime.now())
+
     print('O - outpatient tables')
 
     query = '''
@@ -133,6 +153,8 @@ group by year;
     '''
 
     cursor.execute(query)
+
+    print('o', datetime.now())
 
     print('S - Inpatient Services table')
 
@@ -156,6 +178,8 @@ group by year;
 
     cursor.execute(query)
 
+    print('s', datetime.now())
+
     print('T - Detailed Enrollment table')
 
     query = '''
@@ -177,6 +201,8 @@ group by year;
     '''
 
     cursor.execute(query)
+
+    print('t', datetime.now())
 
     print('D - RX')
 
@@ -200,6 +226,8 @@ group by year;
 
     cursor.execute(query)
 
+    print('d', datetime.now())
+
     print('P ?')
 
     query = '''
@@ -222,6 +250,8 @@ group by year;
 
     cursor.execute(query)
 
+    print('p', datetime.now())
+
     print('Getting Data Version')
 
     cursor.execute('select distinct table_name from qa_reporting.truven_counts;')
@@ -241,3 +271,5 @@ group by year;
         '''
 
         cursor.execute(query)
+
+    print('versions', datetime.now())

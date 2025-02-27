@@ -156,8 +156,10 @@ analyze dw_staging.trum_claim_header;
 select 'Add provider type: ' || current_timestamp as message;
 --- add provider type 
    
+-- 4.5min
+
 update dw_staging.trum_claim_header a 
-   set provider_type = to_char(b.stdprov , 'FM9999')
+   set billing_provider_type = to_char(b.stdprov , 'FM9999')
   from staging_clean.truv_mdcrf_etl b
  where a.member_id_src::bigint = b.enrolid 
    and a.claim_id_src = b.claim_id_derv 
